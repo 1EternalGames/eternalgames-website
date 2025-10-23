@@ -25,8 +25,6 @@ const SanityImageComponent = ({ value }: { value: any }) => {
         .quality(85)
         .url();
 
-    // --- THE DEFINITIVE FIX ---
-    // The link should point to a URL that is auto-formatted but not resized.
     const fullResSrc = urlFor(asset).auto('format').quality(100).url();
 
     return (
@@ -44,6 +42,7 @@ const SanityImageComponent = ({ value }: { value: any }) => {
                     placeholder={blurDataURL ? 'blur' : 'empty'}
                     blurDataURL={blurDataURL}
                     loading="lazy"
+                    draggable={false} // THE FIX
                     style={{
                         width: '100%',
                         height: 'auto',

@@ -16,7 +16,7 @@ export default function TwoImageGrid({ value }: { value: any }) {
 
     return (
         <div className={styles.grid}>
-            <div
+            <div 
                 className={`${styles.imageWrapper} image-lightbox-trigger`}
                 onClick={() => openLightbox(urlFor(image1.asset).auto('format').quality(100).url())}
             >
@@ -25,10 +25,11 @@ export default function TwoImageGrid({ value }: { value: any }) {
                     alt={image1.alt || 'Grid Image 1'}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
+                    draggable={false} // THE FIX
                     style={{ objectFit: 'cover' }}
                 />
             </div>
-            <div
+            <div 
                 className={`${styles.imageWrapper} image-lightbox-trigger`}
                 onClick={() => openLightbox(urlFor(image2.asset).auto('format').quality(100).url())}
             >
@@ -37,6 +38,7 @@ export default function TwoImageGrid({ value }: { value: any }) {
                     alt={image2.alt || 'Grid Image 2'}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
+                    draggable={false} // THE FIX
                     style={{ objectFit: 'cover' }}
                 />
             </div>

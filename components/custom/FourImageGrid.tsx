@@ -29,6 +29,7 @@ export default function FourImageGrid({ value }: { value: any }) {
                         alt={image.alt || `Grid Image ${index + 1}`}
                         fill
                         sizes="(max-width: 768px) 50vw, 33vw"
+                        draggable={false} // THE FIX
                         style={{ objectFit: 'cover' }}
                     />
                 </div>
