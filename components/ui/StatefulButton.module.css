@@ -1,0 +1,62 @@
+/* components/ui/StatefulButton.module.css */
+
+.statefulButton {
+    position: relative;
+    overflow: hidden;
+    transition: width 0.4s ease, height 0.4s ease, border-radius 0.4s ease, background-color 0.2s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out !important;
+  }
+  
+  .loader {
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+  }
+  
+  .loader circle {
+    stroke: #fff;
+  }
+  
+  [data-theme="dark"] .loader circle {
+    stroke: var(--bg-primary);
+  }
+  
+  /* For Editor Save Button */
+  .saveButton {
+    min-width: 140px;
+    min-height: 44px;
+  }
+  
+  .saveButton.saving,
+  .saveButton.success {
+    color: transparent; /* Hide text during animation */
+  }
+  
+  .saveButton.success {
+    background-color: #16A34A;
+  }
+  
+  .saveButton.error {
+    background-color: #DC2626;
+    animation: shake 0.5s ease-in-out;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(-0); }
+    25% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+  }
+  
+  .saveButtonContent {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+
+
+
+

@@ -1,0 +1,52 @@
+// app/layout.tsx
+import { Cairo } from 'next/font/google';
+import './globals.css';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import NextAuthProvider from '@/components/SessionProvider';
+import StudioBar from '@/components/StudioBar';
+import ToastProvider from '@/components/ToastProvider';
+import UserStoreHydration from '@/components/UserStoreHydration';
+
+const cairo = Cairo({
+subsets: ['arabic', 'latin'],
+display: 'swap',
+variable: '--font-main',
+weight: ['400', '500', '700', '800'],
+});
+
+export const metadata = { title: 'EternalGames | الألعاب أبدية', description: 'الألعاب أبدية.', };
+
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
+return (
+<html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+<head>
+{/* --- THE FIX IS HERE --- */}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossOrigin="anonymous"
+/>
+<link
+    rel="preconnect"
+    href="https://cdn.sanity.io"
+    crossOrigin="anonymous"
+/>
+</head>
+<body>
+<NextAuthProvider>
+<UserStoreHydration />
+<ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
+<ToastProvider />
+<Navbar />
+<main>{children}</main>
+<Footer />
+<StudioBar />
+</ThemeProvider>
+</NextAuthProvider>
+</body>
+</html>
+);
+}

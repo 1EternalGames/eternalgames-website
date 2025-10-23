@@ -1,0 +1,151 @@
+/* app/news/NewsPage.module.css */
+
+.chronosFeedLayout {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 4rem;
+  margin-top: 3rem;
+}
+
+.chronosFeedSidebar {
+  position: sticky;
+  top: calc(var(--nav-height-scrolled) + 2rem);
+  align-self: start;
+}
+
+@media (max-width: 1024px) {
+  .chronosFeedLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Neural Cascade Grid */
+.neuralCascadeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3rem;
+}
+.neuralCascadeGrid > div.leadStoryItem {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .neuralCascadeGrid {
+    grid-template-columns: 1fr;
+  }
+  .neuralCascadeGrid > div.leadStoryItem {
+    grid-column: span 1;
+  }
+}
+
+/* Base Card Overrides for Chronos Feed */
+.newsCard {
+  border-radius: 12px;
+}
+.leadNewsCard {
+  border-radius: 12px;
+}
+.leadNewsCard .newsCardImageContainer {
+  height: 220px;
+}
+.leadNewsCard .newsCardContent {
+  padding: 1.5rem 2.5rem;
+}
+.leadNewsCard h3 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+/* News Filter "Command Bar" */
+.newsFilterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4rem;
+  background-color: var(--bg-secondary);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.categoryTabs {
+  display: flex;
+  gap: 1.5rem;
+}
+.categoryTab {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 1.6rem;
+  color: var(--text-secondary);
+  padding: 0.5rem 0;
+  transition: color 0.2s ease;
+}
+.categoryTab:hover {
+  color: var(--text-primary);
+}
+.categoryTab.active {
+  color: var(--accent);
+}
+.categoryUnderline {
+  position: absolute;
+  bottom: -0.5rem;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.filterControls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Terminal Ticker Sidebar */
+.terminalTickerContainer {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+.terminalTickerTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+.terminalTickerContent {
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.terminalTickerCategory {
+  color: var(--accent);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+.terminalTickerHeadline {
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  line-height: 1.5;
+  margin: 0;
+  min-height: 72px; /* Prevents layout shift */
+}
+
+
+
+
+

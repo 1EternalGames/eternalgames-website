@@ -1,0 +1,10 @@
+{
+  "name": "eternalgames-studio",
+  "private": true,
+  "version": "1.0.0",
+  "main": "package.json",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "styled-components": "^6.1.19"
+  }
+}

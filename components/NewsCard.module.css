@@ -1,0 +1,88 @@
+/* components/NewsCard.module.css */
+
+.newsCardLink {
+    display: block;
+    height: 100%;
+    text-decoration: none;
+}
+
+.newsCard {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease;
+}
+
+/* This is the wrapper for the 3D hover effect */
+.livingCardWrapper {
+    transform-style: preserve-3d;
+    height: 100%;
+}
+
+.livingCardWrapper:hover .newsCard {
+    border-color: color-mix(in srgb, var(--text-primary) 20%, transparent);
+}
+
+.imageContainer {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.cardImage {
+    transition: transform 0.4s ease;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cardContent {
+    padding: 2rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.category {
+    font-family: var(--font-ui), sans-serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.cardContent h3 {
+    font-size: 1.8rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Lead Card specific styles for News Page */
+.leadNewsCard {
+    border-radius: 12px;
+}
+
+.leadNewsCard .imageContainer {
+    height: 220px;
+}
+
+.leadNewsCard .cardContent {
+    padding: 1.5rem 2.5rem;
+}
+
+.leadNewsCard h3 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+}
+
+
+
+
+

@@ -1,0 +1,137 @@
+/* components/TriptychHero.module.css */
+
+.stickyHeroWrapper {
+  top: 0;
+  height: 100vh;
+  width: 100%;
+}
+
+.triptychHeroContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  height: 100%;
+  width: 100%;
+  padding: 2rem;
+  padding-top: var(--nav-height);
+  perspective: 1500px;
+  background-color: var(--bg-primary);
+}
+
+.triptychPanel {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 70vh;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+  will-change: transform;
+  transform-style: preserve-3d;
+  border: 1px solid var(--border-color);
+}
+
+/* MODIFIER CLASSES (THE FIX) */
+.center {
+  width: 45%;
+  height: 80vh;
+  z-index: 2;
+}
+
+.left,
+.right {
+  width: 22%;
+  z-index: 1;
+  transform: scale(0.95);
+}
+
+.triptychPanelLink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+}
+
+.triptychPanelBgContainer {
+  position: absolute;
+  inset: 0;
+}
+
+.triptychPanelBg {
+  transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+
+.triptychPanelLink:hover .triptychPanelBg {
+  transform: scale(1.05);
+}
+
+.triptychPanelOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.6) 100%);
+  transition: background-color 0.3s ease;
+}
+
+.triptychPanelLink:hover .triptychPanelOverlay {
+  background-color: rgba(0,0,0,0.3);
+}
+
+.triptychPanelContent {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 2rem;
+  width: 100%;
+  transform: translateZ(30px);
+}
+
+.triptychPanelCategory {
+  font-family: var(--font-ui);
+  font-size: 1.4rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.triptychPanelContent h3 {
+  font-size: 2.4rem;
+  line-height: 1.3;
+}
+
+/* FIX FOR CENTER PANEL'S H3 */
+.center .triptychPanelContent h3 {
+  font-size: 3.2rem;
+}
+
+.scrollPrompt {
+  position: absolute;
+  bottom: 4rem;
+  right: 50%;
+  transform: translateX(50%);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 1.4rem;
+  text-align: center;
+  opacity: 0.7;
+  z-index: 5;
+}
+
+.scrollPromptLine {
+  width: 1px;
+  height: 40px;
+  background: #fff;
+  margin: 0.5rem auto 0;
+  animation: scroll-down 2s infinite;
+}
+
+@keyframes scroll-down {
+  0%{transform:scaleY(0);transform-origin:top;}
+  50%{transform:scaleY(1);transform-origin:top;}
+  51%{transform:scaleY(1);transform-origin:bottom;}
+  100%{transform:scaleY(0);transform-origin:bottom;}
+}
+
+
+
+
+

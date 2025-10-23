@@ -1,0 +1,21 @@
+/* components/ContentBlock.module.css */
+.contentBlock {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 3rem;
+  margin-bottom: 6rem;
+  background-color: var(--bg-secondary);
+}
+
+.title {
+  font-size: 3.2rem;
+  font-family: var(--font-main);
+  margin-bottom: 3rem;
+  text-align: right; /* RTL FIX */
+}
+
+.body {
+  /* No specific styles needed, serves as a container */
+}
+
+
