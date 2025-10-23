@@ -30,7 +30,7 @@ const SanityImageComponent = ({ value }: { value: any }) => {
     return (
         <div style={{ margin: '4rem 0' }}>
             <div
-              onClick={() => openLightbox(fullResSrc)}
+              onClick={() => openLightbox([fullResSrc], 0)}
               className="image-lightbox-trigger"
             >
                 <NextImage
@@ -42,7 +42,7 @@ const SanityImageComponent = ({ value }: { value: any }) => {
                     placeholder={blurDataURL ? 'blur' : 'empty'}
                     blurDataURL={blurDataURL}
                     loading="lazy"
-                    draggable={false} // THE FIX
+                    draggable={false}
                     style={{
                         width: '100%',
                         height: 'auto',

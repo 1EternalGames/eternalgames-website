@@ -12,15 +12,18 @@ const ZoomOutIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentCo
 const ResetIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>;
 const DownloadIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
 const CloseIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+const ArrowIcon = ({ dir }: { dir: 'left' | 'right' }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points={dir === 'left' ? "15 18 9 12 15 6" : "9 18 15 12 9 6"} /></svg>;
+
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const springConfig = { type: 'spring', damping: 30, stiffness: 400 };
 
 export default function Lightbox() {
-    const { isOpen, imageUrl, closeLightbox } = useLightboxStore();
+    const { isOpen, imageUrls, currentIndex, closeLightbox, goToNext, goToPrevious } = useLightboxStore();
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
+    const imageUrl = imageUrls[currentIndex];
 
     const scale = useMotionValue(1);
     const x = useMotionValue(0);
@@ -30,10 +33,16 @@ export default function Lightbox() {
 
     useEffect(() => {
         setIsMounted(true);
-        const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') closeLightbox(); };
+        const handleKeyDown = (e: KeyboardEvent) => { 
+            if (e.key === 'Escape') closeLightbox();
+            if (isOpen && imageUrls.length > 1) {
+                if (e.key === 'ArrowRight') goToNext();
+                if (e.key === 'ArrowLeft') goToPrevious();
+            }
+        };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [closeLightbox]);
+    }, [closeLightbox, isOpen, imageUrls, goToNext, goToPrevious]);
 
     useEffect(() => {
         if (isOpen) document.body.classList.add('lightbox-active');
@@ -47,7 +56,7 @@ export default function Lightbox() {
         animate(y, 0, springConfig);
     }, [scale, x, y]);
 
-    useEffect(() => { if (isOpen) resetTransform(); }, [isOpen, resetTransform]);
+    useEffect(() => { if (isOpen) resetTransform(); }, [isOpen, resetTransform, currentIndex]); // Reset on image change too
     
     const updateConstraints = useCallback((currentScale: number) => {
         const currentX = x.get();
@@ -78,12 +87,16 @@ export default function Lightbox() {
 
             setDragConstraints({ left: -overhangX, right: overhangX, top: -overhangY, bottom: overhangY });
             
-            // Clamp existing position if it's now out of bounds
             animate(x, clamp(currentX, -overhangX, overhangX), springConfig);
             animate(y, clamp(currentY, -overhangY, overhangY), springConfig);
         }
     }, [x, y, resetTransform, scale]);
 
+    useEffect(() => {
+        const unsubscribe = scale.onChange(updateConstraints);
+        return () => unsubscribe();
+    }, [scale, updateConstraints]);
+    
     const handleZoom = useCallback((delta: number, clientX?: number, clientY?: number) => {
         const currentScale = scale.get();
         const newScale = clamp(currentScale + delta, 1, 8);
@@ -120,8 +133,11 @@ export default function Lightbox() {
             {isOpen && imageUrl && (
                 <motion.div className={styles.lightboxOverlay} onWheel={handleWheel} onClick={closeLightbox} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <motion.div ref={containerRef} className={styles.imageContainer} onClick={(e) => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{type: 'spring', damping: 25, stiffness: 250}}>
-                        <motion.img ref={imageRef} drag={isZoomed} dragConstraints={dragConstraints} dragElastic={0} dragMomentum={false} src={imageUrl} alt="Full resolution view" className={styles.lightboxImage} style={{ scale, x, y }} />
+                        <AnimatePresence mode="wait">
+                            <motion.img key={currentIndex} ref={imageRef} drag={isZoomed} dragConstraints={containerRef} dragElastic={0} dragMomentum={false} src={imageUrl} alt="Full resolution view" className={styles.lightboxImage} style={{ scale, x, y }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} />
+                        </AnimatePresence>
                     </motion.div>
+                    
                     <div className={styles.controls} onClick={(e) => e.stopPropagation()}>
                         <button className={styles.controlButton} onClick={() => handleZoom(0.5)} title="Zoom In"><ZoomInIcon /></button>
                         <button className={styles.controlButton} onClick={() => handleZoom(-0.5)} title="Zoom Out"><ZoomOutIcon /></button>
@@ -129,6 +145,13 @@ export default function Lightbox() {
                         <a href={`${imageUrl}?dl=`} download className={styles.controlButton} title="Download Image"><DownloadIcon /></a>
                         <button className={styles.controlButton} onClick={closeLightbox} title="Close"><CloseIcon /></button>
                     </div>
+
+                    {imageUrls.length > 1 && (
+                        <>
+                            <button className={`${styles.navButton} ${styles.prev}`} onClick={(e) => { e.stopPropagation(); goToPrevious(); }}><ArrowIcon dir="left" /></button>
+                            <button className={`${styles.navButton} ${styles.next}`} onClick={(e) => { e.stopPropagation(); goToNext(); }}><ArrowIcon dir="right" /></button>
+                        </>
+                    )}
                 </motion.div>
             )}
         </AnimatePresence>

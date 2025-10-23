@@ -11,10 +11,9 @@ export default function FourImageGrid({ value }: { value: any }) {
     const openLightbox = useLightboxStore((state) => state.openLightbox);
 
     const images = [image1, image2, image3, image4].filter(img => img?.asset);
-
-    if (images.length === 0) {
-        return null;
-    }
+    if (images.length === 0) return null;
+    
+    const imageUrls = images.map(img => urlFor(img.asset).auto('format').quality(100).url());
 
     return (
         <div className={styles.grid}>
@@ -22,14 +21,14 @@ export default function FourImageGrid({ value }: { value: any }) {
                 <div
                     key={image.asset._id || index}
                     className={`${styles.imageWrapper} image-lightbox-trigger`}
-                    onClick={() => openLightbox(urlFor(image.asset).auto('format').quality(100).url())}
+                    onClick={() => openLightbox(imageUrls, index)}
                 >
                     <Image
                         src={urlFor(image.asset).width(800).auto('format').quality(85).url()}
                         alt={image.alt || `Grid Image ${index + 1}`}
                         fill
                         sizes="(max-width: 768px) 50vw, 33vw"
-                        draggable={false} // THE FIX
+                        draggable={false}
                         style={{ objectFit: 'cover' }}
                     />
                 </div>
