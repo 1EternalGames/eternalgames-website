@@ -1,7 +1,7 @@
 // components/TriptychHero.tsx
 'use client';
 import { useRef } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, MotionStyle } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './TriptychHero.module.css';
@@ -26,7 +26,6 @@ const TriptychPanel = ({ item, isCenter, defaultCategory }: { item: any, isCente
         }
     };
 
-    // --- THE DEFINITIVE FIX: ---
     const baseUrl = item.mainImage.url.split('?')[0];
     const imageUrl = `${baseUrl}?w=1200&auto=format&q=80`;
 
@@ -55,7 +54,16 @@ const TriptychPanel = ({ item, isCenter, defaultCategory }: { item: any, isCente
     );
 };
 
-export default function TriptychHero({ heroContent }: { heroContent: any }) {
+interface TriptychHeroProps {
+    heroContent: any;
+    panelStyles: {
+        left: MotionStyle;
+        center: MotionStyle;
+        right: MotionStyle;
+    };
+}
+
+export default function TriptychHero({ heroContent, panelStyles }: TriptychHeroProps) {
     const ref = useRef<HTMLDivElement>(null);
     const mouseX = useMotionValue(0.5);
     const mouseY = useMotionValue(0.5);
@@ -63,10 +71,12 @@ export default function TriptychHero({ heroContent }: { heroContent: any }) {
 
     const smoothMouseX = useSpring(mouseX, springConfig);
     const smoothMouseY = useSpring(mouseY, springConfig);
-    const rotateX = useTransform(smoothMouseY, [0, 1], [8, -8]);
-    const rotateY = useTransform(smoothMouseX, [0, 1], [8, -8]);
-    const centerRotateX = useTransform(smoothMouseY, [0, 1], [4, -4]);
-    const centerRotateY = useTransform(smoothMouseX, [0, 1], [4, -4]);
+    
+    // --- THE DEFINITIVE TILT SETTINGS ---
+    const rotateX = useTransform(smoothMouseY, [0, 1], [12, -12]);
+    const centerRotateX = useTransform(smoothMouseY, [0, 1], [8, -8]);
+    const rotateY = useTransform(smoothMouseX, [0, 1], [-12, 12]);
+    const centerRotateY = useTransform(smoothMouseX, [0, 1], [-8, 8]);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!ref.current) return;
@@ -78,9 +88,15 @@ export default function TriptychHero({ heroContent }: { heroContent: any }) {
 
     return (
         <div ref={ref} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} className={styles.triptychHeroContainer}>
-            <motion.div className={`${styles.triptychPanel} ${styles.left}`} style={{ rotateX, rotateY }}><TriptychPanel item={latestNews} defaultCategory="آخر الأخبار" /></motion.div>
-            <motion.div className={`${styles.triptychPanel} ${styles.center}`} style={{ rotateX: centerRotateX, rotateY: centerRotateY }}><TriptychPanel item={featuredReview} isCenter defaultCategory="مراجعة مميزة" /></motion.div>
-            <motion.div className={`${styles.triptychPanel} ${styles.right}`} style={{ rotateX, rotateY }}><TriptychPanel item={featuredArticle} defaultCategory="من المقالات" /></motion.div>
+            <motion.div className={`${styles.triptychPanel} ${styles.left}`} style={{ ...panelStyles.left, rotateX, rotateY }}>
+                <TriptychPanel item={latestNews} defaultCategory="آخر الأخبار" />
+            </motion.div>
+            <motion.div className={`${styles.triptychPanel} ${styles.center}`} style={{ ...panelStyles.center, rotateX: centerRotateX, rotateY: centerRotateY }}>
+                <TriptychPanel item={featuredReview} isCenter defaultCategory="مراجعة مميزة" />
+            </motion.div>
+            <motion.div className={`${styles.triptychPanel} ${styles.right}`} style={{ ...panelStyles.right, rotateX, rotateY }}>
+                <TriptychPanel item={featuredArticle} defaultCategory="من المقالات" />
+            </motion.div>
             <div className={styles.scrollPrompt}>
                 <span>مرر لاستكشاف الديوان</span>
                 <div className={styles.scrollPromptLine}></div>

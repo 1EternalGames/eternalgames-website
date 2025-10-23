@@ -35,25 +35,44 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
   const [isMounted, setIsMounted] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setIsMounted(true); }, []);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.8]);
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "-20%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0.7, 0.9], [1, 0]);
-  const contentOpacity = useTransform(scrollYProgress, [0.1, 0.3], [0, 1]);
-  const contentY = useTransform(scrollYProgress, [0.1, 0.3], ["50px", "0px"]);
   
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  
+  // --- THE FIX IS HERE ---
+  // Add a vertical transform to the entire hero section
+  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '-25%']);
+  const heroOpacity = useTransform(scrollYProgress, [0.8, 1.0], [1, 0]);
+
+  // Individual panel animations
+  const leftPanelX = useTransform(scrollYProgress, [0, 0.6], ['0%', '-50%']);
+  const rightPanelX = useTransform(scrollYProgress, [0, 0.6], ['0%', '50%']);
+  const centerPanelScale = useTransform(scrollYProgress, [0, 0.6], [1, 0.8]);
+  const panelsOpacity = useTransform(scrollYProgress, [0.3, 0.6], [1, 0]);
+
+  // Content animation
+  const contentOpacity = useTransform(scrollYProgress, [0.6, 0.8], [0, 1]);
+  const contentY = useTransform(scrollYProgress, [0.6, 0.8], ["100px", "0px"]);
+  
+  const panelStyles = {
+      left: { x: leftPanelX, opacity: panelsOpacity },
+      center: { scale: centerPanelScale, opacity: panelsOpacity },
+      right: { x: rightPanelX, opacity: panelsOpacity }
+  };
+
   const adaptedReviews = (reviews || []).map(adaptToCardProps).filter(Boolean);
   const adaptedArticles = (articles || []).map(adaptToCardProps).filter(Boolean);
-  // THE FIX: Adapt the news data before passing it to the ticker
   const adaptedLatestNews = (latestNews || []).map(adaptToCardProps).filter(Boolean);
   
-  const contentStyle = { marginTop: '-20vh', ...(isMounted ? { opacity: contentOpacity, y: contentY } : { opacity: 0 }) };
+  const contentStyle = { marginTop: '-10vh', ...(isMounted ? { opacity: contentOpacity, y: contentY } : { opacity: 0 }) };
 
   return (
     <div className={styles.atriumPageContainer}>
-      <div ref={heroRef} style={{ height: '100vh' }}>
-        <motion.div className={styles.stickyHeroWrapper} style={ isMounted ? { scale: heroScale, y: heroY, opacity: heroOpacity, position: 'sticky' } : { position: 'sticky' } }>
-          <TriptychHero heroContent={heroContent} />
+      <div ref={heroRef} style={{ height: '120vh' }}>
+        <motion.div 
+          className={styles.stickyHeroWrapper} 
+          style={ isMounted ? { opacity: heroOpacity, y: heroY, position: 'sticky' } : { position: 'sticky' } }
+        >
+          <TriptychHero heroContent={heroContent} panelStyles={panelStyles} />
         </motion.div>
       </div>
       
