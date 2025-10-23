@@ -27,9 +27,9 @@ export default function Lightbox() {
 
     const springConfig = { type: 'spring', damping: 30, stiffness: 400 };
     const animatedScale = useSpring(scale, springConfig);
+    // THE FIX: We will NOT use spring for x and y to make dragging feel direct.
     
-    const [dragConstraints, setDragConstraints] = useState({ top: 0, left: 0, right: 0, bottom: 0 });
-    const [isZoomed, setIsZoomed] = useState(false);
+    const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
 
     useEffect(() => {
         setIsMounted(true);
@@ -39,11 +39,8 @@ export default function Lightbox() {
     }, [closeLightbox]);
 
     useEffect(() => {
-        if (isOpen) {
-            document.body.classList.add('lightbox-active');
-        } else {
-            document.body.classList.remove('lightbox-active');
-        }
+        if (isOpen) document.body.classList.add('lightbox-active');
+        else document.body.classList.remove('lightbox-active');
         return () => { document.body.classList.remove('lightbox-active'); };
     }, [isOpen]);
 
@@ -54,36 +51,46 @@ export default function Lightbox() {
     }, [scale, x, y]);
 
     useEffect(() => { if (isOpen) resetTransform(); }, [isOpen, resetTransform]);
+    
+    const updateConstraints = useCallback((currentScale: number) => {
+        if (currentScale <= 1) {
+            setDragConstraints({ left: 0, right: 0, top: 0, bottom: 0 });
+            x.set(0); y.set(0);
+            return;
+        }
 
-    // Effect to update drag constraints when scale changes
-    useEffect(() => {
-        return scale.on("change", (latestScale) => {
-            setIsZoomed(latestScale > 1.01);
-            if (containerRef.current && imageRef.current) {
-                const container = containerRef.current.getBoundingClientRect();
-                const imageAspectRatio = imageRef.current.naturalWidth / imageRef.current.naturalHeight;
-                const containerAspectRatio = container.width / container.height;
-                
-                let renderedWidth, renderedHeight;
-                if (imageAspectRatio > containerAspectRatio) {
-                    renderedWidth = container.width;
-                    renderedHeight = container.width / imageAspectRatio;
-                } else {
-                    renderedHeight = container.height;
-                    renderedWidth = container.height * imageAspectRatio;
-                }
-
-                const overhangX = Math.max(0, (renderedWidth * latestScale - container.width) / 2);
-                const overhangY = Math.max(0, (renderedHeight * latestScale - container.height) / 2);
-
-                setDragConstraints({ left: -overhangX, right: overhangX, top: -overhangY, bottom: overhangY });
+        if (containerRef.current && imageRef.current && imageRef.current.naturalWidth > 0) {
+            const container = containerRef.current.getBoundingClientRect();
+            const imageAspectRatio = imageRef.current.naturalWidth / imageRef.current.naturalHeight;
+            const containerAspectRatio = container.width / container.height;
+            
+            let renderedWidth, renderedHeight;
+            if (imageAspectRatio > containerAspectRatio) {
+                renderedWidth = container.width;
+                renderedHeight = container.width / imageAspectRatio;
+            } else {
+                renderedHeight = container.height;
+                renderedWidth = container.height * imageAspectRatio;
             }
-        });
-    }, [scale]);
 
+            const overhangX = Math.max(0, (renderedWidth * currentScale - container.width) / 2);
+            const overhangY = Math.max(0, (renderedHeight * currentScale - container.height) / 2);
+
+            setDragConstraints({ left: -overhangX, right: overhangX, top: -overhangY, bottom: overhangY });
+            
+            x.set(clamp(x.get(), -overhangX, overhangX));
+            y.set(clamp(y.get(), -overhangY, overhangY));
+        }
+    }, [x, y]);
+
+    useEffect(() => {
+        const unsubscribe = scale.onChange(updateConstraints);
+        return () => unsubscribe();
+    }, [scale, updateConstraints]);
+    
     const handleZoom = useCallback((delta: number, clientX?: number, clientY?: number) => {
         const currentScale = scale.get();
-        const newScale = Math.min(Math.max(currentScale + delta, 1), 8);
+        const newScale = clamp(currentScale + delta, 1, 8);
         const scaleRatio = newScale / currentScale;
 
         const currentX = x.get();
@@ -95,64 +102,46 @@ export default function Lightbox() {
             const rect = containerRef.current.getBoundingClientRect();
             const pointerX = clientX - rect.left - rect.width / 2;
             const pointerY = clientY - rect.top - rect.height / 2;
+            
             newX = pointerX + (currentX - pointerX) * scaleRatio;
             newY = pointerY + (currentY - pointerY) * scaleRatio;
+            
+            x.set(newX);
+            y.set(newY);
         }
-        
-        if (newScale <= 1) {
-            newX = 0;
-            newY = 0;
-        }
-
-        x.set(newX);
-        y.set(newY);
         scale.set(newScale);
+        updateConstraints(newScale);
+    }, [scale, x, y, updateConstraints]);
 
-    }, [scale, x, y]);
-    
     const handleWheel = useCallback((e: React.WheelEvent) => {
         e.preventDefault();
         e.stopPropagation();
         handleZoom(e.deltaY * -0.01, e.clientX, e.clientY);
     }, [handleZoom]);
 
+    const isZoomed = scale.get() > 1.001;
+
     const lightboxContent = (
         <AnimatePresence>
             {isOpen && imageUrl && (
-                <motion.div
-                    className={styles.lightboxOverlay}
-                    onWheel={handleWheel}
-                    onClick={closeLightbox}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                >
-                    <motion.div
-                        ref={containerRef}
-                        className={styles.imageContainer}
-                        onClick={(e) => e.stopPropagation()}
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        transition={{type: 'spring', damping: 25, stiffness: 250}}
-                    >
+                <motion.div className={styles.lightboxOverlay} onWheel={handleWheel} onClick={closeLightbox} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <motion.div ref={containerRef} className={styles.imageContainer} onClick={(e) => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{type: 'spring', damping: 25, stiffness: 250}}>
                         <motion.img
                             ref={imageRef}
                             drag={isZoomed}
                             dragConstraints={dragConstraints}
                             dragElastic={0}
-                            dragMomentum={false}
+                            dragMomentum={false} // THE FIX: Disables post-drag sliding.
                             src={imageUrl}
                             alt="Full resolution view"
                             className={styles.lightboxImage}
                             style={{ 
-                                scale: animatedScale, 
-                                x: x, // Use the motion value directly for drag
-                                y: y  // Use the motion value directly for drag
+                                scale: animatedScale, // Zoom remains smooth
+                                x, // Pan is now direct
+                                y  // Pan is now direct
                             }}
                         />
                     </motion.div>
-                    
                     <div className={styles.controls} onClick={(e) => e.stopPropagation()}>
                         <button className={styles.controlButton} onClick={() => handleZoom(0.5)} title="Zoom In"><ZoomInIcon /></button>
                         <button className={styles.controlButton} onClick={() => handleZoom(-0.5)} title="Zoom Out"><ZoomOutIcon /></button>
