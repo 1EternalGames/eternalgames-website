@@ -8,42 +8,52 @@ import ImageCompare from './ImageCompare';
 import TwoImageGrid from './custom/TwoImageGrid';
 import FourImageGrid from './custom/FourImageGrid';
 import { slugify } from 'transliteration';
-import NextImage from 'next/image'; // Import the Next.js Image component
+import NextImage from 'next/image';
+import { useLightboxStore } from '@/lib/lightboxStore'; // Import the store
 
 const SanityImageComponent = ({ value }: { value: any }) => {
     const { asset, alt } = value;
-    if (!asset?._id) return null;
+    const openLightbox = useLightboxStore((state) => state.openLightbox);
+    if (!asset?._id || !asset?.url) return null;
 
     const { width, height } = asset.metadata?.dimensions || { width: 1920, height: 1080 };
     const blurDataURL = asset.metadata?.lqip;
 
-    // --- THE DEFINITIVE FIX ---
-    // Instead of passing the raw, full-size image URL to Next.js, we first ask Sanity
-    // for a reasonably large, web-optimized version (max 1920px wide).
-    // Next.js's optimizer will then use THIS pre-resized image as its source,
-    // which is much faster to process and avoids timeouts.
     const optimizedSrc = urlFor(asset)
-        .width(1920) // Limit the source image size to a reasonable maximum
+        .width(1920)
         .auto('format')
         .quality(85)
         .url();
 
+    const fullResSrc = asset.url;
+
     return (
-        <div style={{ margin: '4rem 0', borderRadius: '8px', overflow: 'hidden' }}>
-            <NextImage
-                src={optimizedSrc}
-                alt={alt || 'Content Image'}
-                width={width}
-                height={height}
-                sizes="(max-width: 960px) 90vw, 850px"
-                placeholder={blurDataURL ? 'blur' : 'empty'}
-                blurDataURL={blurDataURL}
-                loading="lazy"
-                style={{
-                    width: '100%',
-                    height: 'auto',
-                }}
-            />
+        <div style={{ margin: '4rem 0' }}>
+            <div
+              onClick={() => openLightbox(fullResSrc)}
+              style={{
+                  display: 'block',
+                  cursor: 'zoom-in',
+                  borderRadius: '8px',
+                  overflow: 'hidden'
+              }}
+              title="Click to view full resolution image"
+            >
+                <NextImage
+                    src={optimizedSrc}
+                    alt={alt || 'Content Image'}
+                    width={width}
+                    height={height}
+                    sizes="(max-width: 960px) 90vw, 850px"
+                    placeholder={blurDataURL ? 'blur' : 'empty'}
+                    blurDataURL={blurDataURL}
+                    loading="lazy"
+                    style={{
+                        width: '100%',
+                        height: 'auto',
+                    }}
+                />
+            </div>
         </div>
     );
 };

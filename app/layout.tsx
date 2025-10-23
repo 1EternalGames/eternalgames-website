@@ -8,6 +8,7 @@ import NextAuthProvider from '@/components/SessionProvider';
 import StudioBar from '@/components/StudioBar';
 import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
+import Lightbox from '@/components/Lightbox'; // <-- IMPORT LIGHTBOX
 
 const cairo = Cairo({
 subsets: ['arabic', 'latin'],
@@ -22,7 +23,6 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
 return (
 <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
 <head>
-{/* --- THE FIX IS HERE --- */}
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link
     rel="preconnect"
@@ -40,6 +40,7 @@ return (
 <UserStoreHydration />
 <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
 <ToastProvider />
+<Lightbox /> 
 <Navbar />
 <main>{children}</main>
 <Footer />

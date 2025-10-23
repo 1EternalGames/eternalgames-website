@@ -3,10 +3,12 @@
 
 import Image from 'next/image';
 import { urlFor } from '@/sanity/lib/image';
+import { useLightboxStore } from '@/lib/lightboxStore';
 import styles from './TwoImageGrid.module.css';
 
 export default function TwoImageGrid({ value }: { value: any }) {
     const { image1, image2 } = value;
+    const openLightbox = useLightboxStore((state) => state.openLightbox);
 
     if (!image1?.asset || !image2?.asset) {
         return null;
@@ -14,26 +16,32 @@ export default function TwoImageGrid({ value }: { value: any }) {
 
     return (
         <div className={styles.grid}>
-            <div className={styles.imageWrapper}>
+            <div 
+                className={styles.imageWrapper} 
+                onClick={() => openLightbox(image1.asset.url)}
+                style={{ cursor: 'zoom-in' }}
+                title="Click to view full resolution image"
+            >
                 <Image
-                    // THE FIX: Standardized quality to 85
-                    src={urlFor(image1.asset).auto('format').quality(85).url()}
+                    src={urlFor(image1.asset).width(800).auto('format').quality(85).url()}
                     alt={image1.alt || 'Grid Image 1'}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
                     style={{ objectFit: 'cover' }}
-                    unoptimized
                 />
             </div>
-            <div className={styles.imageWrapper}>
+            <div 
+                className={styles.imageWrapper}
+                onClick={() => openLightbox(image2.asset.url)}
+                style={{ cursor: 'zoom-in' }}
+                title="Click to view full resolution image"
+            >
                 <Image
-                    // THE FIX: Standardized quality to 85
-                    src={urlFor(image2.asset).auto('format').quality(85).url()}
+                    src={urlFor(image2.asset).width(800).auto('format').quality(85).url()}
                     alt={image2.alt || 'Grid Image 2'}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
                     style={{ objectFit: 'cover' }}
-                    unoptimized
                 />
             </div>
         </div>
