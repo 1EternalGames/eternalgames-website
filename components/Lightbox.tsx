@@ -2,7 +2,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion, useMotionValue, animate } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { useLightboxStore } from '@/lib/lightboxStore';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import styles from './Lightbox.module.css';
@@ -13,7 +13,6 @@ const ResetIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 const DownloadIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
 const CloseIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const ArrowIcon = ({ dir }: { dir: 'left' | 'right' }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points={dir === 'left' ? "15 18 9 12 15 6" : "9 18 15 12 9 6"} /></svg>;
-
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const springConfig = { type: 'spring', damping: 30, stiffness: 400 };
@@ -28,6 +27,10 @@ export default function Lightbox() {
     const scale = useMotionValue(1);
     const x = useMotionValue(0);
     const y = useMotionValue(0);
+
+    const animatedScale = useSpring(scale, springConfig);
+    const animatedX = useSpring(x, springConfig);
+    const animatedY = useSpring(y, springConfig);
     
     const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
 
@@ -36,8 +39,8 @@ export default function Lightbox() {
         const handleKeyDown = (e: KeyboardEvent) => { 
             if (e.key === 'Escape') closeLightbox();
             if (isOpen && imageUrls.length > 1) {
-                if (e.key === 'ArrowRight') goToNext();
-                if (e.key === 'ArrowLeft') goToPrevious();
+                if (e.key === 'ArrowRight') goToPrevious();
+                if (e.key === 'ArrowLeft') goToNext();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -51,12 +54,12 @@ export default function Lightbox() {
     }, [isOpen]);
 
     const resetTransform = useCallback(() => {
-        animate(scale, 1, springConfig);
-        animate(x, 0, springConfig);
-        animate(y, 0, springConfig);
+        scale.set(1);
+        x.set(0);
+        y.set(0);
     }, [scale, x, y]);
 
-    useEffect(() => { if (isOpen) resetTransform(); }, [isOpen, resetTransform, currentIndex]); // Reset on image change too
+    useEffect(() => { if (isOpen) resetTransform(); }, [isOpen, resetTransform, currentIndex]);
     
     const updateConstraints = useCallback((currentScale: number) => {
         const currentX = x.get();
@@ -87,8 +90,8 @@ export default function Lightbox() {
 
             setDragConstraints({ left: -overhangX, right: overhangX, top: -overhangY, bottom: overhangY });
             
-            animate(x, clamp(currentX, -overhangX, overhangX), springConfig);
-            animate(y, clamp(currentY, -overhangY, overhangY), springConfig);
+            x.set(clamp(currentX, -overhangX, overhangX));
+            y.set(clamp(currentY, -overhangY, overhangY));
         }
     }, [x, y, resetTransform, scale]);
 
@@ -113,12 +116,11 @@ export default function Lightbox() {
             const newX = pointerX + (currentX - pointerX) * scaleRatio;
             const newY = pointerY + (currentY - pointerY) * scaleRatio;
             
-            animate(x, newX, springConfig);
-            animate(y, newY, springConfig);
+            x.set(newX);
+            y.set(newY);
         }
-        animate(scale, newScale, springConfig);
-        updateConstraints(newScale);
-    }, [scale, x, y, updateConstraints]);
+        scale.set(newScale);
+    }, [scale, x, y]);
 
     const handleWheel = useCallback((e: React.WheelEvent) => {
         e.preventDefault();
@@ -134,7 +136,23 @@ export default function Lightbox() {
                 <motion.div className={styles.lightboxOverlay} onWheel={handleWheel} onClick={closeLightbox} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <motion.div ref={containerRef} className={styles.imageContainer} onClick={(e) => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{type: 'spring', damping: 25, stiffness: 250}}>
                         <AnimatePresence mode="wait">
-                            <motion.img key={currentIndex} ref={imageRef} drag={isZoomed} dragConstraints={containerRef} dragElastic={0} dragMomentum={false} src={imageUrl} alt="Full resolution view" className={styles.lightboxImage} style={{ scale, x, y }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} />
+                            <motion.img
+                                key={currentIndex}
+                                ref={imageRef}
+                                drag={isZoomed}
+                                dragConstraints={dragConstraints}
+                                dragElastic={0}
+                                dragMomentum={false}
+                                src={imageUrl}
+                                alt="Full resolution view"
+                                className={styles.lightboxImage}
+                                style={{ 
+                                    scale: animatedScale, 
+                                    x: animatedX, 
+                                    y: animatedY 
+                                }}
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+                            />
                         </AnimatePresence>
                     </motion.div>
                     

@@ -80,7 +80,7 @@
     height: 22px;
 }
 
-/* --- THE FIX: Navigation Button Styles --- */
+/* --- THE DEFINITIVE FIX: Navigation Button Styles --- */
 .navButton {
     position: absolute;
     top: 50%;
@@ -102,12 +102,13 @@
 .navButton:hover {
     border-color: var(--accent);
     color: var(--accent);
+    transform: translateY(-50%) scale(1.1);
 }
 .navButton.prev {
-    right: -70px; /* RTL */
-    left: auto;
+    left: 2rem; /* RTL */
+    right: auto;
 }
 .navButton.next {
-    left: -70px; /* RTL */
-    right: auto;
+    right: 2rem; /* RTL */
+    left: auto;
 }
