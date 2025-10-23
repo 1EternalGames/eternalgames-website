@@ -2,7 +2,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, animate } from 'framer-motion';
 import { useLightboxStore } from '@/lib/lightboxStore';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import styles from './Lightbox.module.css';
@@ -14,6 +14,7 @@ const DownloadIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentC
 const CloseIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+const springConfig = { type: 'spring', damping: 30, stiffness: 400 };
 
 export default function Lightbox() {
     const { isOpen, imageUrl, closeLightbox } = useLightboxStore();
@@ -24,10 +25,6 @@ export default function Lightbox() {
     const scale = useMotionValue(1);
     const x = useMotionValue(0);
     const y = useMotionValue(0);
-
-    const springConfig = { type: 'spring', damping: 30, stiffness: 400 };
-    const animatedScale = useSpring(scale, springConfig);
-    // THE FIX: We will NOT use spring for x and y to make dragging feel direct.
     
     const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
 
@@ -45,17 +42,20 @@ export default function Lightbox() {
     }, [isOpen]);
 
     const resetTransform = useCallback(() => {
-        scale.set(1);
-        x.set(0);
-        y.set(0);
+        animate(scale, 1, springConfig);
+        animate(x, 0, springConfig);
+        animate(y, 0, springConfig);
     }, [scale, x, y]);
 
     useEffect(() => { if (isOpen) resetTransform(); }, [isOpen, resetTransform]);
     
     const updateConstraints = useCallback((currentScale: number) => {
+        const currentX = x.get();
+        const currentY = y.get();
+
         if (currentScale <= 1) {
             setDragConstraints({ left: 0, right: 0, top: 0, bottom: 0 });
-            x.set(0); y.set(0);
+            resetTransform();
             return;
         }
 
@@ -78,16 +78,12 @@ export default function Lightbox() {
 
             setDragConstraints({ left: -overhangX, right: overhangX, top: -overhangY, bottom: overhangY });
             
-            x.set(clamp(x.get(), -overhangX, overhangX));
-            y.set(clamp(y.get(), -overhangY, overhangY));
+            // Clamp existing position if it's now out of bounds
+            animate(x, clamp(currentX, -overhangX, overhangX), springConfig);
+            animate(y, clamp(currentY, -overhangY, overhangY), springConfig);
         }
-    }, [x, y]);
+    }, [x, y, resetTransform, scale]);
 
-    useEffect(() => {
-        const unsubscribe = scale.onChange(updateConstraints);
-        return () => unsubscribe();
-    }, [scale, updateConstraints]);
-    
     const handleZoom = useCallback((delta: number, clientX?: number, clientY?: number) => {
         const currentScale = scale.get();
         const newScale = clamp(currentScale + delta, 1, 8);
@@ -95,21 +91,19 @@ export default function Lightbox() {
 
         const currentX = x.get();
         const currentY = y.get();
-        let newX = currentX;
-        let newY = currentY;
-
+        
         if (containerRef.current && clientX && clientY) {
             const rect = containerRef.current.getBoundingClientRect();
             const pointerX = clientX - rect.left - rect.width / 2;
             const pointerY = clientY - rect.top - rect.height / 2;
             
-            newX = pointerX + (currentX - pointerX) * scaleRatio;
-            newY = pointerY + (currentY - pointerY) * scaleRatio;
+            const newX = pointerX + (currentX - pointerX) * scaleRatio;
+            const newY = pointerY + (currentY - pointerY) * scaleRatio;
             
-            x.set(newX);
-            y.set(newY);
+            animate(x, newX, springConfig);
+            animate(y, newY, springConfig);
         }
-        scale.set(newScale);
+        animate(scale, newScale, springConfig);
         updateConstraints(newScale);
     }, [scale, x, y, updateConstraints]);
 
@@ -126,21 +120,7 @@ export default function Lightbox() {
             {isOpen && imageUrl && (
                 <motion.div className={styles.lightboxOverlay} onWheel={handleWheel} onClick={closeLightbox} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <motion.div ref={containerRef} className={styles.imageContainer} onClick={(e) => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{type: 'spring', damping: 25, stiffness: 250}}>
-                        <motion.img
-                            ref={imageRef}
-                            drag={isZoomed}
-                            dragConstraints={dragConstraints}
-                            dragElastic={0}
-                            dragMomentum={false} // THE FIX: Disables post-drag sliding.
-                            src={imageUrl}
-                            alt="Full resolution view"
-                            className={styles.lightboxImage}
-                            style={{ 
-                                scale: animatedScale, // Zoom remains smooth
-                                x, // Pan is now direct
-                                y  // Pan is now direct
-                            }}
-                        />
+                        <motion.img ref={imageRef} drag={isZoomed} dragConstraints={dragConstraints} dragElastic={0} dragMomentum={false} src={imageUrl} alt="Full resolution view" className={styles.lightboxImage} style={{ scale, x, y }} />
                     </motion.div>
                     <div className={styles.controls} onClick={(e) => e.stopPropagation()}>
                         <button className={styles.controlButton} onClick={() => handleZoom(0.5)} title="Zoom In"><ZoomInIcon /></button>
