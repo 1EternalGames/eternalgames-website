@@ -19,8 +19,8 @@ export default function FourImageGrid({ value }: { value: any }) {
             {images.map((image, index) => (
                 <div key={image.asset._id || index} className={styles.imageWrapper}>
                     <Image
-                        // THE FIX: Explicitly request original format and max quality
-                        src={urlFor(image.asset).auto('format').quality(100).url()}
+                        // THE FIX: Standardized quality to 85
+                        src={urlFor(image.asset).auto('format').quality(85).url()}
                         alt={image.alt || `Grid Image ${index + 1}`}
                         fill
                         sizes="(max-width: 768px) 50vw, 33vw"

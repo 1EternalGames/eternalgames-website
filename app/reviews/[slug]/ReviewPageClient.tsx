@@ -50,13 +50,19 @@ export default function ReviewPageClient({ review, searchParams, children }: {
     const year = publishedDate.getFullYear();
     const monthIndex = publishedDate.getMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
+    
+    // --- THE DEFINITIVE FIX ---
+    // The query now provides a `url` property directly. We strip any existing query params
+    // from it and then append our desired optimization settings.
+    const baseUrl = review.mainImage.url.split('?')[0];
+    const imageUrl = `${baseUrl}?auto=format&q=85`;
 
     return (
         <>
             <motion.div initial="hidden" animate="visible" variants={contentVariants}><ReadingHud contentContainerRef={contentContainerRef} headings={headings} /></motion.div>
             <div className="page-transition-canvas">
                 <motion.div layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} className={styles.reviewHeroImageSm} style={{ position: 'relative', zIndex: 1060, overflow: 'hidden' }} transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}>
-                    <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} style={{ position: 'absolute', inset: 0 }}><Image src={review.mainImage.url} alt={review.title} fill style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={review.mainImage.blurDataURL} unoptimized /></motion.div>
+                    <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} style={{ position: 'absolute', inset: 0 }}><Image src={imageUrl} alt={review.title} fill style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={review.mainImage.blurDataURL} unoptimized /></motion.div>
                 </motion.div>
                 <motion.div initial="hidden" animate="visible" variants={contentVariants}>
                     <div className="container page-container" style={{ paddingTop: 0 }}>
@@ -103,5 +109,3 @@ export default function ReviewPageClient({ review, searchParams, children }: {
         </>
     );
 }
-
-

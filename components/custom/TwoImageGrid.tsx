@@ -16,8 +16,8 @@ export default function TwoImageGrid({ value }: { value: any }) {
         <div className={styles.grid}>
             <div className={styles.imageWrapper}>
                 <Image
-                    // THE FIX: Explicitly request original format and max quality
-                    src={urlFor(image1.asset).auto('format').quality(100).url()}
+                    // THE FIX: Standardized quality to 85
+                    src={urlFor(image1.asset).auto('format').quality(85).url()}
                     alt={image1.alt || 'Grid Image 1'}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
@@ -27,8 +27,8 @@ export default function TwoImageGrid({ value }: { value: any }) {
             </div>
             <div className={styles.imageWrapper}>
                 <Image
-                    // THE FIX: Explicitly request original format and max quality
-                    src={urlFor(image2.asset).auto('format').quality(100).url()}
+                    // THE FIX: Standardized quality to 85
+                    src={urlFor(image2.asset).auto('format').quality(85).url()}
                     alt={image2.alt || 'Grid Image 2'}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
