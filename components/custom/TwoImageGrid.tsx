@@ -16,11 +16,9 @@ export default function TwoImageGrid({ value }: { value: any }) {
 
     return (
         <div className={styles.grid}>
-            <div 
-                className={styles.imageWrapper} 
-                onClick={() => openLightbox(image1.asset.url)}
-                style={{ cursor: 'zoom-in' }}
-                title="Click to view full resolution image"
+            <div
+                className={`${styles.imageWrapper} image-lightbox-trigger`}
+                onClick={() => openLightbox(urlFor(image1.asset).auto('format').quality(100).url())}
             >
                 <Image
                     src={urlFor(image1.asset).width(800).auto('format').quality(85).url()}
@@ -30,11 +28,9 @@ export default function TwoImageGrid({ value }: { value: any }) {
                     style={{ objectFit: 'cover' }}
                 />
             </div>
-            <div 
-                className={styles.imageWrapper}
-                onClick={() => openLightbox(image2.asset.url)}
-                style={{ cursor: 'zoom-in' }}
-                title="Click to view full resolution image"
+            <div
+                className={`${styles.imageWrapper} image-lightbox-trigger`}
+                onClick={() => openLightbox(urlFor(image2.asset).auto('format').quality(100).url())}
             >
                 <Image
                     src={urlFor(image2.asset).width(800).auto('format').quality(85).url()}

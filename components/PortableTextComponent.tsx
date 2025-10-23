@@ -9,7 +9,7 @@ import TwoImageGrid from './custom/TwoImageGrid';
 import FourImageGrid from './custom/FourImageGrid';
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
-import { useLightboxStore } from '@/lib/lightboxStore'; // Import the store
+import { useLightboxStore } from '@/lib/lightboxStore';
 
 const SanityImageComponent = ({ value }: { value: any }) => {
     const { asset, alt } = value;
@@ -25,19 +25,13 @@ const SanityImageComponent = ({ value }: { value: any }) => {
         .quality(85)
         .url();
 
-    const fullResSrc = asset.url;
+    const fullResSrc = urlFor(asset).auto('format').quality(100).url();
 
     return (
         <div style={{ margin: '4rem 0' }}>
             <div
               onClick={() => openLightbox(fullResSrc)}
-              style={{
-                  display: 'block',
-                  cursor: 'zoom-in',
-                  borderRadius: '8px',
-                  overflow: 'hidden'
-              }}
-              title="Click to view full resolution image"
+              className="image-lightbox-trigger"
             >
                 <NextImage
                     src={optimizedSrc}

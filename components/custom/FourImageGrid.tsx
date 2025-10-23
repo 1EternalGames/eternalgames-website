@@ -19,12 +19,10 @@ export default function FourImageGrid({ value }: { value: any }) {
     return (
         <div className={styles.grid}>
             {images.map((image, index) => (
-                <div 
-                    key={image.asset._id || index} 
-                    className={styles.imageWrapper}
-                    onClick={() => openLightbox(image.asset.url)}
-                    style={{ cursor: 'zoom-in' }}
-                    title="Click to view full resolution image"
+                <div
+                    key={image.asset._id || index}
+                    className={`${styles.imageWrapper} image-lightbox-trigger`}
+                    onClick={() => openLightbox(urlFor(image.asset).auto('format').quality(100).url())}
                 >
                     <Image
                         src={urlFor(image.asset).width(800).auto('format').quality(85).url()}
