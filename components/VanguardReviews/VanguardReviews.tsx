@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, memo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLivingCard } from '@/hooks/useLivingCard';
@@ -12,7 +12,7 @@ import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
 
 const VANGUARD_SLOTS = 5;
-const ANIMATION_COOLDOWN = 450;
+const ANIMATION_COOLDOWN = 450; // ms -- THE DEFINITIVE RECALIBRATION
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
@@ -32,10 +32,27 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     </motion.div>
 );
 
-const VanguardCard = memo(({ review, isCenter }: { review: CardProps, isCenter: boolean }) => {
+const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, isCenter: boolean, isInView: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const [isCardHovered, setIsCardHovered] = useState(false); const layoutIdPrefix = "vanguard-reviews";
+    const scoreRef = useRef<HTMLParagraphElement>(null);
+
+    useEffect(() => {
+        if (isInView && scoreRef.current && typeof review.score === 'number') {
+            const controls = animate(0, review.score, {
+                duration: 1.5,
+                ease: [0.22, 1, 0.36, 1],
+                onUpdate(value) {
+                    if (scoreRef.current) {
+                        scoreRef.current.textContent = value.toFixed(1);
+                    }
+                }
+            });
+            return () => controls.stop();
+        }
+    }, [isInView, review.score]);
+
     const handleClick = (e: React.MouseEvent) => { e.preventDefault(); setPrefix(layoutIdPrefix); router.push(`/reviews/${review.slug}`, { scroll: false }); };
     const imageParams = isCenter ? 'w=800&h=1000' : 'w=560&h=700';
     const baseUrl = review.imageUrl.split('?')[0]; const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format&q=80`;
@@ -45,9 +62,14 @@ const VanguardCard = memo(({ review, isCenter }: { review: CardProps, isCenter: 
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <a href={`/reviews/${review.slug}`} onClick={handleClick} className='no-underline' style={{ display: 'block', height: '100%' }}>
                 <div className={styles.vanguardCard}>
+                    {typeof review.score === 'number' && (
+                        <div className={styles.vanguardScoreBadge}>
+                            <p ref={scoreRef} style={{ margin: 0 }}>0.0</p>
+                        </div>
+                    )}
                     <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} unoptimized /></div>
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
-                        <p className={styles.cardScore}>{review.score?.toFixed(1)}</p><h3>{review.title}</h3>
+                        <h3>{review.title}</h3>
                     </motion.div>
                 </div>
             </a>
@@ -92,6 +114,8 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
 export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const [currentIndex, setCurrentIndex] = useState(0); const [hoveredId, setHoveredId] = useState<string | number | null>(null); const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
+    const containerRef = useRef(null);
+    const isInView = useInView(containerRef, { once: true, amount: 0.3 });
 
     const stopInterval = useCallback(() => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
     const startInterval = useCallback(() => { stopInterval(); intervalRef.current = setInterval(() => { navigateToIndex((currentIndex + 1) % reviews.length, true); }, 5000); }, [reviews.length, stopInterval, currentIndex]);
@@ -131,14 +155,14 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     if (reviews.length < VANGUARD_SLOTS) return null;
 
     return (
-        <div className={styles.vanguardContainer} data-hovered={!!hoveredId}>
+        <div ref={containerRef} className={styles.vanguardContainer} data-hovered={!!hoveredId}>
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             <AnimatePresence>
                 {Array.from({ length: VANGUARD_SLOTS }).map((_, index) => {
                     const review = getReviewForSlot(index); if (!review) return null;
                     return (
                         <motion.div key={review.id} layoutId={`vanguard-card-${review.id}`} className={styles.cardSlot} onMouseEnter={() => setHoveredId(review.id)} onMouseLeave={() => setHoveredId(null)} initial={false} animate={getSlotStyle(index, review.id)} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', stiffness: 400, damping: 40 }}>
-                            <VanguardCard review={review} isCenter={index === 2} />
+                            <VanguardCard review={review} isCenter={index === 2} isInView={isInView} />
                         </motion.div>
                     );
                 })}
