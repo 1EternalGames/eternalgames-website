@@ -36,14 +36,29 @@ const VanguardCard = memo(({ review, isCenter }: { review: CardProps, isCenter: 
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const [isCardHovered, setIsCardHovered] = useState(false); const layoutIdPrefix = "vanguard-reviews";
     const handleClick = (e: React.MouseEvent) => { e.preventDefault(); setPrefix(layoutIdPrefix); router.push(`/reviews/${review.slug}`, { scroll: false }); };
-    const baseUrl = review.imageUrl.split('?')[0]; const imageUrl = `${baseUrl}?w=800&auto=format&q=80`;
+    
+    const imageParams = isCenter ? 'w=800&h=1000' : 'w=560&h=700';
+    const baseUrl = review.imageUrl.split('?')[0];
+    const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format&q=80`;
     const showCredits = isCenter || isCardHovered;
+
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <a href={`/reviews/${review.slug}`} onClick={handleClick} className='no-underline' style={{ display: 'block', height: '100%' }}>
                 <div className={styles.vanguardCard}>
-                    <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="40vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} unoptimized /></div>
-                    <div className={styles.cardContent}><p className={styles.cardScore}>{review.score?.toFixed(1)}</p><h3>{review.title}</h3></div>
+                    <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} unoptimized /></div>
+                    <motion.div
+                        className={styles.cardContent}
+                        animate={{
+                            background: isCenter
+                                ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' // Reduced gradient for center
+                                : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' // Original gradient
+                        }}
+                        transition={{ duration: 0.5, ease: 'circOut' }}
+                    >
+                        <p className={styles.cardScore}>{review.score?.toFixed(1)}</p>
+                        <h3>{review.title}</h3>
+                    </motion.div>
                 </div>
             </a>
             <AnimatePresence>
@@ -90,8 +105,14 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const startInterval = useCallback(() => { stopInterval(); intervalRef.current = setInterval(() => { setCurrentIndex(prev => (prev + 1) % reviews.length); }, 5000); }, [reviews.length, stopInterval]);
     const navigateToIndex = useCallback((index: number) => { setCurrentIndex(index); startInterval(); }, [startInterval]);
     useEffect(() => { if (!hoveredId) { startInterval(); } else { stopInterval(); } return () => stopInterval(); }, [reviews.length, hoveredId, startInterval, stopInterval]);
+    
     const getSlotStyle = (index: number, reviewId: string | number) => {
-        const style: any = { width: `var(--${index === 2 ? 'center' : 'side'}-width)`, height: index === 2 ? '450px' : '380px', opacity: 1, zIndex: 0 };
+        const style: any = {
+            width: `var(--${index === 2 ? 'center' : 'side'}-width)`,
+            height: index === 2 ? '500px' : '350px',
+            opacity: 1,
+            zIndex: 0,
+        };
         const offset = (typeof window !== 'undefined' && window.innerWidth > 768) ? 250 : 160;
         let transform = '';
         switch (index) {

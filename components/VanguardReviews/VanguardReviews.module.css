@@ -85,9 +85,10 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
+    /* THE FIX: Background is now controlled by Framer Motion */
     text-align: right;
     border-radius: 12px;
+    pointer-events: none;
 }
 
 .cardContent h3 { font-size: 2rem; line-height: 1.3; margin: 0; }
@@ -131,7 +132,6 @@
 
 .kineticNavigator {
     position: absolute;
-    /* THE FIX: Lowered */
     bottom: -3rem;
     width: 100%;
     display: flex;
