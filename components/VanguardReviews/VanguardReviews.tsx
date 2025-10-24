@@ -118,18 +118,26 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const isInView = useInView(containerRef, { once: true, amount: 0.3 });
 
     const stopInterval = useCallback(() => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
-    const startInterval = useCallback(() => { stopInterval(); intervalRef.current = setInterval(() => { navigateToIndex((currentIndex + 1) % reviews.length, true); }, 5000); }, [reviews.length, stopInterval, currentIndex]);
     
-    const navigateToIndex = useCallback((index: number, isAuto: boolean = false) => {
+    // --- THE DEFINITIVE FIX IS HERE ---
+    // Removed `currentIndex` from the dependency array and used a functional update
+    // for `setCurrentIndex` to prevent stale state in the interval closure.
+    const startInterval = useCallback(() => {
+        stopInterval();
+        intervalRef.current = setInterval(() => {
+            setCurrentIndex(prevIndex => (prevIndex + 1) % reviews.length);
+        }, 5000);
+    }, [reviews.length, stopInterval]);
+    
+    const navigateToIndex = useCallback((index: number) => {
         if (isAnimating) return;
         if (index === currentIndex) return;
 
         setIsAnimating(true);
         setCurrentIndex(index);
         
-        if (!isAuto) {
-            startInterval();
-        }
+        // Restart the interval timer after a manual navigation
+        startInterval();
         
         setTimeout(() => setIsAnimating(false), ANIMATION_COOLDOWN);
     }, [isAnimating, currentIndex, startInterval]);
