@@ -1,4 +1,5 @@
 // types/index.ts
+import type { SanityAuthor } from "./sanity";
 
 // This type represents the standardized data structure for all content cards,
 // as produced by the `adaptToCardProps` adapter.
@@ -8,10 +9,9 @@ export type CardProps = {
     slug: string;
     game?: string;
     title: string;
-    author: string;
-    authorPrismaId?: string;
-    date?: string; // <-- Used for unified date format
-    // year?: number; REMOVED
+    authors: SanityAuthor[]; // UPDATED
+    designers?: SanityAuthor[]; // NEW
+    date?: string;
     imageUrl: string;
     score?: number;
     tags: string[];
@@ -23,5 +23,3 @@ export type CardProps = {
     content?: any[];
     relatedReviewIds?: string[];
 };
-
-

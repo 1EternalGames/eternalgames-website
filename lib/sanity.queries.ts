@@ -14,6 +14,7 @@ const cardProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
+"designers": designers[]->{${creatorFields}}, 
 "publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{title}, category
 `
 const cardListProjection = groq`
@@ -23,11 +24,12 @@ _id, _type, legacyId, title, "slug": slug.current,
 score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
+"designers": designers[]->{${creatorFields}},
 "publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{title}, category
 `
 
 // --- List Page Queries ---
-export const vanguardReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0...10] { ${cardProjection} }` // <-- NEW QUERY
+export const vanguardReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0...10] { ${cardProjection} }`
 export const featuredHeroReviewQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} }`
 export const featuredShowcaseArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...7] { ${cardProjection} }`
 export const allReviewsListQuery = groq`*[_type == "review" && ${publishedFilter}] | order(publishedAt desc) { ${cardListProjection} }`

@@ -20,15 +20,6 @@ export const adaptToCardProps = (item: any) => {
 
     if (!imageUrl) return null;
 
-    const getAuthorName = (contentItem: any) => {
-        if (!contentItem) return 'مجهول';
-        if (contentItem.authorName) return contentItem.authorName;
-        if (contentItem.reviewer?.name) return contentItem.reviewer.name;
-        if (contentItem.reporter?.name) return contentItem.reporter.name;
-        if (typeof contentItem.author === 'string') return contentItem.author;
-        return 'مجهول';
-    }
-
     let formattedDate = '';
     let publishedYear = null;
 
@@ -37,10 +28,12 @@ export const adaptToCardProps = (item: any) => {
         const day = date.getDate();
         const monthIndex = date.getMonth();
         const year = date.getFullYear();
-        // Unified date format for display
         formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
-        publishedYear = year; // Keep the year separately just in case for specific logic later
+        publishedYear = year;
     }
+
+    // Determine the primary authors/reporters based on type
+    const primaryCreators = item.authors || item.reporters || [];
 
     return {
         type: item._type,
@@ -48,8 +41,8 @@ export const adaptToCardProps = (item: any) => {
         slug: item.slug?.current ?? item.slug ?? '',
         game: item.game?.title,
         title: item.title,
-        author: getAuthorName(item),
-        authorPrismaId: item.authorPrismaId,
+        authors: primaryCreators, // Pass the full array
+        designers: item.designers || [], // Pass the full array
         date: formattedDate,
         year: publishedYear,
         imageUrl: imageUrl,

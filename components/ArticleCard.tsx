@@ -1,7 +1,7 @@
 // components/ArticleCard.tsx
 'use client';
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import TagLinks from './TagLinks';
@@ -9,44 +9,9 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { getCreatorUsernames } from '@/app/actions/creatorActions';
+import CreatorCredit from './CreatorCredit'; // <-- NEW IMPORT
 import { CardProps } from '@/types';
 import styles from './ArticleCard.module.css';
-
-type AuthorLinkProps = { name: string; prismaId: string };
-const AuthorLinkComponent = ({ name, prismaId }: AuthorLinkProps) => {
-    const [username, setUsername] = useState<string | null>(null);
-    const router = useRouter();
-
-    useEffect(() => {
-        if (prismaId) {
-            getCreatorUsernames([prismaId]).then(result => {
-                const fetchedUsername = result[prismaId];
-                if (fetchedUsername) {
-                    setUsername(fetchedUsername);
-                }
-            });
-        }
-    }, [prismaId]);
-
-    if (username) {
-        return (
-            <span className={styles.authorLink}
-                onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    router.push(`/creators/${username}`, { scroll: true });
-                }}
-            >
-                {name}
-            </span>
-        );
-    }
-
-    return <span>{name}</span>;
-};
-const AuthorLink = memo(AuthorLinkComponent);
-
 
 type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
@@ -85,13 +50,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
     };
 
     const hasScore = isReview && typeof article.score === 'number';
-    const authorName = article.author || 'مجهول';
-    const authorPrismaId = article.authorPrismaId;
-    const authorLabel = isReview ? 'مراجعة بواسطة ' : (type === 'news' ? 'بقلم ' : 'بقلم ');
+    const authorLabel = isReview ? 'مراجعة' : (type === 'news' ? 'خبر' : 'مقالة');
 
-    // --- THE DEFINITIVE FIX: ---
-    // The source URL from the adapter might already have query params. We must strip them
-    // before appending our own desired params to avoid conflicts and errors.
     const imageSource = article.imageUrl;
     if (!imageSource) return null;
     
@@ -133,15 +93,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                             <div className={styles.cardTitleLink}>
                                 <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
                             </div>
-                            <p className={styles.cardMetadata}>
-                                {authorLabel}
-                                {authorName !== 'مجهول' && authorPrismaId ? (
-                                    <AuthorLink name={authorName} prismaId={authorPrismaId} />
-                                ) : (
-                                    <span>{authorName}</span>
-                                )}
-                                {article.date && ` • ${article.date}`}
-                            </p>
+                            <div className={styles.cardMetadata}>
+                                <CreatorCredit label={authorLabel} creators={article.authors} />
+                                {article.date && <p style={{margin: '0.25rem 0 0 0', fontSize: '1.3rem'}}>{article.date}</p>}
+                            </div>
                         </div>
                         <div className={styles.tagContainer}>
                             <TagLinks tags={article.tags} small={true} />
