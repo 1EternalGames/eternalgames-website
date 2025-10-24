@@ -6,6 +6,7 @@ import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import TriptychHero from './TriptychHero';
 import { ContentBlock } from './ContentBlock';
 import NewsTicker from './NewsTicker';
+import VanguardReviews from './VanguardReviews/VanguardReviews'; // <-- NEW IMPORT
 import PaginatedCarousel from './PaginatedCarousel';
 import { adaptToCardProps } from '@/lib/adapters';
 import styles from './DigitalAtriumHomePage.module.css';
@@ -38,18 +39,14 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
   
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   
-  // --- THE FIX IS HERE ---
-  // Add a vertical transform to the entire hero section
   const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '-25%']);
   const heroOpacity = useTransform(scrollYProgress, [0.8, 1.0], [1, 0]);
 
-  // Individual panel animations
   const leftPanelX = useTransform(scrollYProgress, [0, 0.6], ['0%', '-50%']);
   const rightPanelX = useTransform(scrollYProgress, [0, 0.6], ['0%', '50%']);
   const centerPanelScale = useTransform(scrollYProgress, [0, 0.6], [1, 0.8]);
   const panelsOpacity = useTransform(scrollYProgress, [0.3, 0.6], [1, 0]);
 
-  // Content animation
   const contentOpacity = useTransform(scrollYProgress, [0.6, 0.8], [0, 1]);
   const contentY = useTransform(scrollYProgress, [0.6, 0.8], ["100px", "0px"]);
   
@@ -77,10 +74,14 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
       </div>
       
       <motion.div className={styles.atriumMainContent} style={contentStyle}>
-          <div className="container">
-              <div className={styles.atriumGrid}>
+          <div className="container" style={{maxWidth: '100%', padding: 0}}>
+              {/* --- THE FIX IS HERE --- */}
+              <AnimatedContentBlock title="مراجعات الطليعة" direction="bottom">
+                  <VanguardReviews reviews={adaptedReviews} />
+              </AnimatedContentBlock>
+
+              <div className={styles.atriumGrid} style={{maxWidth: '1200px', margin: '0 auto', padding: '0 2rem'}}>
                   <main className={styles.atriumMainColumn}>
-                      <AnimatedContentBlock title="مراجعات مختارة" direction="right"><PaginatedCarousel items={adaptedReviews} itemsPerPage={2} layoutIdPrefix="atrium-reviews" /></AnimatedContentBlock>
                       <AnimatedContentBlock title="مقالات مختارة" direction="right"><PaginatedCarousel items={adaptedArticles} itemsPerPage={2} layoutIdPrefix="atrium-articles" /></AnimatedContentBlock>
                   </main>
                   <aside className="atrium-sidebar-column">
@@ -89,7 +90,9 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
                       </motion.div>
                   </aside>
               </div>
-              {children}
+              <div style={{maxWidth: '1200px', margin: '0 auto', padding: '0 2rem'}}>
+                {children}
+              </div>
           </div>
       </motion.div>
     </div>
