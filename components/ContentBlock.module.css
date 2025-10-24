@@ -1,21 +1,44 @@
 /* components/ContentBlock.module.css */
 .contentBlock {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 3rem;
-  margin-bottom: 6rem;
-  background-color: var(--bg-secondary);
+    margin-bottom: 6rem;
 }
 
-.title {
-  font-size: 3.2rem;
-  font-family: var(--font-main);
-  margin-bottom: 3rem;
-  text-align: right; /* RTL FIX */
+.contentBlockTitle {
+    font-size: clamp(2.8rem, 4vw, 3.6rem);
+    margin-bottom: 3rem;
+    font-weight: 700;
+    text-align: right;
+    border-right: 4px solid var(--accent);
+    padding-right: 1.5rem;
 }
 
-.body {
-  /* No specific styles needed, serves as a container */
+.contentBlockBody {
+    /* Default body styles */
 }
 
+/* --- THE DEFINITIVE FIX --- */
+.variantFullbleed {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding-top: 4rem; /* Add padding to the top of the block itself */
+    padding-bottom: 4rem;
+    background-color: var(--bg-secondary);
+}
 
+.variantFullbleed .contentBlockTitle {
+    /* Keep the title aligned with the main site container */
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-right: 3.5rem; /* Adjust for container padding */
+    padding-left: 2rem;
+}
+
+.variantFullbleed .contentBlockBody {
+    padding: 0;
+    max-width: none;
+}

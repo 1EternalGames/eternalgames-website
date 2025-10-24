@@ -6,14 +6,14 @@ import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import TriptychHero from './TriptychHero';
 import { ContentBlock } from './ContentBlock';
 import NewsTicker from './NewsTicker';
-import VanguardReviews from './VanguardReviews/VanguardReviews'; // <-- NEW IMPORT
+import VanguardReviews from './VanguardReviews/VanguardReviews';
 import PaginatedCarousel from './PaginatedCarousel';
 import { adaptToCardProps } from '@/lib/adapters';
 import styles from './DigitalAtriumHomePage.module.css';
 
-const AnimatedContentBlock = ({ title, children, direction = 'right' }: { title: string, children: React.ReactNode, direction?: 'left' | 'right' | 'bottom' }) => {
+const AnimatedContentBlock = ({ title, children, direction = 'right', variant = 'default' }: { title: string, children?: React.ReactNode, direction?: 'left' | 'right' | 'bottom', variant?: 'default' | 'fullbleed' }) => {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.4 }); 
+    const isInView = useInView(ref, { once: true, amount: 0.2 }); 
     const variants = { 
         right: { hidden: { opacity: 0, x: 100 }, visible: { opacity: 1, x: 0 } },
         left: { hidden: { opacity: 0, x: -100 }, visible: { opacity: 1, x: 0 } },
@@ -21,7 +21,7 @@ const AnimatedContentBlock = ({ title, children, direction = 'right' }: { title:
     };
     return ( 
         <motion.div ref={ref} variants={variants[direction]} initial="hidden" animate={isInView ? "visible" : "hidden"} transition={{ duration: 0.8, ease: "easeOut" }}> 
-            <ContentBlock title={title}>{children}</ContentBlock> 
+            <ContentBlock title={title} variant={variant}>{children}</ContentBlock> 
         </motion.div> 
     );
 };
@@ -74,13 +74,13 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
       </div>
       
       <motion.div className={styles.atriumMainContent} style={contentStyle}>
-          <div className="container" style={{maxWidth: '100%', padding: 0}}>
-              {/* --- THE FIX IS HERE --- */}
-              <AnimatedContentBlock title="مراجعات الطليعة" direction="bottom">
-                  <VanguardReviews reviews={adaptedReviews} />
-              </AnimatedContentBlock>
-
-              <div className={styles.atriumGrid} style={{maxWidth: '1200px', margin: '0 auto', padding: '0 2rem'}}>
+          {/* --- THE FIX IS HERE --- */}
+          <AnimatedContentBlock title="مراجعات الطليعة" direction="bottom" variant="fullbleed">
+              <VanguardReviews reviews={adaptedReviews} />
+          </AnimatedContentBlock>
+          
+          <div className="container">
+              <div className={styles.atriumGrid}>
                   <main className={styles.atriumMainColumn}>
                       <AnimatedContentBlock title="مقالات مختارة" direction="right"><PaginatedCarousel items={adaptedArticles} itemsPerPage={2} layoutIdPrefix="atrium-articles" /></AnimatedContentBlock>
                   </main>
@@ -90,9 +90,7 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
                       </motion.div>
                   </aside>
               </div>
-              <div style={{maxWidth: '1200px', margin: '0 auto', padding: '0 2rem'}}>
-                {children}
-              </div>
+              {children}
           </div>
       </motion.div>
     </div>

@@ -6,11 +6,10 @@
     justify-content: center;
     min-height: 500px;
     position: relative;
-    padding: 2rem 0;
+    padding: 6rem 0 12rem 0;
     --card-gap: 1.5rem;
     --center-width: 400px;
     --side-width: 280px;
-    overflow: hidden; /* Hide spotlight overflow */
 }
 
 .spotlightGlow {
@@ -61,21 +60,6 @@
     border-color: var(--accent);
 }
 
-.vanguardCard::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    box-shadow: 0 0 0px 0px var(--accent);
-    transition: box-shadow 0.4s ease-out;
-    pointer-events: none;
-}
-
-.cardSlot:hover .vanguardCard::after {
-    box-shadow: 0 0 25px 3px var(--accent);
-}
-
-
 .cardImageContainer {
     position: absolute;
     inset: 0;
@@ -106,21 +90,9 @@
     border-radius: 12px;
 }
 
-.cardContent h3 {
-    font-size: 2rem;
-    line-height: 1.3;
-    margin: 0;
-}
+.cardContent h3 { font-size: 2rem; line-height: 1.3; margin: 0; }
+.cardScore { font-family: var(--font-ui); color: var(--accent); font-weight: 700; font-size: 1.6rem; margin-bottom: 0.5rem; }
 
-.cardScore {
-    font-family: var(--font-ui);
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 1.6rem;
-    margin-bottom: 0.5rem;
-}
-
-/* --- REFINED BUBBLE STYLES --- */
 .creatorBubbleContainer {
     position: absolute;
     top: 1.5rem;
@@ -136,62 +108,88 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    background-color: var(--bg-secondary); /* Solid background */
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--accent); /* Cyan border */
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--accent);
     border-radius: 999px;
     padding: 0.5rem 1.2rem;
-    color: var(--text-primary); /* Use primary text color */
+    color: var(--text-primary);
     cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.creatorLabel {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: var(--text-secondary);
+.creatorBubble:hover {
+    background-color: var(--accent);
+    box-shadow: 0 0 15px -2px var(--accent);
 }
 
-.creatorName {
-    font-size: 1.4rem;
-    font-weight: 600;
-}
+.creatorLabel { color: var(--text-secondary); font-size: 1.2rem; font-weight: 500; transition: color 0.3s ease; }
+.creatorBubble:hover .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+.creatorName { font-size: 1.4rem; font-weight: 600; transition: color 0.3s ease; }
+.creatorBubble:hover .creatorName { color: var(--bg-primary); }
+.creatorArrow { position: absolute; left: -18px; top: 50%; transform: translateY(-50%); color: var(--accent); transition: opacity 0.3s ease, transform 0.3s ease; opacity: 0; }
+.creatorBubble:hover .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-5px); }
 
-.creatorArrow {
+.kineticNavigator {
     position: absolute;
-    left: -18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--accent);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    opacity: 0;
+    /* THE FIX: Lowered */
+    bottom: -3rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
-.creatorBubble:hover .creatorArrow {
-    opacity: 1;
-    transform: translateY(-50%) translateX(-5px);
-}
-
-/* --- NAVIGATION BUTTONS --- */
-.navButton {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
+.navTrack {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
     background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
     border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
     z-index: 10;
+    max-width: 90vw;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
-.navButton.prev {
-    left: 5vw;
+.navTrack::-webkit-scrollbar { display: none; }
+
+.navItem {
+    position: relative;
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+    border: 1px solid transparent;
+    transition: border-color 0.4s ease;
 }
-.navButton.next {
-    right: 5vw;
+
+.navImage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: filter 0.4s ease, transform 0.4s ease;
+}
+
+.navItem[data-active="false"] .navImage {
+    filter: grayscale(100%) brightness(0.7);
+}
+
+.navItem[data-active="true"] {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px -2px var(--accent);
+}
+
+.navTitle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+    text-align: right;
 }

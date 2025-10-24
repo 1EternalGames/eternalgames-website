@@ -16,6 +16,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 5rem;
+  margin-top: 5rem; /* Add margin to space it from the Vanguard section */
 }
 @media (min-width:1024px) {
   .atriumGrid {
@@ -25,6 +26,12 @@
 .atriumMainColumn {
   min-width: 0;
 }
+
+/* NEW SECTION WRAPPER */
+.vanguardSection {
+  margin-bottom: 5rem;
+}
+
 .horizontalScrollContainer {
   display: flex;
   overflow-x: auto;

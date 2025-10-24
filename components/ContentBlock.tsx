@@ -1,29 +1,24 @@
 // components/ContentBlock.tsx
 import React from 'react';
-import styles from './ContentBlock.module.css'; // <-- IMPORT MODULE
+import styles from './ContentBlock.module.css';
 
-interface ContentBlockProps {
+type ContentBlockProps = {
     title: string;
-    children: React.ReactNode;
-    className?: string;
-}
-
-export const ContentBlock: React.FC<ContentBlockProps> = ({
-    title,
-    children,
-    className = '',
-}) => {
-    return (
-        <div className={`${styles.contentBlock} ${className}`}>
-            <h2 className={styles.title}>{title}</h2>
-            <div className={styles.body}>
-                {children}
-            </div>
-        </div>
-    );
+    children?: React.ReactNode;
+    variant?: 'default' | 'fullbleed';
 };
 
+export function ContentBlock({ title, children, variant = 'default' }: ContentBlockProps) {
+    const blockClasses = `${styles.contentBlock} ${variant === 'fullbleed' ? styles.variantFullbleed : ''}`;
 
-
-
-
+    return (
+        <section className={blockClasses}>
+            <h2 className={styles.contentBlockTitle}>{title}</h2>
+            {children && (
+                <div className={styles.contentBlockBody}>
+                    {children}
+                </div>
+            )}
+        </section>
+    );
+}
