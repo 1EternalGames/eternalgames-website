@@ -12,6 +12,7 @@ import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
 
 const VANGUARD_SLOTS = 5;
+const ANIMATION_COOLDOWN = 450;
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
@@ -36,10 +37,8 @@ const VanguardCard = memo(({ review, isCenter }: { review: CardProps, isCenter: 
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const [isCardHovered, setIsCardHovered] = useState(false); const layoutIdPrefix = "vanguard-reviews";
     const handleClick = (e: React.MouseEvent) => { e.preventDefault(); setPrefix(layoutIdPrefix); router.push(`/reviews/${review.slug}`, { scroll: false }); };
-    
     const imageParams = isCenter ? 'w=800&h=1000' : 'w=560&h=700';
-    const baseUrl = review.imageUrl.split('?')[0];
-    const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format&q=80`;
+    const baseUrl = review.imageUrl.split('?')[0]; const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format&q=80`;
     const showCredits = isCenter || isCardHovered;
 
     return (
@@ -47,17 +46,8 @@ const VanguardCard = memo(({ review, isCenter }: { review: CardProps, isCenter: 
             <a href={`/reviews/${review.slug}`} onClick={handleClick} className='no-underline' style={{ display: 'block', height: '100%' }}>
                 <div className={styles.vanguardCard}>
                     <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} unoptimized /></div>
-                    <motion.div
-                        className={styles.cardContent}
-                        animate={{
-                            background: isCenter
-                                ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' // Reduced gradient for center
-                                : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' // Original gradient
-                        }}
-                        transition={{ duration: 0.5, ease: 'circOut' }}
-                    >
-                        <p className={styles.cardScore}>{review.score?.toFixed(1)}</p>
-                        <h3>{review.title}</h3>
+                    <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
+                        <p className={styles.cardScore}>{review.score?.toFixed(1)}</p><h3>{review.title}</h3>
                     </motion.div>
                 </div>
             </a>
@@ -101,18 +91,29 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
 
 export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const [currentIndex, setCurrentIndex] = useState(0); const [hoveredId, setHoveredId] = useState<string | number | null>(null); const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isAnimating, setIsAnimating] = useState(false);
+
     const stopInterval = useCallback(() => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
-    const startInterval = useCallback(() => { stopInterval(); intervalRef.current = setInterval(() => { setCurrentIndex(prev => (prev + 1) % reviews.length); }, 5000); }, [reviews.length, stopInterval]);
-    const navigateToIndex = useCallback((index: number) => { setCurrentIndex(index); startInterval(); }, [startInterval]);
+    const startInterval = useCallback(() => { stopInterval(); intervalRef.current = setInterval(() => { navigateToIndex((currentIndex + 1) % reviews.length, true); }, 5000); }, [reviews.length, stopInterval, currentIndex]);
+    
+    const navigateToIndex = useCallback((index: number, isAuto: boolean = false) => {
+        if (isAnimating) return;
+        if (index === currentIndex) return;
+
+        setIsAnimating(true);
+        setCurrentIndex(index);
+        
+        if (!isAuto) {
+            startInterval();
+        }
+        
+        setTimeout(() => setIsAnimating(false), ANIMATION_COOLDOWN);
+    }, [isAnimating, currentIndex, startInterval]);
+    
     useEffect(() => { if (!hoveredId) { startInterval(); } else { stopInterval(); } return () => stopInterval(); }, [reviews.length, hoveredId, startInterval, stopInterval]);
     
     const getSlotStyle = (index: number, reviewId: string | number) => {
-        const style: any = {
-            width: `var(--${index === 2 ? 'center' : 'side'}-width)`,
-            height: index === 2 ? '500px' : '350px',
-            opacity: 1,
-            zIndex: 0,
-        };
+        const style: any = { width: `var(--${index === 2 ? 'center' : 'side'}-width)`, height: index === 2 ? '500px' : '350px', opacity: 1, zIndex: 0 };
         const offset = (typeof window !== 'undefined' && window.innerWidth > 768) ? 250 : 160;
         let transform = '';
         switch (index) {

@@ -85,7 +85,6 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    /* THE FIX: Background is now controlled by Framer Motion */
     text-align: right;
     border-radius: 12px;
     pointer-events: none;
@@ -94,14 +93,15 @@
 .cardContent h3 { font-size: 2rem; line-height: 1.3; margin: 0; }
 .cardScore { font-family: var(--font-ui); color: var(--accent); font-weight: 700; font-size: 1.6rem; margin-bottom: 0.5rem; }
 
+/* --- LATEST SETTINGS CONFIRMED --- */
 .creatorBubbleContainer {
     position: absolute;
-    top: 1.5rem;
-    right: -1rem;
+    top: 30%;
+    right: -3.5rem;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.75rem;
+    gap: 0.1rem;
     z-index: 5;
 }
 
@@ -110,9 +110,9 @@
     align-items: center;
     gap: 0.75rem;
     background-color: var(--bg-secondary);
-    border: 1px solid var(--accent);
+    border: 1.2px solid var(--accent);
     border-radius: 999px;
-    padding: 0.5rem 1.2rem;
+    padding: 0.3rem 1.2rem;
     color: var(--text-primary);
     cursor: pointer;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
@@ -120,12 +120,12 @@
 
 .creatorBubble:hover {
     background-color: var(--accent);
-    box-shadow: 0 0 15px -2px var(--accent);
+    box-shadow: 0 0 15px -0.5px var(--accent);
 }
 
-.creatorLabel { color: var(--text-secondary); font-size: 1.2rem; font-weight: 500; transition: color 0.3s ease; }
+.creatorLabel { color: var(--text-secondary); font-size: 1rem; font-weight: 500; transition: color 0.3s ease; }
 .creatorBubble:hover .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
-.creatorName { font-size: 1.4rem; font-weight: 600; transition: color 0.3s ease; }
+.creatorName { font-size: 1.2rem; font-weight: 600; transition: color 0.3s ease; }
 .creatorBubble:hover .creatorName { color: var(--bg-primary); }
 .creatorArrow { position: absolute; left: -18px; top: 50%; transform: translateY(-50%); color: var(--accent); transition: opacity 0.3s ease, transform 0.3s ease; opacity: 0; }
 .creatorBubble:hover .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-5px); }
