@@ -1,0 +1,197 @@
+/* components/VanguardReviews/VanguardReviews.module.css */
+
+.vanguardContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 500px;
+    position: relative;
+    padding: 2rem 0;
+    --card-gap: 1.5rem;
+    --center-width: 400px;
+    --side-width: 280px;
+    overflow: hidden; /* Hide spotlight overflow */
+}
+
+.spotlightGlow {
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cardSlot {
+    position: absolute;
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease-out;
+}
+
+.cardWrapper {
+    height: 100%;
+    will-change: transform;
+    transition: filter 0.4s ease-out;
+    position: relative;
+}
+
+.vanguardContainer[data-hovered="true"] .cardWrapper {
+    filter: brightness(0.6) saturate(0.8);
+}
+
+.vanguardContainer[data-hovered="true"] .cardSlot:hover .cardWrapper {
+    filter: brightness(1) saturate(1);
+}
+
+.vanguardCard {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: visible;
+    height: 100%;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+    color: #fff;
+    position: relative;
+    transition: border-color 0.3s ease-out;
+}
+
+.cardSlot:hover .vanguardCard {
+    border-color: var(--accent);
+}
+
+.vanguardCard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: 0 0 0px 0px var(--accent);
+    transition: box-shadow 0.4s ease-out;
+    pointer-events: none;
+}
+
+.cardSlot:hover .vanguardCard::after {
+    box-shadow: 0 0 25px 3px var(--accent);
+}
+
+
+.cardImageContainer {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.cardImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cardSlot:hover .cardImage {
+    transform: scale(1.05);
+}
+
+.cardContent {
+    position: absolute;
+    inset: 0;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
+    text-align: right;
+    border-radius: 12px;
+}
+
+.cardContent h3 {
+    font-size: 2rem;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.cardScore {
+    font-family: var(--font-ui);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+}
+
+/* --- REFINED BUBBLE STYLES --- */
+.creatorBubbleContainer {
+    position: absolute;
+    top: 1.5rem;
+    right: -1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    z-index: 5;
+}
+
+.creatorBubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: var(--bg-secondary); /* Solid background */
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--accent); /* Cyan border */
+    border-radius: 999px;
+    padding: 0.5rem 1.2rem;
+    color: var(--text-primary); /* Use primary text color */
+    cursor: pointer;
+}
+
+.creatorLabel {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.creatorName {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.creatorArrow {
+    position: absolute;
+    left: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+}
+
+.creatorBubble:hover .creatorArrow {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-5px);
+}
+
+/* --- NAVIGATION BUTTONS --- */
+.navButton {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    z-index: 10;
+}
+.navButton.prev {
+    left: 5vw;
+}
+.navButton.next {
+    right: 5vw;
+}
