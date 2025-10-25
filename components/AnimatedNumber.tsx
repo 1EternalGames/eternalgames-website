@@ -40,17 +40,15 @@ export const AnimatedNumber = ({ value, isInView, className }: { value: number; 
     const integerDigits = Array.from(integerPart);
 
     return (
-        <div ref={scope} className={className} style={{ display: 'flex', justifyContent: 'center' }}>
-            {/* THE DEFINITIVE FIX:
-                Render decimal part FIRST in the code, so RTL layout places it on the LEFT.
-                Render integer part LAST in the code, so RTL layout places it on the RIGHT.
-                Removed `flexDirection: 'row-reverse'`.
-            */}
-            <Digit digit={decimalPart} isInView={isInView} />
-            <div style={{ lineHeight: '8rem' }}>.</div>
+        // --- THE DEFINITIVE FIX ---
+        // Numbers are always displayed Left-to-Right, even in an RTL context.
+        // By adding `direction: 'ltr'`, we isolate the number component from the global
+        // RTL styling, ensuring its parts (integer, decimal) are laid out correctly.
+        // We then write the JSX in the natural LTR order.
+        <div ref={scope} className={className} style={{ display: 'flex', justifyContent: 'center', direction: 'ltr' }}>
             {integerDigits.map((digit, i) => <Digit key={i} digit={digit} isInView={isInView} />)}
+            <div style={{ lineHeight: '8rem' }}>.</div>
+            <Digit digit={decimalPart} isInView={isInView} />
         </div>
     );
 };
-
-
