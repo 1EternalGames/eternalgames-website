@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import CreatorCredit from './CreatorCredit'; // <-- NEW IMPORT
+import CreatorCredit from './CreatorCredit';
 import { CardProps } from '@/types';
 import styles from './ArticleCard.module.css';
 
@@ -39,6 +39,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
 
     const linkPath = `${getLinkBasePath()}${article.slug}`;
     
+    // This handler is now used by the individual Link components inside
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setPrefix(layoutIdPrefix);
@@ -58,6 +59,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
     const baseUrl = imageSource.split('?')[0];
     const imageUrl = `${baseUrl}?w=600&auto=format&q=80`;
 
+    // --- THE DEFINITIVE FIX: START ---
+    // The outermost element is now a motion.div, not an <a> tag.
     return (
         <motion.div
             ref={livingCardRef}
@@ -67,11 +70,12 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
             className={styles.livingCardWrapper}
             style={livingCardAnimation.style}
         >
-            <a href={linkPath} onClick={handleClick} className={styles.cardLink}>
-                <motion.div
-                    layoutId={`${layoutIdPrefix}-card-container-${article.id}`}
-                    className={styles.articleCard}
-                >
+            <motion.div
+                layoutId={`${layoutIdPrefix}-card-container-${article.id}`}
+                className={styles.articleCard}
+            >
+                {/* Link is now on the image */}
+                <Link href={linkPath} onClick={handleClick} className="no-underline">
                     <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
                         {hasScore && ( <motion.div className={styles.score}>{article.score.toFixed(1)}</motion.div> )}
                         <Image 
@@ -88,23 +92,26 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                             unoptimized
                         />
                     </motion.div>
-                    <motion.div className={styles.cardContent}>
-                        <div>
-                            <div className={styles.cardTitleLink}>
-                                <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
-                            </div>
-                            <div className={styles.cardMetadata}>
-                                <CreatorCredit label={authorLabel} creators={article.authors} />
-                                {article.date && <p style={{margin: '0.25rem 0 0 0', fontSize: '1.3rem'}}>{article.date}</p>}
-                            </div>
+                </Link>
+                <motion.div className={styles.cardContent}>
+                    <div>
+                        {/* Link is now on the title */}
+                        <Link href={linkPath} onClick={handleClick} className={`${styles.cardTitleLink} no-underline`}>
+                            <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
+                        </Link>
+                        <div className={styles.cardMetadata}>
+                            {/* CreatorCredit can now render a real link without nesting issues */}
+                            <CreatorCredit label={authorLabel} creators={article.authors} />
+                            {article.date && <p style={{margin: '0.25rem 0 0 0', fontSize: '1.3rem'}}>{article.date}</p>}
                         </div>
-                        <div className={styles.tagContainer}>
-                            <TagLinks tags={article.tags} small={true} />
-                        </div>
-                    </motion.div>
+                    </div>
+                    <div className={styles.tagContainer}>
+                        <TagLinks tags={article.tags} small={true} />
+                    </div>
                 </motion.div>
-            </a>
+            </motion.div>
         </motion.div>
+        // --- THE DEFINITIVE FIX: END ---
     );
 };
 

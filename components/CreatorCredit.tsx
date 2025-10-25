@@ -34,13 +34,12 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => (
     </motion.div>
 );
 
+// --- THE DEFINITIVE FIX: SIMPLIFIED COMPONENT THAT ALWAYS RENDERS A REAL LINK ---
 const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
     const [isHovered, setIsHovered] = useState(false);
-    const linkRef = useRef<HTMLDivElement>(null);
 
     return (
         <div 
-            ref={linkRef}
             className={styles.creatorLinkContainer}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -48,12 +47,12 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
             <AnimatePresence>
                 {isHovered && <CreatorHoverCard creator={creator} />}
             </AnimatePresence>
+
             {creator.username ? (
                 <Link 
                     href={`/creators/${creator.username}`} 
                     className="creator-credit-link no-underline"
-                    // --- THE DEFINITIVE FIX FOR EVENT CONFLICTS ---
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()} // Stop propagation to prevent parent link navigation
                 >
                     {creator.name}
                 </Link>
@@ -64,7 +63,11 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
     );
 };
 
-export default function CreatorCredit({ label, creators }: { label: string; creators: SanityAuthor[] | null | undefined }) {
+
+export default function CreatorCredit({ label, creators }: { 
+    label: string; 
+    creators: SanityAuthor[] | null | undefined;
+}) {
     const [enrichedCreators, setEnrichedCreators] = useState(creators || []);
 
     useEffect(() => {
