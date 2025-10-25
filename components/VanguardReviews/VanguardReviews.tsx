@@ -25,9 +25,13 @@ const creatorBubbleItemVariants = {
 };
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
+// --- THE DEFINITIVE FIX: CREATOR BUBBLE WITH ROBUST LINKING ---
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const bubbleContent = (
-        <motion.div className={styles.creatorBubble} whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}>
+        <motion.div 
+            className={styles.creatorBubble} 
+            whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
+        >
             <span className={styles.creatorLabel}>{label}</span>
             <span className={styles.creatorName}>{creator.name}</span>
             <div className={styles.creatorArrow}><ArrowIcon /></div>
@@ -39,11 +43,12 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
             {creator.username ? (
                 <Link 
                     href={`/creators/${creator.username}`} 
-                    onClick={(e) => e.stopPropagation()} 
-                    className="no-underline" 
-                    title={`View creator profile for ${creator.name}`}
+                    passHref
+                    legacyBehavior
                 >
-                    {bubbleContent}
+                    <a onClick={(e) => e.stopPropagation()} className="no-underline" title={`View creator profile for ${creator.name}`}>
+                        {bubbleContent}
+                    </a>
                 </Link>
             ) : (
                 <div title={`${creator.name} (no public profile)`}>
@@ -53,6 +58,7 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
         </motion.div>
     );
 };
+
 
 const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, isCenter: boolean, isInView: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
@@ -82,7 +88,6 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
 
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
-            {/* --- THE DEFINITIVE FIX: Convert <a> to a div with an onClick handler --- */}
             <div onClick={handleClick} style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (

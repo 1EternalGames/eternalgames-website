@@ -2,9 +2,10 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCreatorUsernames } from '@/app/actions/creatorActions';
 import type { SanityAuthor } from '@/types/sanity';
 import styles from './CreatorCredit.module.css';
 
@@ -48,7 +49,12 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
                 {isHovered && <CreatorHoverCard creator={creator} />}
             </AnimatePresence>
             {creator.username ? (
-                <Link href={`/creators/${creator.username}`} className="creator-credit-link no-underline">
+                <Link 
+                    href={`/creators/${creator.username}`} 
+                    className="creator-credit-link no-underline"
+                    // --- THE DEFINITIVE FIX FOR EVENT CONFLICTS ---
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {creator.name}
                 </Link>
             ) : (
@@ -59,14 +65,33 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
 };
 
 export default function CreatorCredit({ label, creators }: { label: string; creators: SanityAuthor[] | null | undefined }) {
-    if (!creators || creators.length === 0) return null;
+    const [enrichedCreators, setEnrichedCreators] = useState(creators || []);
 
-    // --- THE DEFINITIVE FIX ---
-    // The key now includes the index `i` to guarantee uniqueness even if the `creators`
-    // array contains duplicate references from the CMS.
-    const formattedNames = creators.map((creator, i) => (
+    useEffect(() => {
+        const creatorsWithoutUsername = (creators || []).filter(c => c && c.prismaUserId && !c.username);
+
+        if (creatorsWithoutUsername.length > 0) {
+            const idsToFetch = creatorsWithoutUsername.map(c => c.prismaUserId);
+            getCreatorUsernames(idsToFetch).then(usernameMap => {
+                setEnrichedCreators(prevCreators => 
+                    prevCreators.map(creator => {
+                        if (creator.prismaUserId && usernameMap[creator.prismaUserId]) {
+                            return { ...creator, username: usernameMap[creator.prismaUserId] };
+                        }
+                        return creator;
+                    })
+                );
+            });
+        } else {
+            setEnrichedCreators(creators || []);
+        }
+    }, [creators]);
+
+    if (!enrichedCreators || enrichedCreators.length === 0) return null;
+
+    const formattedNames = enrichedCreators.map((creator, i) => (
         <React.Fragment key={`${creator._id}-${i}`}>
-            {i > 0 && (i === creators.length - 1 ? ' و ' : '، ')}
+            {i > 0 && (i === enrichedCreators.length - 1 ? ' و ' : '، ')}
             <CreatorLink creator={creator} />
         </React.Fragment>
     ));
