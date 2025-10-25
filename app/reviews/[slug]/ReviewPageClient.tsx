@@ -37,7 +37,26 @@ export default function ReviewPageClient({ review, searchParams, children }: {
     }, []);
 
     useEffect(() => { 
-        const contentElement = contentContainerRef.current; if (!contentElement) return; const measureHeadings = () => { const containerRect = contentElement.getBoundingClientRect(); const headingElements = Array.from(contentElement.querySelectorAll('h2')); const navbarOffset = 90; const newHeadings = headingElements.map(h => { const headingRect = h.getBoundingClientRect(); const relativeTop = (headingRect.top - containerRect.top); return { id: h.id, title: h.textContent || '', top: Math.max(0, relativeTop - navbarOffset) }; }); setHeadings(newHeadings); }; const imagePromises = Array.from(contentElement.querySelectorAll('img')).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })); Promise.all(imagePromises).then(measureHeadings); if (imagePromises.length === 0) measureHeadings(); 
+        const contentElement = contentContainerRef.current; if (!contentElement) return; const measureHeadings = () => { const containerRect = contentElement.getBoundingClientRect(); const headingElements = Array.from(contentElement.querySelectorAll('h2')); const navbarOffset = 90; 
+        
+        // --- THE DEFINITIVE FIX FOR DUPLICATE KEYS ---
+        const seenIds = new Set<string>();
+        const newHeadings = headingElements.map((h, index) => {
+            let id = h.id;
+            // If we've seen this ID before, make it unique by appending the index.
+            if (seenIds.has(id)) {
+                id = `${id}-${index}`;
+            }
+            seenIds.add(id);
+            h.id = id; // IMPORTANT: Update the actual DOM element's ID for the click handler.
+            
+            const headingRect = h.getBoundingClientRect(); 
+            const relativeTop = (headingRect.top - containerRect.top); 
+            return { id: id, title: h.textContent || '', top: Math.max(0, relativeTop - navbarOffset) }; 
+        });
+        setHeadings(newHeadings); 
+        
+        }; const imagePromises = Array.from(contentElement.querySelectorAll('img')).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })); Promise.all(imagePromises).then(measureHeadings); if (imagePromises.length === 0) measureHeadings(); 
     }, [review]);
 
     if (!review) return null;
@@ -51,9 +70,6 @@ export default function ReviewPageClient({ review, searchParams, children }: {
     const monthIndex = publishedDate.getMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
     
-    // --- THE DEFINITIVE FIX ---
-    // The query now provides a `url` property directly. We strip any existing query params
-    // from it and then append our desired optimization settings.
     const baseUrl = review.mainImage.url.split('?')[0];
     const imageUrl = `${baseUrl}?auto=format&q=85`;
 
@@ -68,32 +84,25 @@ export default function ReviewPageClient({ review, searchParams, children }: {
                     <div className="container page-container" style={{ paddingTop: 0 }}>
                         <div className={styles.reviewLayout}>
                             <main>
-                                {/* HEADER BLOCK: Title and Game Link */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                    {/* TITLE ON THE RIGHT (First in DOM for RTL) */}
                                     <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${review.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: 0 }}>{review.title}</motion.h1>
                                     
-                                    {/* GAME HUB & ACTIONS ON THE LEFT (Second in DOM for RTL) */}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
                                         <GameLink gameName={review.game?.title} className="kinetic-game-tag" />
                                     </div>
                                 </div>
                                 
-                                {/* --- UNIFIED METADATA BLOCK START: Actions and Credits Side-by-Side --- */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                                    {/* RIGHT SIDE (Creator/Date) */}
                                     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '1.5rem', color: 'var(--text-secondary)' }}>
                                         <CreatorCredit label="بقلم" creators={review.authors} />
                                         <CreatorCredit label="تصميم" creators={review.designers} />
                                         <p style={{ margin: 0 }}>نُشر في {formattedDate}</p>
                                     </div>
 
-                                    {/* LEFT SIDE (Actions) */}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
                                         <ContentActionBar contentId={review.legacyId} contentType="review" contentSlug={review.slug} />
                                     </div>
                                 </div>
-                                {/* --- UNIFIED METADATA BLOCK END --- */}
                                 
                                 <div ref={contentContainerRef}><PortableTextComponent content={review.content} /><ScoreBox review={adaptReviewForScoreBox(review) as any} /></div>
                                 <div className={styles.tagLinksContainer}><TagLinks tags={(review.tags || []).map(t => t.title)} /></div>

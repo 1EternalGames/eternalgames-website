@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import type { SanityAuthor } from '@/types/sanity';
@@ -24,13 +25,34 @@ const creatorBubbleItemVariants = {
 };
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
-const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => (
-    <motion.div variants={creatorBubbleItemVariants}>
+const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
+    const bubbleContent = (
         <motion.div className={styles.creatorBubble} whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}>
-            <span className={styles.creatorLabel}>{label}</span><span className={styles.creatorName}>{creator.name}</span><div className={styles.creatorArrow}><ArrowIcon /></div>
+            <span className={styles.creatorLabel}>{label}</span>
+            <span className={styles.creatorName}>{creator.name}</span>
+            <div className={styles.creatorArrow}><ArrowIcon /></div>
         </motion.div>
-    </motion.div>
-);
+    );
+
+    return (
+        <motion.div variants={creatorBubbleItemVariants}>
+            {creator.username ? (
+                <Link 
+                    href={`/creators/${creator.username}`} 
+                    onClick={(e) => e.stopPropagation()} 
+                    className="no-underline" 
+                    title={`View creator profile for ${creator.name}`}
+                >
+                    {bubbleContent}
+                </Link>
+            ) : (
+                <div title={`${creator.name} (no public profile)`}>
+                    {bubbleContent}
+                </div>
+            )}
+        </motion.div>
+    );
+};
 
 const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, isCenter: boolean, isInView: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
@@ -60,7 +82,8 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
 
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
-            <a href={`/reviews/${review.slug}`} onClick={handleClick} className='no-underline' style={{ display: 'block', height: '100%' }}>
+            {/* --- THE DEFINITIVE FIX: Convert <a> to a div with an onClick handler --- */}
+            <div onClick={handleClick} style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (
                         <div className={styles.vanguardScoreBadge}>
@@ -72,7 +95,7 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
                         <h3>{review.title}</h3>
                     </motion.div>
                 </div>
-            </a>
+            </div>
             <AnimatePresence>
                 {showCredits && (
                     <motion.div className={styles.creatorBubbleContainer} variants={creatorBubbleContainerVariants} initial="hidden" animate="visible" exit="hidden">
@@ -119,9 +142,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
 
     const stopInterval = useCallback(() => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
     
-    // --- THE DEFINITIVE FIX IS HERE ---
-    // Removed `currentIndex` from the dependency array and used a functional update
-    // for `setCurrentIndex` to prevent stale state in the interval closure.
     const startInterval = useCallback(() => {
         stopInterval();
         intervalRef.current = setInterval(() => {
@@ -136,7 +156,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         setIsAnimating(true);
         setCurrentIndex(index);
         
-        // Restart the interval timer after a manual navigation
         startInterval();
         
         setTimeout(() => setIsAnimating(false), ANIMATION_COOLDOWN);

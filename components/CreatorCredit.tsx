@@ -62,11 +62,10 @@ export default function CreatorCredit({ label, creators }: { label: string; crea
     if (!creators || creators.length === 0) return null;
 
     // --- THE DEFINITIVE FIX ---
-    // The previous .reduce() method was creating an unstable list with unkeyed string separators.
-    // This new approach uses a single .map() with React.Fragment, which is the correct and
-    // robust pattern for rendering lists with separators. Each fragment gets a unique key.
+    // The key now includes the index `i` to guarantee uniqueness even if the `creators`
+    // array contains duplicate references from the CMS.
     const formattedNames = creators.map((creator, i) => (
-        <React.Fragment key={creator._id}>
+        <React.Fragment key={`${creator._id}-${i}`}>
             {i > 0 && (i === creators.length - 1 ? ' و ' : '، ')}
             <CreatorLink creator={creator} />
         </React.Fragment>
@@ -79,5 +78,3 @@ export default function CreatorCredit({ label, creators }: { label: string; crea
         </div>
     );
 }
-
-
