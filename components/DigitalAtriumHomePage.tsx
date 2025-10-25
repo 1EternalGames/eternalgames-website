@@ -1,8 +1,8 @@
 // components/DigitalAtriumHomePage.tsx
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import TriptychHero from './TriptychHero';
 import { ContentBlock } from './ContentBlock';
 import NewsTicker from './NewsTicker';
@@ -11,6 +11,7 @@ import PaginatedCarousel from './PaginatedCarousel';
 import { adaptToCardProps } from '@/lib/adapters';
 import styles from './DigitalAtriumHomePage.module.css';
 
+// This sub-component is perfect for the sections below the hero. No changes needed here.
 const AnimatedContentBlock = ({ title, children, direction = 'right', variant = 'default' }: { title: string, children?: React.ReactNode, direction?: 'left' | 'right' | 'bottom', variant?: 'default' | 'fullbleed' }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.2 }); 
@@ -33,48 +34,24 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
     latestNews: any[];
     children: React.ReactNode;
 }) {
-  const [isMounted, setIsMounted] = useState(false);
-  const heroRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setIsMounted(true); }, []);
-  
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '-25%']);
-  const heroOpacity = useTransform(scrollYProgress, [0.8, 1.0], [1, 0]);
-
-  const leftPanelX = useTransform(scrollYProgress, [0, 0.6], ['0%', '-50%']);
-  const rightPanelX = useTransform(scrollYProgress, [0, 0.6], ['0%', '50%']);
-  const centerPanelScale = useTransform(scrollYProgress, [0, 0.6], [1, 0.8]);
-  const panelsOpacity = useTransform(scrollYProgress, [0.3, 0.6], [1, 0]);
-
-  const contentOpacity = useTransform(scrollYProgress, [0.6, 0.8], [0, 1]);
-  const contentY = useTransform(scrollYProgress, [0.6, 0.8], ["100px", "0px"]);
-  
-  const panelStyles = {
-      left: { x: leftPanelX, opacity: panelsOpacity },
-      center: { scale: centerPanelScale, opacity: panelsOpacity },
-      right: { x: rightPanelX, opacity: panelsOpacity }
-  };
-
   const adaptedReviews = (reviews || []).map(adaptToCardProps).filter(Boolean);
   const adaptedArticles = (articles || []).map(adaptToCardProps).filter(Boolean);
   const adaptedLatestNews = (latestNews || []).map(adaptToCardProps).filter(Boolean);
   
-  const contentStyle = { marginTop: '-10vh', ...(isMounted ? { opacity: contentOpacity, y: contentY } : { opacity: 0 }) };
-
   return (
     <div className={styles.atriumPageContainer}>
-      <div ref={heroRef} style={{ height: '120vh' }}>
-        <motion.div 
-          className={styles.stickyHeroWrapper} 
-          style={ isMounted ? { opacity: heroOpacity, y: heroY, position: 'sticky' } : { position: 'sticky' } }
-        >
-          <TriptychHero heroContent={heroContent} panelStyles={panelStyles} />
-        </motion.div>
-      </div>
       
-      <motion.div className={styles.atriumMainContent} style={contentStyle}>
-          {/* --- THE FIX IS HERE --- */}
+      {/* --- THE FIX: Reduced minHeight to pull the hero section higher --- */}
+      <motion.div 
+        style={{ paddingTop: 'var(--nav-height-scrolled)', minHeight: '80vh', display: 'flex', alignItems: 'center' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.75, ease: 'easeOut' }}
+      >
+        <TriptychHero heroContent={heroContent} panelStyles={{}} />
+      </motion.div>
+      
+      <div className={styles.atriumMainContent}>
           <AnimatedContentBlock title="مراجعات الطليعة" direction="bottom" variant="fullbleed">
               <VanguardReviews reviews={adaptedReviews} />
           </AnimatedContentBlock>
@@ -92,7 +69,7 @@ export default function DigitalAtriumHomePage({ heroContent, reviews, articles, 
               </div>
               {children}
           </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
