@@ -2,14 +2,14 @@
 .atriumPageContainer {
   position: relative;
   width: 100%;
+  padding-top: var(--nav-height-scrolled);
 }
 
-/* This style is no longer needed and has been removed. */
-/* .stickyHeroWrapper { ... } */
+.vanguardSection {
+  margin-bottom: 5rem;
+}
 
 .atriumMainContent {
-  /* Reduced top padding as the hero section now provides its own. */
-  padding-top: 4rem;
   padding-bottom: 8rem;
 }
 
@@ -17,7 +17,6 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 5rem;
-  margin-top: 5rem;
 }
 @media (min-width:1024px) {
   .atriumGrid {
@@ -28,37 +27,6 @@
   min-width: 0;
 }
 
-/* This is for the VanguardReviews full-bleed section */
-.vanguardSection {
-  margin-bottom: 5rem;
-}
-
-.horizontalScrollContainer {
-  display: flex;
-  overflow-x: auto;
-  gap: 3rem;
-  padding: 1rem 0 2rem 1rem;
-  margin-right: -1rem;
-  scrollbar-color: var(--accent) transparent;
-}
-.horizontalScrollContainer::-webkit-scrollbar {
-  height: 8px;
-}
-.horizontalScrollContainer::-webkit-scrollbar-track {
-  background: transparent;
-}
-.horizontalScrollContainer::-webkit-scrollbar-thumb {
-  background-color: var(--accent);
-  border-radius: 4px;
-  border: 2px solid var(--bg-secondary);
-}
-.horizontalScrollItem {
-  flex: 0 0 320px;
-  min-width: 320px;
-}
-@media (min-width:768px) {
-  .horizontalScrollItem {
-    flex: 0 0 350px;
-    min-width: 350px;
-  }
+.atriumSidebar {
+  min-width: 0;
 }

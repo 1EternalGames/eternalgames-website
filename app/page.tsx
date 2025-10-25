@@ -1,6 +1,6 @@
 // app/page.tsx
 import { client } from '@/lib/sanity.client';
-import { heroContentQuery, latestNewsQuery, allReleasesQuery, vanguardReviewsQuery, featuredArticlesQuery } from '@/lib/sanity.queries';
+import { latestNewsQuery, allReleasesQuery, vanguardReviewsQuery, featuredArticlesQuery } from '@/lib/sanity.queries';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
@@ -36,14 +36,12 @@ async function ReleasesSection() {
 }
 
 export default async function HomePage() {
-    const [heroContent, reviews, articles, latestNews] = await Promise.all([
-        client.fetch(heroContentQuery),
+    const [reviews, articles, latestNews] = await Promise.all([
         client.fetch(vanguardReviewsQuery),
         client.fetch(featuredArticlesQuery),
         client.fetch(latestNewsQuery)
     ]);
     
-    // --- THE DEFINITIVE FIX ---
     // Enrich all fetched content with usernames from Prisma before sending to client components.
     const enrichedReviews = await Promise.all(
         reviews.map(async (review) => ({
@@ -60,25 +58,12 @@ export default async function HomePage() {
             designers: await enrichCreators(article.designers),
         }))
     );
-    
-    // The sanitizer was removing the enriched data. We apply enrichment AFTER.
-    let sanitizedHeroContent = {
-        featuredReview: heroContent?.featuredReview?.mainImage ? heroContent.featuredReview : null,
-        latestNews: heroContent?.latestNews?.mainImage ? heroContent.latestNews : null,
-        featuredArticle: heroContent?.featuredArticle?.mainImage ? heroContent.featuredArticle : null,
-    };
-
-    if (sanitizedHeroContent.featuredReview) {
-        sanitizedHeroContent.featuredReview.authors = await enrichCreators(sanitizedHeroContent.featuredReview.authors);
-        sanitizedHeroContent.featuredReview.designers = await enrichCreators(sanitizedHeroContent.featuredReview.designers);
-    }
 
     return (
         <DigitalAtriumHomePage
-            heroContent={sanitizedHeroContent}
             reviews={enrichedReviews}
             articles={enrichedArticles}
-            latestNews={latestNews} // This one has no bubbles, so it's safe.
+            latestNews={latestNews}
         >
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 {/* @ts-expect-error Async Server Component */}
