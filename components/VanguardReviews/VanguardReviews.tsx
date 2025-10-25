@@ -25,7 +25,6 @@ const creatorBubbleItemVariants = {
 };
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
-// --- THE DEFINITIVE FIX: CREATOR BUBBLE WITH ROBUST LINKING ---
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const bubbleContent = (
         <motion.div 
@@ -88,7 +87,8 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
 
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
-            <div onClick={handleClick} style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
+            {/* --- THE DEFINITIVE FIX: Replaced div-onClick with a proper Link --- */}
+            <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (
                         <div className={styles.vanguardScoreBadge}>
@@ -100,7 +100,8 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
                         <h3>{review.title}</h3>
                     </motion.div>
                 </div>
-            </div>
+            </Link>
+            {/* Creator bubbles are now SIBLINGS to the Link, not descendants, avoiding the error */}
             <AnimatePresence>
                 {showCredits && (
                     <motion.div className={styles.creatorBubbleContainer} variants={creatorBubbleContainerVariants} initial="hidden" animate="visible" exit="hidden">
