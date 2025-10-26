@@ -1,16 +1,28 @@
 /* components/CreatorCredit.module.css */
 
+.creatorCreditContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* THE FIX: Changed from flex-end to flex-start */
+    gap: 0.25rem;
+}
+
 .creatorCredit {
     line-height: 1.6;
     color: var(--text-primary);
-    display: block; /* Changed from inline to block */
-    margin-bottom: 0.25rem; /* Add some space between lines */
+    display: block;
 }
 
 .label {
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     margin-left: 0.5rem;
+}
+
+.dateText {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin: 0;
 }
 
 .creatorLinkContainer {
@@ -69,5 +81,3 @@
     -webkit-box-orient: vertical;  
     overflow: hidden;
 }
-
-

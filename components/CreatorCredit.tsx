@@ -103,11 +103,14 @@ export default function CreatorCredit({ label, creators, date }: {
     ));
 
     return (
-        <div className={styles.creatorCredit}>
-            {label && hasCreators && <span className={styles.label}>{label}:</span>}
-            {hasCreators && formattedNames}
-            {hasCreators && date && <span className={styles.separator}>•</span>}
-            {date && <span className={styles.dateText}>{date.split(' - ')[0]}</span>}
+        <div className={styles.creatorCreditContainer}>
+            {hasCreators && (
+                <div className={styles.creatorCredit}>
+                    {label && <span className={styles.label}>{label}:</span>}
+                    {formattedNames}
+                </div>
+            )}
+            {date && <p className={styles.dateText}>{date.split(' - ')[0]}</p>}
         </div>
     );
 }

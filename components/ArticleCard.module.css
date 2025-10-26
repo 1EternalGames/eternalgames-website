@@ -101,18 +101,6 @@
     font-family: var(--font-main), sans-serif;
     font-size: 1.4rem;
     color: var(--text-secondary);
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1.5rem;
-}
-
-.cardDate {
-    margin: 0;
-    font-size: 1.3rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    flex-shrink: 0;
 }
 
 .tagContainer {

@@ -43,24 +43,24 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
     const compareIds = (arr1: any[], arr2: any[]) => JSON.stringify(normalize(arr1, []).map(i => i._id).sort()) === JSON.stringify(normalize(arr2, []).map(i => i._id).sort());
 
-    if (normalize(currentState.title) !== normalize(sourceOfTruth.title)) patch.title = currentState.title;
-    if (normalize(currentState.slug) !== normalize(sourceOfTruth.slug?.current)) patch.slug = { _type: 'slug', current: currentState.slug };
+    if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
+    if (normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
     if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
-    if (normalize(currentState.verdict) !== normalize(sourceOfTruth.verdict)) patch.verdict = currentState.verdict;
-    if (normalize(currentState.releaseDate) !== normalize(sourceOfTruth.releaseDate)) patch.releaseDate = currentState.releaseDate;
-    if (normalize(currentState.synopsis) !== normalize(sourceOfTruth.synopsis)) patch.synopsis = currentState.synopsis;
+    if (normalize(currentState.verdict, '') !== normalize(sourceOfTruth.verdict, '')) patch.verdict = currentState.verdict;
+    if (normalize(currentState.releaseDate, '') !== normalize(sourceOfTruth.releaseDate, '')) patch.releaseDate = currentState.releaseDate;
+    if (normalize(currentState.synopsis, '') !== normalize(sourceOfTruth.synopsis, '')) patch.synopsis = currentState.synopsis;
 
     if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
     if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
     if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
 
-    if (normalize(currentState.game?._id) !== normalize(sourceOfTruth.game?._id)) patch.game = currentState.game ? { _type: 'reference', _ref: currentState.game._id } : undefined;
-    if (normalize(currentState.mainImage.assetId) !== normalize(sourceOfTruth.mainImage?._ref)) patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
+    if (normalize(currentState.game?._id, null) !== normalize(sourceOfTruth.game?._id, null)) patch.game = currentState.game ? { _type: 'reference', _ref: currentState.game._id } : undefined;
+    if (normalize(currentState.mainImage.assetId, null) !== normalize(sourceOfTruth.mainImage?._ref, null)) patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
     
-    if (!compareIds(currentState.tags, sourceOfTruth.tags)) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
-    if (!compareIds(currentState.authors, sourceOfTruth.authors)) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
-    if (!compareIds(currentState.reporters, sourceOfTruth.reporters)) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
-    if (!compareIds(currentState.designers, sourceOfTruth.designers)) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
+    if (!compareIds(currentState.tags, (sourceOfTruth.tags || []).filter(Boolean))) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
+    if (!compareIds(currentState.authors, (sourceOfTruth.authors || []).filter(Boolean))) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
+    if (!compareIds(currentState.reporters, (sourceOfTruth.reporters || []).filter(Boolean))) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
+    if (!compareIds(currentState.designers, (sourceOfTruth.designers || []).filter(Boolean))) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
 
     const sourceContentJson = JSON.stringify(sourceOfTruth.tiptapContent || {});
     if (sourceOfTruth._type !== 'gameRelease' && editorContentJson !== sourceContentJson) {
@@ -117,6 +117,16 @@ export function EditorClient({ document: initialDocument }: { document: any }) {
             } 
         });
 
+        // --- THE DEFINITIVE FIX IS HERE ---
+        // Check the loaded image dimensions and set the toggle state accordingly.
+        const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width;
+        if (imageWidth && imageWidth >= 3840) {
+            setMainImageUploadQuality('4k');
+        } else {
+            setMainImageUploadQuality('1080p');
+        }
+        // --- END OF FIX ---
+
         if (editorInstance) {
             const editorJSON = JSON.stringify(editorInstance.getJSON());
             const sourceJSON = JSON.stringify(sourceOfTruth.tiptapContent || {});
@@ -156,9 +166,6 @@ export function EditorClient({ document: initialDocument }: { document: any }) {
     
         if (result.success) {
             const newTiptapContent = editorInstance ? editorInstance.getJSON() : sourceOfTruth.tiptapContent;
-            // --- THE DEFINITIVE FIX: STATE PROMOTION ---
-            // Construct the new sourceOfTruth by merging the old with the new,
-            // and explicitly re-formatting the mainImage to match Sanity's structure.
             setSourceOfTruth(prevState => {
                 const newState = {
                     ...prevState,
@@ -179,12 +186,10 @@ export function EditorClient({ document: initialDocument }: { document: any }) {
     };
     
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => {
-        if (hasChanges) {
-            const didSave = await saveWorkingCopy();
-            if (!didSave) {
-                toast.error('يرجى حفظ التغييرات أولاً.', 'left');
-                return false;
-            }
+        const didSave = await saveWorkingCopy();
+        if (!didSave) {
+            if (hasChanges) toast.error('يرجى حفظ التغييرات أولاً.', 'left');
+            return false;
         }
         
         const result = await publishDocumentAction(sourceOfTruth._id, publishTime);

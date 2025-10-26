@@ -17,10 +17,11 @@
     padding: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
     border-bottom: 1px solid var(--border-color);
     position: relative;
     z-index: 2;
+    border-radius: 12px; /* Added for glyphs */
 }
 
 .sectionLabel {
@@ -52,9 +53,11 @@
     align-items: center;
     text-decoration: none;
     transition: background-color 0.2s ease;
-    padding: 0.5rem;
-    margin: -0.5rem;
+    padding: 1rem;
+    margin: -1rem;
     border-radius: 8px;
+    position: relative;
+    cursor: pointer;
 }
 
 .pinnedNewsItem:hover {
@@ -67,6 +70,11 @@
     border-radius: 6px;
     overflow: hidden;
     position: relative;
+    transition: border-color 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+.pinnedNewsItem:hover .pinnedNewsThumbnail {
+    border-color: var(--accent);
 }
 
 .pinnedNewsThumbnail img {
@@ -78,13 +86,18 @@
 
 .pinnedNewsInfo {
     text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
 }
-.pinnedNewsCategory {
+
+.pinnedNewsDate {
     font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--accent);
-    margin: 0 0 0.25rem 0;
+    color: var(--text-secondary);
+    margin: 0;
 }
+
 .pinnedNewsTitle {
     font-size: 1.6rem;
     font-weight: 600;
@@ -95,6 +108,13 @@
 }
 .pinnedNewsItem:hover .pinnedNewsTitle {
     color: var(--accent);
+}
+
+.pinnedNewsCategory {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 0;
 }
 
 .latestNewsHeader {
@@ -135,8 +155,8 @@
 .newsListItem:hover .newsListTitle {
     color: var(--accent);
 }
-.newsListItem:hover .newsListThumbnail img {
-    transform: scale(1.05);
+.newsListItem:hover .newsListThumbnail {
+    border-color: var(--accent);
 }
 
 .newsListThumbnail {
@@ -145,9 +165,14 @@
     border-radius: 6px;
     overflow: hidden;
     position: relative;
+    border: 1px solid var(--border-color);
+    transition: border-color 0.3s ease;
 }
 .newsListThumbnail img {
     transition: transform 0.3s ease-out;
+}
+.newsListItem:hover .newsListThumbnail img {
+    transform: scale(1.05);
 }
 
 .newsListInfo {
