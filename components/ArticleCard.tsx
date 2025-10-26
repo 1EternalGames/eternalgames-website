@@ -39,7 +39,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
 
     const linkPath = `${getLinkBasePath()}${article.slug}`;
     
-    // This handler is now used by the individual Link components inside
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setPrefix(layoutIdPrefix);
@@ -51,16 +50,13 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
     };
 
     const hasScore = isReview && typeof article.score === 'number';
-    const authorLabel = isReview ? 'مراجعة' : (type === 'news' ? 'خبر' : 'مقالة');
-
+    
     const imageSource = article.imageUrl;
     if (!imageSource) return null;
     
     const baseUrl = imageSource.split('?')[0];
     const imageUrl = `${baseUrl}?w=600&auto=format&q=80`;
 
-    // --- THE DEFINITIVE FIX: START ---
-    // The outermost element is now a motion.div, not an <a> tag.
     return (
         <motion.div
             ref={livingCardRef}
@@ -74,7 +70,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                 layoutId={`${layoutIdPrefix}-card-container-${article.id}`}
                 className={styles.articleCard}
             >
-                {/* Link is now on the image */}
                 <Link href={linkPath} onClick={handleClick} className="no-underline">
                     <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
                         {hasScore && ( <motion.div className={styles.score}>{article.score.toFixed(1)}</motion.div> )}
@@ -95,13 +90,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                 </Link>
                 <motion.div className={styles.cardContent}>
                     <div>
-                        {/* Link is now on the title */}
                         <Link href={linkPath} onClick={handleClick} className={`${styles.cardTitleLink} no-underline`}>
                             <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
                         </Link>
                         <div className={styles.cardMetadata}>
-                            {/* CreatorCredit can now render a real link without nesting issues */}
-                            <CreatorCredit label={authorLabel} creators={article.authors} />
+                            <CreatorCredit label="بقلم" creators={article.authors} />
                             {article.date && <p style={{margin: '0.25rem 0 0 0', fontSize: '1.3rem'}}>{article.date}</p>}
                         </div>
                     </div>
@@ -111,7 +104,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                 </motion.div>
             </motion.div>
         </motion.div>
-        // --- THE DEFINITIVE FIX: END ---
     );
 };
 

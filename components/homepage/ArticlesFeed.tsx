@@ -5,12 +5,10 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { CardProps } from '@/types';
 import CreatorCredit from '@/components/CreatorCredit';
 import KineticGlyphs from '@/components/effects/KineticGlyphs';
 import { useLivingCard } from '@/hooks/useLivingCard';
-import { useRippleStore } from '@/lib/rippleStore';
 import styles from './ArticlesFeed.module.css';
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } } };
@@ -19,49 +17,55 @@ const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 
 const TopArticleCard = ({ article }: { article: CardProps }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
-    const router = useRouter();
-    const addRipple = useRippleStore(state => state.addRipple);
     const [isHovered, setIsHovered] = useState(false);
 
-    const handleClick = (e: React.MouseEvent) => { if ((e.target as HTMLElement).closest('a')) return; e.preventDefault(); addRipple(e.clientX, e.clientY); setTimeout(() => router.push(`/articles/${article.slug}`), 200); };
     return (
-        <motion.div ref={livingCardRef} onClick={handleClick} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} className={styles.topArticleCard} >
-            <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
-            <div className={styles.topArticleImage}><Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 90vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-            <div className={styles.topArticleContent}>
-                <span className={styles.sectionLabel}>الأكثر رواجًا</span>
-                <h3 className={styles.topArticleTitle}>{article.title}</h3>
-                <div className={styles.topArticleMeta}><CreatorCredit label="" creators={article.authors} /></div>
-            </div>
+        <motion.div
+            ref={livingCardRef}
+            style={livingCardAnimation.style}
+            onMouseMove={livingCardAnimation.onMouseMove}
+            onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }}
+            onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }}
+        >
+            <Link href={`/articles/${article.slug}`} className={`${styles.topArticleCard} no-underline`}>
+                <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+                <div className={styles.topArticleImage}><Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 90vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
+                <div className={styles.topArticleContent}>
+                    <span className={styles.sectionLabel}>الأكثر رواجًا</span>
+                    <h3 className={styles.topArticleTitle}>{article.title}</h3>
+                    <div className={styles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} /></div>
+                </div>
+            </Link>
         </motion.div>
     );
 };
 
 export default function ArticlesFeed({ topArticles, latestArticles }: { topArticles: CardProps[]; latestArticles: CardProps[]; }) {
     const ref = useRef(null);
-    const router = useRouter();
-    const addRipple = useRippleStore(state => state.addRipple);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
     
-    const handleItemClick = (e: React.MouseEvent, slug: string) => { if ((e.target as HTMLElement).closest('a')) return; e.preventDefault(); addRipple(e.clientX, e.clientY); setTimeout(() => router.push(`/articles/${slug}`), 200); };
-
     return (
         <motion.div ref={ref} className={styles.feedContainer} variants={containerVariants} initial="hidden" animate={isInView ? "visible" : "hidden"} >
             <motion.div className={styles.topArticlesGrid} variants={itemVariants}>{topArticles.map(article => <TopArticleCard key={article.id} article={article} />)}</motion.div>
-            <motion.div variants={itemVariants} style={{textAlign: 'right'}}><span className={styles.sectionLabel} style={{marginTop: '4rem'}}>الأحدث</span></motion.div>
+            <motion.div variants={itemVariants} style={{textAlign: 'right'}}>
+                <span className={styles.sectionLabel} style={{marginTop: '4rem'}}>
+                    <div className={styles.liveIndicator}></div>
+                    <span>الأحدث</span>
+                </span>
+            </motion.div>
             <motion.div className={styles.latestArticlesList} variants={itemVariants}>
                 {latestArticles.map(article => (
-                    <div key={article.id} className={styles.latestArticleItem} onClick={(e) => handleItemClick(e, article.slug)} >
+                    <Link href={`/articles/${article.slug}`} key={article.id} className={`${styles.latestArticleItem} no-underline`} >
                         <div className={styles.latestArticleThumbnail}><Image src={article.imageUrl} alt={article.title} fill sizes="120px" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
                         <div className={styles.latestArticleInfo}>
                             <h4 className={styles.latestArticleTitle}>{article.title}</h4>
-                            <p className={styles.latestArticleMeta}><CreatorCredit label="" creators={article.authors} /></p>
+                            <div className={styles.latestArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} /></div>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </motion.div>
             <motion.div variants={itemVariants}>
-                <Link href="/articles" className={`${styles.viewAllLink} no-underline`} onClick={(e) => addRipple(e.clientX, e.clientY)}>
+                <Link href="/articles" className={`${styles.viewAllLink} no-underline`}>
                     <span>عرض كل المقالات</span>
                     <ArrowIcon />
                 </Link>

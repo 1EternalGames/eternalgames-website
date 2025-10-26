@@ -82,7 +82,7 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
             <AnimatePresence>
                 {showCredits && (
                     <motion.div className={styles.creatorBubbleContainer} variants={creatorBubbleContainerVariants} initial="hidden" animate="visible" exit="hidden">
-                        {review.authors.map(author => <CreatorBubble key={author._id} label="مراجعة" creator={author} />)}
+                        {review.authors.map(author => <CreatorBubble key={author._id} label="بقلم" creator={author} />)}
                         {review.designers?.map(designer => <CreatorBubble key={designer._id} label="تصميم" creator={designer} />)}
                     </motion.div>
                 )}
