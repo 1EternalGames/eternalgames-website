@@ -5,6 +5,7 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CardProps } from '@/types';
 import CreatorCredit from '@/components/CreatorCredit';
 import KineticGlyphs from '@/components/effects/KineticGlyphs';
@@ -18,6 +19,13 @@ const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const TopArticleCard = ({ article }: { article: CardProps }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const [isHovered, setIsHovered] = useState(false);
+    const router = useRouter();
+
+    const handleClick = (e: React.MouseEvent) => {
+        // Only navigate if the user didn't click on an existing link (like the creator credit).
+        if ((e.target as HTMLElement).closest('a')) return;
+        router.push(`/articles/${article.slug}`);
+    };
 
     return (
         <motion.div
@@ -26,25 +34,29 @@ const TopArticleCard = ({ article }: { article: CardProps }) => {
             onMouseMove={livingCardAnimation.onMouseMove}
             onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }}
             onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }}
+            onClick={handleClick}
+            className={styles.topArticleCard}
         >
-            <Link href={`/articles/${article.slug}`} className={`${styles.topArticleCard} no-underline`}>
-                <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
-                <div className={styles.topArticleImage}><Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 90vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-                <div className={styles.topArticleContent}>
-                    <span className={styles.sectionLabel}>الأكثر رواجًا</span>
-                    <h3 className={styles.topArticleTitle}>{article.title}</h3>
-                    <div className={styles.topArticleMeta}>
-                        <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
-                    </div>
-                </div>
-            </Link>
+            <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+            <div className={styles.topArticleImage}><Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 90vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
+            <div className={styles.topArticleContent}>
+                <span className={styles.sectionLabel}>الأكثر رواجًا</span>
+                <h3 className={styles.topArticleTitle}>{article.title}</h3>
+                <div className={styles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} date={article.date} /></div>
+            </div>
         </motion.div>
     );
 };
 
 export default function ArticlesFeed({ topArticles, latestArticles }: { topArticles: CardProps[]; latestArticles: CardProps[]; }) {
     const ref = useRef(null);
+    const router = useRouter();
     const isInView = useInView(ref, { once: true, amount: 0.1 });
+
+    const handleItemClick = (e: React.MouseEvent, slug: string) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        router.push(`/articles/${slug}`);
+    };
     
     return (
         <motion.div ref={ref} className={styles.feedContainer} variants={containerVariants} initial="hidden" animate={isInView ? "visible" : "hidden"} >
@@ -57,7 +69,7 @@ export default function ArticlesFeed({ topArticles, latestArticles }: { topArtic
             </motion.div>
             <motion.div className={styles.latestArticlesList} variants={itemVariants}>
                 {latestArticles.map(article => (
-                    <Link href={`/articles/${article.slug}`} key={article.id} className={`${styles.latestArticleItem} no-underline`} >
+                    <div key={article.id} className={styles.latestArticleItem} onClick={(e) => handleItemClick(e, article.slug)} >
                         <div className={styles.latestArticleThumbnail}><Image src={article.imageUrl} alt={article.title} fill sizes="120px" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
                         <div className={styles.latestArticleInfo}>
                             <h4 className={styles.latestArticleTitle}>{article.title}</h4>
@@ -65,7 +77,7 @@ export default function ArticlesFeed({ topArticles, latestArticles }: { topArtic
                                 <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
                             </div>
                         </div>
-                    </Link>
+                    </div>
                 ))}
             </motion.div>
             <motion.div variants={itemVariants}>

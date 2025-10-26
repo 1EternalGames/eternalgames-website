@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCreatorUsernames } from '@/app/actions/creatorActions';
@@ -88,11 +88,10 @@ export default function CreatorCredit({ label, creators, date }: {
             setEnrichedCreators(creators || []);
         }
     }, [creators]);
+    
+    const hasCreators = enrichedCreators && enrichedCreators.length > 0;
 
-    if (!enrichedCreators || enrichedCreators.length === 0) {
-        if (date) {
-            return <p style={{ margin: 0, fontSize: '1.3rem' }}>{date.split(' - ')[0]}</p>;
-        }
+    if (!hasCreators && !date) {
         return null;
     }
 
@@ -105,10 +104,10 @@ export default function CreatorCredit({ label, creators, date }: {
 
     return (
         <div className={styles.creatorCredit}>
-            {label && <span className={styles.label}>{label}:</span>}
-            {formattedNames}
-            {date && <span style={{marginRight: '0.75rem', marginLeft: '0.75rem'}}>•</span>}
-            {date && <span style={{fontSize: '1.3rem'}}>{date.split(' - ')[0]}</span>}
+            {label && hasCreators && <span className={styles.label}>{label}:</span>}
+            {hasCreators && formattedNames}
+            {hasCreators && date && <span className={styles.separator}>•</span>}
+            {date && <span className={styles.dateText}>{date.split(' - ')[0]}</span>}
         </div>
     );
 }

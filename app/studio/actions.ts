@@ -62,7 +62,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     return { _id: result._id, _type: result._type };
 }
 
-// ... (rest of the file remains the same)
 export async function updateDocumentAction(docId: string, patchData: Record<string, any>) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return { success: false, message: 'غير مصرح لك.' };
@@ -79,13 +78,11 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         } else {
             const originalDoc = await sanityWriteClient.getDocument(publicId);
             if (!originalDoc) {
-                // This case is unlikely but handled: creating a draft from scratch for a non-existent doc.
                 const docTypeQuery = groq`*[_id == $id][0]._type`;
                 const docType = await sanityWriteClient.fetch(docTypeQuery, { id: publicId });
                 const newDoc = { _id: draftId, _type: docType, ...patchData };
                 tx.create(newDoc);
             } else {
-                // Create a new draft based on the published document, then apply the patch.
                 const newDraftPayload = { ...originalDoc, ...patchData, _id: draftId };
                 delete newDraftPayload._rev;
                 delete newDraftPayload._updatedAt;
@@ -162,23 +159,37 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             revalidatePath(`/${contentTypePlural}/${doc.slug}`);
             revalidatePath('/studio');
 
-            // Fetch the updated draft to return to the client
             const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
             const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-            return { success: true, updatedDocument: docWithTiptap, message: 'Document successfully unpublished.' };
+            return { success: true, updatedDocument: docWithTiptap, message: 'تم إلغاء نشر المستند بنجاح.' };
         }
 
-        // PUBLISH action
-        const finalTime = publishTime || new Date().toISOString();
+        // --- THE DEFINITIVE FIX: PUBLISH / UPDATE ACTION ---
         const draft = await sanityWriteClient.getDocument(draftId);
+        
+        // Fetch the published document to check its existing publishedAt date.
+        const publishedDocForDateCheck = await sanityWriteClient.fetch(groq`*[_id == $id][0]{publishedAt}`, { id: publicId });
+
+        let finalTime;
+        if (publishTime) {
+            // Case 1: User is explicitly scheduling/rescheduling. Use their specified time.
+            finalTime = publishTime;
+        } else if (publishedDocForDateCheck?.publishedAt) {
+            // Case 2: User is updating an already live document. Preserve the original publish date.
+            finalTime = publishedDocForDateCheck.publishedAt;
+        } else {
+            // Case 3: User is publishing a new draft for the first time. Set the publish date to now.
+            finalTime = new Date().toISOString();
+        }
 
         if (draft) {
-            const publishedDoc = { ...draft, _id: publicId, publishedAt: finalTime };
+            const publishedDocPayload = { ...draft, _id: publicId, publishedAt: finalTime };
             const tx = sanityWriteClient.transaction();
-            tx.createOrReplace(publishedDoc);
+            tx.createOrReplace(publishedDocPayload);
             tx.delete(draftId);
             await tx.commit({ returnDocuments: false });
         } else {
+            // This fallback handles cases where there's no draft, e.g., only changing the schedule of a live doc.
             await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit();
         }
 
@@ -189,10 +200,11 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             revalidatePath(`/${contentTypePlural}/${doc.slug}`);
         }
 
-        // Fetch the newly published document to return to the client
+        // Fetch the newly published document to return to the client, ensuring UI consistency.
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-        return { success: true, updatedDocument: docWithTiptap, message: 'Document published successfully.' };
+        const message = publishTime ? 'تم جدولة المستند بنجاح.' : (publishedDocForDateCheck ? 'تم تحديث المستند بنجاح.' : 'تم نشر المستند بنجاح.');
+        return { success: true, updatedDocument: docWithTiptap, message: message };
 
     } catch (error) {
         console.error('Failed to publish/unpublish document:', error);
@@ -242,9 +254,7 @@ export async function getRecentTagsAction(): Promise<{_id: string, title: string
 }
 
 export async function validateSlugAction(slug: string, docId: string): Promise<{ isValid: boolean; message: string }> {
-    // --- THE DEFINITIVE FIX: Add a guard clause ---
     if (!docId) {
-        // This can happen briefly on new doc creation. Silently fail validation until docId is available.
         return { isValid: false, message: 'Waiting for document ID...' };
     }
     

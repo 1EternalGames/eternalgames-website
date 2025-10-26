@@ -5,6 +5,7 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CardProps } from '@/types';
 import KineticGlyphs from '@/components/effects/KineticGlyphs';
 import styles from './NewsFeed.module.css';
@@ -13,34 +14,43 @@ const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, trans
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 20 } } };
 const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}><polyline points="15 18 9 12 15 6"></polyline></svg>;
 
-const PinnedNewsItem = ({ item }: { item: CardProps }) => {
-    const [isHovered, setIsHovered] = useState(false);
+const PinnedNewsItem = ({ item, showGlyphs }: { item: CardProps; showGlyphs: boolean }) => {
+    const router = useRouter();
+    const handleClick = (e: React.MouseEvent) => { router.push(`/news/${item.slug}`); };
+
     return (
-        <Link 
-            href={`/news/${item.slug}`} 
+        <div 
             className={`${styles.pinnedNewsItem} no-underline`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onClick={handleClick}
         >
-            <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+            <AnimatePresence>{showGlyphs && <KineticGlyphs />}</AnimatePresence>
             <div className={styles.pinnedNewsThumbnail}><Image src={item.imageUrl} alt={item.title} fill sizes="80px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} /></div>
             <div className={styles.pinnedNewsInfo}>
-                <p className={styles.pinnedNewsCategory}>{item.category}</p>
+                <div className={styles.pinnedNewsMeta}>
+                    {item.date && <p className={styles.pinnedNewsDate}>{item.date.split(' - ')[0]}</p>}
+                    <p className={styles.pinnedNewsCategory}>{item.category}</p>
+                </div>
                 <h4 className={styles.pinnedNewsTitle}>{item.title}</h4>
             </div>
-        </Link>
+        </div>
     );
 };
 
 export default function NewsFeed({ pinnedNews, newsList }: { pinnedNews: CardProps[]; newsList: CardProps[]; }) {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
+    const [isPinnedSectionHovered, setIsPinnedSectionHovered] = useState(false);
 
     return (
         <motion.div ref={ref} className={styles.feedContainer} variants={containerVariants} initial="hidden" animate={isInView ? "visible" : "hidden"} >
-            <motion.div variants={itemVariants} className={styles.pinnedNewsSection}>
+            <motion.div 
+                variants={itemVariants} 
+                className={styles.pinnedNewsSection}
+                onMouseEnter={() => setIsPinnedSectionHovered(true)}
+                onMouseLeave={() => setIsPinnedSectionHovered(false)}
+            >
                 <span className={styles.sectionLabel} style={{alignSelf: 'flex-start'}}>الأكثر رواجًا</span>
-                {pinnedNews.map(item => <PinnedNewsItem key={item.id} item={item} />)}
+                {pinnedNews.map(item => <PinnedNewsItem key={item.id} item={item} showGlyphs={isPinnedSectionHovered} />)}
             </motion.div>
             <motion.div variants={itemVariants} className={styles.latestNewsHeader}>
                 <span className={styles.sectionLabel} style={{alignSelf: 'flex-end'}}>
