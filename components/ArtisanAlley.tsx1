@@ -1,0 +1,105 @@
+// components/ArtisanAlley.tsx
+'use client';
+
+import { useState, useMemo, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { useEngagementScores } from '@/hooks/useEngagementScores';
+import { adaptToCardProps } from '@/lib/adapters';
+import type { CardProps } from '@/types';
+import ArticleCard from './ArticleCard';
+import PaginatedCarousel from './PaginatedCarousel';
+import styles from './ArtisanAlley.module.css';
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: 'easeOut' } }
+};
+
+export default function ArtisanAlley({ articles: rawArticles }: { articles: any[] }) {
+  const [activeTab, setActiveTab] = useState<'latest' | 'popular'>('latest');
+  const engagementScores = useEngagementScores();
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.2 });
+
+  const allArticles = useMemo(() => 
+    rawArticles.map(adaptToCardProps).filter((a): a is CardProps => !!a), 
+  [rawArticles]);
+
+  const sortedArticles = useMemo(() => {
+    const scoresMap = new Map(engagementScores.map(s => [s.id, s.engagementScore]));
+    if (activeTab === 'popular') {
+      return [...allArticles].sort((a, b) => 
+        (scoresMap.get(b.id) || 0) - (scoresMap.get(a.id) || 0)
+      );
+    }
+    return allArticles; // Default is 'latest'
+  }, [allArticles, activeTab, engagementScores]);
+
+  const featuredArticle = sortedArticles[0];
+  const carouselArticles = sortedArticles.slice(1);
+
+  if (!allArticles || allArticles.length === 0) return null;
+
+  return (
+    <motion.section 
+      ref={ref}
+      className={styles.alleyContainer}
+      variants={containerVariants}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+    >
+      <div className={styles.header}>
+        <h2>ديوان الفن</h2>
+        <div className={styles.tabs}>
+          <button 
+            onClick={() => setActiveTab('latest')}
+            className={`${styles.tabButton} ${activeTab === 'latest' ? styles.active : ''}`}
+          >
+            الأحدث
+            {activeTab === 'latest' && <motion.div layoutId="alley-tab-highlight" className={styles.tabHighlight} />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('popular')}
+            className={`${styles.tabButton} ${activeTab === 'popular' ? styles.active : ''}`}
+          >
+            الأكثر رواجاً
+            {activeTab === 'popular' && <motion.div layoutId="alley-tab-highlight" className={styles.tabHighlight} />}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0.5 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0.5 }}
+          transition={{ duration: 0.4 }}
+          className={styles.alleyLayout}
+        >
+          {featuredArticle && (
+            <div className={styles.featuredArticle}>
+              <ArticleCard 
+                article={featuredArticle} 
+                layoutIdPrefix="artisan-featured"
+                isArticle={true}
+              />
+            </div>
+          )}
+          
+          <div className={styles.carouselContainer}>
+            {carouselArticles.length > 0 ? (
+              <PaginatedCarousel 
+                items={carouselArticles}
+                itemsPerPage={2}
+                layoutIdPrefix="artisan-carousel"
+              />
+            ) : (
+              <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لا يوجد مقالات إضافية لعرضها.</p>
+            )}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </motion.section>
+  );
+}

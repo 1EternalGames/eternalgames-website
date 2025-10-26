@@ -1,0 +1,97 @@
+/* components/ArtisanAlley.module.css */
+.alleyContainer {
+  position: relative;
+  padding: 4rem 0;
+  border-radius: 16px;
+  margin-bottom: 6rem;
+  background: 
+    radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 40%),
+    var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  margin-bottom: 3rem;
+}
+
+.header h2 {
+  font-size: 3.2rem;
+  margin: 0;
+  border-right: 3px solid var(--accent);
+  padding-right: 1.5rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  background-color: var(--bg-primary);
+  padding: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+}
+
+.tabButton {
+  position: relative;
+  padding: 0.8rem 1.8rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  transition: color 0.2s ease-in-out;
+  border-radius: 999px;
+  z-index: 2;
+}
+
+.tabButton.active {
+  color: #fff;
+}
+[data-theme="dark"] .tabButton.active {
+  color: var(--bg-primary);
+}
+
+.tabHighlight {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  border-radius: 999px;
+  z-index: 1;
+}
+
+.alleyLayout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 3rem;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.featuredArticle {
+  height: 500px; /* Taller featured card */
+}
+
+.featuredArticle h3 {
+  font-size: 2.8rem !important; /* Larger title */
+}
+
+@media (max-width: 900px) {
+  .alleyLayout {
+    grid-template-columns: 1fr;
+  }
+  .featuredArticle {
+    height: auto;
+  }
+}
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
