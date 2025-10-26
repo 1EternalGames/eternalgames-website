@@ -51,7 +51,10 @@ export default function NewsFeed({ pinnedNews, newsList }: {
             </motion.div>
 
             <motion.div variants={itemVariants} className={styles.latestNewsHeader}>
-                <span className={styles.sectionLabel}>الأحدث</span>
+                <span className={styles.sectionLabel} style={{alignSelf: 'flex-end'}}>
+                    <div className={styles.liveIndicator}></div>
+                    <span>الأحدث</span>
+                </span>
             </motion.div>
 
             <motion.div variants={itemVariants} className={styles.newsList}>
