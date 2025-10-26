@@ -38,6 +38,24 @@
   }
 }
 
+/* Base Card Overrides for Chronos Feed */
+.newsCard {
+  border-radius: 12px;
+}
+.leadNewsCard {
+  border-radius: 12px;
+}
+.leadNewsCard .newsCardImageContainer {
+  height: 220px;
+}
+.leadNewsCard .newsCardContent {
+  padding: 1.5rem 2.5rem;
+}
+.leadNewsCard h3 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
 /* News Filter "Command Bar" */
 .newsFilterBar {
   display: flex;
@@ -103,9 +121,11 @@
   color: var(--text-secondary);
   margin: 0 0 1.5rem 0;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
+  /* --- ENHANCEMENTS --- */
+  border-bottom: 1px solid var(--accent);
+  box-shadow: 0 5px 15px -8px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 .terminalTickerContent {
   height: 120px;
