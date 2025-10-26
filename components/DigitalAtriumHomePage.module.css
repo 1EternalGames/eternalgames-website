@@ -12,21 +12,3 @@
 .atriumMainContent {
   padding-bottom: 8rem;
 }
-
-.atriumGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 5rem;
-}
-@media (min-width:1024px) {
-  .atriumGrid {
-    grid-template-columns: 2.5fr 1fr;
-  }
-}
-.atriumMainColumn {
-  min-width: 0;
-}
-
-.atriumSidebar {
-  min-width: 0;
-}
