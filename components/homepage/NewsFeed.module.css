@@ -46,7 +46,7 @@
 
 .pinnedNewsDivider {
     height: 1px;
-    background: linear-gradient(to left, transparent, color-mix(in srgb, var(--accent) 30%, transparent) 50%, transparent);
+    background-color: color-mix(in srgb, var(--accent) 30%, transparent); /* THE FIX: Changed from gradient to solid color */
     margin: 0.75rem 0;
 }
 
