@@ -34,7 +34,6 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => (
     </motion.div>
 );
 
-// --- THE DEFINITIVE FIX: SIMPLIFIED COMPONENT THAT ALWAYS RENDERS A REAL LINK ---
 const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -52,7 +51,7 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
                 <Link 
                     href={`/creators/${creator.username}`} 
                     className="creator-credit-link no-underline"
-                    onClick={(e) => e.stopPropagation()} // Stop propagation to prevent parent link navigation
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {creator.name}
                 </Link>

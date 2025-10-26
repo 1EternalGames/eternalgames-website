@@ -24,6 +24,7 @@ const creatorBubbleItemVariants = {
     visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 20 } }
 };
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
+
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const bubbleContent = (
         <motion.div 
@@ -38,13 +39,19 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     return (
         <motion.div variants={creatorBubbleItemVariants}>
             {creator.username ? (
-                <Link href={`/creators/${creator.username}`} passHref legacyBehavior>
-                    <a onClick={(e) => e.stopPropagation()} className="no-underline" title={`View creator profile for ${creator.name}`}>{bubbleContent}</a>
+                <Link
+                    href={`/creators/${creator.username}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="no-underline"
+                    title={`View creator profile for ${creator.name}`}
+                >
+                    {bubbleContent}
                 </Link>
             ) : (<div title={`${creator.name} (no public profile)`}>{bubbleContent}</div>)}
         </motion.div>
     );
 };
+
 const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, isCenter: boolean, isInView: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
@@ -186,7 +193,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 );
             })}
             
-            {/* --- THE FIX: Use `hasAnimatedIn` and remove AnimatePresence --- */}
             {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
         </div>
     );
