@@ -28,7 +28,7 @@
     transform-style: preserve-3d;
     will-change: transform;
     cursor: pointer;
-    transform: translateZ(0px); /* --- THE DEFINITIVE FIX: Enforces clipping context for 3D children --- */
+    transform: translateZ(0px);
 }
 
 .topArticleImage {
@@ -92,10 +92,14 @@
 }
 
 .latestArticlesList {
-    margin-top: 3rem;
+    margin-top: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+}
+
+.listDivider {
+    height: 1px;
+    background: linear-gradient(to left, transparent, var(--border-color) 20%, var(--border-color) 80%, transparent);
 }
 
 .latestArticleItem {
@@ -105,7 +109,7 @@
     align-items: center;
     position: relative;
     cursor: pointer;
-    padding: 1rem 0;
+    padding: 1.5rem 0;
 }
 
 .latestArticleThumbnail {
@@ -176,7 +180,7 @@
     gap: 0.75rem;
     text-align: center;
     padding: 1.25rem;
-    margin: 3rem -2.5rem -2.5rem -2.5rem;
+    margin: 1.5rem -2.5rem -2.5rem -2.5rem;
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
     font-family: var(--font-ui);

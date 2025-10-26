@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,7 +22,6 @@ const TopArticleCard = ({ article }: { article: CardProps }) => {
     const router = useRouter();
 
     const handleClick = (e: React.MouseEvent) => {
-        // Only navigate if the user didn't click on an existing link (like the creator credit).
         if ((e.target as HTMLElement).closest('a')) return;
         router.push(`/articles/${article.slug}`);
     };
@@ -68,16 +67,19 @@ export default function ArticlesFeed({ topArticles, latestArticles }: { topArtic
                 </span>
             </motion.div>
             <motion.div className={styles.latestArticlesList} variants={itemVariants}>
-                {latestArticles.map(article => (
-                    <div key={article.id} className={styles.latestArticleItem} onClick={(e) => handleItemClick(e, article.slug)} >
-                        <div className={styles.latestArticleThumbnail}><Image src={article.imageUrl} alt={article.title} fill sizes="120px" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-                        <div className={styles.latestArticleInfo}>
-                            <h4 className={styles.latestArticleTitle}>{article.title}</h4>
-                            <div className={styles.latestArticleMeta}>
-                                <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
+                {latestArticles.map((article, index) => (
+                    <React.Fragment key={article.id}>
+                        <div className={styles.latestArticleItem} onClick={(e) => handleItemClick(e, article.slug)} >
+                            <div className={styles.latestArticleThumbnail}><Image src={article.imageUrl} alt={article.title} fill sizes="120px" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
+                            <div className={styles.latestArticleInfo}>
+                                <h4 className={styles.latestArticleTitle}>{article.title}</h4>
+                                <div className={styles.latestArticleMeta}>
+                                    <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        {index < latestArticles.length - 1 && <div className={styles.listDivider} />}
+                    </React.Fragment>
                 ))}
             </motion.div>
             <motion.div variants={itemVariants}>

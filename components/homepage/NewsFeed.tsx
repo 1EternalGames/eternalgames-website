@@ -66,15 +66,18 @@ export default function NewsFeed({ pinnedNews, newsList }: { pinnedNews: CardPro
                 </span>
             </motion.div>
             <motion.div variants={itemVariants} className={styles.newsList}>
-                {newsList.map(item => (
-                    <Link href={`/news/${item.slug}`} key={item.id} className={`${styles.newsListItem} no-underline`}>
-                        <div className={styles.newsListThumbnail}><Image src={item.imageUrl} alt={item.title} fill sizes="60px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-                        <div className={styles.newsListInfo}>
-                            <p className={styles.newsListCategory}>{item.category}</p>
-                            <h5 className={styles.newsListTitle}>{item.title}</h5>
-                            {item.date && <p style={{margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)'}}>{item.date.split(' - ')[0]}</p>}
-                        </div>
-                    </Link>
+                {newsList.map((item, index) => (
+                    <React.Fragment key={item.id}>
+                        <Link href={`/news/${item.slug}`} className={`${styles.newsListItem} no-underline`}>
+                            <div className={styles.newsListThumbnail}><Image src={item.imageUrl} alt={item.title} fill sizes="60px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} /></div>
+                            <div className={styles.newsListInfo}>
+                                <p className={styles.newsListCategory}>{item.category}</p>
+                                <h5 className={styles.newsListTitle}>{item.title}</h5>
+                                {item.date && <p style={{margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)'}}>{item.date.split(' - ')[0]}</p>}
+                            </div>
+                        </Link>
+                        {index < newsList.length - 1 && <div className={styles.listDivider} />}
+                    </React.Fragment>
                 ))}
             </motion.div>
             <motion.div variants={itemVariants}>

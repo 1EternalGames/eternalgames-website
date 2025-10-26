@@ -52,7 +52,7 @@
 
 .pinnedNewsItem {
     display: grid;
-    grid-template-columns: 80px 1fr; /* THE FIX: Image left, text right */
+    grid-template-columns: 80px 1fr;
     gap: 1.5rem;
     align-items: center;
     text-decoration: none;
@@ -87,7 +87,7 @@
     text-align: right;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* THE FIX: Align text to the start (left) */
+    align-items: flex-start;
     gap: 0.25rem;
 }
 
@@ -130,18 +130,22 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
     position: relative;
     z-index: 2;
+}
+
+.listDivider {
+    height: 1px;
+    background: var(--border-color);
 }
 
 .newsListItem {
     display: grid;
     grid-template-columns: 60px 1fr;
-    gap: 1rem;
+    gap: 1.5rem;
     align-items: center;
     text-decoration: none;
-    padding: 1rem;
+    padding: 1.25rem 1rem;
     border-radius: 8px;
     margin: 0 -1rem;
     transition: background-color 0.2s ease;
