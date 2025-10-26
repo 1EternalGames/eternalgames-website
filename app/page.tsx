@@ -1,12 +1,11 @@
 // app/page.tsx
 import { client } from '@/lib/sanity.client';
-import { allReleasesQuery, vanguardReviewsQuery, homePageArticlesQuery, homePageNewsQuery } from '@/lib/sanity.queries';
+import { allReleasesQuery, vanguardReviewsQuery } from '@/lib/sanity.queries';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
 import { SanityAuthor } from '@/types/sanity';
-import HomePageSecondaryFeatures from '@/components/homepage/HomePageSecondaryFeatures';
 
 export const revalidate = 60;
 
@@ -28,17 +27,6 @@ async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<San
     }));
 }
 
-async function enrichContentList(list: any[]) {
-    return Promise.all(
-        list.map(async (item) => ({
-            ...item,
-            authors: await enrichCreators(item.authors),
-            reporters: await enrichCreators(item.reporters),
-            designers: await enrichCreators(item.designers),
-        }))
-    );
-}
-
 async function ReleasesSection() {
     const releases = await client.fetch(allReleasesQuery);
     const sanitizedReleases = (releases || []).filter(item => item?.mainImage);
@@ -46,21 +34,19 @@ async function ReleasesSection() {
 }
 
 export default async function HomePage() {
-    const [reviews, articles, news] = await Promise.all([
-        client.fetch(vanguardReviewsQuery),
-        client.fetch(homePageArticlesQuery),
-        client.fetch(homePageNewsQuery),
-    ]);
+    // Data fetching is simplified to only get the reviews.
+    const reviews = await client.fetch(vanguardReviewsQuery);
     
-    const [enrichedReviews, enrichedArticles, enrichedNews] = await Promise.all([
-        enrichContentList(reviews),
-        enrichContentList(articles),
-        enrichContentList(news),
-    ]);
+    const enrichedReviews = await Promise.all(
+        reviews.map(async (review) => ({
+            ...review,
+            authors: await enrichCreators(review.authors),
+            designers: await enrichCreators(review.designers),
+        }))
+    );
 
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
-            <HomePageSecondaryFeatures articles={enrichedArticles} news={enrichedNews} />
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 {/* @ts-expect-error Async Server Component */}
                 <ReleasesSection />

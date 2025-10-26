@@ -9,6 +9,20 @@
   margin-bottom: 5rem;
 }
 
+.midSectionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+  margin-bottom: 5rem;
+}
+
+@media (max-width: 1024px) {
+  .midSectionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .atriumMainContent {
   padding-bottom: 8rem;
 }
