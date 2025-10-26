@@ -4,7 +4,7 @@ import type { SanityAuthor } from "./sanity";
 // This type represents the standardized data structure for all content cards,
 // as produced by the `adaptToCardProps` adapter.
 export type CardProps = {
-    type: 'review' | 'article' | 'news';
+    type: 'review' | 'article' | 'news'; // ADDED 'news' to the type
     id: number | string;
     slug: string;
     game?: string;

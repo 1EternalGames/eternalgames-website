@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,22 +14,22 @@ const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, trans
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 20 } } };
 const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}><polyline points="15 18 9 12 15 6"></polyline></svg>;
 
-const PinnedNewsItem = ({ item }: { item: CardProps }) => {
+const HomepageNewsCard = ({ item }: { item: CardProps }) => {
     const router = useRouter();
     const handleClick = () => { router.push(`/news/${item.slug}`); };
 
     return (
         <div 
-            className={`${styles.pinnedNewsItem} no-underline`}
+            className={styles.pinnedNewsItem}
             onClick={handleClick}
         >
-            <div className={styles.pinnedNewsThumbnail}><Image src={item.imageUrl} alt={item.title} fill sizes="80px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} /></div>
+            <div className={styles.pinnedNewsThumbnail}>
+                <Image src={item.imageUrl} alt={item.title} fill sizes="80px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} />
+            </div>
             <div className={styles.pinnedNewsInfo}>
                 <h4 className={styles.pinnedNewsTitle}>{item.title}</h4>
-                <div className={styles.pinnedNewsMeta}>
-                    <p className={styles.pinnedNewsCategory}>{item.category}</p>
-                    {item.date && <p className={styles.pinnedNewsDate}>{item.date.split(' - ')[0]}</p>}
-                </div>
+                {item.date && <p className={styles.pinnedNewsDate}>{item.date.split(' - ')[0]}</p>}
+                <p className={styles.pinnedNewsCategory}>{item.category}</p>
             </div>
         </div>
     );
@@ -49,8 +49,15 @@ export default function NewsFeed({ pinnedNews, newsList }: { pinnedNews: CardPro
                 onMouseLeave={() => setIsPinnedSectionHovered(false)}
             >
                 <AnimatePresence>{isPinnedSectionHovered && <KineticGlyphs />}</AnimatePresence>
-                <span className={styles.sectionLabel} style={{alignSelf: 'flex-start'}}>الأكثر رواجًا</span>
-                {pinnedNews.map(item => <PinnedNewsItem key={item.id} item={item} />)}
+                <span className={styles.sectionLabel} style={{alignSelf: 'flex-end'}}>الأكثر رواجًا</span>
+                <div className={styles.pinnedNewsList}>
+                    {pinnedNews.map((item, index) => (
+                        <React.Fragment key={item.id}>
+                            <HomepageNewsCard item={item} />
+                            {index < pinnedNews.length - 1 && <div className={styles.pinnedNewsDivider} />}
+                        </React.Fragment>
+                    ))}
+                </div>
             </motion.div>
             <motion.div variants={itemVariants} className={styles.latestNewsHeader}>
                 <span className={styles.sectionLabel} style={{alignSelf: 'flex-end'}}>

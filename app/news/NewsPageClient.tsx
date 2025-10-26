@@ -8,7 +8,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import AnimatedGridBackground from '@/components/AnimatedGridBackground';
 import NewsFilterBar from '@/components/filters/NewsFilterBar';
 import TerminalTicker from '@/components/TerminalTicker';
-import NewsCard from '@/components/NewsCard';
+import ArticleCard from '@/components/ArticleCard'; // <-- Changed from NewsCard to ArticleCard
 import { useEngagementScores } from '@/hooks/useEngagementScores'; // <-- RE-INTRODUCE HOOK
 import { adaptToCardProps } from '@/lib/adapters';
 import styles from './NewsPage.module.css';
@@ -88,9 +88,12 @@ export default function NewsPageClient({
             <motion.div layout className={styles.neuralCascadeGrid}>
               <AnimatePresence>
                 {filteredNews.map((item, index) => (
-                  <motion.div key={item.id} layout className={index === 0 ? styles.leadStoryItem : ''} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
-                    <NewsCard item={item} isLead={index === 0} />
-                  </motion.div>
+                    <motion.div key={item.id} layout className={index === 0 ? styles.leadStoryItem : ''} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
+                      <ArticleCard // Now using ArticleCard
+                        article={item}
+                        layoutIdPrefix="news-grid"
+                      />
+                    </motion.div>
                 ))}
               </AnimatePresence>
             </motion.div>
@@ -104,5 +107,3 @@ export default function NewsPageClient({
     </>
   );
 }
-
-

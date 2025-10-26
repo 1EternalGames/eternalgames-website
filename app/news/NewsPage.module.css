@@ -38,24 +38,6 @@
   }
 }
 
-/* Base Card Overrides for Chronos Feed */
-.newsCard {
-  border-radius: 12px;
-}
-.leadNewsCard {
-  border-radius: 12px;
-}
-.leadNewsCard .newsCardImageContainer {
-  height: 220px;
-}
-.leadNewsCard .newsCardContent {
-  padding: 1.5rem 2.5rem;
-}
-.leadNewsCard h3 {
-  font-size: 2.5rem;
-  line-height: 1.2;
-}
-
 /* News Filter "Command Bar" */
 .newsFilterBar {
   display: flex;
@@ -144,8 +126,3 @@
   margin: 0;
   min-height: 72px; /* Prevents layout shift */
 }
-
-
-
-
-

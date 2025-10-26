@@ -15,13 +15,9 @@
 
 .pinnedNewsSection {
     padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    border-bottom: 1px solid var(--border-color);
     position: relative;
-    z-index: 2;
-    border-radius: 12px; /* Added for glyphs */
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 12px;
 }
 
 .sectionLabel {
@@ -36,28 +32,35 @@
     border: 1px solid var(--accent);
     border-radius: 999px;
     width: max-content;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 1.5rem;
 }
 
-.liveIndicator {
-    width: 8px;
-    height: 8px;
-    background-color: var(--accent);
-    border-radius: 50%;
-    animation: pulse-live 1.5s infinite ease-in-out;
+.pinnedNewsList {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+}
+
+.pinnedNewsDivider {
+    height: 1px;
+    background: linear-gradient(to left, transparent, color-mix(in srgb, var(--accent) 30%, transparent) 50%, transparent);
+    margin: 0.75rem 0;
 }
 
 .pinnedNewsItem {
     display: grid;
-    grid-template-columns: 80px 1fr;
+    grid-template-columns: 80px 1fr; /* THE FIX: Image left, text right */
     gap: 1.5rem;
     align-items: center;
     text-decoration: none;
-    transition: background-color 0.2s ease;
-    padding: 1rem;
-    margin: -1rem;
-    border-radius: 8px;
-    position: relative;
     cursor: pointer;
+    padding: 0.5rem;
+    margin: -0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
 }
 
 .pinnedNewsItem:hover {
@@ -70,11 +73,7 @@
     border-radius: 6px;
     overflow: hidden;
     position: relative;
-    transition: border-color 0.3s ease;
-    border: 1px solid var(--border-color);
-}
-.pinnedNewsItem:hover .pinnedNewsThumbnail {
-    border-color: var(--accent);
+    border: 1px solid transparent;
 }
 
 .pinnedNewsThumbnail img {
@@ -88,20 +87,14 @@
     text-align: right;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.pinnedNewsDate {
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-    margin: 0;
+    align-items: flex-start; /* THE FIX: Align text to the start (left) */
+    gap: 0.25rem;
 }
 
 .pinnedNewsTitle {
-    font-size: 1.6rem;
+    font-size: 1.7rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
     color: var(--text-primary);
     margin: 0;
     transition: color 0.2s ease;
@@ -110,9 +103,15 @@
     color: var(--accent);
 }
 
+.pinnedNewsDate {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
 .pinnedNewsCategory {
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: 1.3rem;
+    font-weight: 500;
     color: var(--accent);
     margin: 0;
 }
