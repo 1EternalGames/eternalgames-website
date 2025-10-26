@@ -3,7 +3,8 @@
 .newsHeroImage {
   position: relative;
   width: 100%;
-  height: 450px;
+  height: 40vh;
+  max-height: 450px;
   margin-bottom: 3rem;
   border-radius: 12px;
   overflow: hidden;
@@ -13,7 +14,6 @@
   /* You can add specific article body styles here if needed later */
 }
 
-/* --- DEFINITIVE FIX: LAYOUT STYLES ADDED --- */
 .reviewLayout {
   display: grid;
   grid-template-columns: 1fr;
@@ -23,7 +23,6 @@
   .reviewLayout {
     grid-template-columns: 2fr 1fr;
   }
-  /* --- THE FIX --- */
   .reviewLayout > main {
     min-width: 0;
   }
@@ -38,5 +37,3 @@
   flex-direction: column;
   gap: 2rem;
 }
-
-
