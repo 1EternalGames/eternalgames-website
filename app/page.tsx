@@ -83,23 +83,36 @@ export default async function HomePage() {
             designers: await enrichCreators(review.designers),
         }))
     );
-
-    const findTopItem = (items: any[]) => {
-        return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0))[0] || items[0];
+    
+    const sortItemsByScore = (items: any[]) => {
+        return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
     };
 
-    const topArticleRaw = findTopItem(homepageArticlesRaw);
-    const topNewsRaw = findTopItem(homepageNewsRaw);
-
-    const latestArticles = homepageArticlesRaw.filter((a: any) => a._id !== topArticleRaw?._id).slice(0, 4).map(adaptToCardProps).filter(Boolean);
-    const topArticle = adaptToCardProps(topArticleRaw);
+    // --- ARTICLE LOGIC ---
+    const sortedArticlesRaw = sortItemsByScore(homepageArticlesRaw);
+    const topArticlesRaw = sortedArticlesRaw.slice(0, 2);
+    const topArticleIds = new Set(topArticlesRaw.map(a => a._id));
+    const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean);
+    const latestArticles = homepageArticlesRaw
+        .filter((a: any) => !topArticleIds.has(a._id))
+        .slice(0, 4)
+        .map(adaptToCardProps)
+        .filter(Boolean);
     
-    const pinnedNews = [topNewsRaw, ...homepageNewsRaw.filter((n: any) => n._id !== topNewsRaw?._id).slice(0, 2)].map(adaptToCardProps).filter(Boolean);
-    const newsList = homepageNewsRaw.filter((n: any) => !pinnedNews.some(p => p.id === n.legacyId)).slice(0, 10).map(adaptToCardProps).filter(Boolean);
+    // --- NEWS LOGIC ---
+    const sortedNewsRaw = sortItemsByScore(homepageNewsRaw);
+    const topNewsRaw = sortedNewsRaw.slice(0, 3);
+    const topNewsIds = new Set(topNewsRaw.map(n => n._id));
+    const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean);
+    const newsList = homepageNewsRaw
+        .filter((n: any) => !topNewsIds.has(n._id))
+        .slice(0, 10)
+        .map(adaptToCardProps)
+        .filter(Boolean);
 
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
-            {topArticle && <HomepageFeeds topArticle={topArticle} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
+            {topArticles.length > 0 && <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 {/* @ts-expect-error Async Server Component */}
                 <ReleasesSection />
