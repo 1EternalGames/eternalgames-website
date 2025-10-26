@@ -39,6 +39,26 @@ const nextConfig = {
             bodySizeLimit: '10mb',
         },
     },
+    // --- ADDED FOR UNIFIED CONTENT ROUTE ---
+    async redirects() {
+        return [
+          {
+            source: '/reviews/:slug',
+            destination: '/content/reviews/:slug',
+            permanent: true,
+          },
+          {
+            source: '/articles/:slug',
+            destination: '/content/articles/:slug',
+            permanent: true,
+          },
+          {
+            source: '/news/:slug',
+            destination: '/content/news/:slug',
+            permanent: true,
+          },
+        ]
+    },
 };
 
 export default nextConfig;

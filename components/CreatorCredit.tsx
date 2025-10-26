@@ -62,10 +62,9 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
     );
 };
 
-export default function CreatorCredit({ label, creators, date }: { 
+export default function CreatorCredit({ label, creators }: { 
     label: string; 
     creators: SanityAuthor[] | null | undefined;
-    date?: string;
 }) {
     const [enrichedCreators, setEnrichedCreators] = useState(creators || []);
 
@@ -91,7 +90,7 @@ export default function CreatorCredit({ label, creators, date }: {
     
     const hasCreators = enrichedCreators && enrichedCreators.length > 0;
 
-    if (!hasCreators && !date) {
+    if (!hasCreators) {
         return null;
     }
 
@@ -103,14 +102,9 @@ export default function CreatorCredit({ label, creators, date }: {
     ));
 
     return (
-        <div className={styles.creatorCreditContainer}>
-            {hasCreators && (
-                <div className={styles.creatorCredit}>
-                    {label && <span className={styles.label}>{label}:</span>}
-                    {formattedNames}
-                </div>
-            )}
-            {date && <p className={styles.dateText}>{date.split(' - ')[0]}</p>}
+        <div className={styles.creatorCredit}>
+            {label && <span className={styles.label}>{label}:</span>}
+            {formattedNames}
         </div>
     );
 }

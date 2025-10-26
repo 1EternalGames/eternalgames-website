@@ -5,14 +5,14 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import { motion, useInView } from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
 
-import FeaturedReviewHero from '@/components/FeaturedReviewHero';
-import ReviewFilters from '@/components/filters/ReviewFilters';
+import ReviewFilters, { ScoreFilter } from '@/components/filters/ReviewFilters';
 import FilteredReviewsGrid from '@/components/FilteredReviewsGrid';
 import { ContentBlock } from '@/components/ContentBlock';
 import { adaptToCardProps } from '@/lib/adapters';
-
-// The incorrect import that caused the build error has been removed.
+import styles from './ReviewsPage.module.css';
 
 export default function ReviewsPageClient({ heroReview, otherReviews, allGames, allTags }: { heroReview: SanityReview, otherReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
   const searchParams = useSearchParams();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedScoreRange, setSelectedScoreRange] = useState<'الكل' | '9-10' | '8-8.9' | '7-7.9' | '<7'>(() => (searchParams.get('score') as 'الكل' | '9-10' | '8-8.9' | '7-7.9' | '<7') || 'الكل');
+  const [selectedScoreRange, setSelectedScoreRange] = useState<ScoreFilter>(() => (searchParams.get('score') as ScoreFilter) || 'All');
   const [activeSort, setActiveSort] = useState<'latest' | 'score'>(() => (searchParams.get('sort') as 'latest' | 'score') || 'latest');
   const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
     const gameSlug = searchParams.get('game');
@@ -37,7 +37,7 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
   const updateURLParams = useCallback((sort: 'latest' | 'score', score: string, game: SanityGame | null, tags: SanityTag[]) => {
     const params = new URLSearchParams();
     if (sort !== 'latest') params.set('sort', sort);
-    if (score !== 'الكل') params.set('score', score);
+    if (score !== 'All') params.set('score', score);
     if (game) params.set('game', game.slug);
     if (tags.length > 0) params.set('tags', tags.map(t => t.slug).join(','));
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -60,11 +60,11 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
   };
   
   const handleClearAll = () => {
-    setSelectedScoreRange('الكل');
+    setSelectedScoreRange('All');
     setSelectedGame(null);
     setSelectedTags([]);
     setSearchTerm('');
-    updateURLParams(activeSort, 'الكل', null, []);
+    updateURLParams(activeSort, 'All', null, []);
   };
   
   const filteredAndSortedReviews = useMemo(() => {
@@ -74,7 +74,7 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
         reviews = reviews.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()));
     }
 
-    if (selectedScoreRange !== 'الكل') {
+    if (selectedScoreRange !== 'All') {
       switch (selectedScoreRange) {
         case '9-10': reviews = reviews.filter(r => r.score >= 9 && r.score <= 10); break;
         case '8-8.9': reviews = reviews.filter(r => r.score >= 8 && r.score < 9); break;
@@ -94,17 +94,43 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
     else reviews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
     return reviews.map(adaptToCardProps).filter(Boolean);
-
   }, [otherReviews, activeSort, selectedScoreRange, selectedGame, selectedTags, searchTerm]);
 
   const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } };
 
   return (
     <>
-      <FeaturedReviewHero review={heroReview} />
+      <div className={styles.reviewHero}>
+        <Image 
+            src={heroReview.mainImage.url} 
+            alt={`Background for ${heroReview.title}`} 
+            fill 
+            className={styles.heroBg}
+            style={{ objectFit: 'cover' }} 
+            priority 
+            placeholder='blur'
+            blurDataURL={heroReview.mainImage.blurDataURL}
+        />
+        <div className={styles.heroOverlay} />
+        <motion.div 
+            className="container"
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', zIndex: 5, color: '#fff', textAlign: 'center' }}
+            initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}
+        >
+            <p style={{fontFamily: 'var(--font-ui)', fontSize: '1.6rem', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--accent)', margin: 0}}>الأعلى تقييمًا</p>
+            <h1 className={styles.heroTitle} style={{fontSize: '4.8rem', marginBottom: '1rem'}}>{heroReview.title}</h1>
+             <div className={styles.heroMeta}>
+                <span className={styles.heroScore}>{heroReview.score?.toFixed(1)}</span>
+                {heroReview.game?.title && (
+                    <span className={styles.heroGame}>{heroReview.game.title}</span>
+                )}
+            </div>
+            <Link href={`/reviews/${heroReview.slug}`} className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>اقرأ المراجعة</Link>
+        </motion.div>
+      </div>
       
-      <div className="container page-container" style={{paddingTop: '4rem'}}>
-        <motion.div ref={filtersRef} variants={animationVariants} initial="hidden" animate={isInView ? 'visible' : 'hidden'}>
+      <div className="container" style={{paddingTop: '4rem'}}>
+        <div ref={filtersRef}>
           <ReviewFilters
             activeSort={activeSort} onSortChange={handleSortChange}
             selectedScoreRange={selectedScoreRange} onScoreSelect={handleScoreSelect}
@@ -112,25 +138,18 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
             allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll}
             searchTerm={searchTerm} onSearchChange={setSearchTerm}
           />
-        </motion.div>
+        </div>
 
-        <motion.div variants={animationVariants} initial="hidden" animate={isInView ? 'visible' : 'hidden'} transition={{ delay: 0.2 }}>
-          <ContentBlock title="جميع المراجعات">
-             {filteredAndSortedReviews.length > 0 ? (
-              <FilteredReviewsGrid reviews={filteredAndSortedReviews} />
+        <ContentBlock title="جميع المراجعات">
+            {filteredAndSortedReviews.length > 0 ? (
+            <FilteredReviewsGrid reviews={filteredAndSortedReviews} />
             ) : (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
                 <p>لا توجد مراجعات تطابق ما اخترت.</p>
-              </motion.div>
+            </motion.div>
             )}
-          </ContentBlock>
-        </motion.div>
+        </ContentBlock>
       </div>
     </>
   );
 }
-
-
-
-
-
