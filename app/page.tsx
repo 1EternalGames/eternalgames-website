@@ -95,7 +95,7 @@ export default async function HomePage() {
     const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean);
     const latestArticles = homepageArticlesRaw
         .filter((a: any) => !topArticleIds.has(a._id))
-        .slice(0, 4)
+        .slice(0, 10) // <-- UPDATED LIMIT
         .map(adaptToCardProps)
         .filter(Boolean);
     
@@ -106,7 +106,7 @@ export default async function HomePage() {
     const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean);
     const newsList = homepageNewsRaw
         .filter((n: any) => !topNewsIds.has(n._id))
-        .slice(0, 10)
+        .slice(0, 15) // <-- UPDATED LIMIT
         .map(adaptToCardProps)
         .filter(Boolean);
 
