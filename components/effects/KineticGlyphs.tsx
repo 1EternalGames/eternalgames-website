@@ -24,7 +24,11 @@ export default function KineticGlyphs() {
             <motion.svg className={styles.glyphSvg} viewBox="0 0 100 100" preserveAspectRatio="none">
                 <motion.path
                     className={styles.glyphPath}
-                    d="M1,1 H99 V99 H1 Z"
+                    // --- THE DEFINITIVE FIX ---
+                    // The radius of the arc commands has been reduced from 4 to 3.
+                    // This ensures the path's corners are smaller than the container's
+                    // CSS border-radius, preventing them from being clipped by overflow:hidden.
+                    d="M 3.5,0.5 H 96.5 A 3,3 0 0 1 99.5,3.5 V 96.5 A 3,3 0 0 1 96.5,99.5 H 3.5 A 3,3 0 0 1 0.5,96.5 V 3.5 A 3,3 0 0 1 3.5,0.5 Z"
                     variants={pathVariants}
                     initial="hidden"
                     animate="visible"

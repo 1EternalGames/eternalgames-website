@@ -16,7 +16,7 @@
 
 .glyphPath {
     stroke: var(--accent);
-    stroke-width: 1.5;
+    stroke-width: 1; /* <-- THINNER LINE */
     fill: none;
     filter: drop-shadow(0 0 4px var(--accent));
 }
