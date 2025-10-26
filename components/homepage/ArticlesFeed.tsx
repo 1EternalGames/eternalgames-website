@@ -33,7 +33,9 @@ const TopArticleCard = ({ article }: { article: CardProps }) => {
                 <div className={styles.topArticleContent}>
                     <span className={styles.sectionLabel}>الأكثر رواجًا</span>
                     <h3 className={styles.topArticleTitle}>{article.title}</h3>
-                    <div className={styles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} /></div>
+                    <div className={styles.topArticleMeta}>
+                        <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
+                    </div>
                 </div>
             </Link>
         </motion.div>
@@ -59,7 +61,9 @@ export default function ArticlesFeed({ topArticles, latestArticles }: { topArtic
                         <div className={styles.latestArticleThumbnail}><Image src={article.imageUrl} alt={article.title} fill sizes="120px" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
                         <div className={styles.latestArticleInfo}>
                             <h4 className={styles.latestArticleTitle}>{article.title}</h4>
-                            <div className={styles.latestArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} /></div>
+                            <div className={styles.latestArticleMeta}>
+                                <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
+                            </div>
                         </div>
                     </Link>
                 ))}

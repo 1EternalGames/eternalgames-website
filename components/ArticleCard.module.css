@@ -46,7 +46,7 @@
 .score {
     position: absolute;
     top: 1rem;
-    left: 1rem; /* RTL FIX */
+    left: 1rem;
     right: auto;
     background-color: var(--accent);
     color: #FFFFFF;
@@ -78,7 +78,7 @@
     flex-grow: 1;
     min-height: 0;
     transform: translateZ(20px);
-    text-align: right; /* RTL FIX */
+    text-align: right;
 }
 
 .cardTitleLink {
@@ -101,18 +101,18 @@
     font-family: var(--font-main), sans-serif;
     font-size: 1.4rem;
     color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1.5rem;
 }
 
-.authorLink {
+.cardDate {
+    margin: 0;
+    font-size: 1.3rem;
     color: var(--text-secondary);
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.authorLink:hover {
-    color: var(--text-primary);
-    text-decoration: underline;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .tagContainer {
@@ -120,5 +120,3 @@
     padding-top: 1rem;
     border-top: 1px solid var(--border-color);
 }
-
-

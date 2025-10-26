@@ -75,7 +75,7 @@ export const heroContentQuery = groq`{
 export const featuredReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && title match $query] | order(_createdAt desc) [0...10] {
-  _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url, 
+  _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url, publishedAt,
   "authors": authors[]->{name}, "reporters": reporters[]->{name}, 
   "gameTitle": game->title, category
 }`
@@ -116,5 +116,5 @@ export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] 
 }`;
 
 // --- Homepage Feed Queries ---
-export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...10] { ${cardListProjection} }`;
-export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...15] { ${cardListProjection} }`;
+export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`;
+export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`;

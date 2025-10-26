@@ -90,7 +90,9 @@
     pointer-events: none;
 }
 
-.cardContent h3 { font-size: 2rem; line-height: 1.3; margin: 0; }
+.cardContent h3 { font-size: 2rem; line-height: 1.3; margin: 0 0 0.5rem 0; }
+.cardDate { font-size: 1.3rem; color: rgba(255,255,255,0.7); }
+
 
 .vanguardScoreBadge {
     position: absolute;
@@ -119,8 +121,6 @@
     box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent);
 }
 
-
-/* --- LATEST SETTINGS CONFIRMED --- */
 .creatorBubbleContainer {
     position: absolute;
     top: 30%;

@@ -106,9 +106,8 @@ export interface SanitySearchResult {
     title: string;
     slug: string;
     imageUrl?: string;
+    publishedAt?: string;
     authorName?: string;
     gameTitle?: string;
     category?: string;
 }
-
-

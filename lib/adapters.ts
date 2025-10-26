@@ -25,11 +25,12 @@ export const adaptToCardProps = (item: any) => {
 
     if (item.publishedAt) {
         const date = new Date(item.publishedAt);
-        const day = date.getDate();
+        // --- THE DEFINITIVE FIX: Use en-US locale for English numerals ---
+        const day = date.toLocaleDateString('en-US', { day: 'numeric' });
         const monthIndex = date.getMonth();
-        const year = date.getFullYear();
+        const year = date.toLocaleDateString('en-US', { year: 'numeric' });
         formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
-        publishedYear = year;
+        publishedYear = parseInt(year);
     }
 
     // Determine the primary authors/reporters based on type

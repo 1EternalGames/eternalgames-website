@@ -57,6 +57,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
     const baseUrl = imageSource.split('?')[0];
     const imageUrl = `${baseUrl}?w=600&auto=format&q=80`;
 
+    // --- THE DEFINITIVE FIX: START ---
     return (
         <motion.div
             ref={livingCardRef}
@@ -95,7 +96,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                         </Link>
                         <div className={styles.cardMetadata}>
                             <CreatorCredit label="بقلم" creators={article.authors} />
-                            {article.date && <p style={{margin: '0.25rem 0 0 0', fontSize: '1.3rem'}}>{article.date}</p>}
+                            {article.date && <p className={styles.cardDate}>{article.date.split(' - ')[0]}</p>}
                         </div>
                     </div>
                     <div className={styles.tagContainer}>

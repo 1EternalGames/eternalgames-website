@@ -62,10 +62,10 @@ const CreatorLink = ({ creator }: { creator: SanityAuthor }) => {
     );
 };
 
-
-export default function CreatorCredit({ label, creators }: { 
+export default function CreatorCredit({ label, creators, date }: { 
     label: string; 
     creators: SanityAuthor[] | null | undefined;
+    date?: string;
 }) {
     const [enrichedCreators, setEnrichedCreators] = useState(creators || []);
 
@@ -89,7 +89,12 @@ export default function CreatorCredit({ label, creators }: {
         }
     }, [creators]);
 
-    if (!enrichedCreators || enrichedCreators.length === 0) return null;
+    if (!enrichedCreators || enrichedCreators.length === 0) {
+        if (date) {
+            return <p style={{ margin: 0, fontSize: '1.3rem' }}>{date.split(' - ')[0]}</p>;
+        }
+        return null;
+    }
 
     const formattedNames = enrichedCreators.map((creator, i) => (
         <React.Fragment key={`${creator._id}-${i}`}>
@@ -100,8 +105,10 @@ export default function CreatorCredit({ label, creators }: {
 
     return (
         <div className={styles.creatorCredit}>
-            <span className={styles.label}>{label}:</span>
+            {label && <span className={styles.label}>{label}:</span>}
             {formattedNames}
+            {date && <span style={{marginRight: '0.75rem', marginLeft: '0.75rem'}}>•</span>}
+            {date && <span style={{fontSize: '1.3rem'}}>{date.split(' - ')[0]}</span>}
         </div>
     );
 }

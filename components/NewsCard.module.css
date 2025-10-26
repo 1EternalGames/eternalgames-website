@@ -17,7 +17,6 @@
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease;
 }
 
-/* This is the wrapper for the 3D hover effect */
 .livingCardWrapper {
     transform-style: preserve-3d;
     height: 100%;
@@ -61,7 +60,15 @@
     font-size: 1.8rem;
     line-height: 1.4;
     color: var(--text-primary);
+    margin: 0 0 1rem 0; /* Add margin bottom */
+}
+
+.cardDate {
     margin: 0;
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin-top: auto; /* Push to bottom */
+    padding-top: 1rem; /* Space above */
 }
 
 /* Lead Card specific styles for News Page */
@@ -81,8 +88,3 @@
     font-size: 2.5rem;
     line-height: 1.2;
 }
-
-
-
-
-

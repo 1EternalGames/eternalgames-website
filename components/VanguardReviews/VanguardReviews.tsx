@@ -76,7 +76,10 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} unoptimized /></div>
-                    <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}><h3>{review.title}</h3></motion.div>
+                    <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
+                        <h3>{review.title}</h3>
+                        {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
+                    </motion.div>
                 </div>
             </Link>
             <AnimatePresence>

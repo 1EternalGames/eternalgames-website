@@ -28,9 +28,6 @@ const NewsCardComponent = ({ item, isLead = false }: { item: any, isLead?: boole
         router.prefetch(linkPath);
     };
 
-    // --- THE DEFINITIVE FIX: ---
-    // The source URL from the adapter might already have query params. We must strip them
-    // before appending our own desired params to avoid conflicts and errors.
     const imageSource = item.imageUrl;
     if (!imageSource) return null;
 
@@ -71,6 +68,7 @@ const NewsCardComponent = ({ item, isLead = false }: { item: any, isLead?: boole
                     <div className={styles.cardContent} style={{ transform: 'translateZ(40px)' }}>
                         <p className={styles.category}>{item.category}</p>
                         <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${item.id}`}>{item.title}</motion.h3>
+                        {item.date && <p className={styles.cardDate}>{item.date.split(' - ')[0]}</p>}
                     </div>
                 </motion.div>
             </a>

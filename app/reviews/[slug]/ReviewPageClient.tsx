@@ -39,16 +39,14 @@ export default function ReviewPageClient({ review, searchParams, children }: {
     useEffect(() => { 
         const contentElement = contentContainerRef.current; if (!contentElement) return; const measureHeadings = () => { const containerRect = contentElement.getBoundingClientRect(); const headingElements = Array.from(contentElement.querySelectorAll('h2')); const navbarOffset = 90; 
         
-        // --- THE DEFINITIVE FIX FOR DUPLICATE KEYS ---
         const seenIds = new Set<string>();
         const newHeadings = headingElements.map((h, index) => {
             let id = h.id;
-            // If we've seen this ID before, make it unique by appending the index.
             if (seenIds.has(id)) {
                 id = `${id}-${index}`;
             }
             seenIds.add(id);
-            h.id = id; // IMPORTANT: Update the actual DOM element's ID for the click handler.
+            h.id = id;
             
             const headingRect = h.getBoundingClientRect(); 
             const relativeTop = (headingRect.top - containerRect.top); 
@@ -65,8 +63,8 @@ export default function ReviewPageClient({ review, searchParams, children }: {
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const publishedDate = new Date(review.publishedAt);
-    const day = publishedDate.getDate();
-    const year = publishedDate.getFullYear();
+    const day = publishedDate.toLocaleDateString('en-US', { day: 'numeric' });
+    const year = publishedDate.toLocaleDateString('en-US', { year: 'numeric' });
     const monthIndex = publishedDate.getMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
     
