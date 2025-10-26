@@ -1,11 +1,13 @@
 // app/page.tsx
 import { client } from '@/lib/sanity.client';
-import { allReleasesQuery, vanguardReviewsQuery } from '@/lib/sanity.queries';
+import { allReleasesQuery, vanguardReviewsQuery, homepageArticlesQuery, homepageNewsQuery } from '@/lib/sanity.queries';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
 import { SanityAuthor } from '@/types/sanity';
+import HomepageFeeds from '@/components/homepage/HomepageFeeds';
+import { adaptToCardProps } from '@/lib/adapters';
 
 export const revalidate = 60;
 
@@ -27,6 +29,34 @@ async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<San
     }));
 }
 
+async function getEngagementScoresMap() {
+    try {
+        const contentTypes = ['review', 'article', 'news'];
+        const contentIdsQuery = await prisma.engagement.findMany({
+            where: { contentType: { in: contentTypes }, type: 'LIKE' },
+            select: { contentId: true },
+            distinct: ['contentId']
+        });
+        const ids = contentIdsQuery.map(i => i.contentId);
+
+        const [likes, shares] = await Promise.all([
+            prisma.engagement.groupBy({ by: ['contentId'], where: { contentId: { in: ids }, type: 'LIKE' }, _count: { userId: true } }),
+            prisma.share.groupBy({ by: ['contentId'], where: { contentId: { in: ids } }, _count: { userId: true } })
+        ]);
+
+        const scoresMap = new Map<number, number>();
+        ids.forEach(id => {
+            const likeCount = likes.find(s => s.contentId === id)?._count.userId || 0;
+            const shareCount = shares.find(s => s.contentId === id)?._count.userId || 0;
+            scoresMap.set(id, (likeCount * 2) + (shareCount * 5));
+        });
+        return scoresMap;
+    } catch (error) {
+        console.error('Failed to fetch engagement scores on server:', error);
+        return new Map<number, number>();
+    }
+}
+
 async function ReleasesSection() {
     const releases = await client.fetch(allReleasesQuery);
     const sanitizedReleases = (releases || []).filter(item => item?.mainImage);
@@ -34,8 +64,17 @@ async function ReleasesSection() {
 }
 
 export default async function HomePage() {
-    // Data fetching is simplified to only get the reviews.
-    const reviews = await client.fetch(vanguardReviewsQuery);
+    const [
+        reviews, 
+        homepageArticlesRaw, 
+        homepageNewsRaw, 
+        scoresMap
+    ] = await Promise.all([
+        client.fetch(vanguardReviewsQuery),
+        client.fetch(homepageArticlesQuery),
+        client.fetch(homepageNewsQuery),
+        getEngagementScoresMap()
+    ]);
     
     const enrichedReviews = await Promise.all(
         reviews.map(async (review) => ({
@@ -45,8 +84,22 @@ export default async function HomePage() {
         }))
     );
 
+    const findTopItem = (items: any[]) => {
+        return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0))[0] || items[0];
+    };
+
+    const topArticleRaw = findTopItem(homepageArticlesRaw);
+    const topNewsRaw = findTopItem(homepageNewsRaw);
+
+    const latestArticles = homepageArticlesRaw.filter((a: any) => a._id !== topArticleRaw?._id).slice(0, 4).map(adaptToCardProps).filter(Boolean);
+    const topArticle = adaptToCardProps(topArticleRaw);
+    
+    const pinnedNews = [topNewsRaw, ...homepageNewsRaw.filter((n: any) => n._id !== topNewsRaw?._id).slice(0, 2)].map(adaptToCardProps).filter(Boolean);
+    const newsList = homepageNewsRaw.filter((n: any) => !pinnedNews.some(p => p.id === n.legacyId)).slice(0, 10).map(adaptToCardProps).filter(Boolean);
+
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
+            {topArticle && <HomepageFeeds topArticle={topArticle} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 {/* @ts-expect-error Async Server Component */}
                 <ReleasesSection />

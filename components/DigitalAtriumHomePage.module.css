@@ -9,20 +9,20 @@
   margin-bottom: 5rem;
 }
 
-.midSectionsGrid {
+.atriumMainContent {
+  padding-bottom: 8rem;
+}
+
+.homeGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: start;
-  margin-bottom: 5rem;
+  grid-template-columns: 1fr 1.75fr;
+  gap: 4rem;
+  margin-bottom: 8rem;
 }
 
 @media (max-width: 1024px) {
-  .midSectionsGrid {
+  .homeGrid {
     grid-template-columns: 1fr;
+    gap: 8rem;
   }
-}
-
-.atriumMainContent {
-  padding-bottom: 8rem;
 }

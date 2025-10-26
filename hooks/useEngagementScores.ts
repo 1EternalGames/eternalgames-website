@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 type EngagementScore = { id: number; engagementScore: number };
 
 /**
- * Fetches and maintains viral engagement scores (likes + shares) for content.
+ * Fetches and maintains viral engagement scores (likes + shares) for all content types.
  * Returns an array of { id: legacyId, engagementScore: number }.
  */
 export const useEngagementScores = () => {
@@ -16,7 +16,8 @@ export const useEngagementScores = () => {
     useEffect(() => {
         const fetchScores = async () => {
             try {
-                const res = await fetch('/api/news-engagement');
+                // THE FIX: Point to the new, unified engagement API endpoint.
+                const res = await fetch('/api/engagement-scores');
                 const data = await res.json();
                 if (data.error) {
                     console.error("Engagement fetch error:", data.error);
@@ -35,5 +36,3 @@ export const useEngagementScores = () => {
     }, []);
     return scores;
 }
-
-
