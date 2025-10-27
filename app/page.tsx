@@ -1,4 +1,5 @@
 // app/page.tsx
+import React from 'react';
 import { client } from '@/lib/sanity.client';
 import { allReleasesQuery, vanguardReviewsQuery, homepageArticlesQuery, homepageNewsQuery } from '@/lib/sanity.queries';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';

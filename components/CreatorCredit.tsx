@@ -103,7 +103,8 @@ export default function CreatorCredit({ label, creators }: {
 
     return (
         <div className={styles.creatorCredit}>
-            {label && <span className={styles.label}>{label}:</span>}
+            {label && <span className={styles.label}>{label}</span>}
+            {label && <span>: </span>}
             {formattedNames}
         </div>
     );
