@@ -24,7 +24,7 @@ export default function NewsTicker({ latestNews }: { latestNews: any[] }) {
 
                     // --- THE DEFINITIVE FIX: ---
                     const baseUrl = imageSource.split('?')[0];
-                    const imageUrl = `${baseUrl}?w=100&h=100&auto=format&q=75`;
+                    const imageUrl = `${baseUrl}?w=100&h=100&auto=format`;
 
                     return (
                         <motion.div key={item.id} variants={itemVariants}>

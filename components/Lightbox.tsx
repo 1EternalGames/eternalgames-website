@@ -129,6 +129,9 @@ export default function Lightbox() {
     }, [handleZoom]);
 
     const isZoomed = scale.get() > 1.001;
+    
+    // THE DEFINITIVE FIX: Create a clean download URL without any processing parameters.
+    const downloadUrl = imageUrl ? `${imageUrl.split('?')[0]}?dl` : '';
 
     const lightboxContent = (
         <AnimatePresence>
@@ -160,7 +163,7 @@ export default function Lightbox() {
                         <button className={styles.controlButton} onClick={() => handleZoom(0.5)} title="Zoom In"><ZoomInIcon /></button>
                         <button className={styles.controlButton} onClick={() => handleZoom(-0.5)} title="Zoom Out"><ZoomOutIcon /></button>
                         <button className={styles.controlButton} onClick={resetTransform} title="Reset Zoom"><ResetIcon /></button>
-                        <a href={`${imageUrl}?dl=`} download className={styles.controlButton} title="Download Image"><DownloadIcon /></a>
+                        <a href={downloadUrl} download className={styles.controlButton} title="Download Image"><DownloadIcon /></a>
                         <button className={styles.controlButton} onClick={closeLightbox} title="Close"><CloseIcon /></button>
                     </div>
 

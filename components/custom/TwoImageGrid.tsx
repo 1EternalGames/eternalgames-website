@@ -13,7 +13,7 @@ export default function TwoImageGrid({ value }: { value: any }) {
     const images = [image1, image2].filter(img => img?.asset);
     if (images.length === 0) return null;
 
-    const imageUrls = images.map(img => urlFor(img.asset).auto('format').quality(100).url());
+    const imageUrls = images.map(img => urlFor(img.asset).auto('format').url());
 
     return (
         <div className={styles.grid}>
@@ -24,7 +24,7 @@ export default function TwoImageGrid({ value }: { value: any }) {
                     onClick={() => openLightbox(imageUrls, index)}
                 >
                     <Image
-                        src={urlFor(image.asset).width(800).auto('format').quality(85).url()}
+                        src={urlFor(image.asset).width(800).auto('format').url()}
                         alt={image.alt || `Grid Image ${index + 1}`}
                         fill
                         sizes="(max-width: 768px) 50vw, 33vw"

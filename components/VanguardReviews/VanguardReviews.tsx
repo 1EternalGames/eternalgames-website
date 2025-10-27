@@ -68,7 +68,7 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
     }, [isInView, review.score]);
     const handleClick = (e: React.MouseEvent) => { e.preventDefault(); setPrefix(layoutIdPrefix); router.push(`/reviews/${review.slug}`, { scroll: false }); };
     const imageParams = isCenter ? 'w=800&h=1000' : 'w=560&h=700';
-    const baseUrl = review.imageUrl.split('?')[0]; const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format&q=80`;
+    const baseUrl = review.imageUrl.split('?')[0]; const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format`;
     const showCredits = isCenter || isCardHovered;
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
@@ -104,7 +104,7 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                     const isActive = currentIndex === index;
                     return (
                         <motion.button key={review.id} ref={el => itemRefs.current[index] = el} className={styles.navItem} data-active={isActive} onClick={() => navigateToIndex(index)} animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
-                            <Image src={`${review.imageUrl.split('?')[0]}?w=200&auto=format&q=70`} alt={review.title} fill sizes="10vw" className={styles.navImage} unoptimized />
+                            <Image src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} alt={review.title} fill sizes="10vw" className={styles.navImage} unoptimized />
                             <AnimatePresence>{isActive && <motion.div className={styles.navTitle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{review.title}</motion.div>}</AnimatePresence>
                         </motion.button>
                     );

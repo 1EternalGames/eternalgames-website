@@ -39,10 +39,10 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
     }, [initialItems]);
 
     const heroImageUrl = latestItem?.mainImageRef 
-        ? urlFor(latestItem.mainImageRef).width(1920).quality(80).auto('format').url() 
+        ? urlFor(latestItem.mainImageRef).width(1920).auto('format').url() 
         : null;
     const heroBlurDataURL = latestItem?.mainImageRef 
-        ? urlFor(latestItem.mainImageRef).width(20).blur(10).quality(30).auto('format').url()
+        ? urlFor(latestItem.mainImageRef).width(20).blur(10).auto('format').url()
         : null;
     
     const heroContent = (

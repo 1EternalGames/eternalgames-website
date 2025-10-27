@@ -20,12 +20,12 @@ const SanityImageComponent = ({ value }: { value: any }) => {
     const blurDataURL = asset.metadata?.lqip;
 
     const optimizedSrc = urlFor(asset)
-        .width(1920)
+        .width(1920) // Keep a reasonable width for in-content images to prevent layout shift and excessive download size.
         .auto('format')
-        .quality(85)
         .url();
 
-    const fullResSrc = urlFor(asset).auto('format').quality(100).url();
+    // Serve original resolution for lightbox
+    const fullResSrc = urlFor(asset).auto('format').url();
 
     return (
         <div style={{ margin: '4rem 0' }}>

@@ -13,8 +13,8 @@ export default function ImageCompare({ value }: { value: any }) {
     }
 
     // --- THE DEFINITIVE FIX ---
-    const imageUrl1 = urlFor(image1).auto('format').quality(85).url();
-    const imageUrl2 = urlFor(image2).auto('format').quality(85).url();
+    const imageUrl1 = urlFor(image1).auto('format').url();
+    const imageUrl2 = urlFor(image2).auto('format').url();
 
     return (
         <div className={styles.imageCompareContainer} data-size={size || 'large'}>
