@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import HorizontalShowcase from '@/components/HorizontalShowcase';
@@ -12,6 +11,7 @@ import { ContentBlock } from '@/components/ContentBlock';
 import Image from 'next/image';
 import AnimatedGridBackground from '@/components/AnimatedGridBackground';
 import { useContentFilters, ContentFilters } from '@/hooks/useContentFilters';
+import { useUrlState } from '@/hooks/useUrlState';
 import { adaptToCardProps } from '@/lib/adapters';
 import styles from './ArticlesPage.module.css';
 
@@ -22,34 +22,52 @@ export default function ArticlesPageClient({ featuredArticles, gridArticles, all
   allGameTags: SanityTag[];
   allArticleTypeTags: SanityTag[];
 }) {
-  const searchParams = useSearchParams();
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const [activeIndex, setActiveIndex] = useState(() => 0);
-  const [sortOrder, setSortOrder] = useState<'latest' | 'viral'>(() => 'latest'); 
-  const [searchTerm, setSearchTerm] = useState(() => '');
-  
-  const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
-    const gameSlug = searchParams.get('game');
-    return gameSlug ? allGames.find(g => g.slug === gameSlug) || null : null;
+  const [searchTerm, setSearchTerm] = useUrlState({
+    param: 'q',
+    defaultValue: '',
+    serialize: v => v || undefined,
+    deserialize: v => v || '',
   });
-  const [selectedGameTags, setSelectedGameTags] = useState<SanityTag[]>(() => {
-    const tagSlugs = searchParams.get('tags')?.split(',').filter(Boolean) || [];
-    return tagSlugs.map(slug => allGameTags.find(t => t.slug === slug)).filter((t): t is SanityTag => !!t);
+
+  const [sortOrder, setSortOrder] = useUrlState({
+    param: 'sort',
+    defaultValue: 'latest' as 'latest' | 'viral',
+    serialize: v => v === 'latest' ? undefined : v,
+    deserialize: v => (v === 'viral' ? 'viral' : 'latest'),
   });
-  const [selectedArticleType, setSelectedArticleType] = useState<SanityTag | null>(null);
-  
-  const featuredForShowcase = useMemo(() => featuredArticles.map(adaptToCardProps).filter(Boolean), [featuredArticles]);
-  const activeBackgroundUrl = featuredForShowcase[activeIndex]?.imageUrl;
 
-  const handleGameSelect = (game: SanityGame | null) => setSelectedGame(game);
-  
-  const handleGameTagToggle = useCallback((tag: SanityTag) => {
-      const newTags = selectedGameTags.some(t => t._id === tag._id) ? selectedGameTags.filter(t => t._id !== tag._id) : [...selectedGameTags, tag];
-      setSelectedGameTags(newTags);
-  }, [selectedGameTags]);
+  const deserializeGame = useCallback((v: string | null) => allGames.find(g => g.slug === v) || null, [allGames]);
+  const [selectedGame, setSelectedGame] = useUrlState({
+    param: 'game',
+    defaultValue: null as SanityGame | null,
+    serialize: v => v?.slug,
+    deserialize: deserializeGame,
+  });
 
-  const handleArticleTypeSelect = (tag: SanityTag | null) => {
-    setSelectedArticleType(tag);
+  const deserializeGameTags = useCallback((v: string | null) => v ? v.split(',').map(slug => allGameTags.find(t => t.slug === slug)).filter((t): t is SanityTag => !!t) : [], [allGameTags]);
+  const [selectedGameTags, setSelectedGameTags] = useUrlState({
+    param: 'tags',
+    defaultValue: [] as SanityTag[],
+    serialize: v => v.length > 0 ? v.map(t => t.slug).join(',') : undefined,
+    deserialize: deserializeGameTags,
+  });
+  
+  const deserializeArticleType = useCallback((v: string | null) => allArticleTypeTags.find(t => t.slug === v) || null, [allArticleTypeTags]);
+  const [selectedArticleType, setSelectedArticleType] = useUrlState({
+    param: 'type',
+    defaultValue: null as SanityTag | null,
+    serialize: v => v?.slug,
+    deserialize: deserializeArticleType,
+  });
+
+  const handleGameTagToggle = (tag: SanityTag) => {
+    setSelectedGameTags(prev => 
+      prev.some(t => t._id === tag._id) 
+        ? prev.filter(t => t._id !== tag._id) 
+        : [...prev, tag]
+    );
   };
   
   const handleClearAllFilters = () => {
@@ -73,6 +91,9 @@ export default function ArticlesPageClient({ featuredArticles, gridArticles, all
   }, [sortOrder, searchTerm, selectedGame, selectedGameTags, selectedArticleType]);
 
   const filteredAndSortedGridArticles = useContentFilters(gridArticles, filters);
+
+  const featuredForShowcase = useMemo(() => featuredArticles.map(adaptToCardProps).filter(Boolean), [featuredArticles]);
+  const activeBackgroundUrl = featuredForShowcase[activeIndex]?.imageUrl;
 
   return (
     <React.Fragment>
@@ -103,13 +124,13 @@ export default function ArticlesPageClient({ featuredArticles, gridArticles, all
                 onSearchChange={setSearchTerm}
                 allGames={allGames}
                 selectedGame={selectedGame}
-                onGameSelect={handleGameSelect}
+                onGameSelect={setSelectedGame}
                 allGameTags={allGameTags}
                 selectedGameTags={selectedGameTags}
                 onGameTagToggle={handleGameTagToggle}
                 allArticleTypeTags={allArticleTypeTags}
                 selectedArticleType={selectedArticleType}
-                onArticleTypeSelect={handleArticleTypeSelect}
+                onArticleTypeSelect={setSelectedArticleType}
                 onClearAllFilters={handleClearAllFilters}
               />
               {filteredAndSortedGridArticles.length > 0 ? (

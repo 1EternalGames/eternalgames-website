@@ -2,9 +2,8 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -12,58 +11,66 @@ import ReviewFilters, { ScoreFilter } from '@/components/filters/ReviewFilters';
 import FilteredReviewsGrid from '@/components/FilteredReviewsGrid';
 import { ContentBlock } from '@/components/ContentBlock';
 import { useContentFilters, ContentFilters } from '@/hooks/useContentFilters';
+import { useUrlState } from '@/hooks/useUrlState';
 import styles from './ReviewsPage.module.css';
 
 export default function ReviewsPageClient({ heroReview, otherReviews, allGames, allTags }: { heroReview: SanityReview, otherReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedScoreRange, setSelectedScoreRange] = useState<ScoreFilter>(() => (searchParams.get('score') as ScoreFilter) || 'All');
-  const [activeSort, setActiveSort] = useState<'latest' | 'score'>(() => (searchParams.get('sort') as 'latest' | 'score') || 'latest');
-  const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
-    const gameSlug = searchParams.get('game');
-    return gameSlug ? allGames.find(g => g.slug === gameSlug) || null : null;
-  });
-  const [selectedTags, setSelectedTags] = useState<SanityTag[]>(() => {
-    const tagSlugs = searchParams.get('tags')?.split(',').filter(Boolean) || [];
-    return tagSlugs.map(slug => allTags.find(t => t.slug === slug)).filter((t): t is SanityTag => !!t);
-  });
-
   const filtersRef = useRef(null);
 
-  const updateURLParams = useCallback((sort: 'latest' | 'score', score: string, game: SanityGame | null, tags: SanityTag[]) => {
-    const params = new URLSearchParams();
-    if (sort !== 'latest') params.set('sort', sort);
-    if (score !== 'All') params.set('score', score);
-    if (game) params.set('game', game.slug);
-    if (tags.length > 0) params.set('tags', tags.map(t => t.slug).join(','));
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [pathname, router]);
+  const [searchTerm, setSearchTerm] = useUrlState({
+    param: 'q',
+    defaultValue: '',
+    serialize: v => v || undefined,
+    deserialize: v => v || '',
+  });
 
-  const handleSortChange = (sort: 'latest' | 'score') => { setActiveSort(sort); updateURLParams(sort, selectedScoreRange, selectedGame, selectedTags); };
-  const handleScoreSelect = (score: string) => { setSelectedScoreRange(score as any); updateURLParams(activeSort, score, selectedGame, selectedTags); };
-  const handleGameSelect = (game: SanityGame | null) => { setSelectedGame(game); updateURLParams(activeSort, selectedScoreRange, game, selectedTags); };
+  const [activeSort, setActiveSort] = useUrlState({
+    param: 'sort',
+    defaultValue: 'latest' as 'latest' | 'score',
+    serialize: v => v === 'latest' ? undefined : v,
+    deserialize: v => (v === 'score' ? 'score' : 'latest'),
+  });
+
+  const [selectedScoreRange, setSelectedScoreRange] = useUrlState({
+    param: 'score',
+    defaultValue: 'All' as ScoreFilter,
+    serialize: v => v === 'All' ? undefined : v,
+    deserialize: v => (v as ScoreFilter) || 'All',
+  });
+  
+  const deserializeGame = useCallback((v: string | null) => allGames.find(g => g.slug === v) || null, [allGames]);
+  const [selectedGame, setSelectedGame] = useUrlState({
+    param: 'game',
+    defaultValue: null as SanityGame | null,
+    serialize: v => v?.slug,
+    deserialize: deserializeGame,
+  });
+
+  const deserializeTags = useCallback((v: string | null) => v ? v.split(',').map(slug => allTags.find(t => t.slug === slug)).filter((t): t is SanityTag => !!t) : [], [allTags]);
+  const [selectedTags, setSelectedTags] = useUrlState({
+    param: 'tags',
+    defaultValue: [] as SanityTag[],
+    serialize: v => v.length > 0 ? v.map(t => t.slug).join(',') : undefined,
+    deserialize: deserializeTags,
+  });
   
   const handleTagToggle = (tagOrArray: SanityTag | SanityTag[]) => {
     if (Array.isArray(tagOrArray)) {
         setSelectedTags([]);
-        updateURLParams(activeSort, selectedScoreRange, selectedGame, []);
         return;
     }
-    const tag = tagOrArray;
-    const newTags = selectedTags.some(t => t._id === tag._id) ? selectedTags.filter(t => t._id !== tag._id) : [...selectedTags, tag];
-    setSelectedTags(newTags);
-    updateURLParams(activeSort, selectedScoreRange, selectedGame, newTags);
+    setSelectedTags(prevTags => 
+        prevTags.some(t => t._id === tagOrArray._id) 
+            ? prevTags.filter(t => t._id !== tagOrArray._id) 
+            : [...prevTags, tagOrArray]
+    );
   };
   
   const handleClearAll = () => {
+    setSearchTerm('');
     setSelectedScoreRange('All');
     setSelectedGame(null);
     setSelectedTags([]);
-    setSearchTerm('');
-    updateURLParams(activeSort, 'All', null, []);
   };
   
   const filters: ContentFilters = useMemo(() => ({
@@ -110,9 +117,9 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
       <div className="container" style={{paddingTop: '4rem'}}>
         <div ref={filtersRef}>
           <ReviewFilters
-            activeSort={activeSort} onSortChange={handleSortChange}
-            selectedScoreRange={selectedScoreRange} onScoreSelect={handleScoreSelect}
-            allGames={allGames} selectedGame={selectedGame} onGameSelect={handleGameSelect}
+            activeSort={activeSort} onSortChange={setActiveSort}
+            selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange}
+            allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame}
             allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll}
             searchTerm={searchTerm} onSearchChange={setSearchTerm}
           />
