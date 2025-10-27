@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { useRef } from 'react';
+import { urlFor } from '@/sanity/lib/image';
 import styles from './FeaturedReviewHero.module.css'; // <-- CORRECTED IMPORT
 
 const containerVariants = {
@@ -46,7 +47,7 @@ export default function FeaturedReviewHero({ review }: { review: SanityReview })
   return (
     <div ref={containerRef} className={styles.featuredHeroContainer} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
       <motion.div className={styles.featuredHeroBg} style={{ y: parallaxY, x: bgMouseX, y: bgMouseY }}>
-        <Image src={review.mainImage.url} alt={`Background for ${review.title}`} fill style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={review.mainImage.blurDataURL} />
+        <Image src={urlFor(review.mainImage).auto('format').url()} alt={`Background for ${review.title}`} fill style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={review.mainImage.blurDataURL} />
       </motion.div>
       <div className={styles.featuredHeroOverlay} />
       
@@ -73,5 +74,3 @@ export default function FeaturedReviewHero({ review }: { review: SanityReview })
     </div>
   );
 }
-
-

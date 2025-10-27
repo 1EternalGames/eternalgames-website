@@ -3,7 +3,7 @@
 import { groq } from 'next-sanity'
 
 // --- Base Fields & Projections (Optimized) ---
-const mainImageFields = groq`"url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
+const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
 const creatorFields = groq`_id, name, prismaUserId, "username": *[_type=="user" && id==^.prismaUserId][0].username` // Add username for linking
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`

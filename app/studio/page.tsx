@@ -30,7 +30,7 @@ const allEditableContentQuery = groq`
         !defined(publishedAt) => "draft",
         "scheduled"
     ),
-    "imageUrl": mainImage.asset->url,
+    "mainImage": mainImage,
     "blurDataURL": mainImage.asset->metadata.lqip
 }
 `;
@@ -66,5 +66,3 @@ export default async function StudioPage() {
         </main>
     );
 }
-
-

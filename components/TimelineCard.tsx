@@ -7,6 +7,7 @@ import type { SanityGameRelease } from '@/types/sanity';
 import { motion } from 'framer-motion';
 import { memo } from 'react';
 import { useLivingCard } from '@/hooks/useLivingCard';
+import { urlFor } from '@/sanity/lib/image';
 import styles from './TimelineCard.module.css';
 
 import PCIcon from '@/components/icons/platforms/PCIcon';
@@ -45,7 +46,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
             <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
                 <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
                     <Image
-                        src={release.mainImage.url}
+                        src={urlFor(release.mainImage).auto('format').url()}
                         alt={release.title}
                         fill
                         sizes="30vw"

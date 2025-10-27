@@ -9,18 +9,20 @@ import { ActionDrawer } from './ActionDrawer';
 import { GenesisOrb } from './GenesisOrb';
 import { deleteDocumentAction } from './actions';
 import { useToast } from '@/lib/toastStore';
+import { urlFor } from '@/sanity/lib/image';
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
-type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; imageUrl?: string; blurDataURL?: string; };
+type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
 
 const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: (id: string) => void; }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isClicked, setIsClicked] = useState(false);
     const isDrawerVisible = isHovered || isClicked;
     const rawImageUrlWithBuster = useMemo(() => {
-        if (!item.imageUrl) return null;
-        return `${item.imageUrl}?${new Date(item._updatedAt).getTime()}`;
-    }, [item.imageUrl, item._updatedAt]);
+        if (!item.mainImage?.asset) return null;
+        const url = urlFor(item.mainImage).width(800).auto('format').url();
+        return `${url}&buster=${new Date(item._updatedAt).getTime()}`;
+    }, [item.mainImage, item._updatedAt]);
 
     return (
         <motion.div layoutId={`canvas-card-${item._id}`} style={{ position: 'relative', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16 / 10', cursor: 'pointer' }} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => setIsClicked(prev => !prev)} >
@@ -122,5 +124,3 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
         </div>
     );
 }
-
-
