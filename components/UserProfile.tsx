@@ -50,7 +50,6 @@ const UserProfile = () => {
                             width={36}
                             height={36}
                             className={styles.userAvatar}
-                            unoptimized // THE FIX
                         />
                     ) : (
                         <div className={styles.userAvatarFallback}><span>{userInitial}</span></div>

@@ -9,8 +9,6 @@ const nextConfig = {
         NEXT_PUBLIC_SANITY_API_VERSION: '2025-09-30',
     },
     images: {
-        // --- THE DEFINITIVE FIX IS HERE ---
-        // Replace the unreliable wildcard with an explicit list of all trusted image sources.
         remotePatterns: [
             // Sanity CMS
             {

@@ -33,10 +33,6 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
     const monthIndex = date.getUTCMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}`;
 
-    // --- THE DEFINITIVE FIX: ---
-    const baseUrl = release.mainImage.url.split('?')[0];
-    const imageUrl = `${baseUrl}?w=600&auto=format&q=80`;
-
     return (
         <motion.div 
             ref={livingCardRef} 
@@ -49,14 +45,13 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
             <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
                 <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
                     <Image
-                        src={imageUrl}
+                        src={release.mainImage.url}
                         alt={release.title}
                         fill
                         sizes="30vw"
                         className={styles.image}
                         placeholder="blur"
                         blurDataURL={release.mainImage.blurDataURL}
-                        unoptimized
                     />
                     {new Date(release.releaseDate) < new Date() && <div className={styles.releasedBadge}><CheckIcon className={styles.checkIcon} /> صدرت</div>}
                     <div className={styles.synopsisOverlay}><p>{release.synopsis}</p></div>

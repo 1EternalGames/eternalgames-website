@@ -9,21 +9,15 @@ import Link from 'next/link';
 import styles from './HorizontalShowcase.module.css';
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
     <polyline points={direction === 'right' ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
   </svg>
 );
 
 const ShowcaseCard = ({ article, isActive }: { article: any, isActive: boolean }) => {
   
-  // --- THE DEFINITIVE FIX: ---
-  // The source URL from the adapter might already have query params. We must strip them
-  // before appending our own desired params to avoid conflicts and errors.
   const imageSource = article.imageUrl;
   if (!imageSource) return null;
-
-  const baseUrl = imageSource.split('?')[0];
-  const imageUrl = `${baseUrl}?w=1200&auto=format&q=80`;
 
   return (
     <motion.div
@@ -37,14 +31,13 @@ const ShowcaseCard = ({ article, isActive }: { article: any, isActive: boolean }
       <Link href={`/articles/${article.slug}`} className={`no-underline ${styles.showcaseCardLink}`} tabIndex={isActive ? 0 : -1} draggable="false">
         <div className={styles.showcaseCardImageWrapper}>
           <Image 
-            src={imageUrl} 
+            src={imageSource} 
             alt={article.title} 
             fill 
             sizes="60vw"
             style={{ objectFit: 'cover' }}
             className={styles.showcaseCardImage}
             draggable="false"
-            unoptimized
           />
         </div>
         <div className={styles.showcaseCardContent}>

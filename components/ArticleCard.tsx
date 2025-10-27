@@ -53,9 +53,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
     
     const imageSource = article.imageUrl;
     if (!imageSource) return null;
-    
-    const baseUrl = imageSource.split('?')[0];
-    const imageUrl = `${baseUrl}?w=600&auto=format&q=80`;
 
     return (
         <motion.div
@@ -74,17 +71,16 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                     <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
                         {hasScore && ( <motion.div className={styles.score}>{article.score.toFixed(1)}</motion.div> )}
                         <Image 
-                            src={imageUrl}
+                            src={imageSource}
                             alt={article.title}
-                            width={article.width || 1600}
-                            height={article.height || 900}
+                            width={article.width || 800}
+                            height={article.height || 450}
                             sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 350px"
                             className={styles.cardImage}
                             style={{ objectFit: 'cover' }}
                             placeholder="blur" 
                             blurDataURL={article.blurDataURL}
                             priority={isPriority}
-                            unoptimized
                         />
                     </motion.div>
                 </Link>
@@ -94,7 +90,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                             <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
                         </Link>
                         <div className={styles.cardMetadata}>
-                            <CreatorCredit label="بقلم" creators={article.authors} date={article.date} />
+                            <CreatorCredit label="بقلم" creators={article.authors} />
                         </div>
                     </div>
                     <div className={styles.tagContainer}>
