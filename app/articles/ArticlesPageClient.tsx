@@ -11,7 +11,7 @@ import ArticleGrid from '@/components/ArticleGrid';
 import { ContentBlock } from '@/components/ContentBlock';
 import Image from 'next/image';
 import AnimatedGridBackground from '@/components/AnimatedGridBackground';
-import { useEngagementScores } from '@/hooks/useEngagementScores';
+import { useContentFilters, ContentFilters } from '@/hooks/useContentFilters';
 import { adaptToCardProps } from '@/lib/adapters';
 import styles from './ArticlesPage.module.css';
 
@@ -23,10 +23,9 @@ export default function ArticlesPageClient({ featuredArticles, gridArticles, all
   allArticleTypeTags: SanityTag[];
 }) {
   const searchParams = useSearchParams();
-  const engagementScores = useEngagementScores();
 
   const [activeIndex, setActiveIndex] = useState(() => 0);
-  const [sortOrder, setSortOrder] = useState(() => 'latest'); 
+  const [sortOrder, setSortOrder] = useState<'latest' | 'viral'>(() => 'latest'); 
   const [searchTerm, setSearchTerm] = useState(() => '');
   
   const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
@@ -60,33 +59,20 @@ export default function ArticlesPageClient({ featuredArticles, gridArticles, all
     setSearchTerm('');
   };
 
-  const filteredAndSortedGridArticles = useMemo(() => {
-    const scoresMap = new Map(engagementScores.map(s => [s.id, s.engagementScore]));
-    let articles = gridArticles;
-
-    if (searchTerm) {
-        articles = articles.filter(article => article.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-    if (selectedGame) {
-        articles = articles.filter(article => article.game?._id === selectedGame._id);
-    }
-    if (selectedGameTags.length > 0) {
-        const selectedTagIds = new Set(selectedGameTags.map(t => t._id));
-        articles = articles.filter(article => (article.tags || []).some(tagRef => tagRef && selectedTagIds.has(tagRef._id)));
-    }
+  const filters: ContentFilters = useMemo(() => {
+    const allTags = [...selectedGameTags];
     if (selectedArticleType) {
-        articles = articles.filter(article => (article.tags || []).some(tagRef => tagRef && tagRef._id === selectedArticleType._id));
+        allTags.push(selectedArticleType);
     }
+    return {
+        sort: sortOrder,
+        searchTerm: searchTerm,
+        game: selectedGame,
+        tags: allTags
+    };
+  }, [sortOrder, searchTerm, selectedGame, selectedGameTags, selectedArticleType]);
 
-    if (sortOrder === 'viral') {
-      articles.sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
-    } else {
-      articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    }
-    
-    return articles.map(adaptToCardProps).filter(Boolean);
-
-  }, [gridArticles, sortOrder, searchTerm, selectedGame, selectedGameTags, selectedArticleType, engagementScores]);
+  const filteredAndSortedGridArticles = useContentFilters(gridArticles, filters);
 
   return (
     <React.Fragment>
@@ -138,5 +124,3 @@ export default function ArticlesPageClient({ featuredArticles, gridArticles, all
     </React.Fragment>
   );
 }
-
-

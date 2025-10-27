@@ -15,7 +15,7 @@ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${main
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}}, 
-"publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{title}, category
+"publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{_id, title}, category
 `
 const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
@@ -25,7 +25,7 @@ score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}},
-"publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{title}, category
+"publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{_id, title}, category
 `
 
 // --- List Page Queries ---
@@ -51,14 +51,14 @@ export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $sl
 }`
 export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
-  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{title},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
   "relatedArticles": relatedArticles[${publishedFilter}]->${relatedContentProjection},
   ${contentProjection}
 }`
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
   "game": game->{${gameFields}},
-  "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{title},
+  "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
   ${contentProjection}
 }`
 

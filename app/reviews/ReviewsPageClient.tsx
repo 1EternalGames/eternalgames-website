@@ -11,7 +11,7 @@ import Link from 'next/link';
 import ReviewFilters, { ScoreFilter } from '@/components/filters/ReviewFilters';
 import FilteredReviewsGrid from '@/components/FilteredReviewsGrid';
 import { ContentBlock } from '@/components/ContentBlock';
-import { adaptToCardProps } from '@/lib/adapters';
+import { useContentFilters, ContentFilters } from '@/hooks/useContentFilters';
 import styles from './ReviewsPage.module.css';
 
 export default function ReviewsPageClient({ heroReview, otherReviews, allGames, allTags }: { heroReview: SanityReview, otherReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
@@ -32,7 +32,6 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
   });
 
   const filtersRef = useRef(null);
-  const isInView = useInView(filtersRef, { once: true, amount: 0.2 });
 
   const updateURLParams = useCallback((sort: 'latest' | 'score', score: string, game: SanityGame | null, tags: SanityTag[]) => {
     const params = new URLSearchParams();
@@ -67,37 +66,16 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
     updateURLParams(activeSort, 'All', null, []);
   };
   
-  const filteredAndSortedReviews = useMemo(() => {
-    let reviews = [...otherReviews];
+  const filters: ContentFilters = useMemo(() => ({
+    sort: activeSort,
+    scoreRange: selectedScoreRange,
+    game: selectedGame,
+    tags: selectedTags,
+    searchTerm: searchTerm,
+  }), [activeSort, selectedScoreRange, selectedGame, selectedTags, searchTerm]);
 
-    if (searchTerm) {
-        reviews = reviews.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-
-    if (selectedScoreRange !== 'All') {
-      switch (selectedScoreRange) {
-        case '9-10': reviews = reviews.filter(r => r.score >= 9 && r.score <= 10); break;
-        case '8-8.9': reviews = reviews.filter(r => r.score >= 8 && r.score < 9); break;
-        case '7-7.9': reviews = reviews.filter(r => r.score >= 7 && r.score < 8); break;
-        case '<7': reviews = reviews.filter(r => r.score < 7); break;
-      }
-    }
-
-    if (selectedGame) reviews = reviews.filter(r => r.game?._id === selectedGame._id);
-
-    if (selectedTags.length > 0) {
-      const selectedTagIds = new Set(selectedTags.map(t => t._id));
-      reviews = reviews.filter(r => (r.tags || []).some(tagRef => tagRef && selectedTagIds.has(tagRef._id)));
-    }
-
-    if (activeSort === 'score') reviews.sort((a, b) => b.score - a.score);
-    else reviews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-    return reviews.map(adaptToCardProps).filter(Boolean);
-  }, [otherReviews, activeSort, selectedScoreRange, selectedGame, selectedTags, searchTerm]);
-
-  const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } };
-
+  const filteredAndSortedReviews = useContentFilters(otherReviews, filters);
+  
   return (
     <>
       <div className={styles.reviewHero}>

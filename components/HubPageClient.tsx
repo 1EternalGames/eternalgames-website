@@ -5,7 +5,7 @@ import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import HubFilters, { HubTypeFilter, HubSortOrder } from './HubFilters';
 import ArticleCard from './ArticleCard';
-import { useEngagementScores } from '@/hooks/useEngagementScores';
+import { useContentFilters, ContentFilters } from '@/hooks/useContentFilters';
 import Image from 'next/image';
 import { adaptToCardProps } from '@/lib/adapters';
 import { urlFor } from '@/sanity/lib/image';
@@ -21,9 +21,15 @@ interface HubPageClientProps {
 export default function HubPageClient({ initialItems, hubTitle, hubType, headerAction }: HubPageClientProps) {
     const [activeTypeFilter, setActiveTypeFilter] = useState<HubTypeFilter>('all');
     const [activeSort, setActiveSort] = useState<HubSortOrder>('latest');
-    const engagementScores = useEngagementScores();
     const contentRef = useRef(null);
     const isInView = useInView(contentRef, { once: true, amount: 0.1 });
+
+    const filters: ContentFilters = useMemo(() => ({
+        sort: activeSort,
+        type: activeTypeFilter,
+    }), [activeSort, activeTypeFilter]);
+
+    const filteredAndSortedItems = useContentFilters(initialItems, filters);
 
     const latestItem = useMemo(() => {
         if (initialItems && initialItems.length > 0) {
@@ -38,22 +44,6 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
     const heroBlurDataURL = latestItem?.mainImageRef 
         ? urlFor(latestItem.mainImageRef).width(20).blur(10).quality(30).auto('format').url()
         : null;
-
-    const filteredAndSortedItems = useMemo(() => {
-        const scoresMap = new Map(engagementScores.map(s => [s.id, s.engagementScore]));
-        let items = initialItems;
-        if (activeTypeFilter !== 'all') {
-            items = items.filter(item => item._type === activeTypeFilter);
-        }
-        if (activeSort === 'viral') {
-            items.sort((a, b) => {
-                const scoreA = scoresMap.get(a.legacyId) || 0;
-                const scoreB = scoresMap.get(b.legacyId) || 0;
-                return scoreB - scoreA;
-            });
-        }
-        return items.map(adaptToCardProps).filter(Boolean);
-    }, [initialItems, activeTypeFilter, activeSort, engagementScores]);
     
     const heroContent = (
         <div className={styles.hubHero} style={{ height: heroImageUrl ? '40vh' : 'auto', marginBottom: heroImageUrl ? '-8rem' : '0', paddingTop: heroImageUrl ? '0' : `calc(var(--nav-height-scrolled) + 4rem)`}}>
@@ -136,5 +126,3 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
         </div>
     );
 }
-
-
