@@ -2,7 +2,7 @@
 
 import { createClient } from 'next-sanity';
 import { projectId, dataset, apiVersion } from '@/lib/sanity.client';
-import { editorDocumentQuery } from '@/lib/sanity.queries'; // Use the master query
+import { editorDocumentQuery, allGamesForStudioQuery, allTagsForStudioQuery, allCreatorsForStudioQuery } from '@/lib/sanity.queries';
 import { notFound } from "next/navigation";
 import { EditorClient } from "./EditorClient";
 import { unstable_noStore as noStore } from 'next/cache';
@@ -24,8 +24,13 @@ export default async function EditorPage({ params }: { params: { contentType: st
     
     const { id } = await params;
     
-    // Use the comprehensive query from sanity.queries.ts
-    const document = await studioClient.fetch(editorDocumentQuery, { id });
+    const [document, allGames, allTags, allCreators] = await Promise.all([
+        studioClient.fetch(editorDocumentQuery, { id }),
+        studioClient.fetch(allGamesForStudioQuery),
+        studioClient.fetch(allTagsForStudioQuery),
+        studioClient.fetch(allCreatorsForStudioQuery)
+    ]);
+
     if (!document) notFound();
     
     const tiptapContent = portableTextToTiptap(document.content ?? []);
@@ -35,5 +40,10 @@ export default async function EditorPage({ params }: { params: { contentType: st
         tiptapContent: tiptapContent,
     };
     
-    return <EditorClient document={documentWithTiptapContent} />;
+    return <EditorClient 
+                document={documentWithTiptapContent} 
+                allGames={allGames}
+                allTags={allTags}
+                allCreators={allCreators}
+           />;
 }

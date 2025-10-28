@@ -22,7 +22,11 @@ const SaveIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="non
 const SuccessIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 const ToggleSwitch = ({ checked, onChange }: { checked: boolean, onChange: (checked: boolean) => void }) => ( <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`toggle ${checked ? 'active' : ''}`}> <motion.div className="toggle-handle" layout transition={{ type: 'spring', stiffness: 700, damping: 30 }} /> </button> );
 
-export function EditorSidebar({ document, isOpen, documentState, dispatch, onSave, hasChanges, onPublish, slugValidationStatus, slugValidationMessage, isDocumentValid, uploadQuality, onUploadQualityChange }: any) {
+export function EditorSidebar({ 
+    document, isOpen, documentState, dispatch, onSave, hasChanges, onPublish, 
+    slugValidationStatus, slugValidationMessage, isDocumentValid, uploadQuality, onUploadQualityChange,
+    allGames, allTags, allCreators
+}: any) {
     const { title, slug, score, verdict, pros, cons, game, tags, publishedAt, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
     const [isSaving, startSaveTransition] = useTransition();
@@ -35,10 +39,10 @@ export function EditorSidebar({ document, isOpen, documentState, dispatch, onSav
     const isRelease = document._type === 'gameRelease';
 
     const primaryCreatorConfig = useMemo(() => {
-        if (isReview) return { label: 'المراجعون', role: 'REVIEWER', field: 'authors' };
-        if (isArticle) return { label: 'الكتّاب', role: 'AUTHOR', field: 'authors' };
-        if (isNews) return { label: 'المراسلون', role: 'REPORTER', field: 'reporters' };
-        return { label: 'المنشئون', role: 'AUTHOR', field: 'authors' };
+        if (isReview) return { label: 'المراجعون', sanityType: 'reviewer', field: 'authors' };
+        if (isArticle) return { label: 'الكتّاب', sanityType: 'author', field: 'authors' };
+        if (isNews) return { label: 'المراسلون', sanityType: 'reporter', field: 'reporters' };
+        return { label: 'المنشئون', sanityType: 'author', field: 'authors' };
     }, [isReview, isArticle, isNews]);
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
@@ -72,6 +76,8 @@ export function EditorSidebar({ document, isOpen, documentState, dispatch, onSav
     const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending;
     const getSlugIcon = () => { if (isSlugPending) return <ClockIcon />; if (isSlugValid) return <CheckIcon />; return <AlertIcon />; };
     const handleFieldChange = (field: string, value: any) => { dispatch({ type: 'UPDATE_FIELD', payload: { field, value } }); };
+
+    const creatorsForRole = (sanityType: string) => allCreators.filter((c: any) => c._type === sanityType);
 
     return (
         <AnimatePresence>
@@ -121,8 +127,8 @@ export function EditorSidebar({ document, isOpen, documentState, dispatch, onSav
                         <AnimatePresence> {!isSlugValid && !isSlugPending && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} </AnimatePresence>
                     </motion.div>
                     
-                    {isRelease ? ( <> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>تاريخ الإصدار</label> <input type="date" value={releaseDate} onChange={(e) => handleFieldChange('releaseDate', e.target.value)} className={styles.sidebarInput} /> </motion.div> <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> </> ) : ( <> <div><CreatorInput label={primaryCreatorConfig.label} roleToSearch={primaryCreatorConfig.role} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> <div><GameInput selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> <div><TagInput selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} /></div> </> )}
-                    <div><CreatorInput label="المصممون (اختياري)" roleToSearch="DESIGNER" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
+                    {isRelease ? ( <> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>تاريخ الإصدار</label> <input type="date" value={releaseDate} onChange={(e) => handleFieldChange('releaseDate', e.target.value)} className={styles.sidebarInput} /> </motion.div> <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> </> ) : ( <> <div><CreatorInput allCreators={creatorsForRole(primaryCreatorConfig.sanityType)} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> <div><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> <div><TagInput allTags={allTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} /></div> </> )}
+                    <div><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
                     {isReview && (<> <motion.hr variants={itemVariants} style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} /> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>التقييم (0-10) {score <= 0 && <AlertIcon />}</label> <input type="number" value={score} onChange={(e) => handleFieldChange('score', parseFloat(e.target.value) || 0)} className={styles.sidebarInput} min="0" max="10" step="0.1" /> </motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>الخلاصة {!verdict.trim() && <AlertIcon />}</label> <textarea value={verdict} onChange={(e) => handleFieldChange('verdict', e.target.value)} className={styles.sidebarInput} rows={3} /> </motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المحاسن" items={pros} setItems={(p: any) => handleFieldChange('pros', p)} /></motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المآخذ" items={cons} setItems={(c: any) => handleFieldChange('cons', c)} /></motion.div> </>)}
                 </motion.aside>
             )}

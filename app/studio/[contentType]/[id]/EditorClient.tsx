@@ -71,7 +71,7 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 };
 
 
-export function EditorClient({ document: initialDocument }: { document: any }) {
+export function EditorClient({ document: initialDocument, allGames, allTags, allCreators }: { document: any, allGames: any[], allTags: any[], allCreators: any[] }) {
     const [sourceOfTruth, setSourceOfTruth] = useState(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, initialState);
     const { title, slug, isSlugManual } = state;
@@ -88,9 +88,7 @@ export function EditorClient({ document: initialDocument }: { document: any }) {
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
     
-    useEffect(() => {
-        if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality;
-    }, [blockUploadQuality, editorInstance]);
+    useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => {
         dispatch({ 
@@ -117,15 +115,12 @@ export function EditorClient({ document: initialDocument }: { document: any }) {
             } 
         });
 
-        // --- THE DEFINITIVE FIX IS HERE ---
-        // Check the loaded image dimensions and set the toggle state accordingly.
         const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width;
         if (imageWidth && imageWidth >= 3840) {
             setMainImageUploadQuality('4k');
         } else {
             setMainImageUploadQuality('1080p');
         }
-        // --- END OF FIX ---
 
         if (editorInstance) {
             const editorJSON = JSON.stringify(editorInstance.getJSON());
@@ -225,7 +220,23 @@ export function EditorClient({ document: initialDocument }: { document: any }) {
                 </div>
             </header>
             <motion.div className={styles.sanctumMain} layout transition={{ type: 'spring', stiffness: 400, damping: 40 }}>
-                <EditorSidebar document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} uploadQuality={mainImageUploadQuality} onUploadQualityChange={setMainImageUploadQuality} />
+                <EditorSidebar 
+                    document={sourceOfTruth} 
+                    isOpen={isSidebarOpen} 
+                    documentState={state} 
+                    dispatch={dispatch} 
+                    onSave={saveWorkingCopy} 
+                    hasChanges={hasChanges} 
+                    onPublish={handlePublish} 
+                    slugValidationStatus={slugValidationStatus} 
+                    slugValidationMessage={slugValidationMessage} 
+                    isDocumentValid={isDocumentValid} 
+                    uploadQuality={mainImageUploadQuality} 
+                    onUploadQualityChange={setMainImageUploadQuality}
+                    allGames={allGames}
+                    allTags={allTags}
+                    allCreators={allCreators}
+                />
                 <EditorCanvas document={sourceOfTruth} title={title} onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} onEditorCreated={setEditorInstance} editor={editorInstance} />
             </motion.div>
             

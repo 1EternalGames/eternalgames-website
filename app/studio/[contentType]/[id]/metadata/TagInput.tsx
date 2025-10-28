@@ -1,10 +1,9 @@
 // app/studio/[contentType]/[id]/metadata/TagInput.tsx
 'use client';
 
-import { useState, useEffect, useRef, useTransition } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDebounce } from '@/hooks/useDebounce';
-import { searchTagsAction, createTagAction, getRecentTagsAction } from '../../../actions';
+import { createTagAction } from '../../../actions';
 import { AddTagModal } from './AddTagModal';
 import ActionButton from '@/components/ActionButton';
 import { translateTag } from '@/lib/translations';
@@ -12,6 +11,7 @@ import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
 
 type Tag = { _id: string; title: string };
+interface TagInputProps { allTags: Tag[]; selectedTags: Tag[]; onTagsChange: (tags: Tag[]) => void; }
 
 const popoverVariants = { 
     hidden: { opacity: 0, y: -10, scale: 0.95 }, 
@@ -31,42 +31,20 @@ const AnimatedTag = ({ tag, onRemove }: { tag: Tag, onRemove: (tagId: string) =>
     );
 };
 
-export function TagInput({ selectedTags, onTagsChange }: { selectedTags: Tag[], onTagsChange: (tags: Tag[]) => void }) {
+export function TagInput({ allTags, selectedTags, onTagsChange }: TagInputProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState<Tag[]>([]);
-    const [initialTags, setInitialTags] = useState<Tag[]>([]);
-    const [isPending, startTransition] = useTransition();
-    const debouncedSearchTerm = useDebounce(searchTerm, 200);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => { 
-        if (isPopoverOpen) { 
-            if (initialTags.length === 0) { 
-                getRecentTagsAction().then(tags => {
-                    setInitialTags(tags);
-                    setResults(tags);
-                }); 
-            }
-            setTimeout(() => inputRef.current?.focus(), 100); 
-        } else { 
-            setSearchTerm(''); 
-        } 
-    }, [isPopoverOpen, initialTags.length]);
-    
-    useEffect(() => { 
-        if (debouncedSearchTerm.length > 0) { 
-            startTransition(() => { 
-                searchTagsAction(debouncedSearchTerm).then(setResults); 
-            }); 
-        } else if (isPopoverOpen) {
-            setResults(initialTags);
-        } else {
-            setResults([]);
-        }
-    }, [debouncedSearchTerm, isPopoverOpen, initialTags]);
+    const filteredResults = (searchTerm
+        ? allTags.filter(tag => 
+            tag.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            translateTag(tag.title).toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : allTags
+    ).filter(tag => !selectedTags.some(st => st._id === tag._id));
     
     useEffect(() => { 
         const handleClickOutside = (event: MouseEvent) => { 
@@ -77,16 +55,22 @@ export function TagInput({ selectedTags, onTagsChange }: { selectedTags: Tag[], 
         document.addEventListener('mousedown', handleClickOutside); 
         return () => document.removeEventListener('mousedown', handleClickOutside); 
     }, []);
+    
+    useEffect(() => { 
+        if (isPopoverOpen) { 
+            setTimeout(() => inputRef.current?.focus(), 100); 
+        } else { 
+            setSearchTerm(''); 
+        } 
+    }, [isPopoverOpen]);
 
     const addTag = (tag: Tag) => { if (!selectedTags.some(t => t._id === tag._id)) { onTagsChange([...selectedTags, tag]); } setSearchTerm(''); inputRef.current?.focus(); };
     const removeTag = (tagIdToRemove: string) => { onTagsChange(selectedTags.filter(tag => tag._id !== tagIdToRemove)); };
     const handleOpenModal = () => { setIsPopoverOpen(false); setIsAddTagModalOpen(true); };
     const handleCreateTag = async (title: string) => { const newTag = await createTagAction(title); if (newTag) { addTag(newTag); } setIsAddTagModalOpen(false); setSearchTerm(''); };
     
-    const showCreateOption = searchTerm.trim().length > 1 && !results.some(r => r.title.toLowerCase() === searchTerm.toLowerCase()) && !isPending;
+    const showCreateOption = searchTerm.trim().length > 1 && !allTags.some(r => r.title.toLowerCase() === searchTerm.toLowerCase());
     
-    const filteredResults = !isPending ? results.filter(tag => !selectedTags.some(st => st._id === tag._id)) : [];
-
     return (
         <>
             <AddTagModal isOpen={isAddTagModalOpen} onClose={() => setIsAddTagModalOpen(false)} onSubmit={handleCreateTag} initialValue={searchTerm} />
@@ -103,7 +87,6 @@ export function TagInput({ selectedTags, onTagsChange }: { selectedTags: Tag[], 
                     >
                         <AnimatePresence>{selectedTags.map(tag => (<AnimatedTag key={tag._id} tag={tag} onRemove={removeTag} />))}</AnimatePresence>
                         {selectedTags.length === 0 && !isPopoverOpen && (
-                            // THE DEFINITIVE FIX: Use `right` for RTL positioning.
                             <span style={{ color: 'var(--text-secondary)', position: 'absolute', right: '1rem', left: 'auto', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>انقر لإضافة الوسوم...</span>
                         )}
                     </div>
@@ -126,15 +109,11 @@ export function TagInput({ selectedTags, onTagsChange }: { selectedTags: Tag[], 
                             >
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search or create a tag..." className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {isPending ? <div style={{padding: '1rem', color: 'var(--text-secondary)'}}>Searching...</div> : (
-                                        <>
-                                            {filteredResults.map(tag => ( <button type="button" key={tag._id} onClick={() => addTag(tag)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {translateTag(tag.title)} </button> ))}
-                                            {showCreateOption && (
-                                                <button type="button" onClick={handleOpenModal} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic' }} className={styles.popoverItemButton}>
-                                                    + Create new tag: "{searchTerm.trim()}"
-                                                </button>
-                                            )}
-                                        </>
+                                    {filteredResults.map(tag => ( <button type="button" key={tag._id} onClick={() => addTag(tag)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {translateTag(tag.title)} </button> ))}
+                                    {showCreateOption && (
+                                        <button type="button" onClick={handleOpenModal} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic' }} className={styles.popoverItemButton}>
+                                            + Create new tag: "{searchTerm.trim()}"
+                                        </button>
                                     )}
                                 </div>
                             </motion.div>
@@ -145,5 +124,3 @@ export function TagInput({ selectedTags, onTagsChange }: { selectedTags: Tag[], 
         </>
     );
 }
-
-

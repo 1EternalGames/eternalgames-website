@@ -2,8 +2,8 @@
 'use client';
 
 import { updateUserAvatar, updateUserProfile, checkUsernameAvailability } from '@/app/actions/userActions';
-import {المستخدم} from '@prisma/client';
-import { useRef, useState, useTransition, useEffect } from 'react';
+import { User } from '@prisma/client';
+import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import AvatarCropperModal from './AvatarCropperModal';
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ButtonLoader from '@/components/ui/ButtonLoader';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/lib/toastStore';
+import { useServerAction } from '@/hooks/useServerAction'; // <-- IMPORT HOOK
 import avatarStyles from './ProfileEditForm.module.css';
 
 const UploadIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24"> <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /> </svg> );
@@ -29,15 +30,11 @@ const ToggleSwitch = ({ checked, onChange, name }: { checked: boolean, onChange:
 );
 
 
-export default function ProfileEditForm({ user }: { user: المستخدم}) {
+export default function ProfileEditForm({ user }: { user: User}) {
     const inputFileRef = useRef<HTMLInputElement>(null);
     const { update: updateSession } = useSession();
     const toast = useToast();
-    const [isSaving, startSaveTransition] = useTransition();
-    const [isCheckingUsername, startUsernameCheckTransition] = useTransition();
     
-    // THE FIX: Use nullish coalescing `?? ''` for robust state initialization.
-    // This guarantees the state is always a string, never null or undefined.
     const [avatarPreview, setAvatarPreview] = useState(user.image ?? '/default-avatar.svg');
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [name, setName] = useState(user.name ?? '');
@@ -52,6 +49,10 @@ export default function ProfileEditForm({ user }: { user: المستخدم}) {
     const debouncedUsername = useDebounce(username, 500);
     const [isCropperOpen, setIsCropperOpen] = useState(false);
     const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
+
+    const { execute: executeSaveAvatar, isPending: isSavingAvatar } = useServerAction(updateUserAvatar);
+    const { execute: executeSaveProfile, isPending: isSavingProfile } = useServerAction(updateUserProfile);
+    const isSaving = isSavingAvatar || isSavingProfile;
     
     const hasTextChanged = 
         name !== (user.name ?? '') ||
@@ -68,8 +69,7 @@ export default function ProfileEditForm({ user }: { user: المستخدم}) {
     useEffect(() => {
         if (debouncedUsername && debouncedUsername !== user.username) {
             setUsernameStatus({ type: 'checking', message: 'Checking...' });
-            startUsernameCheckTransition(async () => {
-                const result = await checkUsernameAvailability(debouncedUsername);
+            checkUsernameAvailability(debouncedUsername).then(result => {
                 setUsernameStatus({ type: result.available ? 'valid' : 'invalid', message: result.message });
             });
         } else {
@@ -90,29 +90,26 @@ export default function ProfileEditForm({ user }: { user: المستخدم}) {
         setAvatarPreview(URL.createObjectURL(croppedFile));
         setIsCropperOpen(false);
     };
+
     async function handleProfileSave(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (isSaveDisabled) return;
-        startSaveTransition(async () => {
-            try {
-                if (avatarFile) {
-                    const avatarFormData = new FormData();
-                    avatarFormData.append('avatar', avatarFile);
-                    const avatarResult = await updateUserAvatar(avatarFormData);
-                    if (!avatarResult.success) throw new Error(avatarResult.message);
-                }
-                if (hasTextChanged) {
-                    const profileFormData = new FormData(event.currentTarget);
-                    const profileResult = await updateUserProfile(profileFormData);
-                    if (!profileResult.success) throw new Error(profileResult.message);
-                }
-                await updateSession();
-                toast.success('تم تحديث الملف الشخصي بنجاح!');
-                setAvatarFile(null);
-            } catch (error: any) {
-                toast.error(error.message || 'Failed to update profile.');
-            }
-        });
+
+        const promises = [];
+
+        if (avatarFile) {
+            const avatarFormData = new FormData();
+            avatarFormData.append('avatar', avatarFile);
+            promises.push(executeSaveAvatar(avatarFormData));
+        }
+        if (hasTextChanged) {
+            const profileFormData = new FormData(event.currentTarget);
+            promises.push(executeSaveProfile(profileFormData));
+        }
+        
+        await Promise.all(promises);
+        await updateSession();
+        setAvatarFile(null); // Reset avatar file state after successful save
     }
 
     const hasContent = (value: string) => value ? 'has-content' : '';
@@ -178,5 +175,3 @@ export default function ProfileEditForm({ user }: { user: المستخدم}) {
         </>
     );
 }
-
-
