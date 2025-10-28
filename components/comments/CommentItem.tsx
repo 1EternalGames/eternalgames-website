@@ -10,9 +10,12 @@ import CommentForm from './CommentForm';
 import Link from 'next/link';
 import Image from 'next/image';
 import TimeStamp from './TimeStamp';
+import ActionButton from '../ActionButton'; // <-- IMPORT ActionButton
 import styles from './Comments.module.css';
 
 const ReplyIcon = () => ( <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path> </svg> );
+const EditIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
+const DeleteIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 const animationVariants = { initial: { opacity: 0, y: -10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 10 } };
 
 export default function CommentItem({ comment, session, slug, onVoteUpdate, onPostReply, onDeleteSuccess, onUpdateSuccess }: {
@@ -73,7 +76,7 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
             {!comment.isOptimistic && <TimeStamp date={comment.createdAt} />}
         </div>
     </div> 
-    {session?.user && !comment.isOptimistic && ( <button onClick={() => setIsReplying(!isReplying)} className={styles.commentReplyButton} disabled={isPending}> <ReplyIcon /> </button> )} 
+    {session?.user && !comment.isOptimistic && ( <ActionButton onClick={() => setIsReplying(!isReplying)} aria-label="Reply" disabled={isPending}> <ReplyIcon /> </ActionButton> )} 
     </div> <AnimatePresence mode="wait"> {!isEditing ? ( <motion.div key="display" variants={animationVariants} initial="initial" animate="animate" exit="exit"> 
     <div className={styles.commentBody}>
         <p className={comment.isOptimistic ? styles.pulsingText : ''}>{comment.content}</p>
@@ -83,10 +86,11 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
         <>
             <CommentVoteButtons commentId={comment.id} initialVotes={comment.votes} onVoteUpdate={onVoteUpdate} /> 
             {replyCount > 0 && (<button onClick={handleToggleReplies} className={`${styles.commentActionButton} ${styles.viewRepliesButton}`} disabled={isLoadingReplies}>{isLoadingReplies ? 'جار التحميل...' : areRepliesVisible ? 'إخفاء الردود' : `View ${replyCount} ${replyCount > 1 ? 'ردود' : 'رد'}`}</button>)} 
-            {isAuthor && ( <div className={styles.commentAuthorActions}> <button onClick={() => setIsEditing(true)} className={styles.commentActionButton} disabled={isPending}>تحرير</button> <button onClick={() => setShowDeleteModal(true)} className={styles.commentActionButton} disabled={isPending}>حذف</button> </div> )}
+            {isAuthor && ( <div className={styles.commentAuthorActions}>
+                <ActionButton onClick={() => setIsEditing(true)} aria-label="Edit" disabled={isPending}><EditIcon /></ActionButton>
+                <ActionButton onClick={() => setShowDeleteModal(true)} aria-label="Delete" disabled={isPending}><DeleteIcon /></ActionButton>
+            </div> )}
         </>
     )}
     </div> </motion.div> ) : ( <motion.div key="edit" variants={animationVariants} initial="initial" animate="animate" exit="exit" className={styles.commentEditForm}> <textarea defaultValue={comment.content} onChange={(e) => setEditText(e.target.value)} className="profile-input" disabled={isPending} autoFocus /> <div className={styles.commentEditActions}> <button onClick={handleUpdate} className="primary-button" disabled={isPending || editText.trim() === ''}>حفظ</button> <button onClick={() => setIsEditing(false)} className="outline-button" disabled={isPending}>إلغاء</button> </div> </motion.div> )} </AnimatePresence> <AnimatePresence> {isReplying && ( <motion.div className={styles.commentReplyFormContainer} variants={animationVariants} initial="initial" animate="animate" exit="exit"> <CommentForm slug={slug} session={session} parentId={comment.id} onPostComment={onPostReply} onReplySuccess={() => setIsReplying(false)} /> </motion.div> )} </AnimatePresence> {areRepliesVisible && ( <div className={styles.commentRepliesList}> {isLoadingReplies && <div className="spinner" />} {!isLoadingReplies && (replies).map((reply: any) => ( <CommentItem key={reply.id} comment={reply} session={session} slug={slug} onVoteUpdate={onVoteUpdate} onPostReply={onPostReply} onDeleteSuccess={onDeleteSuccess} onUpdateSuccess={onUpdateSuccess} /> ))} </div> )} </motion.div> <ConfirmationModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteConfirm} title="حذف التعليق" message="هل أنت متيقن؟" /> </> );
 }
-
-

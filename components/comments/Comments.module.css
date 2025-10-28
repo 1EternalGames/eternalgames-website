@@ -39,12 +39,11 @@
     font-family: var(--font-main), sans-serif;
     margin: 0;
 }
-.commentReplyButton { flex-shrink: 0; background: none; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: all 0.2s ease; }
-.commentReplyButton:hover { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 15%, transparent); transform: scale(1.1); }
+
 .commentBody { padding-right: 52px; padding-left: 0; }
 .commentFooter { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-right: 52px; padding-left: 0; }
 .commentVoteActions { display: flex; align-items: center; gap: 1.5rem; }
-.commentAuthorActions { display: flex; align-items: center; gap: 1.5rem; }
+.commentAuthorActions { display: flex; align-items: center; gap: 0.5rem; }
 .commentActionButton { background: none; border: none; padding: 0.2rem 0.6rem; margin: 0 -0.6rem; border-radius: 4px; cursor: pointer; font-family: var(--font-main), sans-serif; font-size: 1.3rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s ease, background-color 0.2s ease; }
 .commentActionButton:hover { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
 .voteButton { display: flex; align-items: center; gap: 0.6rem; background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0.4rem 0.8rem; margin: 0 -0.8rem; border-radius: 999px; transition: color 0.2s ease, background-color 0.2s ease; }
@@ -62,5 +61,3 @@
 .commentItem.deleted .commentAuthorInfo { opacity: 0.7; }
 .deletedAvatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--border-color); }
 .commentAuthorLink.deleted { color: var(--text-secondary); font-style: italic; }
-
-
