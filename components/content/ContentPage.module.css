@@ -1,0 +1,35 @@
+/* components/content/ContentPage.module.css */
+
+.contentLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5rem;
+}
+@media (min-width: 1024px) {
+  .contentLayout {
+    grid-template-columns: 2fr 1fr;
+  }
+  .contentLayout > main {
+    min-width: 0;
+  }
+}
+
+.heroImage {
+    position: relative;
+    width: 100%;
+    height: 40vh;
+    max-height: 450px;
+    margin-bottom: 3rem;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.sidebar {
+    margin-top: 3rem;
+}
+
+.relatedGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
