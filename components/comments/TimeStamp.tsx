@@ -6,11 +6,11 @@ useEffect(() => {
 const updateDisplayTime = () => {
 const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
 if (seconds < 5) { setDisplayTime("للتو"); return; }
-if (seconds < 60) { setDisplayTime(`${Math.floor(seconds)}s ago`); return; }
+if (seconds < 60) { setDisplayTime(`منذ ${Math.floor(seconds)} ث`); return; }
 const minutes = seconds / 60;
-if (minutes < 60) { setDisplayTime(`${Math.floor(minutes)}m ago`); return; }
+if (minutes < 60) { setDisplayTime(`منذ ${Math.floor(minutes)} د`); return; }
 const hours = minutes / 60;
-if (hours < 24) { setDisplayTime(`${Math.floor(hours)}h ago`); return; }
+if (hours < 24) { setDisplayTime(`منذ ${Math.floor(hours)} س`); return; }
 setDisplayTime(new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
 };
 updateDisplayTime();
@@ -19,30 +19,3 @@ return () => clearInterval(interval);
 }, [date]);
 return <p className="comment-timestamp">{displayTime}</p>;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
