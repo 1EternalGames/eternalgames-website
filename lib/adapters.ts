@@ -7,15 +7,14 @@ const englishMonths = ["January", "February", "March", "April", "May", "June", "
 export const adaptToCardProps = (item: any) => {
     if (!item) return null;
 
+    const imageAsset = item.mainImage?.asset || item.mainImageRef;
     let imageUrl = null;
     let blurDataURL: string = '';
 
-    if (item.mainImage?.url) { // Handles data from "heavy" queries
-        imageUrl = item.mainImage.url;
-        blurDataURL = item.mainImage.blurDataURL || '';
-    } else if (item.mainImageRef) { // Handles data from our "lean" queries
-        imageUrl = urlFor(item.mainImageRef).width(1920).auto('format').url();
-        blurDataURL = urlFor(item.mainImageRef).width(20).blur(10).quality(30).auto('format').url();
+    if (imageAsset) {
+        // THE DEFINITIVE FIX: Enforce a 16:9 aspect ratio crop and remove quality params.
+        imageUrl = urlFor(imageAsset).width(800).height(450).auto('format').url();
+        blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url();
     }
 
     if (!imageUrl) return null;
@@ -25,7 +24,6 @@ export const adaptToCardProps = (item: any) => {
 
     if (item.publishedAt) {
         const date = new Date(item.publishedAt);
-        // --- THE DEFINITIVE FIX: Use en-US locale for English numerals ---
         const day = date.toLocaleDateString('en-US', { day: 'numeric' });
         const monthIndex = date.getMonth();
         const year = date.toLocaleDateString('en-US', { year: 'numeric' });
@@ -33,7 +31,6 @@ export const adaptToCardProps = (item: any) => {
         publishedYear = parseInt(year);
     }
 
-    // Determine the primary authors/reporters based on type
     const primaryCreators = item.authors || item.reporters || [];
 
     return {
@@ -42,8 +39,8 @@ export const adaptToCardProps = (item: any) => {
         slug: item.slug?.current ?? item.slug ?? '',
         game: item.game?.title,
         title: item.title,
-        authors: primaryCreators, // Pass the full array
-        designers: item.designers || [], // Pass the full array
+        authors: primaryCreators,
+        designers: item.designers || [],
         date: formattedDate,
         year: publishedYear,
         imageUrl: imageUrl,

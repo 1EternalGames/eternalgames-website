@@ -1,33 +1,39 @@
 // app/celestial-almanac/page.tsx
+'use client'; // This page is now a client component boundary
+
 import { client } from '@/lib/sanity.client';
 import { allReleasesQuery } from '@/lib/sanity.queries';
 import type { SanityGameRelease } from '@/types/sanity';
-import CelestialAlmanacLoader from './CelestialAlmanacLoader';
-import { unstable_noStore as noStore } from 'next/cache';
+import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 
-export const revalidate = 3600;
+// The loader component is removed. We now handle the dynamic import directly here.
+const CelestialAlmanac = dynamic(() => import('@/app/celestial-almanac'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="spinner" style={{ width: '60px', height: '60px' }} />
+    </div>
+  ),
+});
 
-// NOTE: The CelestialAlmanacLoader already uses dynamic import internally.
-// This file structure is correct and requires no changes. It already isolates the heavy component.
-export default async function CelestialAlmanacPage() {
-  noStore();
+export default function CelestialAlmanacPage() {
+  const [releases, setReleases] = useState<SanityGameRelease[]>([]);
 
-  const releases: SanityGameRelease[] = await client.fetch(allReleasesQuery);
-  const sanitizedReleases = (releases || []).filter(item =>
-    item?.mainImage?.url && item.releaseDate && item.title && item.slug
-  );
+  useEffect(() => {
+    const fetchReleases = async () => {
+      const fetchedReleases: SanityGameRelease[] = await client.fetch(allReleasesQuery);
+      const sanitizedReleases = (fetchedReleases || []).filter(item =>
+        item?.mainImage?.url && item.releaseDate && item.title && item.slug
+      );
+      setReleases(sanitizedReleases);
+    };
+    fetchReleases();
+  }, []);
 
   return (
     <div style={{ paddingTop: 'var(--nav-height-scrolled)' }}>
-      <CelestialAlmanacLoader releases={sanitizedReleases} />
+      <CelestialAlmanac releases={releases} />
     </div>
   );
 }
-
-
-
-
-
-
-
-

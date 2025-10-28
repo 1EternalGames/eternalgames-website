@@ -13,7 +13,7 @@ import AnimatedGridBackground from '@/components/AnimatedGridBackground';
 import { useContentFilters, ContentFilters } from '@/hooks/useContentFilters';
 import { useUrlState } from '@/hooks/useUrlState';
 import { adaptToCardProps } from '@/lib/adapters';
-import styles from './ArticlesPage.module.css';
+import styles from '@/components/HorizontalShowcase.module.css'; // <-- THE FIX: Import the merged stylesheet
 
 export default function ArticlesPageClient({ featuredArticles, gridArticles, allGames, allGameTags, allArticleTypeTags }: {
   featuredArticles: SanityArticle[];

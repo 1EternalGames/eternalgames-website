@@ -16,7 +16,6 @@
     border-bottom:2px solid var(--accent);
     padding-bottom:1rem;
     display:inline-block;
-    /* --- ENHANCEMENTS --- */
     box-shadow: 0 5px 15px -5px color-mix(in srgb, var(--accent) 30%, transparent);
     transition: color 0.3s ease;
 }
@@ -26,6 +25,6 @@
 .badgeGrid{display:flex;flex-wrap:wrap;gap:1.5rem}
 .badgeItem{display:flex;align-items:center;gap:1rem;background-color:var(--bg-secondary);padding:1rem 1.5rem;border-radius:8px;border:1px solid var(--border-color);transition:all .2s ease-out}
 .badgeItem:hover{transform:translateY(-2px);border-color:var(--accent)}
-.badgeIcon{width:24px;height:24px;color:var(--accent)}
+.badgeIcon{width:20px;height:20px;color:var(--accent)}
 @keyframes glint{0%,100%{transform:scale(1)}50%{transform:scale(1.2) rotate(10deg);filter:brightness(1.5)}}
 .badgeItem:hover .badgeIconFOUNDER{animation:glint .7s ease-in-out}

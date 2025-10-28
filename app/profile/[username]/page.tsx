@@ -12,7 +12,8 @@ function hasCreatorRole(userRoles: string[]): boolean {
 }
 
 function getCommentLink(comment: { contentSlug: string, content: string }) {
-    const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'خبر';
+    // Corrected logic for news path
+    const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'news';
     return ( <Link href={`/${path}/${comment.contentSlug}`} className="author-link">{comment.content.slice(0, 30)}...</Link> );
 }
 
@@ -82,5 +83,3 @@ export default async function PublicProfilePage({ params }: { params: { username
         </div>
     );
 }
-
-

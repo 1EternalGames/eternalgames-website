@@ -8,7 +8,7 @@ import PopoverTriggerButton from './ui/PopoverTriggerButton';
 import SelectedGameButton from './ui/SelectedGameButton';
 import SelectedTagsButton from './ui/SelectedTagsButton';
 import { usePopoverManager } from '@/hooks/usePopoverManager';
-import styles from './Filters.module.css';
+import styles from './Filters.module.css'; // <-- THE FIX: Import the centralized stylesheet
 import FilterContainer from './ui/FilterContainer';
 import FilterGroup from './ui/FilterGroup';
 

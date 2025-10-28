@@ -11,6 +11,7 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import CreatorCredit from './CreatorCredit';
 import { CardProps } from '@/types';
+import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './ArticleCard.module.css';
 
 type ArticleCardProps = {
@@ -71,10 +72,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                     <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
                         {hasScore && ( <motion.div className={styles.score}>{article.score.toFixed(1)}</motion.div> )}
                         <Image 
+                            loader={sanityLoader}
                             src={imageSource}
                             alt={article.title}
-                            width={article.width || 800}
-                            height={article.height || 450}
+                            width={800} // Default width, loader will override
+                            height={450} // Default height, loader will override
                             sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 350px"
                             className={styles.cardImage}
                             style={{ objectFit: 'cover' }}
