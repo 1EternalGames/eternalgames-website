@@ -10,7 +10,7 @@ import CommentForm from './CommentForm';
 import Link from 'next/link';
 import Image from 'next/image';
 import TimeStamp from './TimeStamp';
-import ActionButton from '../ActionButton'; // <-- IMPORT ActionButton
+import ActionButton from '../ActionButton';
 import styles from './Comments.module.css';
 
 const ReplyIcon = () => ( <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path> </svg> );
@@ -85,7 +85,7 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
     {!comment.isOptimistic && (
         <>
             <CommentVoteButtons commentId={comment.id} initialVotes={comment.votes} onVoteUpdate={onVoteUpdate} /> 
-            {replyCount > 0 && (<button onClick={handleToggleReplies} className={`${styles.commentActionButton} ${styles.viewRepliesButton}`} disabled={isLoadingReplies}>{isLoadingReplies ? 'جار التحميل...' : areRepliesVisible ? 'إخفاء الردود' : `View ${replyCount} ${replyCount > 1 ? 'ردود' : 'رد'}`}</button>)} 
+            {replyCount > 0 && (<button onClick={handleToggleReplies} className={`outline-button ${styles.viewRepliesButton}`} disabled={isLoadingReplies}>{isLoadingReplies ? 'جار التحميل...' : areRepliesVisible ? 'إخفاء الردود' : `عرض ${replyCount} ${replyCount > 1 ? 'ردود' : 'رد'}`}</button>)} 
             {isAuthor && ( <div className={styles.commentAuthorActions}>
                 <ActionButton onClick={() => setIsEditing(true)} aria-label="Edit" disabled={isPending}><EditIcon /></ActionButton>
                 <ActionButton onClick={() => setShowDeleteModal(true)} aria-label="Delete" disabled={isPending}><DeleteIcon /></ActionButton>
