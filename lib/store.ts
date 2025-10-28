@@ -2,9 +2,8 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-// THE FIX: Import the new idempotent actions
 import { setBookmarkAction, setLikeAction, recordShareAction } from '@/app/actions/contentActions';
-import { useToast } from './toastStore';
+import useToastStore from './toastStore'; // <-- THE FIX: Import the raw store, not the hook
 
 const createContentKey = (id: number, type: string) => `${type}-${id}`;
 
@@ -43,22 +42,19 @@ export const useUserStore = create<UserState & UserActions>()(
                 const key = createContentKey(contentId, contentType);
                 const originalBookmarks = get().bookmarks;
                 const isCurrentlyBookmarked = originalBookmarks.includes(key);
-
-                // This is the final state the user wants.
                 const finalState = !isCurrentlyBookmarked;
 
                 if (debounceTimers[key]) clearTimeout(debounceTimers[key]);
                 
-                // Perform the optimistic update immediately.
                 set({ bookmarks: finalState ? [...originalBookmarks, key] : originalBookmarks.filter(k => k !== key) });
 
-                // Debounce the server action, sending the FINAL state.
                 debounceTimers[key] = setTimeout(async () => {
                     try {
                         const result = await setBookmarkAction(contentId, contentType, finalState);
                         if (!result.success) throw new Error(result.error);
                     } catch (error) {
-                        useToast.getState().error('فشل حفظ العلامة المرجعية.');
+                        // THE FIX: Call the raw store's action directly
+                        useToastStore.getState().addToast('فشل حفظ العلامة المرجعية.', 'error');
                         set({ bookmarks: originalBookmarks });
                     }
                 }, 500);
@@ -70,22 +66,19 @@ export const useUserStore = create<UserState & UserActions>()(
                 const key = createContentKey(contentId, contentType);
                 const originalLikes = get().likes;
                 const isCurrentlyLiked = originalLikes.includes(key);
-
-                // This is the final state the user wants.
                 const finalState = !isCurrentlyLiked;
 
                 if (debounceTimers[key]) clearTimeout(debounceTimers[key]);
 
-                // Perform the optimistic update immediately.
                 set({ likes: finalState ? [...originalLikes, key] : originalLikes.filter(k => k !== key) });
                 
-                // Debounce the server action, sending the FINAL state.
                 debounceTimers[key] = setTimeout(async () => {
                     try {
                         const result = await setLikeAction(contentId, contentType, contentSlug, finalState);
                         if (!result.success) throw new Error(result.error);
                     } catch (error) {
-                        useToast.getState().error('فشل تسجيل الإعجاب.');
+                        // THE FIX: Call the raw store's action directly
+                        useToastStore.getState().addToast('فشل تسجيل الإعجاب.', 'error');
                         set({ likes: originalLikes });
                     }
                 }, 500);
@@ -127,5 +120,3 @@ export const useUserStore = create<UserState & UserActions>()(
         }
     )
 );
-
-

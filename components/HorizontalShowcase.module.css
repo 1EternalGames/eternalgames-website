@@ -1,5 +1,27 @@
 /* components/HorizontalShowcase.module.css */
 
+/* Styles from former app/articles/ArticlesPage.module.css */
+.articlesPageContainer {
+  position: relative;
+  padding-top: var(--nav-height-scrolled);
+}
+
+.articlesPageBg {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+}
+.articlesPageBgOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--bg-primary) 80%, transparent);
+  backdrop-filter: blur(16px) saturate(120%);
+}
+
+/* Original Horizontal Showcase Styles */
 .horizontalShowcaseWrapper {
   position: relative;
   height: 450px;
@@ -122,5 +144,3 @@
   right: 3rem;
   left: auto;
 }
-
-

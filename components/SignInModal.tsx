@@ -11,9 +11,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { AuthOrb } from './AuthOrb';
 import { requestPasswordReset } from '@/app/actions/authActions';
 import ButtonLoader from './ui/ButtonLoader';
-import { useDebounce } from '@/hooks/useDebounce';
-import { checkUsernameAvailability } from '@/app/actions/userActions';
 import styles from './SignInModal.module.css';
+import modalStyles from './modals/Modals.module.css'; // <-- THE FIX: Import shared modal styles
 
 const GitHubIcon = dynamic(() => import('@/components/icons/GitHubIcon'));
 const GoogleIcon = dynamic(() => import('@/components/icons/GoogleIcon'));
@@ -86,7 +85,6 @@ const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl 
                     <input type="hidden" name="returnTo" value={callbackUrl} />
                     <input type="email" name="email" placeholder="البريد الإلكتروني" required className={styles.authInput} autoFocus value={email} onChange={e => setEmail(e.target.value)} />
                     <input type="password" name="password" placeholder="كلمة السر" required className={styles.authInput} value={password} onChange={e => setPassword(e.target.value)} />
-                    {/* --- THE FIX IS HERE --- */}
                     <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                         <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>ولوج</motion.span>}</AnimatePresence>
                     </motion.button>
@@ -96,7 +94,6 @@ const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl 
                     <input type="hidden" name="returnTo" value={callbackUrl} />
                     <input type="email" name="email" placeholder="البريد الإلكتروني" required value={email} onChange={e => setEmail(e.target.value)} className={styles.authInput} />
                     <input type="password" name="password" placeholder="كلمة السر (8 أحرف على الأقل)" required value={password} onChange={e => setPassword(e.target.value)} className={styles.authInput} />
-                    {/* --- THE FIX IS HERE --- */}
                     <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                         <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>أنشئ حسابًا</motion.span>}</AnimatePresence>
                     </motion.button>
@@ -136,7 +133,6 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <div className={styles.formHeader}><h2 className={styles.formTitle}>إعادة تعيين كلمة السر</h2><p style={{color: 'var(--text-secondary)', fontSize: '1.5rem'}}>أدخل بريدك لتلقي رابط إعادة التعيين.</p></div>
             <form onSubmit={handleSubmit} className={styles.credentialsForm}>
                 <input type="email" name="email" placeholder="البريد الإلكتروني" required className={styles.authInput} autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
-                {/* --- THE FIX IS HERE --- */}
                 <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', height: '48px', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                     <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>إرسال الرابط</motion.span>}</AnimatePresence>
                 </motion.button>
@@ -185,7 +181,7 @@ export default function SignInModal() {
     const modalContent = (
         <AnimatePresence>
             {isSignInModalOpen && (
-                <motion.div className={styles.authOverlay} onClick={handleClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div className={modalStyles.modalOverlay} onClick={handleClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <motion.div className={styles.authModalPanelContainer} onClick={(e) => e.stopPropagation()} initial="hidden" animate="visible" >
                         <AnimatePresence>
                             {view === 'orbs' && (
@@ -215,5 +211,3 @@ export default function SignInModal() {
     if (!isMounted) { return null; }
     return createPortal(modalContent, document.body);
 }
-
-
