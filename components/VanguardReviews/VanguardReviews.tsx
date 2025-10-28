@@ -1,19 +1,17 @@
 // components/VanguardReviews/VanguardReviews.tsx
 'use client';
 
-import { useState, useEffect, useRef, memo, useCallback } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence, useInView, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { useVanguardCarousel } from '@/hooks/useVanguardCarousel'; // <-- IMPORT THE NEW HOOK
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
-
-const VANGUARD_SLOTS = 5;
-const ANIMATION_COOLDOWN = 450;
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
@@ -26,7 +24,6 @@ const creatorBubbleItemVariants = {
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
-    // DEFINITIVE FIX: Reverted to a simple, stateless component.
     const bubbleContent = (
         <motion.div 
             className={styles.creatorBubble} 
@@ -115,64 +112,20 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
 };
 
 export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [hoveredId, setHoveredId] = useState<string | number | null>(null);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const [isAnimating, setIsAnimating] = useState(false);
     const containerRef = useRef(null);
-    
-    const [isClient, setIsClient] = useState(false);
-    useEffect(() => { setIsClient(true); }, []);
-
     const hasAnimatedIn = useInView(containerRef, { once: true, amount: 0.1 });
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
-    
-    const stopInterval = useCallback(() => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-    }, []);
-    
-    const startInterval = useCallback(() => {
-        stopInterval();
-        intervalRef.current = setInterval(() => {
-            setCurrentIndex(prevIndex => (prevIndex + 1) % reviews.length);
-        }, 2500);
-    }, [reviews.length, stopInterval]);
-    
-    const navigateToIndex = useCallback((index: number) => {
-        if (isAnimating || index === currentIndex) return;
-        setIsAnimating(true);
-        setCurrentIndex(index);
-        startInterval();
-        setTimeout(() => setIsAnimating(false), ANIMATION_COOLDOWN);
-    }, [isAnimating, currentIndex, startInterval]);
-    
-    useEffect(() => {
-        if (!hoveredId && isCurrentlyInView) {
-            startInterval();
-        } else {
-            stopInterval();
-        }
-        return () => stopInterval();
-    }, [hoveredId, isCurrentlyInView, startInterval, stopInterval]);
-    
-    const getSlotStyle = (index: number, reviewId: string | number) => {
-        const style: any = { width: `var(--${index === 2 ? 'center' : 'side'}-width)`, height: index === 2 ? '500px' : '350px', opacity: 1, zIndex: 0 };
-        const offset = (isClient && window.innerWidth > 768) ? 250 : 160;
-        let transform = '';
-        switch (index) {
-            case 0: transform = `translateX(${-offset * 1.7}px) scale(0.75)`; break;
-            case 1: transform = `translateX(${-offset}px) scale(0.85)`; style.zIndex = 1; break;
-            case 2: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-            case 3: transform = `translateX(${offset}px) scale(0.85)`; style.zIndex = 1; break;
-            case 4: transform = `translateX(${offset * 1.7}px) scale(0.75)`; break;
-            default: style.opacity = 0;
-        }
-        if (hoveredId === reviewId) { style.zIndex = 3; transform += ' translateY(-15px)'; }
-        style.transform = transform; return style;
-    };
 
-    const getReviewForSlot = (slotIndex: number) => reviews[(currentIndex + slotIndex - 2 + reviews.length) % reviews.length];
-    
+    const {
+        currentIndex,
+        hoveredId,
+        setHoveredId,
+        navigateToIndex,
+        getSlotStyle,
+        getReviewForSlot,
+        VANGUARD_SLOTS
+    } = useVanguardCarousel(reviews.length, isCurrentlyInView);
+
     if (reviews.length < VANGUARD_SLOTS) return null;
 
     return (
@@ -180,7 +133,10 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
             {Array.from({ length: VANGUARD_SLOTS }).map((_, index) => {
-                const review = getReviewForSlot(index); if (!review) return null;
+                const reviewIndex = getReviewForSlot(index);
+                if (reviewIndex === null) return null;
+                const review = reviews[reviewIndex];
+                
                 return (
                     <motion.div 
                         key={review.id} 

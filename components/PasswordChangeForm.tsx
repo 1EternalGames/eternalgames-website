@@ -1,37 +1,46 @@
 // components/PasswordChangeForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { changePasswordAction } from '@/app/actions/userActions';
-import { useServerAction } from '@/hooks/useServerAction'; // <-- IMPORT HOOK
+import { useToast } from '@/lib/toastStore';
 import ButtonLoader from './ui/ButtonLoader';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PasswordChangeForm() {
+    const [isPending, startTransition] = useTransition();
+    const toast = useToast();
+    
+    // --- DEFINITIVE FIX: Comment is now correctly formatted ---
+    // State to manage form fields for floating labels
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const formRef = useRef<HTMLFormElement>(null);
 
-    const { execute: executeChangePassword, isPending } = useServerAction(changePasswordAction, {
-        onSuccess: () => {
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-            formRef.current?.reset();
-        }
-    });
-
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        executeChangePassword(formData);
+        const form = event.currentTarget;
+
+        startTransition(async () => {
+            const result = await changePasswordAction(formData);
+            if (result.success) {
+                toast.success(result.message || 'تم تغيير كلمة السر بنجاح!');
+                // Clear state on success
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+                form.reset();
+            } else {
+                toast.error(result.message || 'Failed to change password.');
+            }
+        });
     };
 
     const hasContent = (value: string) => value ? 'has-content' : '';
 
     return (
-        <form ref={formRef} onSubmit={handleSubmit} style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <form onSubmit={handleSubmit} style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div className={`profile-form-group ${hasContent(currentPassword)}`}>
                 <input 
                     id="currentPassword" 
@@ -93,3 +102,8 @@ export default function PasswordChangeForm() {
         </form>
     );
 }
+
+
+
+
+
