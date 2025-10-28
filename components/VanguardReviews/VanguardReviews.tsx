@@ -1,14 +1,14 @@
 // components/VanguardReviews/VanguardReviews.tsx
 'use client';
 
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useVanguardCarousel } from '@/hooks/useVanguardCarousel'; // <-- IMPORT THE NEW HOOK
+import { useVanguardCarousel } from '@/hooks/useVanguardCarousel';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
@@ -49,7 +49,7 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     );
 };
 
-const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, isCenter: boolean, isInView: boolean }) => {
+const VanguardCard = memo(({ review, isCenter, isInView, isPriority }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const [isCardHovered, setIsCardHovered] = useState(false); const layoutIdPrefix = "vanguard-reviews";
@@ -72,7 +72,7 @@ const VanguardCard = memo(({ review, isCenter, isInView }: { review: CardProps, 
             <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
-                    <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} unoptimized /></div>
+                    <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} priority={isPriority} unoptimized /></div>
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
                         <h3>{review.title}</h3>
                         {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
@@ -147,7 +147,12 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                         animate={getSlotStyle(index, review.id)}
                         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
                     >
-                        <VanguardCard review={review} isCenter={index === 2} isInView={hasAnimatedIn} />
+                        <VanguardCard 
+                            review={review} 
+                            isCenter={index === 2} 
+                            isInView={hasAnimatedIn}
+                            isPriority={index === 2}
+                        />
                     </motion.div>
                 );
             })}
