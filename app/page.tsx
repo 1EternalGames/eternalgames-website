@@ -6,10 +6,30 @@ import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
+import { SanityAuthor } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 
 export const revalidate = 60;
+
+// DEFINITIVE FIX: Restore server-side enrichment to ensure data is complete on initial load.
+async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
+    if (!creators || creators.length === 0) return [];
+    
+    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
+    if (userIds.length === 0) return creators;
+
+    const users = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, username: true },
+    });
+    const usernameMap = new Map(users.map(u => [u.id, u.username]));
+
+    return creators.map(creator => ({
+        ...creator,
+        username: usernameMap.get(creator.prismaUserId) || creator.username || null,
+    }));
+}
 
 async function getEngagementScoresMap() {
     try {
@@ -58,11 +78,19 @@ export default async function HomePage() {
         getEngagementScoresMap()
     ]);
     
+    // DEFINITIVE FIX: Enrich all creator data on the server before rendering.
+    const enrichedReviews = await Promise.all(
+        reviews.map(async (review) => ({
+            ...review,
+            authors: await enrichCreators(review.authors),
+            designers: await enrichCreators(review.designers),
+        }))
+    );
+    
     const sortItemsByScore = (items: any[]) => {
         return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
     };
 
-    // --- ARTICLE LOGIC (CORRECTED) ---
     const sortedArticlesByScore = sortItemsByScore(homepageArticlesRaw);
     const topArticlesRaw = sortedArticlesByScore.slice(0, 2);
     const topArticleIds = new Set(topArticlesRaw.map(a => a._id));
@@ -74,7 +102,6 @@ export default async function HomePage() {
         .map(adaptToCardProps)
         .filter(Boolean);
     
-    // --- NEWS LOGIC (CORRECTED) ---
     const sortedNewsByScore = sortItemsByScore(homepageNewsRaw);
     const topNewsRaw = sortedNewsByScore.slice(0, 3);
     const topNewsIds = new Set(topNewsRaw.map(n => n._id));
@@ -87,7 +114,7 @@ export default async function HomePage() {
         .filter(Boolean);
 
     return (
-        <DigitalAtriumHomePage reviews={reviews}>
+        <DigitalAtriumHomePage reviews={enrichedReviews}>
             {topArticles.length > 0 && <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 {/* @ts-expect-error Async Server Component */}

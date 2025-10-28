@@ -8,7 +8,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { getCreatorUsernames } from '@/app/actions/creatorActions';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
@@ -24,21 +23,10 @@ const creatorBubbleItemVariants = {
     hidden: { opacity: 0, x: 20 },
     visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 20 } }
 };
-const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
+const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
-const CreatorBubble = ({ label, creator: initialCreator }: { label: string, creator: SanityAuthor }) => {
-    const [creator, setCreator] = useState(initialCreator);
-
-    useEffect(() => {
-        if (initialCreator.prismaUserId && !initialCreator.username) {
-            getCreatorUsernames([initialCreator.prismaUserId]).then(usernameMap => {
-                if (usernameMap[initialCreator.prismaUserId]) {
-                    setCreator(prev => ({ ...prev, username: usernameMap[initialCreator.prismaUserId] }));
-                }
-            });
-        }
-    }, [initialCreator]);
-
+const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
+    // DEFINITIVE FIX: Reverted to a simple, stateless component.
     const bubbleContent = (
         <motion.div 
             className={styles.creatorBubble} 
