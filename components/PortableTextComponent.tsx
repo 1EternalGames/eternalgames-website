@@ -4,12 +4,26 @@
 import React from 'react'
 import { PortableText, PortableTextComponents } from '@portabletext/react'
 import { urlFor } from '@/sanity/lib/image'
-import ImageCompare from './ImageCompare';
-import TwoImageGrid from './custom/TwoImageGrid';
-import FourImageGrid from './custom/FourImageGrid';
+import dynamic from 'next/dynamic' // <-- IMPORT DYNAMIC
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
+
+// --- LAZY-LOADED COMPONENTS ---
+const LoadingSpinner = () => <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}><div className="spinner" /></div>;
+
+const ImageCompare = dynamic(() => import('./ImageCompare'), {
+    loading: () => <LoadingSpinner />,
+    ssr: false
+});
+const TwoImageGrid = dynamic(() => import('./custom/TwoImageGrid'), {
+    loading: () => <LoadingSpinner />,
+});
+const FourImageGrid = dynamic(() => import('./custom/FourImageGrid'), {
+    loading: () => <LoadingSpinner />,
+});
+// --- END LAZY-LOADED COMPONENTS ---
+
 
 const SanityImageComponent = ({ value }: { value: any }) => {
     const { asset, alt } = value;
@@ -20,11 +34,10 @@ const SanityImageComponent = ({ value }: { value: any }) => {
     const blurDataURL = asset.metadata?.lqip;
 
     const optimizedSrc = urlFor(asset)
-        .width(1920) // Keep a reasonable width for in-content images to prevent layout shift and excessive download size.
+        .width(1920)
         .auto('format')
         .url();
 
-    // Serve original resolution for lightbox
     const fullResSrc = urlFor(asset).auto('format').url();
 
     return (
