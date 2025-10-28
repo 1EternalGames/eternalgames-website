@@ -12,7 +12,7 @@ import { AuthOrb } from './AuthOrb';
 import { requestPasswordReset } from '@/app/actions/authActions';
 import ButtonLoader from './ui/ButtonLoader';
 import styles from './SignInModal.module.css';
-import modalStyles from './modals/Modals.module.css'; // <-- THE FIX: Import shared modal styles
+import modalStyles from './modals/Modals.module.css';
 
 const GitHubIcon = dynamic(() => import('@/components/icons/GitHubIcon'));
 const GoogleIcon = dynamic(() => import('@/components/icons/GoogleIcon'));
@@ -103,12 +103,12 @@ const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl 
             {message && <p className={`${styles.authMessage} ${message.type === 'error' ? styles.error : styles.success}`}>{message.text}</p>}
             <p className={styles.authViewSwitcher}>
                 {view === 'signup' ? (
-                    <>لديك حساب بالفعل؟<a onClick={() => {setView('signin'); setMessage(null);}} className="no-underline">ولوج</a></>
+                    <>لديك حساب بالفعل؟ <button type="button" onClick={() => {setView('signin'); setMessage(null);}} className={styles.linkButton}>ولوج</button></>
                 ) : (
-                    <>جديدٌ في EternalGames؟<a onClick={() => {setView('signup'); setMessage(null);}} className="no-underline">أنشئ حسابًا</a></>
+                    <>جديدٌ في EternalGames؟ <button type="button" onClick={() => {setView('signup'); setMessage(null);}} className={styles.linkButton}>أنشئ حسابًا</button></>
                 )}
             </p>
-            {view === 'signin' && <a onClick={onForgotPassword} className="no-underline" style={{textAlign: 'center', fontSize: '1.4rem', color: 'var(--text-secondary)', cursor: 'pointer', display: 'block', marginTop: '1rem'}}>هل نسيت كلمة السر؟</a>}
+            {view === 'signin' && <button type="button" onClick={onForgotPassword} className={styles.linkButton} style={{textAlign: 'center', fontSize: '1.4rem', color: 'var(--text-secondary)', display: 'block', margin: '1rem auto 0'}}>هل نسيت كلمة السر؟</button>}
         </motion.div>
     );
 };

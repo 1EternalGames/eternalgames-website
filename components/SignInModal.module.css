@@ -114,12 +114,18 @@
   font-size: 1.4rem;
   color: var(--text-secondary);
 }
-.authViewSwitcher a {
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0.5rem;
+  font: inherit;
   color: var(--accent);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
 }
+
 .authMessage {
   margin-top: 1rem;
   font-size: 1.4rem;
