@@ -57,8 +57,8 @@ export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $
 }`
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
-  "game": game->{${gameFields}},
-  "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
+  "relatedNews": relatedNews[${publishedFilter}]->${relatedContentProjection},
   ${contentProjection}
 }`
 

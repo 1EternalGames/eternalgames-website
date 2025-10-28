@@ -1,6 +1,6 @@
 /* components/TimelineCard.module.css */
 .livingCardWrapper {
-    transform-style: preserve-3d;
+    transform-style: preserve-d;
     height: 100%;
 }
 
@@ -15,8 +15,29 @@
     border: 1px solid var(--border-color);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     will-change: transform;
-    transform-style: preserve-3d;
+    transform-style: preserve-d;
+    position: relative; /* For glare positioning */
 }
+
+/* --- NEW GLARE EFFECT STYLE --- */
+.livingCardGlare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at var(--mouse-x) var(--mouse-y),
+        rgba(255, 255, 255, 0.2),
+        transparent 40%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease-out;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.livingCardWrapper:hover .livingCardGlare {
+    opacity: 1;
+}
+/* --- END NEW STYLE --- */
 
 .imageContainer {
     position: relative;
@@ -69,7 +90,6 @@
     }
 }
 
-/* --- THE SIZE FIX IS HERE --- */
 .releasedBadge {
     position: absolute;
     top: 0.75rem;
@@ -77,27 +97,26 @@
     background-color: color-mix(in srgb, var(--accent) 95%, black 20%);
     backdrop-filter: blur(5px);
     color: #fff;
-    padding: 0.4rem 1rem; /* Reduced padding */
+    padding: 0.4rem 1rem;
     border-radius: 999px;
     font-family: var(--font-ui);
-    font-size: 1.2rem; /* Reduced font size */
+    font-size: 1.2rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* Reduced gap */
+    gap: 0.5rem;
     border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
     z-index: 2;
     animation: pulse-glow 3s infinite ease-in-out;
 }
 
 .checkIcon {
-    width: 14px; /* Reduced icon size */
-    height: 14px; /* Reduced icon size */
+    width: 14px;
+    height: 14px;
     filter: drop-shadow(0 0 5px #fff);
 }
-/* --- END OF FIX --- */
 
 .cardContent {
     padding: 1.5rem;

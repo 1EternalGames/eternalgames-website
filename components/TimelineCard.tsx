@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { SanityGameRelease } from '@/types/sanity';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { memo } from 'react';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { urlFor } from '@/sanity/lib/image';
@@ -27,6 +27,29 @@ const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http:/
 const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
 
+    // --- ENHANCEMENT: Glare effect logic from ChronoCard.tsx ---
+    const mouseX = useMotionValue(0.5);
+    const mouseY = useMotionValue(0.5);
+    const smoothMouseX = useSpring(mouseX, { damping: 20, stiffness: 150, mass: 0.7 });
+    const smoothMouseY = useSpring(mouseY, { damping: 20, stiffness: 150, mass: 0.7 });
+    const glareX = useTransform(smoothMouseX, [0, 1], ['-10%', '110%']);
+    const glareY = useTransform(smoothMouseY, [0, 1], ['-10%', '110%']);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        livingCardAnimation.onMouseMove(e);
+        if (!livingCardRef.current) return;
+        const { left, top, width, height } = livingCardRef.current.getBoundingClientRect();
+        mouseX.set((e.clientX - left) / width);
+        mouseY.set((e.clientY - top) / height);
+    };
+
+    const handleMouseLeave = () => {
+        livingCardAnimation.onHoverEnd();
+        mouseX.set(0.5);
+        mouseY.set(0.5);
+    };
+    // --- END ENHANCEMENT ---
+
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const date = new Date(release.releaseDate);
@@ -37,13 +60,22 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
     return (
         <motion.div 
             ref={livingCardRef} 
-            onMouseMove={livingCardAnimation.onMouseMove} 
+            onMouseMove={handleMouseMove} 
             onMouseEnter={livingCardAnimation.onHoverStart} 
-            onMouseLeave={livingCardAnimation.onHoverEnd}
+            onMouseLeave={handleMouseLeave}
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}
         >
-            <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
+            <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-d'}}>
+                {/* --- ENHANCEMENT: Glare element --- */}
+                <motion.div
+                    className={styles.livingCardGlare}
+                    style={{
+                        '--mouse-x': glareX,
+                        '--mouse-y': glareY,
+                    } as any}
+                />
+                
                 <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
                     <Image
                         src={urlFor(release.mainImage).auto('format').url()}
