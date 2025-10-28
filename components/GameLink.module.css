@@ -1,8 +1,4 @@
 /* components/GameLink.module.css */
-.gameLinkContainer {
-    position: relative;
-    display: inline-block;
-}
 
 .kineticGameTag {
     display: inline-flex;
@@ -43,37 +39,4 @@
 .kineticGameTag:hover .gameTagArrow {
     opacity: 1;
     transform: translateX(-0);
-}
-
-.hoverCard {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    right: 50%;
-    transform: translateX(50%);
-    width: 250px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.2);
-    z-index: 10;
-    pointer-events: none;
-    overflow: hidden;
-    transform-origin: bottom center;
-}
-
-.hoverCardImageWrapper {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-}
-
-.hoverCardContent {
-    padding: 1rem 1.25rem;
-}
-
-.hoverCardTitle {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
 }
