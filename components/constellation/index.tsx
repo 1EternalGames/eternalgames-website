@@ -6,6 +6,7 @@ import { Canvas } from '@react-three/fiber';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserStore } from '@/lib/store';
+import { useBodyClass } from '@/hooks/useBodyClass'; // <-- IMPORT HOOK
 import * as THREE from 'three';
 import { THEME_CONFIG, StarData, SanityContentObject, ScreenPosition } from './config';
 import { StarPreviewCard } from './StarPreviewCard';
@@ -15,7 +16,7 @@ import { getCommentedContentIds } from '@/app/actions/userActions';
 import styles from './ConstellationControlPanel.module.css';
 
 const CelestialGearIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="8"></circle>
         <path d="M12 2v2m0 16v2m8.5-10h-2m-13 0h-2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"></path>
     </svg>
@@ -27,19 +28,9 @@ export default function Constellation() {
 
     const [isFullscreen, setIsFullscreen] = useState(false);
 
-    useEffect(() => {
-        document.body.classList.add('constellation-active');
-        if (isFullscreen) {
-            document.body.classList.add('fullscreen-active');
-        } else {
-            document.body.classList.remove('fullscreen-active');
-        }
-        return () => {
-            document.body.classList.remove('constellation-active');
-            document.body.classList.remove('fullscreen-active');
-        };
-    }, [isFullscreen]);
-
+    useBodyClass('constellation-active'); // <-- REFACTORED
+    useBodyClass('fullscreen-active', isFullscreen); // <-- REFACTORED
+    
     const { resolvedTheme } = useTheme();
     const { bookmarks, likes, shares } = useUserStore();
     const [userContent, setUserContent] = useState<SanityContentObject[]>([]);
@@ -184,5 +175,3 @@ export default function Constellation() {
         </>
     );
 }
-
-

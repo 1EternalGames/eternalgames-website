@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect, useMemo } from 'react';
 import { completeOnboardingAction, checkUsernameAvailability } from '@/app/actions/userActions';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useAsyncValidation } from '@/hooks/useAsyncValidation'; // <-- IMPORT HOOK
 import { motion, AnimatePresence } from 'framer-motion';
 import ButtonLoader from '@/components/ui/ButtonLoader';
 import { useToast } from '@/lib/toastStore';
@@ -33,12 +33,13 @@ export default function WelcomePage() {
     const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
 
-    const [usernameStatus, setUsernameStatus] = useState<{ type: 'idle' | 'checking' | 'valid' | 'invalid', message: string }>({ type: 'idle', message: '' });
     const [isPending, startTransition] = useTransition();
-    const debouncedUsername = useDebounce(username, 500);
 
     const hasInitialUsername = !!session?.user?.username;
 
+    // --- REFACTORED: Use the new hook for validation ---
+    const usernameValidation = useAsyncValidation(username, checkUsernameAvailability, session?.user?.username ?? undefined);
+    
     const filteredCountries = useMemo(() => 
         countries.filter(c => c.toLowerCase().includes(countrySearch.toLowerCase())),
     [countrySearch]);
@@ -56,18 +57,6 @@ export default function WelcomePage() {
             }
         }
     }, [sessionStatus, session, router, searchParams]);
-
-
-    useEffect(() => {
-        if (!hasInitialUsername && debouncedUsername) {
-            setUsernameStatus({ type: 'checking', message: 'جارٍ التحقق...' });
-            checkUsernameAvailability(debouncedUsername).then(result => {
-                setUsernameStatus({ type: result.available ? 'valid' : 'invalid', message: result.message });
-            });
-        } else if (!hasInitialUsername) {
-            setUsernameStatus({ type: 'idle', message: '' });
-        }
-    }, [debouncedUsername, hasInitialUsername]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,7 +84,7 @@ export default function WelcomePage() {
         );
     }
     
-    const isButtonDisabled = isPending || (!hasInitialUsername && usernameStatus.type !== 'valid') || !fullName || !termsAccepted;
+    const isButtonDisabled = isPending || (!hasInitialUsername && usernameValidation.type !== 'valid') || !fullName || !termsAccepted;
 
     return (
         <div className="container page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '15vh' }}>
@@ -117,7 +106,7 @@ export default function WelcomePage() {
                             <input id="username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} className="profile-input" placeholder=" " autoFocus required />
                             <label htmlFor="username" className="profile-form-label">اختر اسمًا للمستخدم</label>
                             <AnimatePresence>
-                                {usernameStatus.message && <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ fontSize: '1.4rem', margin: '0.5rem 0 0 0', color: usernameStatus.type === 'invalid' ? '#DC2626' : (usernameStatus.type === 'valid' ? '#16A34A' : 'var(--text-secondary)') }}>{usernameStatus.message}</motion.p>}
+                                {usernameValidation.type !== 'idle' && <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ fontSize: '1.4rem', margin: '0.5rem 0 0 0', color: usernameValidation.type === 'invalid' ? '#DC2626' : (usernameValidation.type === 'valid' ? '#16A34A' : 'var(--text-secondary)') }}>{usernameValidation.message}</motion.p>}
                             </AnimatePresence>
                         </div>
                     )}
@@ -167,7 +156,6 @@ export default function WelcomePage() {
                         </label>
                     </div>
 
-                    {/* --- THE FIX IS HERE --- */}
                     <motion.button type="submit" className="primary-button" style={{ width: '100%', marginTop: '1rem', height: '48px' }} disabled={isButtonDisabled} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '5px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                         <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>إكمال الملف الشخصي</motion.span>}</AnimatePresence>
                     </motion.button>
@@ -176,5 +164,3 @@ export default function WelcomePage() {
         </div>
     );
 }
-
-

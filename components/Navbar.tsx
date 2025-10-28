@@ -1,12 +1,13 @@
 // components/Navbar.tsx
 'use client';
 
-import React, from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from './ThemeToggle';
 import UserProfile from './UserProfile';
 import { motion, AnimatePresence } from 'framer-motion';
-import styles from './Navbar.module.css'; // <-- IMPORTED MODULE
+import { useScrolled } from '@/hooks/useScrolled'; // <-- IMPORT THE NEW HOOK
+import styles from './Navbar.module.css';
 
 // Lazy load search to optimize initial load
 const Search = React.lazy(() => import('./Search'));
@@ -16,15 +17,9 @@ const SearchIcon = () => (
 );
 
 const Navbar = () => {
-    const [scrolled, setScrolled] = React.useState(false);
+    const scrolled = useScrolled(50); // <-- USE THE HOOK
     const [isSearchOpen, setIsSearchOpen] = React.useState(false);
     const [loadSearch, setLoadSearch] = React.useState(false);
-
-    React.useEffect(() => {
-        const handleScroll = () => { setScrolled(window.scrollY > 50); };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const openSearch = () => {
         setLoadSearch(true);
@@ -77,5 +72,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-

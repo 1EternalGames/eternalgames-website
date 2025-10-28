@@ -4,6 +4,7 @@
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { useLightboxStore } from '@/lib/lightboxStore';
+import { useBodyClass } from '@/hooks/useBodyClass'; // <-- IMPORT HOOK
 import { useEffect, useState, useRef, useCallback } from 'react';
 import styles from './Lightbox.module.css';
 
@@ -23,6 +24,8 @@ export default function Lightbox() {
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const imageUrl = imageUrls[currentIndex];
+
+    useBodyClass('lightbox-active', isOpen); // <-- REFACTORED
 
     const scale = useMotionValue(1);
     const x = useMotionValue(0);
@@ -46,12 +49,6 @@ export default function Lightbox() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [closeLightbox, isOpen, imageUrls, goToNext, goToPrevious]);
-
-    useEffect(() => {
-        if (isOpen) document.body.classList.add('lightbox-active');
-        else document.body.classList.remove('lightbox-active');
-        return () => { document.body.classList.remove('lightbox-active'); };
-    }, [isOpen]);
 
     const resetTransform = useCallback(() => {
         scale.set(1);
@@ -130,7 +127,6 @@ export default function Lightbox() {
 
     const isZoomed = scale.get() > 1.001;
     
-    // THE DEFINITIVE FIX: Create a clean download URL without any processing parameters.
     const downloadUrl = imageUrl ? `${imageUrl.split('?')[0]}?dl` : '';
 
     const lightboxContent = (
