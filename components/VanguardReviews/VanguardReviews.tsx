@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { getCreatorUsernames } from '@/app/actions/creatorActions';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
@@ -25,7 +26,19 @@ const creatorBubbleItemVariants = {
 };
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
-const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
+const CreatorBubble = ({ label, creator: initialCreator }: { label: string, creator: SanityAuthor }) => {
+    const [creator, setCreator] = useState(initialCreator);
+
+    useEffect(() => {
+        if (initialCreator.prismaUserId && !initialCreator.username) {
+            getCreatorUsernames([initialCreator.prismaUserId]).then(usernameMap => {
+                if (usernameMap[initialCreator.prismaUserId]) {
+                    setCreator(prev => ({ ...prev, username: usernameMap[initialCreator.prismaUserId] }));
+                }
+            });
+        }
+    }, [initialCreator]);
+
     const bubbleContent = (
         <motion.div 
             className={styles.creatorBubble} 
@@ -43,7 +56,6 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
                     href={`/creators/${creator.username}`}
                     onClick={(e) => e.stopPropagation()}
                     className="no-underline"
-                    title={`View creator profile for ${creator.name}`}
                 >
                     {bubbleContent}
                 </Link>

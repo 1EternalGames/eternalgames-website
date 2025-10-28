@@ -58,10 +58,6 @@ export default async function HomePage() {
         getEngagementScoresMap()
     ]);
     
-    // The redundant `enrichCreators` function has been removed.
-    // The `VanguardReviews` component passes raw reviews to `ArticleCard`,
-    // which then uses `CreatorCredit` to handle enrichment on the client.
-    
     const sortItemsByScore = (items: any[]) => {
         return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
     };
@@ -72,9 +68,8 @@ export default async function HomePage() {
     const topArticleIds = new Set(topArticlesRaw.map(a => a._id));
     const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean);
 
-    // The `homepageArticlesQuery` already sorts by date, so we just filter and slice.
     const latestArticles = homepageArticlesRaw
-        .filter((a: any) => !topArticleIds.has(a._id)) // Exclude top articles to prevent duplication
+        .filter((a: any) => !topArticleIds.has(a._id))
         .slice(0, 10)
         .map(adaptToCardProps)
         .filter(Boolean);
@@ -85,7 +80,6 @@ export default async function HomePage() {
     const topNewsIds = new Set(topNewsRaw.map(n => n._id));
     const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean);
 
-    // The `homepageNewsQuery` already sorts by date, so we just filter and slice.
     const newsList = homepageNewsRaw
         .filter((n: any) => !topNewsIds.has(n._id))
         .slice(0, 15)
