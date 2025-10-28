@@ -18,12 +18,25 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     const [hoveredId, setHoveredId] = useState<string | number | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isClient, setIsClient] = useState(false);
-    const [isNavigating, setIsNavigating] = useState(false); // <-- NEW STATE
+    const [isNavigating, setIsNavigating] = useState(false);
+    const [isPageVisible, setIsPageVisible] = useState(true); // <-- NEW STATE
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    // --- NEW EFFECT: Tracks page visibility ---
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            setIsPageVisible(document.visibilityState === 'visible');
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+    // --- END NEW EFFECT ---
 
     const stopInterval = useCallback(() => {
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -33,9 +46,9 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         stopInterval();
         if (itemCount > 0) {
             intervalRef.current = setInterval(() => {
-                setIsNavigating(true); // <-- SET NAVIGATION LOCK
+                setIsNavigating(true);
                 setCurrentIndex(prevIndex => (prevIndex + 1) % itemCount);
-                setTimeout(() => setIsNavigating(false), ANIMATION_COOLDOWN); // <-- RELEASE LOCK
+                setTimeout(() => setIsNavigating(false), ANIMATION_COOLDOWN);
             }, AUTO_NAVIGATE_INTERVAL);
         }
     }, [itemCount, stopInterval]);
@@ -43,26 +56,26 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     const navigateToIndex = useCallback((index: number) => {
         if (isAnimating || index === currentIndex) return;
         setIsAnimating(true);
-        setIsNavigating(true); // <-- SET NAVIGATION LOCK
+        setIsNavigating(true);
         setCurrentIndex(index);
         startInterval(); 
         setTimeout(() => {
             setIsAnimating(false);
-            setIsNavigating(false); // <-- RELEASE LOCK
+            setIsNavigating(false);
         }, ANIMATION_COOLDOWN);
     }, [isAnimating, currentIndex, startInterval]);
 
+    // --- UPDATED EFFECT: Now includes isPageVisible in its logic ---
     useEffect(() => {
-        if (!hoveredId && isCurrentlyInView) {
+        if (!hoveredId && isCurrentlyInView && isPageVisible) {
             startInterval();
         } else {
             stopInterval();
         }
         return () => stopInterval();
-    }, [hoveredId, isCurrentlyInView, startInterval, stopInterval]);
+    }, [hoveredId, isCurrentlyInView, isPageVisible, startInterval, stopInterval]);
 
     const handleSetHoveredId = useCallback((id: string | number | null) => {
-        // DEFINITIVE FIX: Prevent setting hover state while cards are moving.
         if (isNavigating) return;
         setHoveredId(id);
     }, [isNavigating]);
@@ -104,7 +117,7 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     return {
         currentIndex,
         hoveredId,
-        setHoveredId: handleSetHoveredId, // <-- EXPORT THE GUARDED FUNCTION
+        setHoveredId: handleSetHoveredId,
         navigateToIndex,
         getSlotStyle,
         getReviewForSlot,
