@@ -15,7 +15,7 @@ export default function StudioBar() {
     const pathname = usePathname();
     
     const userRoles = (session?.user as any)?.roles || [];
-    const isCreatorOrAdmin = userRoles.some(role => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
+    const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
     let editPath = null;
     const pathSegments = pathname.split('/').filter(Boolean);
     

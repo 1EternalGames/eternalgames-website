@@ -2,7 +2,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { MotionValue, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useTheme } from 'next-themes';
 
 const springConfig = { stiffness: 250, damping: 25 };
@@ -31,12 +31,12 @@ export function useLivingCard({ isLead = false } = {}) {
 
     const transform = useTransform(
         [rotateX, rotateY, scale],
-        ([rX, rY, s]) => `perspective(1000px) rotateX(${rX}deg) rotateY(${rY}deg) scale(${s})`
+        ([rX, rY, s]: (string | number)[]) => `perspective(1000px) rotateX(${rX}deg) rotateY(${rY}deg) scale(${s})`
     );
 
-    const boxShadow = useTransform(
+    const boxShadow = useTransform<number, string>(
         [smoothMouseX, smoothMouseY],
-        ([x, y]) => {
+        ([x, y]: number[]) => {
             const offsetX = (0.5 - x) * 30;
             const offsetY = (0.5 - y) * 30;
             const shadowOpacity = isHovered ? 0.1 : 0;
@@ -77,8 +77,3 @@ export function useLivingCard({ isLead = false } = {}) {
         },
     };
 }
-
-
-
-
-

@@ -123,7 +123,11 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
         setMessage(null);
         startTransition(async () => {
             const result = await requestPasswordReset(email);
-            setMessage(result);
+            if(result.success) {
+                setMessage({type: 'success', text: result.message});
+            } else {
+                setMessage({type: 'error', text: result.message});
+            }
         });
     };
 

@@ -1,4 +1,5 @@
 // lib/badges.tsx
+import React from 'react';
 
 export type BadgeId = 'DIRECTOR' | 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER' | 'FOUNDER' | 'FIRST_COMMENT' | 'ENGAGED_COMMENTER' | 'TOP_CONTRIBUTOR';
 
@@ -6,7 +7,7 @@ export interface Badge {
     id: BadgeId;
     name: string;
     description: string;
-    Icon: (props: { className?: string }) => JSX.Element;
+    Icon: (props: { className?: string }) => React.JSX.Element;
 }
 
 const DirectorIcon = ({ className = '' }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>;
@@ -54,5 +55,3 @@ export function getBadgesForUser(user: { createdAt: Date; _count: { comments: nu
 
     return earnedBadges;
 }
-
-
