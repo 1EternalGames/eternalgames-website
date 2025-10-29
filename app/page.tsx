@@ -9,6 +9,7 @@ import prisma from '@/lib/prisma';
 import { SanityAuthor } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
+import { CardProps } from '@/types';
 
 export const revalidate = 60;
 
@@ -61,7 +62,7 @@ async function getEngagementScoresMap() {
 
 async function ReleasesSection() {
     const releases = await client.fetch(allReleasesQuery);
-    const sanitizedReleases = (releases || []).filter(item => item?.mainImage);
+    const sanitizedReleases = (releases || []).filter((item: any) => item?.mainImage);
     return <AnimatedReleases releases={sanitizedReleases} />;
 }
 
@@ -80,7 +81,7 @@ export default async function HomePage() {
     
     // DEFINITIVE FIX: Enrich all creator data on the server before rendering.
     const enrichedReviews = await Promise.all(
-        reviews.map(async (review) => ({
+        reviews.map(async (review: any) => ({
             ...review,
             authors: await enrichCreators(review.authors),
             designers: await enrichCreators(review.designers),
@@ -93,31 +94,30 @@ export default async function HomePage() {
 
     const sortedArticlesByScore = sortItemsByScore(homepageArticlesRaw);
     const topArticlesRaw = sortedArticlesByScore.slice(0, 2);
-    const topArticleIds = new Set(topArticlesRaw.map(a => a._id));
-    const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean);
+    const topArticleIds = new Set(topArticlesRaw.map((a: any) => a._id));
+    const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
 
     const latestArticles = homepageArticlesRaw
         .filter((a: any) => !topArticleIds.has(a._id))
         .slice(0, 10)
         .map(adaptToCardProps)
-        .filter(Boolean);
+        .filter(Boolean) as CardProps[];
     
     const sortedNewsByScore = sortItemsByScore(homepageNewsRaw);
     const topNewsRaw = sortedNewsByScore.slice(0, 3);
-    const topNewsIds = new Set(topNewsRaw.map(n => n._id));
-    const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean);
+    const topNewsIds = new Set(topNewsRaw.map((n: any) => n._id));
+    const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
 
     const newsList = homepageNewsRaw
         .filter((n: any) => !topNewsIds.has(n._id))
         .slice(0, 15)
         .map(adaptToCardProps)
-        .filter(Boolean);
+        .filter(Boolean) as CardProps[];
 
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
             {topArticles.length > 0 && <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
-                {/* @ts-expect-error Async Server Component */}
                 <ReleasesSection />
             </Suspense>
         </DigitalAtriumHomePage>

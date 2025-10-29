@@ -1,50 +1,38 @@
-//  FIX #1: Revert to the correct, project-wide authenticated client
-import { client } from '@/lib/sanity.client';
-import { searchQuery } from '@/lib/sanity.queries';
-import { SanitySearchResult } from '@/types/sanity';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@sanity/client';
 
-export async function GET(request: Request) {
-const { searchParams } = new URL(request.url);
-const query = searchParams.get('q');
+const client = createClient({
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET!,
+  apiVersion: '2024-01-01',
+  useCdn: false,
+});
 
-if (!query || query.length < 3) {
-return NextResponse.json([], { status: 200 });
+interface SanitySearchResult {
+  _id: string;
+  _type: string;
+  title: string;
+  slug: { current: string };
+  excerpt?: string;
 }
 
-try {
-const results: SanitySearchResult[] = await client.fetch(searchQuery, { query: `*${query}*` });
-return NextResponse.json(results);
-} catch (error) {
-console.error('Sanity search failed:', error);
-// This is where the "Search failed" message comes from.
-return NextResponse.json({ error: 'An error occurred while searching.' }, { status: 500 });
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const query = searchParams.get('q') || '';
+
+  const searchQuery = `*[_type in ["post", "page", "game"] && (title match $searchTerm || body match $searchTerm || excerpt match $searchTerm)] {
+    _id,
+    _type,
+    title,
+    slug,
+    excerpt
+  }[0...10]`;
+
+  try {
+    const results = await client.fetch<SanitySearchResult[]>(searchQuery, { searchTerm: `*${query}*` });
+    return NextResponse.json(results);
+  } catch (error) {
+    console.error('Sanity search failed:', error);
+    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+  }
 }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

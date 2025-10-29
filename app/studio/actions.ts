@@ -1,8 +1,8 @@
 // app/studio/actions.ts
 'use server';
 
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/authOptions';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { sanityWriteClient } from '@/lib/sanity.server';

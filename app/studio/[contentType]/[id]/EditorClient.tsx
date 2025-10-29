@@ -17,6 +17,30 @@ import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import styles from './Editor.module.css';
 
+// --- TYPE DEFINITION TO FIX BUILD ERROR ---
+type EditorDocument = {
+    _id: string;
+    _type: string;
+    title: string;
+    slug?: { current: string };
+    score?: number;
+    verdict?: string;
+    pros?: string[];
+    cons?: string[];
+    game?: { _id: string; title: string } | null;
+    publishedAt?: string | null;
+    mainImage?: { _ref: string | null; url: string | null; metadata?: any };
+    authors?: any[];
+    reporters?: any[];
+    designers?: any[];
+    tags?: any[];
+    releaseDate?: string;
+    platforms?: string[];
+    synopsis?: string;
+    tiptapContent?: any;
+    content?: any;
+};
+
 const SidebarToggleIcon = () => ( <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 18H3M21 12H3M21 6H3"/></svg> );
 const ExitIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
@@ -41,7 +65,7 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
 const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJson: string) => {
     const patch: Record<string, any> = {};
     const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
-    const compareIds = (arr1: any[], arr2: any[]) => JSON.stringify(normalize(arr1, []).map(i => i._id).sort()) === JSON.stringify(normalize(arr2, []).map(i => i._id).sort());
+    const compareIds = (arr1: any[], arr2: any[]) => JSON.stringify(normalize(arr1, []).map((i: any) => i._id).sort()) === JSON.stringify(normalize(arr2, []).map((i: any) => i._id).sort());
 
     if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
     if (normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
@@ -71,8 +95,8 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 };
 
 
-export function EditorClient({ document: initialDocument, allGames, allTags, allCreators }: { document: any, allGames: any[], allTags: any[], allCreators: any[] }) {
-    const [sourceOfTruth, setSourceOfTruth] = useState(initialDocument);
+export function EditorClient({ document: initialDocument, allGames, allTags, allCreators }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[] }) {
+    const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, initialState);
     const { title, slug, isSlugManual } = state;
     const toast = useToast();
@@ -81,7 +105,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [mainImageUploadQuality, setMainImageUploadQuality] = useState<UploadQuality>('1080p');
     const [blockUploadQuality, setBlockUploadQuality] = useState<UploadQuality>('1080p');
     const [slugValidationStatus, setSlugValidationStatus] = useState<'pending' | 'valid' | 'invalid'>('pending');
-    const [slugValidationMessage, setSlugValidationMessage] = useState('جارٍ التحقق...');
+    const [slugValidationMessage, setSlugValidationMessage] = useState('جار التحقق...');
     const debouncedSlug = useDebounce(slug, 500);
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
     
@@ -138,11 +162,11 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     useEffect(() => { 
         if (!state._id || !debouncedSlug) { 
             setSlugValidationStatus('invalid'); 
-            setSlugValidationMessage(!state._id ? 'Waiting for document ID...' : 'المُعرِّف لا يمكن أن يكون فارغًا.'); 
+            setSlugValidationMessage(!state._id ? 'Waiting for document ID...' : 'المُعرّف لا يمكن أن يكون فارغًا.'); 
             return; 
         } 
         setSlugValidationStatus('pending'); 
-        setSlugValidationMessage('جارٍ التحقق...'); 
+        setSlugValidationMessage('جار التحقق...'); 
         const checkSlug = async () => { 
             const result = await validateSlugAction(debouncedSlug, state._id); 
             setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); 
@@ -155,14 +179,14 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     const saveWorkingCopy = async (): Promise<boolean> => {
         if (!hasChanges) return true;
-        if (slugValidationStatus !== 'valid') { toast.error('لا يمكن الحفظ بمُعرِّف غير صالح.', 'left'); return false; }
+        if (slugValidationStatus !== 'valid') { toast.error('لا يمكن الحفظ بمُعرّف غير صالح.', 'left'); return false; }
     
         const result = await updateDocumentAction(sourceOfTruth._id, patch);
     
         if (result.success) {
             const newTiptapContent = editorInstance ? editorInstance.getJSON() : sourceOfTruth.tiptapContent;
-            setSourceOfTruth(prevState => {
-                const newState = {
+            setSourceOfTruth((prevState: EditorDocument) => {
+                const newState: EditorDocument = {
                     ...prevState,
                     ...state,
                     mainImage: state.mainImage.assetId 

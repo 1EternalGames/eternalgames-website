@@ -7,11 +7,12 @@ import {
 } from '@/lib/sanity.queries';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/authOptions';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
+import type { Session } from 'next-auth';
 
 export const revalidate = 60;
 
@@ -72,7 +73,7 @@ async function Comments({ slug }: { slug: string }) {
     ]);
     // The LazyCommentSection component has been removed for simplification.
     // CommentSection is now loaded directly with Suspense handling the fallback.
-    return <CommentSection slug={slug} initialComments={comments} session={session} />;
+    return <CommentSection slug={slug} initialComments={comments} session={session as Session | null} />;
 }
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
@@ -108,7 +109,6 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     return (
         <ContentPageClient item={item} type={type as any}>
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
-                {/* @ts-expect-error Async Server Component */}
                 <Comments slug={slug} />
             </Suspense>
         </ContentPageClient>

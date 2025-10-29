@@ -12,9 +12,15 @@ export type CardProps = {
     authors: SanityAuthor[];
     designers?: SanityAuthor[];
     date?: string;
+    year?: number | null;
     imageUrl: string;
     score?: number;
     tags: string[];
     blurDataURL: string;
+    verdict?: string;
+    pros?: any[];
+    cons?: any[];
+    content?: any[];
+    relatedReviewIds?: any[];
     category?: string;
 };

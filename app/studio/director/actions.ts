@@ -2,8 +2,8 @@
 
 'use server';
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/lib/authOptions";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Role } from "@prisma/client";
@@ -87,5 +87,3 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
         return { success: false, message: "A database error occurred." };
     }
 }
-
-

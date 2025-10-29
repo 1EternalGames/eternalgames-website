@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { getBadgesForUser } from '@/lib/badges.tsx';
+import { getBadgesForUser } from '@/lib/badges';
 import Link from 'next/link';
 import styles from '../ProfilePage.module.css';
 

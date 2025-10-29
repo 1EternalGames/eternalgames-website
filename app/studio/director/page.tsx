@@ -1,7 +1,7 @@
 // app/studio/director/page.tsx
 
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { UserManagementClient } from './UserManagementClient';
@@ -41,18 +41,3 @@ export default async function DirectorPage() {
         </div>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

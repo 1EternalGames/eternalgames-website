@@ -85,7 +85,7 @@ function InteractiveLayer({ orbitalData, themeColors, setActiveStar, settings }:
     setActiveStar(body, { top: y, left: finalX, placement });
   }, [camera, gl.domElement, setActiveStar]);
 
-  const controlsRef = useRef<any>();
+  const controlsRef = useRef<any>(null);
   useFrame(() => {
     if (controlsRef.current) {
       controlsRef.current.autoRotate = !hoveredBody;
@@ -170,21 +170,3 @@ export const Scene = ({ orbitalData, themeColors, setActiveStar, settings }: any
     </Suspense>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

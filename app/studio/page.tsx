@@ -5,8 +5,8 @@ import { groq } from 'next-sanity';
 import { StudioDashboard } from './StudioDashboard';
 import { projectId, dataset, apiVersion } from '@/lib/sanity.client';
 import { unstable_noStore as noStore } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 
 const studioClient = createClient({

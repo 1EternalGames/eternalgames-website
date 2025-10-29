@@ -1,7 +1,7 @@
 // app/profile/page.tsx
 export const maxDuration = 60;
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import ProfileEditForm from '@/components/ProfileEditForm';
@@ -37,5 +37,3 @@ export default async function ProfilePage() {
         </div>
     );
 }
-
-

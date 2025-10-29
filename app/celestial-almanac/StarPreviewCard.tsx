@@ -78,7 +78,11 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', justifyContent: 'flex-end' }}>
           {(content.platforms || []).map(p => {
             const Icon = PlatformIcons[p];
-            return Icon ? <Icon key={p} className="platform-icon" title={p} /> : null;
+            return Icon ? (
+              <div key={p} title={p}>
+                <Icon className="platform-icon" />
+              </div>
+            ) : null;
           })}
         </div>
         <Link href={linkPath} onClick={onClose} className="primary-button no-underline" style={{ display: 'block', textAlign: 'center' }}>
@@ -88,5 +92,3 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
     </motion.div>
   );
 };
-
-

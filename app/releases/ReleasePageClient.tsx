@@ -15,7 +15,10 @@ const PLATFORM_LABELS: Record<Platform, string> = { 'الكل': 'الكل', 'PC'
 const PlatformFilters = ({ activeFilter, onFilterChange }: { activeFilter: Platform, onFilterChange: (platform: Platform) => void }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.5 });
-  const animationVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } };
+  const animationVariants = { 
+    hidden: { opacity: 0, y: 50 }, 
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } } 
+  };
 
   return (
     <motion.div ref={ref} variants={animationVariants} initial="hidden" animate={isInView ? 'visible' : 'hidden'} className={styles.platformFilters}>
@@ -113,5 +116,3 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
     </div>
   );
 }
-
-
