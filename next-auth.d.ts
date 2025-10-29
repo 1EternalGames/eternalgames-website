@@ -1,26 +1,37 @@
 // next-auth.d.ts
+import 'next-auth';
 import 'next-auth/jwt';
 
-// By redefining the entire user object, we ensure TS recognizes the custom properties.
 declare module 'next-auth' {
-    interface Session {
-        user?: {
-            id: string;
-            roles: string[];
-            username?: string | null;
-            name?: string | null;
-            email?: string | null;
-            image?: string | null;
-        };
-        needsOnboarding?: boolean;
-    }
+  /**
+   * The `User` object is available in callbacks.
+   */
+  interface User {
+    id: string;
+    roles: string[];
+    username?: string | null;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  }
+
+  /**
+   * The `Session` object is what is returned to the client.
+   */
+  interface Session {
+    user: User; // The user object now includes all our custom and default fields.
+    needsOnboarding?: boolean;
+  }
 }
 
 declare module 'next-auth/jwt' {
-    interface JWT {
-        id: string;
-        roles: string[];
-        username?: string | null;
-        needsOnboarding?: boolean;
-    }
+  /**
+   * The `JWT` interface is used in the `jwt` callback.
+   */
+  interface JWT {
+    id: string;
+    roles: string[];
+    username?: string | null;
+    needsOnboarding?: boolean;
+  }
 }

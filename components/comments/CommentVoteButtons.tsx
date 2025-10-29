@@ -38,10 +38,10 @@ export default function CommentVoteButtons({ commentId, initialVotes, onVoteUpda
 
     const likes = optimisticVotes.filter(v => v.type === 'LIKE').length;
     const dislikes = optimisticVotes.filter(v => v.type === 'DISLIKE').length;
-    const currentUserVote = optimisticVotes.find(v => v.userId === session?.user?.id)?.type;
+    const currentUserVote = optimisticVotes.find(v => v.userId === (session?.user as any)?.id)?.type;
 
     const handleVote = (voteType: VoteType) => {
-        const userId = session?.user?.id;
+        const userId = (session?.user as any)?.id;
         if (!userId) { setSignInModalOpen(true); return; }
 
         const requestId = ++latestRequestRef.current;

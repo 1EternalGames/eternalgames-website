@@ -71,8 +71,8 @@ const UserProfile = () => {
                             </div>
                             <div className={styles.userDropdownDivider} />
                             
-                            {session.user.username && (
-                                <Link href={`/profile/${session.user.username}`} className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)}>ملفك الشخصي</Link>
+                            {(session.user as any).username && (
+                                <Link href={`/profile/${(session.user as any).username}`} className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)}>ملفك الشخصي</Link>
                             )}
 
                             <Link href="/profile" className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)}>الإعدادات</Link>
