@@ -170,9 +170,10 @@ const validateUsername = (username: string) => {
     if (!usernameRegex.test(username)) {
         return { success: false, message: 'اسم المستخدم يجب أن يتكون من 3-20 حرفًا إنجليزيًا.' };
     }
-    return { success: true };
+    return { success: true, message: '' };
 };
-export async function checkUsernameAvailability(username: string) {
+
+export async function checkUsernameAvailability(username: string): Promise<{ available: boolean; message: string }> {
     const validation = validateUsername(username);
     if (!validation.success) {
         return { available: false, message: validation.message };
@@ -256,5 +257,3 @@ export async function getCommentedContentIds() {
         return [];
     }
 }
-
-

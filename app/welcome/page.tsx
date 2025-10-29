@@ -35,10 +35,10 @@ export default function WelcomePage() {
 
     const [isPending, startTransition] = useTransition();
 
-    const hasInitialUsername = !!session?.user?.username;
+    const hasInitialUsername = !!(session?.user as any)?.username;
 
     // --- REFACTORED: Use the new hook for validation ---
-    const usernameValidation = useAsyncValidation(username, checkUsernameAvailability, session?.user?.username ?? undefined);
+    const usernameValidation = useAsyncValidation(username, checkUsernameAvailability, (session?.user as any)?.username ?? undefined);
     
     const filteredCountries = useMemo(() => 
         countries.filter(c => c.toLowerCase().includes(countrySearch.toLowerCase())),
@@ -52,8 +52,8 @@ export default function WelcomePage() {
                 return;
             }
             setFullName(session.user?.name ?? '');
-            if (session.user?.username) {
-                setUsername(session.user.username);
+            if ((session.user as any)?.username) {
+                setUsername((session.user as any).username);
             }
         }
     }, [sessionStatus, session, router, searchParams]);
