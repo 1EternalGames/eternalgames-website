@@ -36,7 +36,12 @@ async function findOrCreateSanityCreator(userId: string, sanityType: string) {
     
     if (user.image) {
         try {
-            const imageAsset = await sanityWriteClient.assets.upload('image', user.image);
+            const response = await fetch(user.image);
+            const imageBlob = await response.blob();
+            const imageAsset = await sanityWriteClient.assets.upload('image', imageBlob, {
+                contentType: imageBlob.type,
+                filename: `${user.id}-avatar.jpg`
+            });
             newCreator.image = { _type: 'image', asset: { _type: 'reference', _ref: imageAsset._id } };
         } catch (e) {
             console.warn(`Could not upload user image to Sanity for ${user.name}:`, e);

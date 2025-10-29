@@ -17,7 +17,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    const userRoles = session?.user?.roles || [];
+    const userRoles = (session?.user as any)?.roles || [];
     const isCreatorOrAdmin = userRoles.some((role: string) =>
       ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
     );

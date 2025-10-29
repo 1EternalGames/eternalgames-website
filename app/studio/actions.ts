@@ -11,6 +11,7 @@ import { slugify } from 'transliteration';
 import { tiptapToPortableText } from './utils/tiptapToPortableText';
 import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery } from '@/lib/sanity.queries';
+import type { QueryParams } from '@sanity/client';
 
 // --- uploadImageFromUrlAction REMOVED as it's no longer needed ---
 
@@ -42,7 +43,13 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
             const newCreatorPayload: any = { _type: sanityDocType, _id: `${sanityDocType}-${session.user.id}`, name: user.name, prismaUserId: session.user.id };
             if (user.image) {
                 try {
-                    const imageAsset = await sanityWriteClient.assets.upload('image', user.image);
+                    // THE DEFINITIVE FIX: Fetch the image data from the URL before uploading.
+                    const response = await fetch(user.image);
+                    const imageBlob = await response.blob();
+                    const imageAsset = await sanityWriteClient.assets.upload('image', imageBlob, {
+                        contentType: imageBlob.type,
+                        filename: `${session.user.id}-avatar.jpg`
+                    });
                     newCreatorPayload.image = { _type: 'image', asset: { _type: 'reference', _ref: imageAsset._id }};
                 } catch (e) { console.warn('Image upload on draft creation failed', e); }
             }
@@ -83,10 +90,9 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
                 const newDoc = { _id: draftId, _type: docType, ...patchData };
                 tx.create(newDoc);
             } else {
-                const newDraftPayload = { ...originalDoc, ...patchData, _id: draftId };
-                delete newDraftPayload._rev;
-                delete newDraftPayload._updatedAt;
-                delete newDraftPayload._createdAt;
+                // THE DEFINITIVE FIX: Create a new object excluding the system properties.
+                const { _rev, _updatedAt, _createdAt, ...restOfOriginalDoc } = originalDoc;
+                const newDraftPayload = { ...restOfOriginalDoc, ...patchData, _id: draftId };
                 tx.create(newDraftPayload);
             }
         }
@@ -126,8 +132,8 @@ export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' |
     const prismaUserIds = usersWithRole.map(u => u.id);
     const sanityTypeMap = { REVIEWER: 'reviewer', AUTHOR: 'author', REPORTER: 'reporter', DESIGNER: 'designer' };
     const sanityType = sanityTypeMap[roleName];
-    const sanityQuery = groq`*[_type == $sanityType && prismaUserId in $prismaUserIds]{_id, name}`;
-    return await sanityWriteClient.fetch(sanityQuery, { sanityType, prismaUserIds });
+    const sanityQuery = `*[_type == $sanityType && prismaUserId in $prismaUserIds]{_id, name}`;
+    return await sanityWriteClient.fetch(sanityQuery, { sanityType, prismaUserIds }) as {_id: string, name: string}[];
 }
 
 export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
@@ -215,16 +221,19 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
 export async function searchGamesAction(query: string): Promise<{_id: string, title: string}[]> {
     if (query.length < 2) return [];
     try {
-        const results = await sanityWriteClient.fetch(groq`*[_type == "game" && title match $query + "*"][0...10]{_id, title}`, { query });
+        const results = await sanityWriteClient.fetch(
+            `*[_type == "game" && title match $searchTerm + "*"][0...10]{_id, title}`, 
+            { searchTerm: query }
+        ) as {_id: string, title: string}[];
         return results;
     } catch (error) { console.error("Game search failed:", error); return []; }
 }
 
 export async function createGameAction(title: string): Promise<{_id: string, title: string} | null> {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles.some(role => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
+    if (!session?.user?.id || !session.user.roles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
-        const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title, { lower: true, separator: '-' }) } });
+        const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } });
         return { _id: newGame._id, title: newGame.title };
     } catch (error) { console.error("Failed to create game:", error); return null; }
 }
@@ -232,16 +241,19 @@ export async function createGameAction(title: string): Promise<{_id: string, tit
 export async function searchTagsAction(query: string): Promise<{_id: string, title: string}[]> {
     if (query.length < 1) return [];
     try {
-        const results = await sanityWriteClient.fetch(groq`*[_type == "tag" && title match $query + "*"][0...10]{_id, title}`, { query });
+        const results = await sanityWriteClient.fetch(
+            `*[_type == "tag" && title match $searchTerm + "*"][0...10]{_id, title}`, 
+            { searchTerm: query }
+        ) as {_id: string, title: string}[];
         return results;
     } catch (error) { console.error("Tag search failed:", error); return []; }
 }
 
 export async function createTagAction(title: string): Promise<{_id: string, title: string} | null> {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles.some(role => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
+    if (!session?.user?.id || !session.user.roles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
-        const newTag = await sanityWriteClient.create({ _type: 'tag', title, slug: { _type: 'slug', current: slugify(title) } });
+        const newTag = await sanityWriteClient.create({ _type: 'tag', title, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } });
         return { _id: newTag._id, title: newTag.title };
     } catch (error) { console.error("Failed to create tag:", error); return null; }
 }

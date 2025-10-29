@@ -39,7 +39,7 @@ export default async function StudioPage() {
     noStore();
     
     const session = await getServerSession(authOptions);
-    const userRoles = session?.user?.roles || [];
+    const userRoles = (session?.user as any)?.roles || [];
     
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     const allowedContentTypes: string[] = [];

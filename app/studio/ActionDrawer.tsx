@@ -12,7 +12,7 @@ type ContentCanvasItem = { _id: string; _type: string; slug: string; title: stri
 
 const drawerVariants = {
     hidden: { y: '100%' },
-    visible: { y: '0%', transition: { type: 'spring', damping: 25, stiffness: 200 } },
+    visible: { y: '0%', transition: { type: 'spring' as const, damping: 25, stiffness: 200 } },
     exit: { y: '100%', transition: { duration: 0.2 } }
 };
 
@@ -89,5 +89,3 @@ export function ActionDrawer({ item, onDelete }: { item: ContentCanvasItem, onDe
         </>
     );
 }
-
-

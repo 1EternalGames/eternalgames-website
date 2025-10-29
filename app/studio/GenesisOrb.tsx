@@ -30,7 +30,7 @@ export function GenesisOrb() {
     const { data: session } = useSession();
     const toast = useToast();
 
-    const userRoles = session?.user?.roles || [];
+    const userRoles = (session?.user as any)?.roles || [];
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     
     const creationPermissions = useMemo(() => new Set( allContentTypes.filter(item => isAdminOrDirector || userRoles.includes(item.requiredRole)).map(item => item.type) ), [isAdminOrDirector, userRoles]);
