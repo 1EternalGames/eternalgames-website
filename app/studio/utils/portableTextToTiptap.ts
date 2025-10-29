@@ -1,6 +1,7 @@
 // app/studio/utils/portableTextToTiptap.ts
 
-import { PortableTextBlock } from 'sanity';
+import { PortableTextBlock } from '@portabletext/types';
+import type { SanityImageObject as SanityImage } from '@sanity/image-url/lib/types/types';
 
 // Type definitions for Tiptap's JSON structure
 interface TiptapNode {
@@ -27,7 +28,7 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
 
     validBlocks.forEach((block) => {
         // --- HANDLE LIST ITEMS ---
-        if (block.listItem === 'bullet') {
+        if (block._type === 'block' && block.listItem === 'bullet') {
             if (!currentList) {
                 currentList = { type: 'bulletList', content: [] };
             }
@@ -60,11 +61,11 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
             content.push({ type: 'fourImageGrid', attrs: { src1: image1?.asset?.url, assetId1: image1?.asset?._id, src2: image2?.asset?.url, assetId2: image2?.asset?._id, src3: image3?.asset?.url, assetId3: image3?.asset?._id, src4: image4?.asset?.url, assetId4: image4?.asset?._id } });
             return;
         }
-        if (block._type === 'image' && block.asset) {
-            const asset = block.asset as any;
+        if (block._type === 'image') {
+            const imageBlock = block as unknown as SanityImage & { asset: { _id: string, url: string } };
             const size = (block as any).size || 'large';
-            if (asset?._id && asset?.url) {
-                content.push({ type: 'image', attrs: { src: asset.url, assetId: asset._id, 'data-size': size } });
+            if (imageBlock.asset?._id && imageBlock.asset?.url) {
+                content.push({ type: 'image', attrs: { src: imageBlock.asset.url, assetId: imageBlock.asset._id, 'data-size': size } });
             }
             return;
         }
@@ -93,18 +94,20 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
 }
 
 function processBlockChildren(block: PortableTextBlock): TiptapNode[] {
-    return block.children?.map(span => {
-        const marks = span.marks?.map(mark => {
-            const markDef = block.markDefs?.find(def => def._key === mark);
+    // Ensure block.children is an array before mapping
+    const children = Array.isArray(block.children) ? block.children : [];
+    return children.map(span => {
+        // Ensure span.marks is an array before mapping
+        const marks = (Array.isArray(span.marks) ? span.marks : []).map(mark => {
+            const markDefs = Array.isArray(block.markDefs) ? block.markDefs : [];
+            const markDef = markDefs.find(def => def._key === mark);
             if (markDef?._type === 'link') {
-                return { type: 'link', attrs: { href: markDef.href } };
+                return { type: 'link', attrs: { href: (markDef as any).href } };
             }
             if (mark === 'strong') return { type: 'bold' };
             if (mark === 'em') return { type: 'italic' };
             return null;
         }).filter(Boolean) as { type: string }[] || [];
         return { type: 'text', text: span.text, marks };
-    }) || [];
+    });
 }
-
-
