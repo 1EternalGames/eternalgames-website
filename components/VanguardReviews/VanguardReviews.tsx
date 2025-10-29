@@ -100,7 +100,7 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                 {reviews.map((review, index) => {
                     const isActive = currentIndex === index;
                     return (
-                        <motion.button key={review.id} ref={el => itemRefs.current[index] = el} className={styles.navItem} data-active={isActive} onClick={() => navigateToIndex(index)} animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
+                        <motion.button key={review.id} ref={el => { itemRefs.current[index] = el }} className={styles.navItem} data-active={isActive} onClick={() => navigateToIndex(index)} animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
                             <Image src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} alt={review.title} fill sizes="10vw" className={styles.navImage} unoptimized />
                             <AnimatePresence>{isActive && <motion.div className={styles.navTitle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{review.title}</motion.div>}</AnimatePresence>
                         </motion.button>

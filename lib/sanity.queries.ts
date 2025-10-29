@@ -4,7 +4,7 @@ import { groq } from 'next-sanity'
 
 // --- Base Fields & Projections (Optimized) ---
 const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
-const creatorFields = groq`_id, name, prismaUserId, "username": *[_type=="user" && id==^.prismaUserId][0].username` // Add username for linking
+const creatorFields = groq`_id, name, prismaUserId, image, bio, "username": *[_type=="user" && id==^.prismaUserId][0].username`
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`
 const publishedFilter = groq`defined(publishedAt) && publishedAt < now()`
@@ -15,17 +15,16 @@ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${main
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}}, 
-"publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{_id, title}, category
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{_id, title}, category
 `
 const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
-"mainImageRef": mainImage.asset._ref, 
-"mainImageDimensions": mainImage.asset->metadata.dimensions,
+"mainImageRef": mainImage.asset, 
 score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}},
-"publishedAt": publishedAt, "game": game->{_id, title}, "tags": tags[]->{_id, title}, category
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{_id, title}, category
 `
 
 // --- List Page Queries ---
@@ -41,7 +40,7 @@ export const allContentByTagListQuery = groq`*[_type in ["review", "article", "n
 
 // --- Detail Page Queries ---
 const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} } }`
-const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, "mainImageDimensions": mainImage.asset->metadata.dimensions, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
+const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
 
 export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
@@ -74,7 +73,7 @@ export const heroContentQuery = groq`{
 }`
 export const featuredReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
-export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && title match $query] | order(_createdAt desc) [0...10] {
+export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $query + "*" || pt::text(content) match $query)] | order(publishedAt desc) [0...10] {
   _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url, publishedAt,
   "authors": authors[]->{name}, "reporters": reporters[]->{name}, 
   "gameTitle": game->title, category
@@ -83,7 +82,7 @@ export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] &
 export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(releaseDate)] | order(releaseDate asc) { _id, legacyId, title, "slug": slug.current, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, }`
 
 // --- Studio Editor Queries ---
-export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title}`;
+export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`;
 export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title}`;
 export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`;
 

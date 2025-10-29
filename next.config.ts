@@ -2,7 +2,8 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Inject public Sanity environment variables here since .env.local is consolidated.
+    reactStrictMode: false,
+
     env: {
         NEXT_PUBLIC_SANITY_PROJECT_ID: '0zany1dm',
         NEXT_PUBLIC_SANITY_DATASET: 'production',
@@ -18,7 +19,7 @@ const nextConfig = {
             // Vercel Blob Storage (for user avatars)
             {
                 protocol: 'https',
-                hostname: '*.public.blob.vercel-storage.com',
+                hostname: 'prbfm1qu2ulcoznj.public.blob.vercel-storage.com',
             },
             // Google OAuth Avatars
             {

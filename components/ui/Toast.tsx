@@ -4,6 +4,7 @@
 
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
+import React from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -15,7 +16,7 @@ onDismiss: (id: string) => void;
 duration?: number;
 }
 
-const icons: Record<ToastType, JSX.Element> = {
+const icons: Record<ToastType, React.JSX.Element> = {
 success: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>,
 error: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
 info: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>,
@@ -31,8 +32,8 @@ info: '#6B7280', // Using a neutral secondary text color for info
 
 const toastVariants = {
 initial: { opacity: 0, y: 50, scale: 0.8 },
-animate: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 20, stiffness: 200 } },
-exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2, ease: 'easeOut' } },
+animate: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, damping: 20, stiffness: 200 } },
+exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2, ease: 'easeOut' as const } },
 };
 
 export const Toast = ({ id, message, type, onDismiss, duration = 5000 }: ToastProps) => {
@@ -72,30 +73,3 @@ maxWidth: '380px',
 </motion.div>
 );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

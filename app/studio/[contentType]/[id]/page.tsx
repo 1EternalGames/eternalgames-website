@@ -14,9 +14,6 @@ const studioClient = createClient({
     apiVersion,
     useCdn: false,
     token: process.env.SANITY_API_WRITE_TOKEN,
-    fetch: {
-        cache: 'no-store',
-    },
 });
 
 export default async function EditorPage({ params }: { params: { contentType: string; id: string } }) {
