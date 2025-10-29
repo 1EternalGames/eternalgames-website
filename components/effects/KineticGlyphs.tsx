@@ -9,12 +9,12 @@ const pathVariants = {
     visible: { 
         pathLength: 1, 
         pathOffset: 0,
-        transition: { duration: 0.6, ease: 'easeInOut' }
+        transition: { duration: 0.6, ease: 'easeInOut' as const }
     },
     exit: { 
         pathLength: 0, 
         pathOffset: -1,
-        transition: { duration: 0.3, ease: 'easeInOut' }
+        transition: { duration: 0.3, ease: 'easeInOut' as const }
     }
 };
 

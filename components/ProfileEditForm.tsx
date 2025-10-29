@@ -2,7 +2,7 @@
 'use client';
 
 import { updateUserAvatar, updateUserProfile, checkUsernameAvailability } from '@/app/actions/userActions';
-import {المستخدم} from '@prisma/client';
+import { User } from '@prisma/client';
 import { useRef, useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
@@ -29,7 +29,7 @@ const ToggleSwitch = ({ checked, onChange, name }: { checked: boolean, onChange:
 );
 
 
-export default function ProfileEditForm({ user }: { user: المستخدم}) {
+export default function ProfileEditForm({ user }: { user: User}) {
     const inputFileRef = useRef<HTMLInputElement>(null);
     const { update: updateSession } = useSession();
     const toast = useToast();
@@ -178,5 +178,3 @@ export default function ProfileEditForm({ user }: { user: المستخدم}) {
         </>
     );
 }
-
-

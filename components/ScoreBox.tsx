@@ -10,7 +10,7 @@ const CheckIcon = () => ( <svg style={{flexShrink:0,width:'1.8rem',height:'1.8re
 const CrossIcon = () => ( <svg style={{flexShrink:0,width:'1.8rem',height:'1.8rem',marginTop:'0.2rem',color:'#DC2626'}} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg> );
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.25, delayChildren: 0.2 }, }, };
-const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }, };
+const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } }, };
 
 const ScoreBoxComponent = ({ review }: { review: any }) => {
     const ref = useRef(null);

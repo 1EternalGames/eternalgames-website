@@ -66,7 +66,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}
         >
-            <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-d'}}>
+            <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
                 {/* --- ENHANCEMENT: Glare element --- */}
                 <motion.div
                     className={styles.livingCardGlare}
@@ -95,7 +95,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
                         <p>{formattedDate}</p>
                     </div>
                     <div className={styles.platformIcons}>
-                        {(release.platforms || []).map(p => { const Icon = PlatformIcons[p]; return Icon ? <Icon key={p} className={styles.platformIcon} title={p} /> : null; })}
+                        {(release.platforms || []).map(p => { const Icon = PlatformIcons[p]; return Icon ? <Icon key={p} className={styles.platformIcon} /> : null; })}
                     </div>
                 </div>
             </Link>

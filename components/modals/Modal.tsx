@@ -16,7 +16,7 @@ interface ModalProps {
 
 const modalVariants = {
     hidden: { opacity: 0, scale: 0.9, y: 20 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', damping: 20, stiffness: 250 } },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, damping: 20, stiffness: 250 } },
     exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.15 } },
 };
 

@@ -13,7 +13,7 @@ import styles from './Search.module.css';
 const CrossIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 const overlayVariants = { hidden: { opacity: 0, backdropFilter: 'blur(0px)' }, visible: { opacity: 1, backdropFilter: 'blur(12px)' } };
-const containerVariants = { hidden: { y: '-10vh', opacity: 0, scale: 0.98, transition: { type: 'spring', stiffness: 200, damping: 25 } }, visible: { y: 0, opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 25 } } };
+const containerVariants = { hidden: { y: '-10vh', opacity: 0, scale: 0.98, transition: { type: 'spring' as const, stiffness: 200, damping: 25 } }, visible: { y: 0, opacity: 1, scale: 1, transition: { type: 'spring' as const, stiffness: 200, damping: 25 } } };
 const listVariants = { visible: { transition: { staggerChildren: 0.03, delayChildren: 0.05 } } };
 const resultItemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 

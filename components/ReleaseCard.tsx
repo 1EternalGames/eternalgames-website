@@ -75,7 +75,7 @@ const ReleaseCardComponent = ({ release, variant = 'timeline' }: ReleaseCardProp
                 {variant === 'kinetic' && (
                     <motion.div
                         className={styles.livingCardGlare}
-                        style={{ opacity: glareOpacity, '--mouse-x': glareX, '--mouse-y': glareY }}
+                        style={{ opacity: glareOpacity, '--mouse-x': glareX, '--mouse-y': glareY } as any}
                     />
                 )}
                 <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
@@ -97,7 +97,7 @@ const ReleaseCardComponent = ({ release, variant = 'timeline' }: ReleaseCardProp
                         <p>{formattedDate}</p>
                     </div>
                     <div className={styles.platformIcons}>
-                        {(release.platforms || []).map(p => { const Icon = PlatformIcons[p]; return Icon ? <Icon key={p} className={styles.platformIcon} title={p} /> : null; })}
+                        {(release.platforms || []).map(p => { const Icon = PlatformIcons[p]; return Icon ? <Icon key={p} className={styles.platformIcon} /> : null; })}
                     </div>
                 </div>
             </Link>
