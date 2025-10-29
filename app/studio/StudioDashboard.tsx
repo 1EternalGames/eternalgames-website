@@ -14,7 +14,7 @@ import { urlFor } from '@/sanity/lib/image';
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
 
-const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: (id: string) => void; }) => {
+const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: (id: string) => Promise<void>; }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isClicked, setIsClicked] = useState(false);
     const isDrawerVisible = isHovered || isClicked;
