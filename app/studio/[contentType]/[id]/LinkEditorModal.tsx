@@ -7,7 +7,7 @@ import editorStyles from './Editor.module.css'; // <-- IMPORTED for input styles
 import modalStyles from '@/components/modals/Modals.module.css'; // <-- IMPORTED for modal layout
 
 interface LinkEditorModalProps { isOpen: boolean; onClose: () => void; onSubmit: (url: string) => void; onRemove: () => void; initialUrl?: string; }
-const modalVariants = { hidden: { opacity: 0, scale: 0.9, y: 20 }, visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', damping: 20, stiffness: 250 } }, exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.15 } }, };
+const modalVariants = { hidden: { opacity: 0, scale: 0.9, y: 20 }, visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, damping: 20, stiffness: 250 } }, exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.15 } }, };
 
 export function LinkEditorModal({ isOpen, onClose, onSubmit, onRemove, initialUrl }: LinkEditorModalProps) {
     const [url, setUrl] = useState('');
@@ -37,8 +37,3 @@ export function LinkEditorModal({ isOpen, onClose, onSubmit, onRemove, initialUr
         </AnimatePresence>
     );
 }
-
-
-
-
-

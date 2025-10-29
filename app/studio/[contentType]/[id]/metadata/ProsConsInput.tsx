@@ -24,7 +24,7 @@ export function ProsConsInput({ label, items, setItems }: ProsConsInputProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <AnimatePresence>
                     {items.map((item, index) => (
-                        <motion.div key={index} layout variants={itemVariants} initial="hidden" animate="visible" exit="exit" transition={{ type: 'spring', stiffness: 400, damping: 25 }} className={metadataStyles.inputWrapper}>
+                        <motion.div key={index} layout variants={itemVariants} initial="hidden" animate="visible" exit="exit" transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }} className={metadataStyles.inputWrapper}>
                             <ActionButton type="button" onClick={() => handleRemoveItem(index)} aria-label={ariaLabel}>
                                 <RemoveIcon />
                             </ActionButton>
@@ -39,5 +39,3 @@ export function ProsConsInput({ label, items, setItems }: ProsConsInputProps) {
         </div>
     );
 }
-
-

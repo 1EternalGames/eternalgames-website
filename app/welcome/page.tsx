@@ -156,7 +156,7 @@ export default function WelcomePage() {
                         </label>
                     </div>
 
-                    <motion.button type="submit" className="primary-button" style={{ width: '100%', marginTop: '1rem', height: '48px' }} disabled={isButtonDisabled} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '5px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                    <motion.button type="submit" className="primary-button" style={{ width: '100%', marginTop: '1rem', height: '48px' }} disabled={isButtonDisabled} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '5px' }} transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}>
                         <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>إكمال الملف الشخصي</motion.span>}</AnimatePresence>
                     </motion.button>
                 </form>

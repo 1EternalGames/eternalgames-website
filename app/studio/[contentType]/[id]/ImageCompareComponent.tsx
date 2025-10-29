@@ -17,6 +17,14 @@ const SizeSmallIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill
 const SizeMediumIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="10" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>;
 const SizeLargeIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>;
 
+const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(2)} MB`;
+};
+
 const Dropzone = ({ side, src, onUpload }: { side: 'left' | 'right', src: string | null, onUpload: (file: File) => void }) => {
     const [isDragging, setIsDragging] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +40,10 @@ export const ImageCompareComponent = ({ node, updateAttributes, editor, getPos }
         try {
             toast.info('جار تحسين الصورة للرفع...', 'left');
             const quality = editor.storage.uploadQuality || '1080p';
-            const optimizedFile = await optimizeImageForUpload(file, quality);
+            // THE DEFINITIVE FIX: Destructure the object to get the file.
+            const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, quality);
+
+            toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
             
             const asset = await clientAssetUploader.assets.upload('image', optimizedFile, {
                 filename: optimizedFile.name,
@@ -81,5 +92,3 @@ export const ImageCompareComponent = ({ node, updateAttributes, editor, getPos }
         </NodeViewWrapper>
     );
 };
-
-

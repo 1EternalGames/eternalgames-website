@@ -96,7 +96,7 @@ export default function NewsPageClient({
       y: 0, 
       transition: { 
         duration: 0.7, 
-        ease: [0.22, 1, 0.36, 1] as [number, number, number, number]
+        ease: [0.22, 1, 0.36, 1] as const
       } 
     } 
   };
@@ -114,7 +114,7 @@ export default function NewsPageClient({
             <motion.div layout className={styles.neuralCascadeGrid}>
               <AnimatePresence>
                 {filteredNews.map((item, index) => (
-                    <motion.div key={item.id} layout className={index === 0 ? styles.leadStoryItem : ''} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
+                    <motion.div key={item.id} layout className={index === 0 ? styles.leadStoryItem : ''} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}>
                       <ArticleCard
                         article={item}
                         layoutIdPrefix="news-grid"

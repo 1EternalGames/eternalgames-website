@@ -21,12 +21,12 @@ const popoverVariants = {
 
 const AnimatedTag = ({ tag, onRemove }: { tag: Tag, onRemove: (tagId: string) => void }) => {
     const [isDeleting, setIsDeleting] = useState(false);
-    const tagVariants = { initial: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 }, exiting: { opacity: 0, scale: 0.6, transition: { duration: 0.2, ease: 'easeOut' } }, };
+    const tagVariants = { initial: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 }, exiting: { opacity: 0, scale: 0.6, transition: { duration: 0.2, ease: 'easeOut' as const } }, };
     const handleRemove = (e: React.MouseEvent) => { e.stopPropagation(); setIsDeleting(true); };
     return (
         <motion.div onClick={handleRemove} layout variants={tagVariants} initial="initial" animate={isDeleting ? "exiting" : "visible"} exit="exiting" onAnimationComplete={() => { if (isDeleting) { onRemove(tag._id); } }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem 0.75rem', borderRadius: '4px', zIndex: 1, cursor: 'pointer' }} title={`Click to remove "${translateTag(tag.title)}"`} whileHover={{ backgroundColor: 'color-mix(in srgb, #DC2626 15%, transparent)' }}>
             <span>{translateTag(tag.title)}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24" style={{ flexShrink: 0 }}><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </motion.div>
     );
 };

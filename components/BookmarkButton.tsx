@@ -12,13 +12,13 @@ const iconVariants = {
     marked: {
         rotate: [0, -5, 5, -2, 2, 0],
         scale: 1,
-        transition: { rotate: { duration: 0.5, ease: 'easeInOut' } }
+        transition: { rotate: { duration: 0.5, ease: 'easeInOut' as const } }
     },
 };
 
 const fillVariants = {
     unmarked: { opacity: 0, transition: { duration: 0.2 } },
-    marked: { opacity: 1, transition: { duration: 0.3, ease: 'easeIn' } },
+    marked: { opacity: 1, transition: { duration: 0.3, ease: 'easeIn' as const } },
 };
 
 const BookmarkIcon = () => (
@@ -71,5 +71,3 @@ const BookmarkButton = ({ contentId, contentType }: { contentId: number; content
 };
 
 export default BookmarkButton;
-
-

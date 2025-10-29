@@ -16,7 +16,7 @@ export default function AnimatedReleases({ releases }: { releases: any[] }) {
             variants={variants} 
             initial="hidden" 
             animate={isInView ? "visible" : "hidden"} 
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8, ease: "easeOut" as const }}
         >
             <ContentBlock title="إصدارات هذا الشهر">
                 <p style={{textAlign: 'center', maxWidth: '600px', margin: '-2rem auto 4rem auto', color: 'var(--text-secondary)'}}>نظرة على الألعاب التي ترى النور هذا الشهر. ما صدر منها قد وُسِمَ بعلامة.</p>
@@ -25,5 +25,3 @@ export default function AnimatedReleases({ releases }: { releases: any[] }) {
         </motion.div>
     );
 }
-
-

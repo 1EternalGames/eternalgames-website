@@ -82,7 +82,7 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                  <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.7, ease: "easeOut" }}
+                    transition={{ duration: 0.7, ease: "easeOut" as const }}
                 >
                     <HubFilters
                         activeTypeFilter={activeTypeFilter}
@@ -102,7 +102,7 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                                    transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
                                     style={{ height: '100%' }}
                                 >
                                     <ArticleCard

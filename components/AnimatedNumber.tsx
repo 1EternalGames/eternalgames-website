@@ -12,7 +12,7 @@ const Digit = ({ digit, isInView }: { digit: string; isInView: boolean }) => {
 
     useEffect(() => {
         if (isInView) {
-            animate(scope.current, { y: -DIGIT_MAP[digit] * digitHeight }, { duration: 1.5, ease: [0.22, 1, 0.36, 1] });
+            animate(scope.current, { y: -DIGIT_MAP[digit] * digitHeight }, { duration: 1.5, ease: [0.22, 1, 0.36, 1] as const });
         }
     }, [digit, isInView, animate, scope, digitHeight]);
 
@@ -30,7 +30,7 @@ export const AnimatedNumber = ({ value, isInView, className }: { value: number; 
 
     useEffect(() => {
         if (isInView) {
-            const popAnimation = animate(scope.current, { scale: [1, 1.15, 1], }, { duration: 0.4, delay: 1.5, ease: "easeOut", });
+            const popAnimation = animate(scope.current, { scale: [1, 1.15, 1], }, { duration: 0.4, delay: 1.5, ease: "easeOut" as const, });
             return () => { popAnimation.stop(); };
         }
     }, [isInView, animate, scope]);

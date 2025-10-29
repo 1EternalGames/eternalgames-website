@@ -12,7 +12,7 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const isLeft = index % 2 === 0;
     const variants = {
         hidden: { opacity: 0, x: isLeft ? -50 : 50, scale: 0.9 },
-        visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+        visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } }
     };
 
     return (
@@ -66,14 +66,9 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                 {releasesForThisMonth.length > 0 ? (
                     releasesForThisMonth.map((release, index) => ( <TimelineItem key={release._id} release={release} index={index} /> ))
                 ) : (
-                    <motion.div style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' }}>يجري تحديث جدول الإصدارات. عد قريبًا.</motion.div>
+                    <motion.div style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}>يجري تحديث جدول الإصدارات. عد قريبًا.</motion.div>
                 )}
             </div>
         </div>
     );
 }
-
-
-
-
-

@@ -45,7 +45,7 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                        transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
                         style={{ height: '100%' }}
                     >
                         <ArticleCard
@@ -58,5 +58,3 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
         </motion.div>
     );
 }
-
-

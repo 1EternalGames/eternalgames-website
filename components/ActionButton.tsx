@@ -19,7 +19,7 @@ const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProps>(
                 whileTap={{ scale: 0.9, y: 0 }}
                 whileHover={{ scale: 1.15, y: 0 }}
                 // --- THE FIX: Use an instantaneous tween/duration for immediate feel ---
-                transition={{ duration: 0.05, ease: "easeInOut" }}
+                transition={{ duration: 0.05, ease: "easeInOut" as const }}
                 {...props}
             >
                 {children}
@@ -30,5 +30,3 @@ const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProps>(
 
 ActionButton.displayName = 'ActionButton';
 export default ActionButton;
-
-
