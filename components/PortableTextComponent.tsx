@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic' // <-- IMPORT DYNAMIC
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
-import type { PortableTextBlock } from '@sanity/types';
+import type { PortableTextBlock } from '@portabletext/types';
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}><div className="spinner" /></div>;

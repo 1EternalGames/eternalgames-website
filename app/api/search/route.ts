@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await client.fetch<SanitySearchResult[]>(searchQuery, { query });
+    const results = await client.fetch<SanitySearchResult[]>(searchQuery, { searchTerm: query });
     return NextResponse.json(results);
   } catch (error) {
     console.error('Sanity search failed:', error);

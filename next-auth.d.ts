@@ -1,18 +1,23 @@
 // next-auth.d.ts
+import 'next-auth/jwt';
 
-declare module "next-auth" {
+// By redefining the entire user object, we ensure TS recognizes the custom properties.
+declare module 'next-auth' {
     interface Session {
         user?: {
             id: string;
             roles: string[];
             username?: string | null;
-        } & import("next-auth").DefaultSession["user"];
+            name?: string | null;
+            email?: string | null;
+            image?: string | null;
+        };
         needsOnboarding?: boolean;
     }
 }
 
-declare module "next-auth/jwt" {
-    interface JWT extends import("next-auth/jwt").JWT {
+declare module 'next-auth/jwt' {
+    interface JWT {
         id: string;
         roles: string[];
         username?: string | null;
