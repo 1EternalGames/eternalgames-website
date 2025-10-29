@@ -20,16 +20,22 @@ async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<San
     const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
     if (userIds.length === 0) return creators;
 
-    const users = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, username: true },
-    });
-    const usernameMap = new Map(users.map(u => [u.id, u.username]));
+    try {
+        const users = await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, username: true },
+        });
+        const usernameMap = new Map(users.map(u => [u.id, u.username]));
 
-    return creators.map(creator => ({
-        ...creator,
-        username: usernameMap.get(creator.prismaUserId) || creator.username || null,
-    }));
+        return creators.map(creator => ({
+            ...creator,
+            username: usernameMap.get(creator.prismaUserId) || creator.username || null,
+        }));
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Database connection failed during homepage creator enrichment. Skipping. Error:`, error);
+        // On build failure, gracefully return the creators without enriched data.
+        return creators;
+    }
 }
 
 async function getEngagementScoresMap() {

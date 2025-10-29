@@ -5,6 +5,7 @@ import { featuredHeroReviewQuery, allReviewsListQuery } from '@/lib/sanity.queri
 import { groq } from 'next-sanity';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
+import { Suspense } from 'react';
 
 export const revalidate = 60;
 
@@ -34,14 +35,15 @@ export default async function ReviewsPage() {
   // Filter the main list to exclude the hero review, preventing duplication
   const gridReviews = (otherReviews || []).filter(review => review._id !== heroReview._id);
 
+  // THE FIX: Wrap the client component in a Suspense boundary
   return (
-    <ReviewsPageClient 
-      heroReview={heroReview} 
-      otherReviews={gridReviews}
-      allGames={allGames}
-      allTags={allTags}
-    />
+    <Suspense fallback={<div className="spinner page-container" style={{margin: 'auto'}} />}>
+      <ReviewsPageClient 
+        heroReview={heroReview} 
+        otherReviews={gridReviews}
+        allGames={allGames}
+        allTags={allTags}
+      />
+    </Suspense>
   );
 }
-
-

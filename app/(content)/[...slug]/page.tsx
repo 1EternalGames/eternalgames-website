@@ -42,38 +42,53 @@ const contentConfig = {
 
 async function enrichCreator(creator: any) {
     if (!creator || !creator.prismaUserId) return creator;
-    const user = await prisma.user.findUnique({
-        where: { id: creator.prismaUserId },
-        select: { username: true, image: true, bio: true }
-    });
-    return {
-        ...creator,
-        username: user?.username || null,
-        image: user?.image || null,
-        bio: user?.bio || null,
-    };
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: creator.prismaUserId },
+            select: { username: true, image: true, bio: true }
+        });
+        return {
+            ...creator,
+            username: user?.username || null,
+            image: user?.image || null,
+            bio: user?.bio || null,
+        };
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Database connection failed during creator enrichment for "${creator.name}". Skipping. Error:`, error);
+        // On build failure, gracefully return the creator without enriched data.
+        return creator;
+    }
 }
 
 export async function generateStaticParams() {
-    const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]]{ "slug": slug.current, _type }`);
-    return allContent.filter(c => c.slug).map(c => {
-        const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
-        return { slug: [type, c.slug] };
-    });
+    try {
+        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]]{ "slug": slug.current, _type }`);
+        return allContent.filter(c => c.slug).map(c => {
+            const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
+            return { slug: [type, c.slug] };
+        });
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Failed to fetch slugs for generateStaticParams. This may be due to a network or API issue. Skipping static generation for content pages. Error:`, error);
+        return [];
+    }
 }
 
 async function Comments({ slug }: { slug: string }) {
-    const [comments, session] = await Promise.all([
-        prisma.comment.findMany({
-            where: { contentSlug: slug, parentId: null },
-            include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
-            orderBy: { createdAt: 'desc' },
-        }),
-        getServerSession(authOptions)
-    ]);
-    // The LazyCommentSection component has been removed for simplification.
-    // CommentSection is now loaded directly with Suspense handling the fallback.
-    return <CommentSection slug={slug} initialComments={comments} session={session as Session | null} />;
+    try {
+        const [comments, session] = await Promise.all([
+            prisma.comment.findMany({
+                where: { contentSlug: slug, parentId: null },
+                include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
+                orderBy: { createdAt: 'desc' },
+            }),
+            getServerSession(authOptions)
+        ]);
+        return <CommentSection slug={slug} initialComments={comments} session={session as Session | null} />;
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Database connection failed while fetching comments for slug "${slug}". Skipping comment pre-rendering. Error:`, error);
+        // Gracefully return the component with no initial comments if the DB fails.
+        return <CommentSection slug={slug} initialComments={[]} session={null} />;
+    }
 }
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {

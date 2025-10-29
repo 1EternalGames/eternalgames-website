@@ -4,11 +4,11 @@ import { featuredShowcaseArticlesQuery, allArticlesListQuery } from '@/lib/sanit
 import { groq } from 'next-sanity';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import ArticlesPageClient from './ArticlesPageClient';
+import { Suspense } from 'react';
 
 export const revalidate = 60;
 
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
-// THE FIX: Create two distinct queries for each tag category.
 const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}`;
 const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current}`;
 
@@ -30,15 +30,21 @@ export default async function ArticlesPage() {
     );
   }
 
+  const ArticlesPageFallback = () => (
+    <div className="container page-container" style={{display: 'flex', alignItems:'center', justifyContent: 'center'}}>
+      <div className="spinner" />
+    </div>
+  );
+
   return (
-    <ArticlesPageClient
-      featuredArticles={featuredArticles}
-      gridArticles={gridArticles}
-      allGames={allGames}
-      allGameTags={allGameTags}
-      allArticleTypeTags={allArticleTypeTags}
-    />
+    <Suspense fallback={<ArticlesPageFallback />}>
+      <ArticlesPageClient
+        featuredArticles={featuredArticles}
+        gridArticles={gridArticles}
+        allGames={allGames}
+        allGameTags={allGameTags}
+        allArticleTypeTags={allArticleTypeTags}
+      />
+    </Suspense>
   );
 }
-
-
