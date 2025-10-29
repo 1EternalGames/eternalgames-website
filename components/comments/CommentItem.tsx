@@ -44,7 +44,7 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
         startTransition(async () => {
             const result = await deleteComment(comment.id);
             if (result.success) {
-                onDeleteSuccess(result.deletedId || comment.id, result.wasDeleted, result.updatedComment);
+                onDeleteSuccess(result.deletedId || comment.id, result.wasDeleted ?? false, result.updatedComment);
             }
             setShowDeleteModal(false);
         });

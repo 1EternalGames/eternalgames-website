@@ -11,7 +11,7 @@ type Heading = {
     top: number;
 };
 
-export default function ReadingHud({ contentContainerRef, headings }: { contentContainerRef: React.RefObject<HTMLElement>, headings: Heading[] }) {
+export default function ReadingHud({ contentContainerRef, headings }: { contentContainerRef: React.RefObject<HTMLDivElement>, headings: Heading[] }) {
     const [activeHeadings, setActiveHeadings] = useState<Set<string>>(new Set());
     const [isVisible, setIsVisible] = useState(false);
     const scrollableHeightRef = useRef(0);
@@ -90,8 +90,3 @@ export default function ReadingHud({ contentContainerRef, headings }: { contentC
         </AnimatePresence>
     );
 };
-
-
-
-
-

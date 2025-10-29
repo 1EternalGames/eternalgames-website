@@ -18,7 +18,7 @@ const CloseIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="no
 
 const panelVariants = {
     hidden: { x: '-100%', opacity: 0 },
-    visible: { x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 150, staggerChildren: 0.05, delayChildren: 0.1 } },
+    visible: { x: 0, opacity: 1, transition: { type: 'spring' as const, damping: 25, stiffness: 150, staggerChildren: 0.05, delayChildren: 0.1 } },
     exit: { x: '-100%', opacity: 0, transition: { duration: 0.2 } }
 };
 const itemVariants = {
@@ -99,5 +99,3 @@ export default function ConstellationControlPanel({ settings, setSettings, onClo
         </motion.div>
     );
 }
-
-

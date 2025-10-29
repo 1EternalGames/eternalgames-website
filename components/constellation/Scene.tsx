@@ -177,7 +177,6 @@ const UserStarPoints = ({ stars, themeColors, hoveredStar, setHoveredStar, setAc
                 const colorKey = `${star.content._type}Color` as keyof typeof themeColors;
                 const isHovered = hoveredStar?.id === star.id;
                 return (
-                    // --- DEFINITIVE FIX IS HERE: Use _id as a fallback for the key ---
                     <group key={star.id || star.content._id} position={star.position}>
                         <InteractiveStar star={star} color={themeColors[colorKey]} isHovered={isHovered} onHover={setHoveredStar} onClick={handleStarClick} />
                         {(alwaysShowOrbits || isHovered) && star.actions.length > 0 && (
@@ -201,7 +200,7 @@ const HoverContext = ({ hoveredStar, alwaysShowOrbits }: { hoveredStar: StarData
                 {!alwaysShowOrbits && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        transition={{ duration: 0.2, ease: 'easeOut' as const }}
                         style={{
                             position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
                             background: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.5rem 1rem',
@@ -211,7 +210,7 @@ const HoverContext = ({ hoveredStar, alwaysShowOrbits }: { hoveredStar: StarData
                         }}
                     >
                         <p style={{ margin: 0, fontWeight: 600 }}>{hoveredStar.content.title}</p>
-                        <p style={{ margin: 0, textTransform: 'capitalize', color: 'var(--text-secondary)' }}>{hoveredStar.content.type}</p>
+                        <p style={{ margin: 0, textTransform: 'capitalize', color: 'var(--text-secondary)' }}>{hoveredStar.content._type}</p>
                     </motion.div>
                 )}
             </div>
@@ -224,7 +223,7 @@ function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, sett
     const { bloomIntensity, alwaysShowOrbits, flawlessPathThickness } = settings;
     const isBloomEnabled = bloomIntensity > 0;
 
-    const controlsRef = useRef<any>();
+    const controlsRef = useRef<any>(null);
     useFrame(() => {
         if (controlsRef.current) {
             controlsRef.current.autoRotate = !hoveredStar;
@@ -243,7 +242,7 @@ function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, sett
                     {chronologicalStars.length > 0 && (
                         <Select enabled>
                             <UserStarPoints stars={chronologicalStars} themeColors={themeColors} hoveredStar={hoveredStar} setHoveredStar={setHoveredStar} setActiveStar={setActiveStar} alwaysShowOrbits={alwaysShowOrbits} />
-                            <ConstellationPath pathPoints={chronologicalStars.map(s => s.position)} color={themeColors.pathColor} thickness={flawlessPathThickness} />
+                            <ConstellationPath pathPoints={chronologicalStars.map((s: StarData) => s.position)} color={themeColors.pathColor} thickness={flawlessPathThickness} />
                         </Select>
                     )}
                 </Selection>
@@ -251,7 +250,7 @@ function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, sett
                 chronologicalStars.length > 0 && (
                     <>
                         <UserStarPoints stars={chronologicalStars} themeColors={themeColors} hoveredStar={hoveredStar} setHoveredStar={setHoveredStar} setActiveStar={setActiveStar} alwaysShowOrbits={alwaysShowOrbits} />
-                        <ConstellationPath pathPoints={chronologicalStars.map(s => s.position)} color={themeColors.pathColor} thickness={flawlessPathThickness} />
+                        <ConstellationPath pathPoints={chronologicalStars.map((s: StarData) => s.position)} color={themeColors.pathColor} thickness={flawlessPathThickness} />
                     </>
                 )
             )}
@@ -290,11 +289,3 @@ export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings
         </Suspense>
     );
 };
-
-
-
-
-
-
-
-

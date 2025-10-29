@@ -1,5 +1,5 @@
 // types/sanity.ts
-import type { Image, PortableTextBlock } from 'sanity'
+import type { Image, PortableTextBlock } from '@sanity/types'
 
 export interface SanityImage extends Image {
     url: string;
@@ -33,6 +33,7 @@ export interface SanityGame {
 
 export interface SanityReview {
     _id: string;
+    _type: 'review';
     legacyId: number;
     title: string;
     slug: string;
@@ -61,6 +62,7 @@ export interface SanityReview {
 
 export interface SanityArticle {
     _id: string;
+    _type: 'article';
     legacyId: number;
     title: string;
     slug: string;
@@ -77,6 +79,7 @@ export interface SanityArticle {
 
 export interface SanityNews {
     _id: string;
+    _type: 'news';
     legacyId: number;
     title: string;
     slug: string;

@@ -12,7 +12,7 @@ position: ScreenPosition;
 onClose: () => void;
 }
 
-const typeMap = {
+const typeMap: Record<'review' | 'article' | 'news', string> = {
     review: 'مراجعة',
     article: 'مقالة',
     news: 'خبر'

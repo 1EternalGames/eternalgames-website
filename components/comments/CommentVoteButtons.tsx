@@ -5,14 +5,14 @@ import { voteOnComment } from '@/app/actions/commentActions';
 import { VoteType } from '@prisma/client';
 import { useUserStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
-import { motion, useAnimationControls } from 'framer-motion'; // <-- Ensure useAnimationControls is imported
+import { motion, useAnimationControls } from 'framer-motion';
 import styles from './Comments.module.css';
 
-const ThumbsUpIcon = ({ isActive }: { isActive: boolean }) => ( <motion.svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/0000/svg"> <motion.path d="M3,21a1,1,0,0,1-1-1V12a1,1,0,0,1,1-1H6V21ZM19.949,10H14.178V5c0-2-3.076-2-3.076-2s0,4-1.026,5C9.52,8.543,8.669,10.348,8,11V21H18.644a2.036,2.036,0,0,0,2.017-1.642l1.3-7A2.015,2.015,0,0,0,19.949,10Z" initial={false} animate={{ fill: isActive ? "currentColor" : "rgba(0,0,0,0)" }} transition={{ duration: 0.2, ease: "easeOut" }} stroke="currentColor" strokeWidth="1" /> </motion.svg> );
-const ThumbsDownIcon = ({ isActive }: { isActive: boolean }) => ( <motion.svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/0000/svg" style={{ transform: 'scaleY(-1)' }}> <motion.path d="M3,21a1,1,0,0,1-1-1V12a1,1,0,0,1,1-1H6V21ZM19.949,10H14.178V5c0-2-3.076-2-3.076-2s0,4-1.026,5C9.52,8.543,8.669,10.348,8,11V21H18.644a2.036,2.036,0,0,0,2.017-1.642l1.3-7A2.015,2.015,0,0,0,19.949,10Z" initial={false} animate={{ fill: isActive ? "currentColor" : "rgba(0,0,0,0)" }} transition={{ duration: 0.2, ease: "easeOut" }} stroke="currentColor" strokeWidth="1" /> </motion.svg> );
+const ThumbsUpIcon = ({ isActive }: { isActive: boolean }) => ( <motion.svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <motion.path d="M3,21a1,1,0,0,1-1-1V12a1,1,0,0,1,1-1H6V21ZM19.949,10H14.178V5c0-2-3.076-2-3.076-2s0,4-1.026,5C9.52,8.543,8.669,10.348,8,11V21H18.644a2.036,2.036,0,0,0,2.017-1.642l1.3-7A2.015,2.015,0,0,0,19.949,10Z" initial={false} animate={{ fill: isActive ? "currentColor" : "rgba(0,0,0,0)" }} transition={{ duration: 0.2, ease: "easeOut" as const }} stroke="currentColor" strokeWidth="1" /> </motion.svg> );
+const ThumbsDownIcon = ({ isActive }: { isActive: boolean }) => ( <motion.svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'scaleY(-1)' }}> <motion.path d="M3,21a1,1,0,0,1-1-1V12a1,1,0,0,1,1-1H6V21ZM19.949,10H14.178V5c0-2-3.076-2-3.076-2s0,4-1.026,5C9.52,8.543,8.669,10.348,8,11V21H18.644a2.036,2.036,0,0,0,2.017-1.642l1.3-7A2.015,2.015,0,0,0,19.949,10Z" initial={false} animate={{ fill: isActive ? "currentColor" : "rgba(0,0,0,0)" }} transition={{ duration: 0.2, ease: "easeOut" as const }} stroke="currentColor" strokeWidth="1" /> </motion.svg> );
 type Vote = { userId: string; type: VoteType; };
-const buttonVariants = { inactive: { scale: 1 }, active: { scale: [1, 1.3, 1.1], transition: { duration: 0.4, ease: "easeOut" } } }
-const countVariants = { initial: { y: 10, opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: -10, opacity: 0 }, transition: { type: 'spring', stiffness: 400, damping: 20 } };
+const buttonVariants = { inactive: { scale: 1 }, active: { scale: [1, 1.3, 1.1], transition: { duration: 0.4, ease: "easeOut" as const } } }
+const countVariants = { initial: { y: 10, opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: -10, opacity: 0 }, transition: { type: 'spring' as const, stiffness: 400, damping: 20 } };
 
 
 export default function CommentVoteButtons({ commentId, initialVotes, onVoteUpdate }: { 
@@ -88,8 +88,3 @@ export default function CommentVoteButtons({ commentId, initialVotes, onVoteUpda
         </div>
     );
 }
-
-
-
-
-

@@ -6,12 +6,13 @@ import VanguardReviews from './VanguardReviews/VanguardReviews';
 import { adaptToCardProps } from '@/lib/adapters';
 import AnimatedGridBackground from './AnimatedGridBackground';
 import styles from './DigitalAtriumHomePage.module.css';
+import { CardProps } from '@/types';
 
 export default function DigitalAtriumHomePage({ reviews, children }: {
     reviews: any[];
     children: React.ReactNode;
 }) {
-  const adaptedReviews = (reviews || []).map(adaptToCardProps).filter(Boolean);
+  const adaptedReviews = (reviews || []).map(adaptToCardProps).filter((item): item is CardProps => !!item);
   
   return (
     <div className={styles.atriumPageContainer}>

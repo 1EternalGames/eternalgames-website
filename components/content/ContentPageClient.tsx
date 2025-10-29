@@ -20,6 +20,7 @@ import ReadingHud from '@/components/ReadingHud';
 import { ContentBlock } from '@/components/ContentBlock';
 import CreatorCredit from '@/components/CreatorCredit';
 import styles from './ContentPage.module.css';
+import { CardProps } from '@/types';
 
 type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedContent?: any[] };
 type ContentType = 'reviews' | 'articles' | 'news';
@@ -71,7 +72,7 @@ export default function ContentPageClient({ item, type, children }: {
 
     const relatedContent = (item as any).relatedReviews || (item as any).relatedArticles || (item as any).relatedNews || [];
     const uniqueRelatedContent = relatedContent ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
-    const adaptedRelatedContent = (uniqueRelatedContent || []).map(adaptToCardProps).filter(Boolean);
+    const adaptedRelatedContent = (uniqueRelatedContent || []).map(adaptToCardProps).filter((item): item is CardProps => !!item);
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
