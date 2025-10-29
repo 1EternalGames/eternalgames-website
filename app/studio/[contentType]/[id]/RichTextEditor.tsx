@@ -110,10 +110,26 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
 
     const editor = useEditor({
         extensions: [
-            StarterKit.configure({ heading: false, bulletList: false, listItem: false, bold: false, image: false }),
+            StarterKit.configure({ heading: false, bulletList: false, listItem: false, bold: false }),
             Bold.extend({ addInputRules() { return [ new InputRule({ find: /(?:^|\s)(\*\*(?!\s+\*\*).+\*\*(?!\s+\*\*))$/, handler: ({ state, range, match }) => { const { tr } = state; const text = match[1]; const start = range.from; const end = range.to; tr.delete(start, end); tr.insertText(text.slice(2, -2), start); tr.addMark(start, start + text.length - 4, this.type.create()); }, }), ]; }, }),
-            Heading.configure({ levels: [2] }).extend({ onCreate({ editor }) { const transaction = editor.state.tr; editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading' && !node.attrs.id) { const id = slugify(node.textContent); transaction.setNodeMarkup(pos, undefined, { ...node.attrs, id }); } }); transaction.setMeta('addToHistory', false); editor.view.dispatch(transaction); }, addAttributes() { return { ...this.parent?.(), id: { default: null, parseHTML: element => element.getAttribute('id'), renderHTML: attributes => { if (!attributes.id) { return {}; } return { id: attributes.id }; }, }, }; }, }),
-            Link.configure({ openOnClick: false, autolink: true, inclusive: false, HTMLAttributes: { class: 'editor-link' }, }),
+            Heading.configure({ levels: [2] }).extend({
+                onCreate() {
+                    const editor = this.editor;
+                    const transaction = editor.state.tr;
+                    editor.state.doc.descendants((node, pos) => {
+                        if (node.type.name === 'heading' && !node.attrs.id) {
+                            const id = slugify(node.textContent);
+                            transaction.setNodeMarkup(pos, undefined, { ...node.attrs, id });
+                        }
+                    });
+                    transaction.setMeta('addToHistory', false);
+                    editor.view.dispatch(transaction);
+                },
+                addAttributes() {
+                    return { ...this.parent?.(), id: { default: null, parseHTML: element => element.getAttribute('id'), renderHTML: attributes => { if (!attributes.id) { return {}; } return { id: attributes.id }; }, }, };
+                },
+            }),
+            Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'editor-link' }, }),
             Placeholder.configure({ placeholder: 'اكتب محتواك هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
         ],
