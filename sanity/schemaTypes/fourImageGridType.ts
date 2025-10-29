@@ -1,5 +1,6 @@
 // sanity/schemaTypes/fourImageGridType.ts
 import { defineType, defineField } from 'sanity';
+import { Image } from '@sanity/types';
 
 export default defineType({
     name: 'fourImageGrid',
@@ -13,7 +14,7 @@ export default defineType({
     ],
     preview: {
         select: { media: 'image1' },
-        prepare({ media }) {
+        prepare({ media }: { media: Image }) {
             return { title: 'Four Image Grid', media };
         },
     },
