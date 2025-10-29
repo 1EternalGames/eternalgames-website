@@ -55,7 +55,7 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
         >
             <TooltipButton onClick={() => addBlock('image')} title="صورة واحدة" disabled={!editor}><SingleImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('imageCompare')} title="مقارنة صور" disabled={!editor}><CompareIcon /></TooltipButton>
@@ -66,5 +66,3 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
         </motion.div>
     );
 }
-
-

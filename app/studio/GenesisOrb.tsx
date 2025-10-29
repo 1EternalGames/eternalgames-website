@@ -20,8 +20,8 @@ const allContentTypes = [
 ];
 
 const orbContainerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } }, };
-const satelliteVariants = { hidden: { scale: 0, opacity: 0, x: 0, y: 0 }, visible: (custom: { x: number; y: number }) => ({ scale: 1, opacity: 1, x: custom.x, y: custom.y, transition: { type: 'spring', stiffness: 400, damping: 18 }, }), };
-const backdropVariants = { hidden: { scale: 0, opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }, visible: { scale: 1, opacity: 1, transition: { type: "spring", stiffness: 400, damping: 25 } }, };
+const satelliteVariants = { hidden: { scale: 0, opacity: 0, x: 0, y: 0 }, visible: (custom: { x: number; y: number }) => ({ scale: 1, opacity: 1, x: custom.x, y: custom.y, transition: { type: 'spring' as const, stiffness: 400, damping: 18 }, }), };
+const backdropVariants = { hidden: { scale: 0, opacity: 0, transition: { duration: 0.2, ease: "easeOut" as const } }, visible: { scale: 1, opacity: 1, transition: { type: "spring" as const, stiffness: 400, damping: 25 } }, };
 
 export function GenesisOrb() {
     const [isOpen, setIsOpen] = useState(false);
@@ -81,7 +81,7 @@ export function GenesisOrb() {
                     </>
                 )}
             </AnimatePresence>
-            <motion.button onClick={() => setIsOpen(!isOpen)} disabled={isPending} className={styles.genesisOrb} whileHover={{ scale: 1.05, boxShadow: isOpen ? '0 0 35px 0 #DC2626' : '0 0 35px 0 var(--accent)' }} whileTap={{ scale: 0.95 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} animate={{ scale: isOpen ? 1.1 : 1, backgroundColor: isOpen ? '#DC2626' : 'var(--accent)', boxShadow: isOpen ? '0 0 35px 0 #DC2626' : '0 0 35px 0 var(--accent)' }} >
+            <motion.button onClick={() => setIsOpen(!isOpen)} disabled={isPending} className={styles.genesisOrb} whileHover={{ scale: 1.05, boxShadow: isOpen ? '0 0 35px 0 #DC2626' : '0 0 35px 0 var(--accent)' }} whileTap={{ scale: 0.95 }} transition={{ type: 'spring' as const, stiffness: 300, damping: 20 }} animate={{ scale: isOpen ? 1.1 : 1, backgroundColor: isOpen ? '#DC2626' : 'var(--accent)', boxShadow: isOpen ? '0 0 35px 0 #DC2626' : '0 0 35px 0 var(--accent)' }} >
                 <motion.div animate={{ rotate: isOpen ? 45 : 0 }} className={isOpen ? styles.closeIcon : ''}>
                     <PlusIcon />
                 </motion.div>
@@ -89,5 +89,3 @@ export function GenesisOrb() {
         </div>
     );
 }
-
-

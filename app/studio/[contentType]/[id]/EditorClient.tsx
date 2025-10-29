@@ -243,7 +243,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                     <div className={`${styles.documentStatus} ${statusInfo.className}`}>{statusInfo.text}</div>
                 </div>
             </header>
-            <motion.div className={styles.sanctumMain} layout transition={{ type: 'spring', stiffness: 400, damping: 40 }}>
+            <motion.div className={styles.sanctumMain} layout transition={{ type: 'spring' as const, stiffness: 400, damping: 40 }}>
                 <EditorSidebar 
                     document={sourceOfTruth} 
                     isOpen={isSidebarOpen} 

@@ -26,7 +26,7 @@ const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: 
 
     return (
         <motion.div layoutId={`canvas-card-${item._id}`} style={{ position: 'relative', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16 / 10', cursor: 'pointer' }} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => setIsClicked(prev => !prev)} >
-            <motion.div className="canvas-image-container" animate={{ scale: isDrawerVisible ? 1.05 : 1, filter: isDrawerVisible ? 'brightness(0.8)' : 'brightness(1)' }} transition={{ type: 'spring', damping: 20, stiffness: 150 }} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} >
+            <motion.div className="canvas-image-container" animate={{ scale: isDrawerVisible ? 1.05 : 1, filter: isDrawerVisible ? 'brightness(0.8)' : 'brightness(1)' }} transition={{ type: 'spring' as const, damping: 20, stiffness: 150 }} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} >
                 {rawImageUrlWithBuster ? (<img src={rawImageUrlWithBuster} alt={item.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>) : (<span style={{color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600}}>NO IMAGE</span>)}
             </motion.div>
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)', pointerEvents: 'none' }} />
@@ -112,7 +112,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
             <motion.div layout className="content-grid" style={{gap: '1.5rem'}}>
                 <AnimatePresence>
                     {filteredContent.map(item => (
-                        <motion.div key={item._id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ type: 'spring', damping: 20, stiffness: 200 }} >
+                        <motion.div key={item._id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ type: 'spring' as const, damping: 20, stiffness: 200 }} >
                             <ContentCanvas item={item} onDelete={handleDelete} />
                         </motion.div>
                     ))}
