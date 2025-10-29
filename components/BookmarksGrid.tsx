@@ -7,24 +7,27 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArticleCard from './ArticleCard';
 import { adaptToCardProps } from '@/lib/adapters';
+import { CardProps } from '@/types';
 
 export default function BookmarksGrid({ initialItems }: { initialItems: any[] }) {
     // We still subscribe to the store to get real-time updates when a user bookmarks/unbookmarks.
     const bookmarksFromStore = useUserStore(state => state.bookmarks);
     
-    // The initial state is now server-rendered, providing a fast first paint.
-    const [bookmarkedItems, setBookmarkedItems] = useState(() => 
-        initialItems.map(adaptToCardProps).filter(Boolean)
-    );
+    // THE DEFINITIVE FIX: Filter out nulls and then assert the final type.
+    const initialBookmarkedItems = initialItems
+        .map(adaptToCardProps)
+        .filter(Boolean) as CardProps[];
+    
+    const [bookmarkedItems, setBookmarkedItems] = useState<CardProps[]>(initialBookmarkedItems);
 
     useEffect(() => {
         // This effect ensures the grid visually updates when the store changes,
         // without needing a full page refresh.
-        const currentIdsInGrid = new Set(bookmarkedItems.map(item => item.id));
+        const currentKeysInGrid = new Set(bookmarkedItems.map(item => `${item.type}-${item.id}`));
         
-        if (bookmarksFromStore.length < currentIdsInGrid.size) {
+        if (bookmarksFromStore.length < currentKeysInGrid.size) {
             // An item was removed
-            setBookmarkedItems(prev => prev.filter(item => bookmarksFromStore.includes(item.id)));
+            setBookmarkedItems(prev => prev.filter(item => bookmarksFromStore.includes(`${item.type}-${item.id}`)));
         }
         // Note: Adding items in real-time is more complex and would require a re-fetch.
         // This implementation prioritizes correct removal, which is the more common action on this page.

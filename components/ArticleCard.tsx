@@ -70,7 +70,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
             >
                 <Link href={linkPath} onClick={handleClick} className="no-underline">
                     <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
-                        {hasScore && ( <motion.div className={styles.score}>{article.score.toFixed(1)}</motion.div> )}
+                        {hasScore && ( <motion.div className={styles.score}>{article.score!.toFixed(1)}</motion.div> )}
                         <Image 
                             loader={sanityLoader}
                             src={imageSource}

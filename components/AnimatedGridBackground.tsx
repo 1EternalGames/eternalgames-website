@@ -2,6 +2,7 @@
 
 'use client';
 
+import React from 'react';
 import { motion } from 'framer-motion';
 
 export default function AnimatedGridBackground() {
@@ -19,7 +20,7 @@ export default function AnimatedGridBackground() {
         backgroundImage:
           'linear-gradient(to right, var(--grid-color) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px)',
         backgroundSize: 'var(--grid-size) var(--grid-size)',
-      }}
+      } as React.CSSProperties}
       animate={{
         backgroundPosition: ['0px 0px', 'var(--grid-size) var(--grid-size)'],
       }}
@@ -31,26 +32,3 @@ export default function AnimatedGridBackground() {
     />
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
