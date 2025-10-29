@@ -31,7 +31,7 @@ export default defineType({
                 ],
                 layout: 'radio'
             },
-            validation: (Rule: Rule) => Rule.required(),
+            validation: (Rule) => Rule.required(),
             initialValue: 'Game'
         }),
     ],
