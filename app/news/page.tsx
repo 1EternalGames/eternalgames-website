@@ -4,6 +4,7 @@ import { allNewsListQuery } from '@/lib/sanity.queries'; // Use LEAN query
 import { groq } from 'next-sanity';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import NewsPageClient from './NewsPageClient';
+import { Suspense } from 'react';
 
 export const revalidate = 60;
 
@@ -31,15 +32,15 @@ export default async function NewsPage() {
   
   const latestHeadlines = allNews.slice(0, 7);
 
-  // Pass fast data to client. Client will fetch slow engagement data.
+  // THE FIX: Wrap the client component in Suspense
   return (
-    <NewsPageClient
-      allNews={allNews}
-      latestHeadlines={latestHeadlines}
-      allGames={allGames}
-      allTags={allTags}
-    />
+    <Suspense fallback={<div className="spinner page-container" style={{margin: 'auto'}} />}>
+      <NewsPageClient
+        allNews={allNews}
+        latestHeadlines={latestHeadlines}
+        allGames={allGames}
+        allTags={allTags}
+      />
+    </Suspense>
   );
 }
-
-

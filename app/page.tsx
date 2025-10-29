@@ -55,7 +55,7 @@ async function getEngagementScoresMap() {
         });
         return scoresMap;
     } catch (error) {
-        console.error('Failed to fetch engagement scores on server:', error);
+        console.warn('Build-time DB connection failed for engagement scores. Gracefully continuing. Error:', error);
         return new Map<number, number>();
     }
 }
