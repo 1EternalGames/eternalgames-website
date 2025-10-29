@@ -16,10 +16,10 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'cdn.sanity.io',
             },
-            // Vercel Blob Storage (for user avatars)
+            // Vercel Blob Storage (for user avatars) - WILDCARD ADDED
             {
                 protocol: 'https',
-                hostname: 'prbfm1qu2ulcoznj.public.blob.vercel-storage.com',
+                hostname: '*.public.blob.vercel-storage.com',
             },
             // Google OAuth Avatars
             {

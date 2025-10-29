@@ -85,8 +85,8 @@ async function Comments({ slug }: { slug: string }) {
         ]);
         return <CommentSection slug={slug} initialComments={comments} session={session as Session | null} />;
     } catch (error) {
-        console.warn(`[BUILD WARNING] Database connection failed while fetching comments for slug "${slug}". Skipping comment pre-rendering. Error:`, error);
-        // Gracefully return the component with no initial comments if the DB fails.
+        // This catch block handles both DB connection errors and dynamic server usage errors during build.
+        console.warn(`[BUILD WARNING] Database/session access failed while pre-rendering comments for slug "${slug}". Skipping. Error digest:`, (error as any)?.digest);
         return <CommentSection slug={slug} initialComments={[]} session={null} />;
     }
 }
