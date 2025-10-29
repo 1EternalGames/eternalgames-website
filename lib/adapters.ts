@@ -1,10 +1,11 @@
 // lib/adapters.ts
 import { urlFor } from '@/sanity/lib/image';
+import { CardProps } from '@/types';
 
 const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export const adaptToCardProps = (item: any) => {
+export const adaptToCardProps = (item: any): CardProps | null => {
     if (!item) return null;
 
     const imageAsset = item.mainImage?.asset || item.mainImageRef;

@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic' // <-- IMPORT DYNAMIC
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
-import { PortableTextBlock } from 'sanity';
+import type { PortableTextBlock } from '@sanity/types';
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}><div className="spinner" /></div>;
@@ -67,7 +67,7 @@ const SanityImageComponent = ({ value }: { value: any }) => {
     );
 };
 
-const H2Component = ({ children }: { children: React.ReactNode }) => {
+const H2Component = ({ children }: { children?: React.ReactNode }) => {
     const textContent = Array.isArray(children) ? children.join('') : (children as string) || '';
     const id = slugify(textContent);
     return <h2 id={id} style={{ margin: '5rem 0 2rem 0', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>{children}</h2>

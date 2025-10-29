@@ -12,7 +12,7 @@ export default function DigitalAtriumHomePage({ reviews, children }: {
     reviews: any[];
     children: React.ReactNode;
 }) {
-  const adaptedReviews = (reviews || []).map(adaptToCardProps).filter((item): item is CardProps => !!item);
+  const adaptedReviews = (reviews || []).map(adaptToCardProps).filter(Boolean) as CardProps[];
   
   return (
     <div className={styles.atriumPageContainer}>

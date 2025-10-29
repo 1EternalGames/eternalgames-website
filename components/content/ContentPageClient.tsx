@@ -72,7 +72,7 @@ export default function ContentPageClient({ item, type, children }: {
 
     const relatedContent = (item as any).relatedReviews || (item as any).relatedArticles || (item as any).relatedNews || [];
     const uniqueRelatedContent = relatedContent ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
-    const adaptedRelatedContent = (uniqueRelatedContent || []).map(adaptToCardProps).filter((item): item is CardProps => !!item);
+    const adaptedRelatedContent = (uniqueRelatedContent || []).map(adaptToCardProps).filter(Boolean) as CardProps[];
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -127,7 +127,7 @@ export default function ContentPageClient({ item, type, children }: {
                             <ContentBlock title="قد يروق لك">
                                 <div className={styles.relatedGrid}>
                                     {adaptedRelatedContent.map(related => (
-                                        <ArticleCard key={related.id} article={related} layoutIdPrefix={`related-${type}`} isArticle={true} />
+                                        <ArticleCard key={related?.id} article={related} layoutIdPrefix={`related-${type}`} isArticle={true} />
                                     ))}
                                 </div>
                             </ContentBlock>

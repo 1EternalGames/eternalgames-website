@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { client } from '@/lib/sanity.client';
 import { searchQuery } from '@/lib/sanity.queries';
+import { SanitySearchResult } from '@/types/sanity';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await client.fetch(searchQuery, { query });
+    const results = await client.fetch<SanitySearchResult[]>(searchQuery, { query });
     return NextResponse.json(results);
   } catch (error) {
     console.error('Sanity search failed:', error);

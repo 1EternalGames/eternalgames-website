@@ -15,7 +15,7 @@ export default async function ProfilePage() {
     // Fetch user and check if they have a password set (i.e., not an OAuth user)
     const user = await prisma.user.findUnique({ 
         where: { id: session.user.id }, 
-        select: { password: true, id: true, name: true, email: true, username: true, image: true, createdAt: true, bio: true, twitterHandle: true, instagramHandle: true, age: true, country: true, agePublic: true, countryPublic: true }
+        select: { password: true, id: true, name: true, email: true, username: true, image: true, createdAt: true, bio: true, twitterHandle: true, instagramHandle: true, age: true, country: true, agePublic: true, countryPublic: true, emailVerified: true }
     });
 
     if (!user) { redirect('/api/auth/signin'); }

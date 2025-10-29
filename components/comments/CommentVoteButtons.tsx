@@ -41,7 +41,9 @@ export default function CommentVoteButtons({ commentId, initialVotes, onVoteUpda
     const currentUserVote = optimisticVotes.find(v => v.userId === session?.user?.id)?.type;
 
     const handleVote = (voteType: VoteType) => {
-        if (!session?.user?.id) { setSignInModalOpen(true); return; }
+        const userId = session?.user?.id;
+        if (!userId) { setSignInModalOpen(true); return; }
+
         const requestId = ++latestRequestRef.current;
         
         if (voteType === 'LIKE') {
@@ -51,7 +53,7 @@ export default function CommentVoteButtons({ commentId, initialVotes, onVoteUpda
         }
         
         startTransition(() => {
-            setOptimisticVotes({ voteType, userId: session.user.id! });
+            setOptimisticVotes({ voteType, userId });
         });
 
         voteOnComment(commentId, voteType).then(result => {
