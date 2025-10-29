@@ -12,7 +12,7 @@ const itemVariants = { hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x:
 
 export default function GameFilterPopover({ allGames, selectedGame, onGameSelect, onClose }: { allGames: SanityGame[], selectedGame: SanityGame | null, onGameSelect: (game: SanityGame | null) => void, onClose: () => void }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<SanityGame[]>(allGames);
+  const [results, setResults] = useState<(SanityGame | { _id: string; title: string; })[]>(allGames);
   const debouncedSearchTerm = useDebounce(searchTerm, 200);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function GameFilterPopover({ allGames, selectedGame, onGameSelect
       <input type="search" placeholder="Search for a game..." className={styles.popoverSearchInput} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
       <div className={styles.popoverResultsList}>
         {results.map(game => (
-          <motion.button key={game._id} variants={itemVariants} className={`${styles.popoverItemButton} ${selectedGame?._id === game._id ? styles.selected : ''}`} onClick={() => { onGameSelect(game); onClose(); }}>
+          <motion.button key={game._id} variants={itemVariants} className={`${styles.popoverItemButton} ${selectedGame?._id === game._id ? styles.selected : ''}`} onClick={() => { onGameSelect(game as SanityGame); onClose(); }}>
             {game.title}
           </motion.button>
         ))}
@@ -36,8 +36,3 @@ export default function GameFilterPopover({ allGames, selectedGame, onGameSelect
     </motion.div>
   );
 }
-
-
-
-
-

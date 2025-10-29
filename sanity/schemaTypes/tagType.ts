@@ -1,4 +1,4 @@
-import {defineField, defineType} from 'sanity'
+import {defineField, defineType, Rule} from 'sanity'
 
 export default defineType({
     name: 'tag',
@@ -31,10 +31,8 @@ export default defineType({
                 ],
                 layout: 'radio'
             },
-            validation: Rule => Rule.required(),
+            validation: (Rule: Rule) => Rule.required(),
             initialValue: 'Game'
         }),
     ],
 })
-
-

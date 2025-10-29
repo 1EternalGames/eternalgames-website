@@ -1,5 +1,6 @@
 // sanity/schemaTypes/twoImageGridType.ts
 import { defineType, defineField } from 'sanity';
+import { Image } from '@sanity/types';
 
 export default defineType({
     name: 'twoImageGrid',
@@ -24,7 +25,7 @@ export default defineType({
             media: 'image1',
             media2: 'image2',
         },
-        prepare({ media, media2 }) {
+        prepare({ media, media2 }: { media?: Image, media2?: Image }) {
             return {
                 title: 'Two Image Grid',
                 media: media || media2,

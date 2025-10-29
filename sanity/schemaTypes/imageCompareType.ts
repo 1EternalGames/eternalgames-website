@@ -1,5 +1,6 @@
 // sanity/schemaTypes/imageCompareType.ts
-import { defineType, defineField } from 'sanity';
+import { defineType, defineField, Rule } from 'sanity';
+import { Image } from '@sanity/types';
 
 export default defineType({
     name: 'imageCompare',
@@ -11,14 +12,14 @@ export default defineType({
             title: 'Image 1 (Before)',
             type: 'image',
             options: { hotspot: true },
-            validation: Rule => Rule.required(),
+            validation: (Rule: Rule) => Rule.required(),
         }),
         defineField({
             name: 'image2',
             title: 'Image 2 (After)',
             type: 'image',
             options: { hotspot: true },
-            validation: Rule => Rule.required(),
+            validation: (Rule: Rule) => Rule.required(),
         }),
         defineField({
             name: 'size',
@@ -40,7 +41,7 @@ export default defineType({
             media: 'image1',
             media2: 'image2',
         },
-        prepare({ media, media2 }) {
+        prepare({ media, media2 }: { media?: Image, media2?: Image }) {
             return {
                 title: 'Image Comparison',
                 media: media || media2,
@@ -48,5 +49,3 @@ export default defineType({
         },
     },
 });
-
-

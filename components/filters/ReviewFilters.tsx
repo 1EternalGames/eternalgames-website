@@ -21,7 +21,7 @@ const scoreRangeMap: Record<ScoreFilter, string> = { 'All': 'الكل', '9-10': 
 export default function ReviewFilters({ activeSort, onSortChange, selectedScoreRange, onScoreSelect, allGames, selectedGame, onGameSelect, allTags, selectedTags, onTagToggle, onClearAll, searchTerm, onSearchChange }: any) {
     const { popoverRef, openPopover, togglePopover, closePopover } = usePopoverManager();
 
-    const scoreButtonLabel = selectedScoreRange === 'All' ? 'التقييم' : `التقييم: ${scoreRangeMap[selectedScoreRange]}`;
+    const scoreButtonLabel = selectedScoreRange === 'All' ? 'التقييم' : `التقييم: ${scoreRangeMap[selectedScoreRange as ScoreFilter]}`;
     const hasActiveFilters = selectedScoreRange !== 'All' || !!selectedGame || selectedTags.length > 0 || searchTerm;
 
     return (

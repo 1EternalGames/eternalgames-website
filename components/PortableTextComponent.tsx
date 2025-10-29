@@ -2,12 +2,13 @@
 'use client'
 
 import React from 'react'
-import { PortableText, PortableTextComponents } from '@portabletext/react'
+import { PortableText, PortableTextComponents, PortableTextComponentProps } from '@portabletext/react'
 import { urlFor } from '@/sanity/lib/image'
 import dynamic from 'next/dynamic' // <-- IMPORT DYNAMIC
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
+import { PortableTextBlock } from 'sanity';
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}><div className="spinner" /></div>;
@@ -72,6 +73,10 @@ const H2Component = ({ children }: { children: React.ReactNode }) => {
     return <h2 id={id} style={{ margin: '5rem 0 2rem 0', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>{children}</h2>
 }
 
+const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock>) => {
+    return <blockquote style={{ margin: '4rem 0', paddingLeft: '2rem', borderLeft: '4px solid var(--accent)', fontSize: '2.4rem', fontStyle: 'italic', color: 'var(--text-primary)' }}>{props.children}</blockquote>;
+}
+
 const components: PortableTextComponents = {
     types: { 
         image: SanityImageComponent,
@@ -79,7 +84,7 @@ const components: PortableTextComponents = {
         twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
         fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
     },
-    block: { h2: H2Component, blockquote: ({ children }) => <blockquote style={{ margin: '4rem 0', paddingLeft: '2rem', borderLeft: '4px solid var(--accent)', fontSize: '2.4rem', fontStyle: 'italic', color: 'var(--text-primary)' }}>{children}</blockquote>, },
+    block: { h2: H2Component, blockquote: BlockquoteComponent },
 }
 
 export default function PortableTextComponent({ content }: { content: any[] }) {

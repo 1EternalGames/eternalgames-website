@@ -155,7 +155,7 @@ export default function HorizontalShowcase({ articles, onActiveIndexChange }: { 
         {articles.map((article, index) => (
           <div 
             key={article.id} 
-            ref={el => cardRefs.current[index] = el}
+            ref={(el) => { cardRefs.current[index] = el; }}
             className={styles.showcaseItemWrapper}
           >
             <ShowcaseCard
