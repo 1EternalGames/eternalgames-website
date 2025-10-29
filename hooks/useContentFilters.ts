@@ -61,7 +61,7 @@ export function useContentFilters(initialItems: any[], filters: ContentFilters):
             items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
         }
 
-        return items.map(adaptToCardProps).filter((item): item is CardProps => !!item);
+        return items.map(adaptToCardProps).filter(Boolean) as CardProps[];
 
     }, [initialItems, filters, engagementScores]);
 }

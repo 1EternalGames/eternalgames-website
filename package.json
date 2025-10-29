@@ -50,6 +50,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@fullhuman/postcss-purgecss": "^7.0.2",
+    "@sanity/types": "^4.10.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

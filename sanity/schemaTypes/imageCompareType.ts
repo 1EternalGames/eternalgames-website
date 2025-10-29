@@ -12,14 +12,14 @@ export default defineType({
             title: 'Image 1 (Before)',
             type: 'image',
             options: { hotspot: true },
-            validation: (Rule: Rule) => Rule.required(),
+            validation: (Rule) => Rule.required(),
         }),
         defineField({
             name: 'image2',
             title: 'Image 2 (After)',
             type: 'image',
             options: { hotspot: true },
-            validation: (Rule: Rule) => Rule.required(),
+            validation: (Rule) => Rule.required(),
         }),
         defineField({
             name: 'size',
