@@ -65,13 +65,18 @@
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
   flex-shrink: 0;
 }
+
+/* --- THE FIX IS HERE --- */
+[data-theme="dark"] .satelliteOrb {
+  color: var(--text-primary);
+}
+
 .satelliteOrb:hover {
   border-color: var(--accent);
   color: var(--accent);
   transform: scale(1.1);
 }
 
-/* --- THE FIX IS HERE --- */
 .satelliteOrb svg {
   color: currentColor; /* Inherit color from the parent .satelliteOrb */
   filter: grayscale(0) opacity(1) !important;
@@ -102,8 +107,10 @@
 .closeIcon {
   color: #fff !important;
 }
+[data-theme="dark"] .closeIcon {
+  color: var(--bg-primary) !important;
+}
+
 .closeIcon:hover {
   filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
 }
-
-

@@ -63,7 +63,13 @@ export function GenesisOrb() {
                         <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="hidden" onClick={() => setIsOpen(false)} style={{ position: 'absolute', top: '-110px', right: '-110px', width: '300px', height: '300px', backgroundColor: 'transparent', borderRadius: '50%', zIndex: 10, cursor: 'default' }} />
                         <motion.div className={styles.genesisSatellites} variants={orbContainerVariants} initial="hidden" animate="visible" exit="hidden" >
                             {availableTypes.map((item, i) => {
-                                const angleInDegrees = 180 + (i * (90 / (availableTypes.length -1 || 1) ));
+                                // --- THE DEFINITIVE FIX ---
+                                // The total arc of deployment is increased from 90 to 110 degrees.
+                                // The starting angle is shifted from 180 to 170 to re-center the arc.
+                                const totalAngle = 110;
+                                const startAngle = 170;
+                                const angleInDegrees = startAngle + (i * (totalAngle / (availableTypes.length -1 || 1) ));
+                                // --- END FIX ---
                                 const angleInRadians = angleInDegrees * (Math.PI / 180);
                                 const radius = 100;
                                 const x = Math.cos(angleInRadians) * radius;

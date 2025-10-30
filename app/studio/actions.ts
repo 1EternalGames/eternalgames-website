@@ -11,7 +11,8 @@ import { slugify } from 'transliteration';
 import { tiptapToPortableText } from './utils/tiptapToPortableText';
 import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery } from '@/lib/sanity.queries';
-import type { QueryParams } from '@sanity/client';
+import type { QueryParams, IdentifiedSanityDocumentStub } from '@sanity/client';
+
 
 // --- uploadImageFromUrlAction REMOVED as it's no longer needed ---
 
@@ -154,8 +155,6 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
     if (!doc) return { success: false, message: 'Document not found.' };
     
     const docType = doc._type;
-
-    // THE DEFINITIVE FIX: The guard clause blocking 'gameRelease' is removed.
     
     const canPublish = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER')) || (docType === 'gameRelease' && isAdminOrDirector);
     if (!canPublish) return { success: false, message: 'صلاحيات غير كافية.' };
@@ -194,7 +193,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
         }
         
         if (draft) {
-            const publishedDocPayload: Record<string, any> = { ...draft, _id: publicId };
+            const publishedDocPayload: IdentifiedSanityDocumentStub = { ...draft, _id: publicId };
             if (docType !== 'gameRelease') {
                 publishedDocPayload.publishedAt = finalTime;
             }

@@ -69,11 +69,10 @@ export interface SanityArticle {
     authors: SanityAuthor[];
     designers?: SanityAuthor[];
     game: { title: string };
-    mainImage: { url: string, blurDataURL: string };
+    mainImage: SanityImage; // THE FIX
     content?: PortableTextBlock[];
     tags: { _id: string, title: string }[];
-    publishedAt: string; // <-- NOW REQUIRED
-    // publishedYear REMOVED
+    publishedAt: string; 
     relatedArticles?: any[];
 }
 
@@ -85,10 +84,10 @@ export interface SanityNews {
     slug: string;
     reporters: SanityAuthor[];
     designers?: SanityAuthor[];
-    mainImage: { url: string, blurDataURL: string };
+    mainImage: SanityImage; // THE FIX
     category: string;
     tags: { _id: string, title: string }[];
-    publishedAt: string; // <-- NOW REQUIRED
+    publishedAt: string; 
     content?: PortableTextBlock[];
 }
 
@@ -100,7 +99,7 @@ export interface SanityGameRelease {
     releaseDate: string;
     platforms: ('PC' | 'PS5' | 'Xbox' | 'Switch')[];
     synopsis: string;
-    mainImage: { url: string, blurDataURL: string };
+    mainImage: SanityImage; // THE FIX
 }
 
 export interface SanitySearchResult {
