@@ -23,7 +23,6 @@ export default function DigitalAtriumHomePage({ reviews, children }: {
         </ContentBlock>
       </div>
       
-      {/* The main content area now only renders the children (AnimatedReleases). */}
       <div className={`container ${styles.atriumMainContent}`}>
           {children}
       </div>

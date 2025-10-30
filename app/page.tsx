@@ -137,7 +137,7 @@ export default async function HomePage() {
 
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
-            {topArticles.length > 0 && <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
+            <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 <ReleasesSection />
             </Suspense>
