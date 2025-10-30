@@ -1,37 +1,61 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.js
 
-# testing
+# Testing
 /coverage
 
-# next.js
+# Next.js build output
 /.next/
 /out/
 
-# production
+# Production
 /build
 
-# misc
-.DS_Store
-*.pem
+# Vercel
+.vercel
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Sanity Studio
+# The static build of the Sanity Studio is generated here
+# and it's not meant to be checked into version control
+/sanity/dist
 
-# local env files
+# dotenv environment variables file
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# vercel
-.vercel
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
 
-# Turbopack
-.turbo
+# Editor directories and files
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- PROJECT-SPECIFIC CLEANUP ---
+# Ignore all temporary code dump text files
+EternalGamesWebsite_Full*.txt
+
+# Ignore Python and batch scripts
+*.py
+*.bat
+
+# Ignore temporary build files and backups
+Build
+next
+eternalgames-next@*
+*.bak
+run2.bat
+WebsiteGatherer2.py
+123.py
