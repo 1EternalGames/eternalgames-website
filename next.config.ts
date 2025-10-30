@@ -2,7 +2,7 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: false,
+    reactStrictMode: true,
 
     env: {
         NEXT_PUBLIC_SANITY_PROJECT_ID: '0zany1dm',

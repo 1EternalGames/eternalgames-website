@@ -85,7 +85,7 @@ export default function ContentPageClient({ item, type, children }: {
     const primaryCreators = (item as any).authors || (item as any).reporters || [];
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
-    const heroImageUrl = urlFor(item.mainImage).width(1920).height(1080).fit('crop').auto('format').url();
+    const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
 
     return (
         <>
