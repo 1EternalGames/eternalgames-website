@@ -1,7 +1,6 @@
 // app/(content)/[...slug]/page.tsx
 import { unstable_cache } from 'next/cache';
 import { client } from '@/lib/sanity.client';
-import dynamic from 'next/dynamic';
 import {
     reviewBySlugQuery, latestReviewsFallbackQuery,
     articleBySlugQuery, latestArticlesFallbackQuery,
@@ -9,16 +8,11 @@ import {
 } from '@/lib/sanity.queries';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
+import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
 
 export const revalidate = 60;
-
-// MAINTAINED: The entire comment section will only be loaded when it is about to be scrolled into view.
-const CommentSection = dynamic(() => import('@/components/comments/CommentSection'), {
-    loading: () => <div className="spinner" style={{ margin: '8rem auto' }} />,
-    ssr: false, // The component fetches session client-side, making SSR unnecessary.
-});
 
 const contentConfig = {
     reviews: {
@@ -44,6 +38,7 @@ const contentConfig = {
     },
 };
 
+// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
 const getCachedCreatorDetails = unstable_cache(
     async (prismaUserId: string) => {
         try {
@@ -65,6 +60,8 @@ const getCachedCreatorDetails = unstable_cache(
     { revalidate: 3600 }
 );
 
+
+// MODIFIED: This function now uses the cached helper.
 async function enrichCreator(creator: any) {
     if (!creator || !creator.prismaUserId) return creator;
     
@@ -97,7 +94,6 @@ async function Comments({ slug }: { slug: string }) {
             include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
             orderBy: { createdAt: 'desc' },
         });
-        // Renders the lazy-loaded component with its initial server-fetched data.
         return <CommentSection slug={slug} initialComments={comments} />;
     } catch (error) {
         console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);

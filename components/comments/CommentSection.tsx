@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useOptimistic } from 'react';
-import { useSession } from 'next-auth/react'; // <-- THE FIX: Import client-side session hook
+import { useSession } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import { postReplyOrComment } from '@/app/actions/commentActions';
 import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
@@ -12,7 +13,7 @@ import styles from './Comments.module.css';
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
     return comments.map(comment => {
         if (comment.id === parentId) {
-            const updatedReplies = comment.replies ? [...comment.replies, reply] : [reply]; // Append to end
+            const updatedReplies = comment.replies ? [...comment.replies, reply] : [reply];
             return { ...comment, replies: updatedReplies, _count: { replies: (comment._count?.replies || 0) + 1 } };
         }
         if (comment.replies && comment.replies.length > 0) {
@@ -22,12 +23,14 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-// THE FIX: The session is no longer a prop. It's fetched internally.
 export default function CommentSection({ slug, initialComments }: {
     slug: string;
     initialComments: any[];
 }) {
-    const { data: session } = useSession(); // <-- THE FIX: Fetch session on the client
+    const { data: session } = useSession();
+    // THE DEFINITIVE FIX: Cast the session object via `unknown` to the augmented type.
+    const typedSession = session as unknown as Session | null;
+
     const [comments, setComments] = useState(initialComments);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
@@ -41,15 +44,16 @@ export default function CommentSection({ slug, initialComments }: {
     );
 
     const handlePostComment = async (content: string, parentId?: string) => {
-        if (!session?.user) return;
+        // Use the correctly typed session object
+        if (!typedSession?.user?.id) return;
 
         const optimisticComment = {
             id: crypto.randomUUID(),
             content,
             parentId,
             createdAt: new Date().toISOString(),
-            author: session.user,
-            authorId: session.user.id,
+            author: typedSession.user,
+            authorId: typedSession.user.id, // This is now type-safe
             votes: [],
             replies: [],
             _count: { replies: 0 },
@@ -123,8 +127,8 @@ export default function CommentSection({ slug, initialComments }: {
 
     return (
         <div className={styles.commentsSection}>
-            {session?.user ? (
-                <CommentForm slug={slug} session={session} onPostComment={handlePostComment} />
+            {typedSession?.user ? (
+                <CommentForm slug={slug} session={typedSession} onPostComment={handlePostComment} />
             ) : (
                 <SignInPrompt />
             )}
@@ -132,7 +136,7 @@ export default function CommentSection({ slug, initialComments }: {
             <div> 
                 <CommentList
                     comments={optimisticComments}
-                    session={session}
+                    session={typedSession}
                     slug={slug}
                     onVoteUpdate={handleVoteUpdate}
                     onPostReply={handlePostComment}

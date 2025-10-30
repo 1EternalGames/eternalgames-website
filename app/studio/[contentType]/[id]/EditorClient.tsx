@@ -17,10 +17,10 @@ import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import styles from './Editor.module.css';
 
-// --- TYPE DEFINITION TO FIX BUILD ERROR ---
 type EditorDocument = {
     _id: string;
     _type: string;
+    _updatedAt: string; // <-- Ensure this is part of the type
     title: string;
     slug?: { current: string };
     score?: number;
@@ -114,7 +114,11 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
-    useEffect(() => {
+    // THE DEFINITIVE FIX: The dependency array now includes `_updatedAt`.
+    // This ensures that after ANY successful save (draft or publish), which always changes
+    // the `_updatedAt` timestamp, the form state is fully re-synchronized with the
+    // authoritative data returned from the server, mimicking the publish behavior.
+    useEffect(() => { 
         dispatch({ 
             type: 'INITIALIZE_STATE', 
             payload: { 
@@ -153,7 +157,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 editorInstance.commands.setContent(sourceOfTruth.tiptapContent, false);
             }
         }
-    }, [sourceOfTruth, editorInstance]);
+    }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance]); // <<< THE FIX IS HERE
     
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     
@@ -183,20 +187,8 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
         const result = await updateDocumentAction(sourceOfTruth._id, patch);
     
-        if (result.success) {
-            const newTiptapContent = editorInstance ? editorInstance.getJSON() : sourceOfTruth.tiptapContent;
-            setSourceOfTruth((prevState: EditorDocument) => {
-                const newState: EditorDocument = {
-                    ...prevState,
-                    ...state,
-                    mainImage: state.mainImage.assetId 
-                        ? { _ref: state.mainImage.assetId, url: state.mainImage.assetUrl } 
-                        : null,
-                    slug: { current: state.slug },
-                    tiptapContent: newTiptapContent,
-                };
-                return newState;
-            });
+        if (result.success && result.updatedDocument) {
+            setSourceOfTruth(result.updatedDocument);
             return true;
         } else {
             toast.error(result.message || 'فشل حفظ التغييرات.', 'left');

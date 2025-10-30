@@ -43,7 +43,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
             const newCreatorPayload: any = { _type: sanityDocType, _id: `${sanityDocType}-${session.user.id}`, name: user.name, prismaUserId: session.user.id };
             if (user.image) {
                 try {
-                    // THE DEFINITIVE FIX: Fetch the image data from the URL before uploading.
                     const response = await fetch(user.image);
                     const imageBlob = await response.blob();
                     const imageAsset = await sanityWriteClient.assets.upload('image', imageBlob, {
@@ -69,7 +68,7 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     return { _id: result._id, _type: result._type };
 }
 
-export async function updateDocumentAction(docId: string, patchData: Record<string, any>) {
+export async function updateDocumentAction(docId: string, patchData: Record<string, any>): Promise<{ success: boolean; message?: string; updatedDocument?: any }> {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return { success: false, message: 'غير مصرح لك.' };
 
@@ -87,19 +86,30 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
             if (!originalDoc) {
                 const docTypeQuery = groq`*[_id == $id][0]._type`;
                 const docType = await sanityWriteClient.fetch(docTypeQuery, { id: publicId });
+                if (!docType) throw new Error("Document type not found for creation.");
                 const newDoc = { _id: draftId, _type: docType, ...patchData };
                 tx.create(newDoc);
             } else {
-                // THE DEFINITIVE FIX: Create a new object excluding the system properties.
                 const { _rev, _updatedAt, _createdAt, ...restOfOriginalDoc } = originalDoc;
                 const newDraftPayload = { ...restOfOriginalDoc, ...patchData, _id: draftId };
                 tx.create(newDraftPayload);
             }
         }
 
-        await tx.commit({ autoGenerateArrayKeys: true });
+        await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
         revalidatePath('/studio');
-        return { success: true };
+        
+        // --- THE FIX: Fetch and return the authoritative document state ---
+        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
+        if (!finalDoc) {
+             const publicDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+             if (!publicDoc) throw new Error("Document not found after update.");
+             const docWithTiptap = { ...publicDoc, tiptapContent: portableTextToTiptap(publicDoc.content ?? []) };
+             return { success: true, updatedDocument: docWithTiptap };
+        }
+        
+        const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
+        return { success: true, updatedDocument: docWithTiptap };
 
     } catch (error: any) {
         console.error("Error during document update:", error);
@@ -140,7 +150,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
     const session = await getServerSession(authOptions);
     const userRoles = session?.user?.roles || [];
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
-    const doc = await sanityWriteClient.fetch(groq`*[_id == $docId || _id == 'drafts.' + $docId][0]{_id, _type, "slug": slug.current}`, { docId });
+    const doc = await sanityWriteClient.fetch(groq`*[_id == $docId || _id == 'drafts.' + $docId] | order(_updatedAt desc)[0]{_id, _type, "slug": slug.current}`, { docId });
     if (!doc) return { success: false, message: 'Document not found.' };
     
     const docType = doc._type;
@@ -170,21 +180,16 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             return { success: true, updatedDocument: docWithTiptap, message: 'تم إلغاء نشر المستند بنجاح.' };
         }
 
-        // --- THE DEFINITIVE FIX: PUBLISH / UPDATE ACTION ---
         const draft = await sanityWriteClient.getDocument(draftId);
         
-        // Fetch the published document to check its existing publishedAt date.
         const publishedDocForDateCheck = await sanityWriteClient.fetch(groq`*[_id == $id][0]{publishedAt}`, { id: publicId });
 
         let finalTime;
         if (publishTime) {
-            // Case 1: User is explicitly scheduling/rescheduling. Use their specified time.
             finalTime = publishTime;
         } else if (publishedDocForDateCheck?.publishedAt) {
-            // Case 2: User is updating an already live document. Preserve the original publish date.
             finalTime = publishedDocForDateCheck.publishedAt;
         } else {
-            // Case 3: User is publishing a new draft for the first time. Set the publish date to now.
             finalTime = new Date().toISOString();
         }
 
@@ -195,7 +200,6 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.delete(draftId);
             await tx.commit({ returnDocuments: false });
         } else {
-            // This fallback handles cases where there's no draft, e.g., only changing the schedule of a live doc.
             await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit();
         }
 
@@ -206,7 +210,6 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             revalidatePath(`/${contentTypePlural}/${doc.slug}`);
         }
 
-        // Fetch the newly published document to return to the client, ensuring UI consistency.
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         const message = publishTime ? 'تم جدولة المستند بنجاح.' : (publishedDocForDateCheck ? 'تم تحديث المستند بنجاح.' : 'تم نشر المستند بنجاح.');

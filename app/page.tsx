@@ -14,33 +14,32 @@ import { CardProps } from '@/types';
 
 export const revalidate = 60;
 
-// CACHED: Caches the username map for 1 hour. Usernames change infrequently.
 const getCachedEnrichedCreators = unstable_cache(
-    async (creatorIds: string[]) => {
-        if (creatorIds.length === 0) return new Map<string, string | null>();
+    async (creatorIds: string[]): Promise<[string, string | null][]> => {
+        if (creatorIds.length === 0) return [];
         try {
             const users = await prisma.user.findMany({
                 where: { id: { in: creatorIds } },
                 select: { id: true, username: true },
             });
-            return new Map(users.map(u => [u.id, u.username]));
+            return users.map(u => [u.id, u.username || null]);
         } catch (error) {
             console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment. Skipping. Error:`, error);
-            return new Map<string, string | null>();
+            return [];
         }
     },
     ['enriched-creators'],
     { revalidate: 3600 }
 );
 
-// MODIFIED: This function now uses the cached helper.
 async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
     if (!creators || creators.length === 0) return [];
     
     const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
     if (userIds.length === 0) return creators;
 
-    const usernameMap = await getCachedEnrichedCreators(userIds);
+    const usernameArray = await getCachedEnrichedCreators(userIds);
+    const usernameMap = new Map(usernameArray);
 
     return creators.map(creator => ({
         ...creator,
@@ -48,9 +47,9 @@ async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<San
     }));
 }
 
-// CACHED: Wraps the engagement score calculation in a 60-second cache.
+// THE FIX: The function now returns a serializable array of [id, score] tuples.
 const getCachedEngagementScoresMap = unstable_cache(
-    async () => {
+    async (): Promise<[number, number][]> => {
         try {
             const contentTypes = ['review', 'article', 'news'];
             const contentIdsQuery = await prisma.engagement.findMany({
@@ -71,10 +70,10 @@ const getCachedEngagementScoresMap = unstable_cache(
                 const shareCount = shares.find(s => s.contentId === id)?._count.userId || 0;
                 scoresMap.set(id, (likeCount * 2) + (shareCount * 5));
             });
-            return scoresMap;
+            return Array.from(scoresMap.entries()); // Convert Map to array
         } catch (error) {
             console.warn('[CACHE WARNING] DB connection failed for engagement scores. Gracefully continuing. Error:', error);
-            return new Map<number, number>();
+            return []; // Return empty array on error
         }
     },
     ['homepage-engagement-scores'],
@@ -93,13 +92,16 @@ export default async function HomePage() {
         reviews, 
         homepageArticlesRaw, 
         homepageNewsRaw, 
-        scoresMap
+        scoresArray // <-- THE FIX: Receive the serializable array.
     ] = await Promise.all([
         client.fetch(vanguardReviewsQuery),
         client.fetch(homepageArticlesQuery),
         client.fetch(homepageNewsQuery),
-        getCachedEngagementScoresMap() // <-- USE CACHED FUNCTION
+        getCachedEngagementScoresMap()
     ]);
+
+    // THE FIX: Reconstruct the Map instance from the cached array.
+    const scoresMap = new Map(scoresArray);
     
     const enrichedReviews = await Promise.all(
         reviews.map(async (review: any) => ({
@@ -137,7 +139,7 @@ export default async function HomePage() {
 
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
-            <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />
+            {topArticles.length > 0 && <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 <ReleasesSection />
             </Suspense>
