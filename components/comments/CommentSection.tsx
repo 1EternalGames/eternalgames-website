@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useOptimistic } from 'react';
-import type { Session } from 'next-auth';
+import { useSession } from 'next-auth/react'; // <-- THE FIX: Import client-side session hook
 import { postReplyOrComment } from '@/app/actions/commentActions';
 import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
@@ -22,11 +22,12 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-export default function CommentSection({ slug, initialComments, session }: {
+// THE FIX: The session is no longer a prop. It's fetched internally.
+export default function CommentSection({ slug, initialComments }: {
     slug: string;
     initialComments: any[];
-    session: Session | null;
 }) {
+    const { data: session } = useSession(); // <-- THE FIX: Fetch session on the client
     const [comments, setComments] = useState(initialComments);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
@@ -90,7 +91,6 @@ export default function CommentSection({ slug, initialComments, session }: {
         setComments(prevComments => updateVotesRecursive(prevComments));
     };
 
-    // --- THE FIX: START ---
     const handleDeleteSuccess = (deletedId: string, wasDeleted: boolean, updatedComment?: any) => {
         const removeOrUpdateRecursive = (commentsList: any[]): any[] => {
             if (wasDeleted) {
@@ -119,7 +119,6 @@ export default function CommentSection({ slug, initialComments, session }: {
         };
         setComments(prevComments => updateRecursive(prevComments));
     };
-    // --- THE FIX: END ---
 
 
     return (
@@ -137,12 +136,10 @@ export default function CommentSection({ slug, initialComments, session }: {
                     slug={slug}
                     onVoteUpdate={handleVoteUpdate}
                     onPostReply={handlePostComment}
-                    onDeleteSuccess={handleDeleteSuccess} // Pass down callback
-                    onUpdateSuccess={handleUpdateSuccess} // Pass down callback
+                    onDeleteSuccess={handleDeleteSuccess}
+                    onUpdateSuccess={handleUpdateSuccess}
                 />
             </div>
         </div>
     );
 }
-
-

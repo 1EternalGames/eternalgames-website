@@ -7,12 +7,9 @@ import {
 } from '@/lib/sanity.queries';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/authOptions';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
-import type { Session } from 'next-auth';
 
 export const revalidate = 60;
 
@@ -55,7 +52,6 @@ async function enrichCreator(creator: any) {
         };
     } catch (error) {
         console.warn(`[BUILD WARNING] Database connection failed during creator enrichment for "${creator.name}". Skipping. Error:`, error);
-        // On build failure, gracefully return the creator without enriched data.
         return creator;
     }
 }
@@ -75,19 +71,17 @@ export async function generateStaticParams() {
 
 async function Comments({ slug }: { slug: string }) {
     try {
-        const [comments, session] = await Promise.all([
-            prisma.comment.findMany({
-                where: { contentSlug: slug, parentId: null },
-                include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
-                orderBy: { createdAt: 'desc' },
-            }),
-            getServerSession(authOptions)
-        ]);
-        return <CommentSection slug={slug} initialComments={comments} session={session as Session | null} />;
+        // THE FIX: This function now ONLY fetches static data (comments).
+        const comments = await prisma.comment.findMany({
+            where: { contentSlug: slug, parentId: null },
+            include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
+            orderBy: { createdAt: 'desc' },
+        });
+        // THE FIX: The session is no longer fetched here. It will be fetched on the client.
+        return <CommentSection slug={slug} initialComments={comments} />;
     } catch (error) {
-        // This catch block handles both DB connection errors and dynamic server usage errors during build.
-        console.warn(`[BUILD WARNING] Database/session access failed while pre-rendering comments for slug "${slug}". Skipping. Error digest:`, (error as any)?.digest);
-        return <CommentSection slug={slug} initialComments={[]} session={null} />;
+        console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
+        return <CommentSection slug={slug} initialComments={[]} />;
     }
 }
 
