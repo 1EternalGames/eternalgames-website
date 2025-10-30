@@ -1,4 +1,5 @@
 // app/(content)/[...slug]/page.tsx
+import { unstable_cache } from 'next/cache';
 import { client } from '@/lib/sanity.client';
 import {
     reviewBySlugQuery, latestReviewsFallbackQuery,
@@ -37,24 +38,41 @@ const contentConfig = {
     },
 };
 
+// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
+const getCachedCreatorDetails = unstable_cache(
+    async (prismaUserId: string) => {
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: prismaUserId },
+                select: { username: true, image: true, bio: true }
+            });
+            return {
+                username: user?.username || null,
+                image: user?.image || null,
+                bio: user?.bio || null,
+            };
+        } catch (error) {
+            console.warn(`[CACHE WARNING] Database connection failed for creator enrichment (ID: ${prismaUserId}). Skipping. Error:`, error);
+            return { username: null, image: null, bio: null };
+        }
+    },
+    ['enriched-creator-details'],
+    { revalidate: 3600 }
+);
+
+
+// MODIFIED: This function now uses the cached helper.
 async function enrichCreator(creator: any) {
     if (!creator || !creator.prismaUserId) return creator;
-    try {
-        const user = await prisma.user.findUnique({
-            where: { id: creator.prismaUserId },
-            select: { username: true, image: true, bio: true }
-        });
-        return {
-            ...creator,
-            username: user?.username || null,
-            image: user?.image || null,
-            bio: user?.bio || null,
-        };
-    } catch (error) {
-        console.warn(`[BUILD WARNING] Database connection failed during creator enrichment for "${creator.name}". Skipping. Error:`, error);
-        return creator;
-    }
+    
+    const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
+
+    return {
+        ...creator,
+        ...userDetails,
+    };
 }
+
 
 export async function generateStaticParams() {
     try {
@@ -71,13 +89,11 @@ export async function generateStaticParams() {
 
 async function Comments({ slug }: { slug: string }) {
     try {
-        // THE FIX: This function now ONLY fetches static data (comments).
         const comments = await prisma.comment.findMany({
             where: { contentSlug: slug, parentId: null },
             include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
             orderBy: { createdAt: 'desc' },
         });
-        // THE FIX: The session is no longer fetched here. It will be fetched on the client.
         return <CommentSection slug={slug} initialComments={comments} />;
     } catch (error) {
         console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
