@@ -154,16 +154,17 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
     if (!doc) return { success: false, message: 'Document not found.' };
     
     const docType = doc._type;
-    if (docType === 'gameRelease') return { success: false, message: 'Releases do not support publishing.' };
 
-    const canPublish = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
+    // THE DEFINITIVE FIX: The guard clause blocking 'gameRelease' is removed.
+    
+    const canPublish = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER')) || (docType === 'gameRelease' && isAdminOrDirector);
     if (!canPublish) return { success: false, message: 'صلاحيات غير كافية.' };
 
     try {
         const publicId = docId.replace('drafts.', '');
         const draftId = `drafts.${publicId}`;
 
-        // UNPUBLISH action
+        // UNPUBLISH action (won't trigger for gameRelease)
         if (publishTime === null) {
             const tx = sanityWriteClient.transaction();
             tx.delete(publicId);
@@ -182,29 +183,34 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
 
         const draft = await sanityWriteClient.getDocument(draftId);
         
-        const publishedDocForDateCheck = await sanityWriteClient.fetch(groq`*[_id == $id][0]{publishedAt}`, { id: publicId });
-
-        let finalTime;
-        if (publishTime) {
-            finalTime = publishTime;
-        } else if (publishedDocForDateCheck?.publishedAt) {
-            finalTime = publishedDocForDateCheck.publishedAt;
-        } else {
-            finalTime = new Date().toISOString();
+        let finalTime = publishTime || new Date().toISOString();
+        if (docType !== 'gameRelease') {
+            const publishedDocForDateCheck = await sanityWriteClient.fetch(groq`*[_id == $id][0]{publishedAt}`, { id: publicId });
+            if (publishTime) {
+                finalTime = publishTime;
+            } else if (publishedDocForDateCheck?.publishedAt) {
+                finalTime = publishedDocForDateCheck.publishedAt;
+            }
         }
-
+        
         if (draft) {
-            const publishedDocPayload = { ...draft, _id: publicId, publishedAt: finalTime };
+            const publishedDocPayload: Record<string, any> = { ...draft, _id: publicId };
+            if (docType !== 'gameRelease') {
+                publishedDocPayload.publishedAt = finalTime;
+            }
             const tx = sanityWriteClient.transaction();
             tx.createOrReplace(publishedDocPayload);
             tx.delete(draftId);
             await tx.commit({ returnDocuments: false });
-        } else {
+        } else if (docType !== 'gameRelease') {
             await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit();
         }
 
         revalidatePath('/studio');
-        if (new Date(finalTime) <= new Date()) {
+        if (docType === 'gameRelease') {
+            revalidatePath('/releases');
+            revalidatePath('/celestial-almanac');
+        } else if (new Date(finalTime) <= new Date()) {
             const contentTypePlural = docType === 'news' ? 'news' : `${docType}s`;
             revalidatePath(`/${contentTypePlural}`);
             revalidatePath(`/${contentTypePlural}/${doc.slug}`);
@@ -212,7 +218,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
 
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-        const message = publishTime ? 'تم جدولة المستند بنجاح.' : (publishedDocForDateCheck ? 'تم تحديث المستند بنجاح.' : 'تم نشر المستند بنجاح.');
+        const message = docType === 'gameRelease' ? 'تم نشر الإصدار بنجاح.' : (publishTime ? 'تم جدولة المستند بنجاح.' : 'تم نشر المستند بنجاح.');
         return { success: true, updatedDocument: docWithTiptap, message: message };
 
     } catch (error) {

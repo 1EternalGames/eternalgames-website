@@ -14,6 +14,7 @@ export type CardProps = {
     date?: string;
     year?: number | null;
     imageUrl: string;
+    mainImageRef?: any; // For components needing custom aspect ratios
     score?: number;
     tags: string[];
     blurDataURL: string;

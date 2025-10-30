@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useVanguardCarousel } from '@/hooks/useVanguardCarousel';
+import { urlFor } from '@/sanity/lib/image';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
@@ -64,15 +65,29 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority }: { review:
         }
     }, [isInView, review.score]);
     const handleClick = (e: React.MouseEvent) => { e.preventDefault(); setPrefix(layoutIdPrefix); router.push(`/reviews/${review.slug}`, { scroll: false }); };
-    const imageParams = isCenter ? 'w=800&h=1000' : 'w=560&h=700';
-    const baseUrl = review.imageUrl.split('?')[0]; const imageUrl = `${baseUrl}?${imageParams}&fit=crop&auto=format`;
+    
+    const imageUrl = review.mainImageRef 
+        ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
+        : review.imageUrl;
+
     const showCredits = isCenter || isCardHovered;
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
-                    <div className={styles.cardImageContainer}><Image src={imageUrl} alt={review.title} fill sizes="(max-width: 768px) 50vw, 30vw" className={styles.cardImage} placeholder="blur" blurDataURL={review.blurDataURL} priority={isPriority} unoptimized /></div>
+                    <div className={styles.cardImageContainer}>
+                        <Image 
+                            src={imageUrl} 
+                            alt={review.title} 
+                            fill 
+                            sizes={isCenter ? "(max-width: 768px) 80vw, 400px" : "(max-width: 768px) 60vw, 280px"}
+                            className={styles.cardImage} 
+                            placeholder="blur" 
+                            blurDataURL={review.blurDataURL} 
+                            priority={isPriority}
+                        />
+                    </div>
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
                         <h3>{review.title}</h3>
                         {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}

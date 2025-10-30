@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { urlFor } from '@/sanity/lib/image';
 import { OrbitalBodyData, ScreenPosition } from './config';
 
 import PCIcon from '@/components/icons/platforms/PCIcon';
@@ -24,7 +25,8 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
     onClose: () => void;
 }) => {
   const { content } = orbitalBody;
-  const imageUrl = content.mainImage?.url;
+  const imageUrl = content.mainImage?.asset ? urlFor(content.mainImage).width(600).height(338).fit('crop').auto('format').url() : null;
+  const blurDataURL = content.mainImage?.blurDataURL;
   const linkPath = '/games/' + content.slug;
 
   const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -64,7 +66,15 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
 
       <div style={{ position: 'relative', width: '100%', height: '150px' }}>
         {imageUrl ? (
-          <Image src={imageUrl} alt={content.title} fill style={{ objectFit: 'cover' }} />
+          <Image 
+            src={imageUrl} 
+            alt={content.title} 
+            fill 
+            sizes="300px"
+            style={{ objectFit: 'cover' }} 
+            placeholder={blurDataURL ? 'blur' : 'empty'}
+            blurDataURL={blurDataURL || ''}
+          />
         ) : (
           <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--border-color)' }} />
         )}

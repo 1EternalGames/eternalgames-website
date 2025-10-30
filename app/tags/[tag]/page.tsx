@@ -6,7 +6,8 @@ import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 
 export default async function TagPage({ params }: { params: { tag: string } }) {
-    const tagSlug = decodeURIComponent(params.tag);
+    const { tag } = await params;
+    const tagSlug = decodeURIComponent(tag);
 
     const tagMeta = await client.fetch(
         `*[_type == "tag" && slug.current == $slug][0]{title}`,
@@ -37,5 +38,3 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
         />
     );
 }
-
-

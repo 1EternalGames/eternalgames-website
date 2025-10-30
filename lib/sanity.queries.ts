@@ -74,7 +74,7 @@ export const heroContentQuery = groq`{
 export const featuredReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] {
-  _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url, publishedAt,
+  _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt,
   "authors": authors[]->{name}, "reporters": reporters[]->{name}, 
   "gameTitle": game->title, category
 }`

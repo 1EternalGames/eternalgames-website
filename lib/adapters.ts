@@ -14,7 +14,7 @@ export const adaptToCardProps = (item: any): CardProps | null => {
 
     if (imageAsset) {
         // THE DEFINITIVE FIX: Enforce a 16:9 aspect ratio crop and remove quality params.
-        imageUrl = urlFor(imageAsset).width(800).height(450).auto('format').url();
+        imageUrl = urlFor(imageAsset).width(1600).height(900).fit('crop').auto('format').url();
         blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url();
     }
 
@@ -45,6 +45,7 @@ export const adaptToCardProps = (item: any): CardProps | null => {
         date: formattedDate,
         year: publishedYear,
         imageUrl: imageUrl,
+        mainImageRef: imageAsset,
         score: item.score,
         tags: (item.tags || []).map((t: any) => t.title).filter(Boolean),
         blurDataURL: blurDataURL,

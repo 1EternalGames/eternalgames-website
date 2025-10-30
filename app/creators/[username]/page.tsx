@@ -7,7 +7,8 @@ import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
 
 export default async function CreatorHubPage({ params }: { params: { username: string } }) {
-    const username = decodeURIComponent(params.username);
+    const { username: encodedUsername } = await params;
+    const username = decodeURIComponent(encodedUsername);
 
     const user = await prisma.user.findUnique({
         where: { username: username },
@@ -58,5 +59,3 @@ export default async function CreatorHubPage({ params }: { params: { username: s
         />
     );
 }
-
-

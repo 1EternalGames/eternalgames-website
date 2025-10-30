@@ -10,6 +10,8 @@ import { GenesisOrb } from './GenesisOrb';
 import { deleteDocumentAction } from './actions';
 import { useToast } from '@/lib/toastStore';
 import { urlFor } from '@/sanity/lib/image';
+import Image from 'next/image';
+import { sanityLoader } from '@/lib/sanity.loader';
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
@@ -18,16 +20,25 @@ const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: 
     const [isHovered, setIsHovered] = useState(false);
     const [isClicked, setIsClicked] = useState(false);
     const isDrawerVisible = isHovered || isClicked;
-    const rawImageUrlWithBuster = useMemo(() => {
+    const imageUrlWithBuster = useMemo(() => {
         if (!item.mainImage?.asset) return null;
-        const url = urlFor(item.mainImage).width(800).auto('format').url();
+        const url = urlFor(item.mainImage).width(800).height(500).fit('crop').auto('format').url();
         return `${url}&buster=${new Date(item._updatedAt).getTime()}`;
     }, [item.mainImage, item._updatedAt]);
 
     return (
         <motion.div layoutId={`canvas-card-${item._id}`} style={{ position: 'relative', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16 / 10', cursor: 'pointer' }} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => setIsClicked(prev => !prev)} >
             <motion.div className="canvas-image-container" animate={{ scale: isDrawerVisible ? 1.05 : 1, filter: isDrawerVisible ? 'brightness(0.8)' : 'brightness(1)' }} transition={{ type: 'spring' as const, damping: 20, stiffness: 150 }} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} >
-                {rawImageUrlWithBuster ? (<img src={rawImageUrlWithBuster} alt={item.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>) : (<span style={{color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600}}>NO IMAGE</span>)}
+                {imageUrlWithBuster ? (
+                    <Image 
+                        src={imageUrlWithBuster} 
+                        alt={item.title} 
+                        fill
+                        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 350px"
+                        style={{ objectFit: 'cover' }}
+                        loader={sanityLoader}
+                    />
+                ) : (<span style={{color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600}}>NO IMAGE</span>)}
             </motion.div>
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, padding: '1.25rem', color: 'white', pointerEvents: 'none' }}>

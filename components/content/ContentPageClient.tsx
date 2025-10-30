@@ -85,14 +85,24 @@ export default function ContentPageClient({ item, type, children }: {
     const primaryCreators = (item as any).authors || (item as any).reporters || [];
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
-    const heroImageUrl = urlFor(item.mainImage).auto('format').url();
+    const heroImageUrl = urlFor(item.mainImage).width(1920).height(1080).fit('crop').auto('format').url();
 
     return (
         <>
             <motion.div initial="hidden" animate="visible" variants={contentVariants}><ReadingHud contentContainerRef={contentContainerRef} headings={headings} /></motion.div>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                 <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={styles.heroImage}>
-                    <Image loader={sanityLoader} src={heroImageUrl} alt={item.title} fill style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={(item.mainImage as any).blurDataURL} />
+                    <Image 
+                        loader={sanityLoader} 
+                        src={heroImageUrl} 
+                        alt={item.title} 
+                        fill 
+                        sizes="100vw"
+                        style={{ objectFit: 'cover' }} 
+                        priority 
+                        placeholder="blur" 
+                        blurDataURL={(item.mainImage as any).blurDataURL} 
+                    />
                 </motion.div>
 
                 <motion.div initial="hidden" animate="visible" variants={contentVariants} className="container page-container" style={{ paddingTop: '0' }}>

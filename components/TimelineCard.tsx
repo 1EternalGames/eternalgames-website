@@ -78,10 +78,10 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
                 
                 <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
                     <Image
-                        src={urlFor(release.mainImage).auto('format').url()}
+                        src={urlFor(release.mainImage).width(800).height(450).fit('crop').auto('format').url()}
                         alt={release.title}
                         fill
-                        sizes="30vw"
+                        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 320px"
                         className={styles.image}
                         placeholder="blur"
                         blurDataURL={release.mainImage.blurDataURL}

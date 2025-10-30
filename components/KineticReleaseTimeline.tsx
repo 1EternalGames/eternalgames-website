@@ -36,8 +36,15 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
     const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 50%", "end 50%"], });
     const releasesForThisMonth = useMemo(() => {
         if (!allReleases) return [];
-        const now = new Date(); const currentMonth = now.getMonth(); const currentYear = now.getFullYear();
-        return allReleases.filter(release => { const releaseDate = new Date(release.releaseDate); return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; }).sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+        const now = new Date();
+        const currentMonth = now.getUTCMonth();
+        const currentYear = now.getUTCFullYear();
+        return allReleases.filter(release => {
+            // --- THE DEFINITIVE FIX ---
+            // Append time and 'Z' to parse the date string as UTC, preventing timezone shift errors.
+            const releaseDate = new Date(release.releaseDate + 'T00:00:00Z'); 
+            return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; 
+        }).sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
     }, [allReleases]);
 
     useLayoutEffect(() => {

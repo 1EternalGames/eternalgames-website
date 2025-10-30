@@ -83,7 +83,11 @@ const getCachedEngagementScoresMap = unstable_cache(
 
 async function ReleasesSection() {
     const releases = await client.fetch(allReleasesQuery);
-    const sanitizedReleases = (releases || []).filter((item: any) => item?.mainImage);
+    // --- THE DEFINITIVE FIX ---
+    // Use the same robust sanitization check as the /releases page.
+    const sanitizedReleases = (releases || []).filter((item: any) => 
+        item?.mainImage?.url && item.releaseDate && item.title && item.slug
+    );
     return <AnimatedReleases releases={sanitizedReleases} />;
 }
 

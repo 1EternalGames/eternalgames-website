@@ -102,8 +102,7 @@ async function Comments({ slug }: { slug: string }) {
 }
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
-    const resolvedParams = await params;
-    const slugArray = resolvedParams.slug;
+    const { slug: slugArray } = await params;
     
     if (!slugArray || slugArray.length !== 2) {
         notFound();

@@ -18,8 +18,8 @@ function getCommentLink(comment: { contentSlug: string, content: string }) {
 }
 
 export default async function PublicProfilePage({ params }: { params: { username: string } }) {
-    const resolvedParams = await params;
-    const username = decodeURIComponent(resolvedParams.username);
+    const { username: encodedUsername } = await params;
+    const username = decodeURIComponent(encodedUsername);
 
     const user = await prisma.user.findUnique({
         where: { username: username },

@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 
 export default async function GameHubPage({ params }: { params: { slug: string } }) {
-    const gameSlug = decodeURIComponent(params.slug);
+    const { slug } = await params;
+    const gameSlug = decodeURIComponent(slug);
 
     const gameMeta = await client.fetch(
         `*[_type == "game" && slug.current == $slug][0]{title}`,
@@ -27,5 +28,3 @@ export default async function GameHubPage({ params }: { params: { slug: string }
         />
     );
 }
-
-

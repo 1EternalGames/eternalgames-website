@@ -47,33 +47,39 @@ export function EditorSidebar({
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
 
-    const isPublished = publishedAt && new Date(publishedAt) <= new Date();
+    // This check is now robust; it works for releases by checking if a draft ID is being used.
+    const isPublished = !document._id.startsWith('drafts.');
     const isScheduled = publishedAt && new Date(publishedAt) > new Date();
     const isSlugValid = slugValidationStatus === 'valid';
     const isSlugPending = slugValidationStatus === 'pending';
 
     const handlePublishClick = () => {
         startPublishTransition(async () => {
+            // For releases, we don't pass a schedule date.
+            const publishDate = isRelease ? '' : (scheduledDateTime || '');
             if (hasChanges) {
                 const saveSuccess = await onSave();
                 if (saveSuccess) {
-                    await onPublish(scheduledDateTime || '');
+                    await onPublish(publishDate);
                 }
             } else {
-                await onPublish(scheduledDateTime || '');
+                await onPublish(publishDate);
             }
         });
     };
 
     const publishButtonText = useMemo(() => {
+        if (isRelease) {
+            return isPublished ? "تحديث الإصدار" : "نشر الإصدار";
+        }
         if (scheduledDateTime) return hasChanges ? "حفظ وجدولة" : "جدولة";
         if (isPublished) return hasChanges ? "حفظ وتحديث" : "تحديث";
         return hasChanges ? "حفظ ونشر" : "انشر الآن";
-    }, [scheduledDateTime, isPublished, hasChanges]);
+    }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
 
-    const isSaveDisabled = isSaving || !hasChanges || !isSlugValid || isSlugPending;
-    const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending;
-    const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending;
+    const isSaveDisabled = isSaving || !hasChanges || !isSlugValid || isSlugPending || isPublishing;
+    const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending || isSaving;
+    const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending || isSaving;
     const getSlugIcon = () => { if (isSlugPending) return <ClockIcon />; if (isSlugValid) return <CheckIcon />; return <AlertIcon />; };
     const handleFieldChange = (field: string, value: any) => { dispatch({ type: 'UPDATE_FIELD', payload: { field, value } }); };
 
@@ -83,53 +89,68 @@ export function EditorSidebar({
         <AnimatePresence>
             {isOpen && (
                 <motion.aside className={styles.sanctumSidebar} variants={sidebarVariants} initial="hidden" animate="visible" exit="exit">
-                    <motion.div variants={itemVariants} className={styles.sidebarContent}><h2 className={styles.sidebarTitle}>منصة التحرير</h2><p className={styles.sidebarSubtitle}>تحرير: {title}</p></motion.div>
+                    <motion.div variants={itemVariants} className={styles.sidebarContent}>
+                        <h2 className={styles.sidebarTitle}>منصة التحرير</h2>
+                        <p className={styles.sidebarSubtitle}>تحرير: {title}</p>
+                    </motion.div>
                     
-                    {!isRelease && (
-                        <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                <label className={styles.sidebarLabel} style={{ marginBottom: 0 }}>جدولة (اختياري)</label>
-                                <motion.button onClick={handleSave} disabled={isSaveDisabled} className={styles.sanctumSidebarToggle} title={isSaveDisabled ? 'لا تغييرات للحفظ' : 'حفظ التغييرات'} whileHover={{ scale: hasChanges && !isSaving ? 1.15 : 1 }} style={{ color: hasChanges && !isSaving ? 'var(--accent)' : 'var(--text-secondary)', cursor: isSaveDisabled ? 'not-allowed' : 'pointer' }}>
-                                    <AnimatePresence mode="wait">
-                                        {saveStatus === 'saving' && <motion.div key="loader" initial={{scale:0}} animate={{scale:1}} exit={{scale:0}}><ButtonLoader /></motion.div>}
-                                        {saveStatus === 'success' && <motion.div key="success" initial={{scale:0}} animate={{scale:1}} exit={{scale:0}} style={{color: '#16A34A'}}><SuccessIcon /></motion.div>}
-                                        {saveStatus === 'idle' && <motion.div key="icon" initial={{scale:0}} animate={{scale:1}} exit={{scale:0}}><SaveIcon /></motion.div>}
-                                    </AnimatePresence>
-                                </motion.button>
-                            </div>
-                            <input type="datetime-local" value={scheduledDateTime} onChange={(e) => setScheduledDateTime(e.target.value)} className={styles.sidebarInput} />
-                            <motion.button onClick={handlePublishClick} className="primary-button" style={{ width: '100%', marginTop: '1rem', height: '44px' }} disabled={isPublishDisabled}>
-                                <AnimatePresence mode="wait">{isPublishing ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>{publishButtonText}</motion.span>}</AnimatePresence>
-                            </motion.button>
-                            {(isPublished || isScheduled) && (<motion.button onClick={() => onPublish(null)} className="outline-button" style={{ width: '100%', marginTop: '0.5rem', color: '#DC2626', borderColor: '#DC2626' }} disabled={isUnpublishDisabled}>إلغاء النشر</motion.button>)}
-                            <p style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '1.4rem', textAlign: 'right' }}> {!isDocumentValid && <span style={{ color: '#DC2626' }}>الحقول الإلزامية ناقصة.</span>}</p>
-                        </motion.div>
-                    )}
+                    <motion.div className={styles.sidebarSection} variants={itemVariants}>
+                        {/* THE DEFINITIVE FIX: Publishing controls are now correctly sectioned */}
+                        {!isRelease && (
+                            <>
+                                <label className={styles.sidebarLabel} style={{ marginBottom: '0.75rem' }}>جدولة (اختياري)</label>
+                                <input type="datetime-local" value={scheduledDateTime} onChange={(e) => setScheduledDateTime(e.target.value)} className={styles.sidebarInput} disabled={isPublishing || isSaving} />
+                            </>
+                        )}
+                        <motion.button onClick={handlePublishClick} className="primary-button" style={{ width: '100%', marginTop: '1rem', height: '44px' }} disabled={isPublishDisabled}>
+                            <AnimatePresence mode="wait">{isPublishing ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>{publishButtonText}</motion.span>}</AnimatePresence>
+                        </motion.button>
+                        {!isRelease && (isPublished || isScheduled) && (<motion.button onClick={() => onPublish(null)} className="outline-button" style={{ width: '100%', marginTop: '0.5rem', color: '#DC2626', borderColor: '#DC2626' }} disabled={isUnpublishDisabled}>إلغاء النشر</motion.button>)}
+                        <p style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '1.4rem', textAlign: 'right' }}> {!isDocumentValid && <span style={{ color: '#DC2626' }}>الحقول الإلزامية ناقصة.</span>}</p>
+                    </motion.div>
 
-                    <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                            <label className={styles.sidebarLabel} style={{marginBottom: 0}}>جودة الرفع</label>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'var(--font-main)', fontSize: '1.4rem'}}>
-                                <span>1080p</span>
-                                <ToggleSwitch checked={uploadQuality === '4k'} onChange={(isChecked) => onUploadQualityChange(isChecked ? '4k' : '1080p')} />
-                                <span>4K</span>
+                    <fieldset disabled={isSaving || isPublishing} style={{border: 'none', padding: 0, margin: 0, minWidth: 0}}>
+                        <motion.div className={styles.sidebarSection} variants={itemVariants}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                                <label className={styles.sidebarLabel} style={{marginBottom: 0}}>جودة الرفع</label>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'var(--font-main)', fontSize: '1.4rem'}}>
+                                    <span>1080p</span>
+                                    <ToggleSwitch checked={uploadQuality === '4k'} onChange={(isChecked) => onUploadQualityChange(isChecked ? '4k' : '1080p')} />
+                                    <span>4K</span>
+                                </div>
                             </div>
-                        </div>
-                        <MainImageInput currentAssetId={mainImage.assetId} currentAssetUrl={mainImage.assetUrl} onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} uploadQuality={uploadQuality} />
-                    </motion.div>
+                            <MainImageInput currentAssetId={mainImage.assetId} currentAssetUrl={mainImage.assetUrl} onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} uploadQuality={uploadQuality} />
+                        </motion.div>
+                        
+                        <motion.div className={styles.sidebarSection} variants={itemVariants}>
+                            <label className={styles.sidebarLabel}>المُعرِّف {!isSlugValid && <AlertIcon />}</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <motion.div key={slugValidationStatus} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>{getSlugIcon()}</motion.div>
+                                <input type="text" value={slug} onChange={(e) => dispatch({ type: 'UPDATE_SLUG', payload: { slug: e.target.value, isManual: true } })} className={styles.sidebarInput} style={{ flexGrow: 1, borderColor: isSlugValid && !isSlugPending ? '#16A34A' : isSlugPending ? 'var(--border-color)' : '#DC2626' }} />
+                            </div>
+                            <AnimatePresence> {!isSlugValid && !isSlugPending && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} </AnimatePresence>
+                        </motion.div>
+                        
+                        {isRelease ? ( <> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>تاريخ الإصدار</label> <input type="date" value={releaseDate} onChange={(e) => handleFieldChange('releaseDate', e.target.value)} className={styles.sidebarInput} /> </motion.div> <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> </> ) : ( <> <div><CreatorInput allCreators={creatorsForRole(primaryCreatorConfig.sanityType)} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> <div><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> <div><TagInput allTags={allTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} /></div> </> )}
+                        <div><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
+                        {isReview && (<> <motion.hr variants={itemVariants} style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} /> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>التقييم (0-10) {score <= 0 && <AlertIcon />}</label> <input type="number" value={score} onChange={(e) => handleFieldChange('score', parseFloat(e.target.value) || 0)} className={styles.sidebarInput} min="0" max="10" step="0.1" /> </motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>الخلاصة {!verdict.trim() && <AlertIcon />}</label> <textarea value={verdict} onChange={(e) => handleFieldChange('verdict', e.target.value)} className={styles.sidebarInput} rows={3} /> </motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المحاسن" items={pros} setItems={(p: any) => handleFieldChange('pros', p)} /></motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المآخذ" items={cons} setItems={(c: any) => handleFieldChange('cons', c)} /></motion.div> </>)}
+                    </fieldset>
                     
-                    <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                        <label className={styles.sidebarLabel}>المُعرِّف {!isSlugValid && <AlertIcon />}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <motion.div key={slugValidationStatus} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>{getSlugIcon()}</motion.div>
-                            <input type="text" value={slug} onChange={(e) => dispatch({ type: 'UPDATE_SLUG', payload: { slug: e.target.value, isManual: true } })} className={styles.sidebarInput} style={{ flexGrow: 1, borderColor: isSlugValid && !isSlugPending ? '#16A34A' : isSlugPending ? 'var(--border-color)' : '#DC2626' }} />
-                        </div>
-                        <AnimatePresence> {!isSlugValid && !isSlugPending && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} </AnimatePresence>
-                    </motion.div>
-                    
-                    {isRelease ? ( <> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>تاريخ الإصدار</label> <input type="date" value={releaseDate} onChange={(e) => handleFieldChange('releaseDate', e.target.value)} className={styles.sidebarInput} /> </motion.div> <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> </> ) : ( <> <div><CreatorInput allCreators={creatorsForRole(primaryCreatorConfig.sanityType)} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> <div><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> <div><TagInput allTags={allTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} /></div> </> )}
-                    <div><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
-                    {isReview && (<> <motion.hr variants={itemVariants} style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} /> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>التقييم (0-10) {score <= 0 && <AlertIcon />}</label> <input type="number" value={score} onChange={(e) => handleFieldChange('score', parseFloat(e.target.value) || 0)} className={styles.sidebarInput} min="0" max="10" step="0.1" /> </motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>الخلاصة {!verdict.trim() && <AlertIcon />}</label> <textarea value={verdict} onChange={(e) => handleFieldChange('verdict', e.target.value)} className={styles.sidebarInput} rows={3} /> </motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المحاسن" items={pros} setItems={(p: any) => handleFieldChange('pros', p)} /></motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المآخذ" items={cons} setItems={(c: any) => handleFieldChange('cons', c)} /></motion.div> </>)}
+                    <div className={styles.sidebarFooter}>
+                        <motion.button onClick={handleSave} disabled={isSaveDisabled} className="primary-button" style={{ width: '100%', height: '44px' }}
+                            title={isSaveDisabled ? (hasChanges ? 'المُعرّف غير صالح' : 'لا تغييرات للحفظ') : 'حفظ التغييرات'}
+                            animate={{ 
+                                backgroundColor: saveStatus === 'success' ? '#16A34A' : 'var(--accent)',
+                                color: saveStatus === 'success' ? '#fff' : 'inherit'
+                            }}
+                        >
+                            <AnimatePresence mode="wait">
+                                {isSaving && <ButtonLoader key="loader" />}
+                                {saveStatus === 'success' && <motion.span key="success" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>تم الحفظ!</motion.span>}
+                                {saveStatus === 'idle' && <motion.span key="idle" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>حفظ التغييرات</motion.span>}
+                            </AnimatePresence>
+                        </motion.button>
+                    </div>
                 </motion.aside>
             )}
         </AnimatePresence>

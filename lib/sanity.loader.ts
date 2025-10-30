@@ -15,11 +15,19 @@ export const sanityLoader = ({ src, width, quality }: SanityImageLoaderProps) =>
   
   const params = url.searchParams
 
+  const originalWidth = params.get('w');
+  const originalHeight = params.get('h');
+
+  // Set common params
   params.set('auto', 'format')
   params.set('w', width.toString())
-  
-  // THE DEFINITIVE FIX: The 'q' parameter is permanently removed.
   params.delete('q');
 
+  if (originalWidth && originalHeight) {
+    const aspectRatio = parseInt(originalHeight, 10) / parseInt(originalWidth, 10);
+    const newHeight = Math.round(width * aspectRatio);
+    params.set('h', newHeight.toString());
+  }
+  
   return `${url.origin}${url.pathname}?${params.toString()}`
 }

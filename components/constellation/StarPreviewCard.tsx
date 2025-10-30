@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { urlFor } from '@/sanity/lib/image';
 import { SanityContentObject, StarData, ScreenPosition } from './config';
 
 interface StarPreviewCardProps {
@@ -29,7 +30,8 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
         }
     };
     
-    const imageUrl = content.mainImage?.url;
+    const imageUrl = content.mainImage?.asset ? urlFor(content.mainImage).width(600).height(338).fit('crop').auto('format').url() : null;
+    const blurDataURL = content.mainImage?.blurDataURL;
     const contentType = typeMap[content._type] || 'محتوى';
     const formattedDate = content.publishedAt 
         ? new Date(content.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -63,7 +65,17 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
         </motion.button>
 
         <div style={{ position: 'relative', width: '100%', height: '150px' }}>
-        {imageUrl ? ( <Image src={imageUrl} alt={content.title} fill style={{ objectFit: 'cover' }} /> ) : ( <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--border-color)' }} /> )}
+            {imageUrl ? ( 
+                <Image 
+                    src={imageUrl} 
+                    alt={content.title} 
+                    fill 
+                    sizes="300px"
+                    style={{ objectFit: 'cover' }} 
+                    placeholder={blurDataURL ? 'blur' : 'empty'}
+                    blurDataURL={blurDataURL || ''}
+                /> 
+            ) : ( <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--border-color)' }} /> )}
         </div>
 
         <div style={{ padding: '1.5rem', textAlign: 'right' }}>
