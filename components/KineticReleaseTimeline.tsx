@@ -3,8 +3,18 @@
 
 import React, { useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useScroll, useInView, useTransform, MotionValue } from 'framer-motion';
-import TimelineCard from './TimelineCard'; // <-- IMPORT THE NEW CARD
+import Link from 'next/link';
+import TimelineCard from './TimelineCard';
 import styles from './KineticReleaseTimeline.module.css';
+
+const ViewAllIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" {...props}>
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+    </svg>
+);
 
 const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const itemRef = useRef(null);
@@ -32,6 +42,8 @@ const TimelineDot = ({ position, scrollYProgress }: { position: number, scrollYP
 
 export default function KineticReleaseTimeline({ releases: allReleases }: { releases: any[] }) {
     const timelineRef = useRef<HTMLDivElement>(null);
+    const terminusRef = useRef(null);
+    const isTerminusInView = useInView(terminusRef, { once: true, amount: 0.8 });
     const [dotPositions, setDotPositions] = useState<number[]>([]);
     const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 50%", "end 50%"], });
     const releasesForThisMonth = useMemo(() => {
@@ -40,8 +52,6 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
         const currentMonth = now.getUTCMonth();
         const currentYear = now.getUTCFullYear();
         return allReleases.filter(release => {
-            // --- THE DEFINITIVE FIX ---
-            // Append time and 'Z' to parse the date string as UTC, preventing timezone shift errors.
             const releaseDate = new Date(release.releaseDate + 'T00:00:00Z'); 
             return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; 
         }).sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
@@ -76,6 +86,27 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                     <motion.div style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}>يجري تحديث جدول الإصدارات. عد قريبًا.</motion.div>
                 )}
             </div>
+
+            {releasesForThisMonth.length > 0 && (
+                <motion.div
+                    ref={terminusRef}
+                    className={styles.terminusContainer}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isTerminusInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+                >
+                    <Link href="/releases" passHref legacyBehavior>
+                        <motion.a 
+                            className={`${styles.timelineTerminusButton} no-underline`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <ViewAllIcon className={styles.terminusIcon} />
+                            <span>عرض كل الإصدارات</span>
+                        </motion.a>
+                    </Link>
+                </motion.div>
+            )}
         </div>
     );
 }

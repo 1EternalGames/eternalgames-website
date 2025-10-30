@@ -16,21 +16,23 @@ interface FeedProps {
     topSectionLabel: string;
     latestSectionLabel: string;
     topItems: CardProps[];
-    latestItems: CardProps[];
+    latestItems?: CardProps[]; // Made optional
     viewAllLink: string;
     viewAllText: string;
     topItemsContainerClassName?: string;
     renderTopItem: (item: CardProps, index: number) => React.ReactNode;
-    renderListItem: (item: CardProps, index: number) => React.ReactNode;
+    renderListItem?: (item: CardProps, index: number) => React.ReactNode; // Made optional
     listDividerClassName?: string;
     enableTopSectionHoverEffect?: boolean;
+    latestSectionContent?: React.ReactNode; // New prop
+    topSectionContent?: React.ReactNode; // New prop for top section
 }
 
 export default function Feed({
-    topSectionLabel, latestSectionLabel, topItems, latestItems,
+    topSectionLabel, latestSectionLabel, topItems, latestItems = [],
     viewAllLink, viewAllText, topItemsContainerClassName = '',
     renderTopItem, renderListItem, listDividerClassName = styles.listDivider,
-    enableTopSectionHoverEffect = false
+    enableTopSectionHoverEffect = false, latestSectionContent, topSectionContent
 }: FeedProps) {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -48,7 +50,7 @@ export default function Feed({
                     <AnimatePresence>{isTopSectionHovered && enableTopSectionHoverEffect && <KineticGlyphs />}</AnimatePresence>
                     <span className={styles.sectionLabel}>{topSectionLabel}</span>
                     <div className={`${styles.topItemsContainer} ${topItemsContainerClassName}`}>
-                        {topItems.map((item, index) => renderTopItem(item, index))}
+                        {topSectionContent ? topSectionContent : topItems.map((item, index) => renderTopItem(item, index))}
                     </div>
                 </motion.div>
             )}
@@ -59,12 +61,18 @@ export default function Feed({
                     <span>{latestSectionLabel}</span>
                 </span>
                 <div className={styles.latestItemsList}>
-                    {latestItems.map((item, index) => (
-                        <React.Fragment key={item.id}>
-                            {renderListItem(item, index)}
-                            {index < latestItems.length - 1 && <div className={listDividerClassName} />}
-                        </React.Fragment>
-                    ))}
+                    {latestSectionContent ? (
+                        latestSectionContent
+                    ) : (
+                        latestItems.map((item, index) => (
+                            renderListItem && (
+                                <React.Fragment key={item.id}>
+                                    {renderListItem(item, index)}
+                                    {index < latestItems.length - 1 && <div className={listDividerClassName} />}
+                                </React.Fragment>
+                            )
+                        ))
+                    )}
                 </div>
             </motion.div>
             

@@ -12,6 +12,9 @@ import KineticGlyphs from "@/components/effects/KineticGlyphs";
 import { useLivingCard } from "@/hooks/useLivingCard";
 import { CardProps } from "@/types";
 import { ContentBlock } from "../ContentBlock";
+import PaginatedLatestArticles from "./PaginatedLatestArticles";
+import KineticSpotlightNews from "./kinetic-news/KineticSpotlightNews";
+import NewsfeedStream from "./kinetic-news/NewsfeedStream";
 import gridStyles from './HomepageFeeds.module.css';
 import feedStyles from './feed/Feed.module.css';
 
@@ -38,48 +41,6 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
 });
 TopArticleCard.displayName = "TopArticleCard";
 
-const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
-    const router = useRouter();
-    const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a')) return;
-        router.push(`/articles/${article.slug}`);
-    };
-    return (
-        <div className={feedStyles.latestArticleItem} onClick={(e) => handleClick(e)}>
-            <div className={feedStyles.latestArticleThumbnail}><Image src={article.imageUrl} alt={article.title} fill sizes="120px" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-            <div className={feedStyles.latestArticleInfo}>
-                <h4 className={feedStyles.latestArticleTitle}>{article.title}</h4>
-                <div className={feedStyles.latestArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} /></div>
-            </div>
-        </div>
-    );
-});
-LatestArticleListItem.displayName = "LatestArticleListItem";
-
-const PinnedNewsCard = memo(({ item }: { item: CardProps }) => (
-    <Link href={`/news/${item.slug}`} className={`${feedStyles.pinnedNewsItem} no-underline`}>
-        <div className={feedStyles.pinnedNewsThumbnail}><Image src={item.imageUrl} alt={item.title} fill sizes="80px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-        <div className={feedStyles.pinnedNewsInfo}>
-            <h4 className={feedStyles.pinnedNewsTitle}>{item.title}</h4>
-            {item.date && <p className={feedStyles.pinnedNewsDate}>{item.date.split(' - ')[0]}</p>}
-            <p className={feedStyles.pinnedNewsCategory}>{item.category}</p>
-        </div>
-    </Link>
-));
-PinnedNewsCard.displayName = "PinnedNewsCard";
-
-const LatestNewsListItem = memo(({ item }: { item: CardProps }) => (
-    <Link href={`/news/${item.slug}`} className={`${feedStyles.newsListItem} no-underline`}>
-        <div className={feedStyles.newsListThumbnail}><Image src={item.imageUrl} alt={item.title} fill sizes="60px" placeholder="blur" blurDataURL={item.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-        <div className={feedStyles.newsListInfo}>
-            <p className={feedStyles.newsListCategory}>{item.category}</p>
-            <h5 className={feedStyles.newsListTitle}>{item.title}</h5>
-            {item.date && <p style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)' }}>{item.date.split(' - ')[0]}</p>}
-        </div>
-    </Link>
-));
-LatestNewsListItem.displayName = "LatestNewsListItem";
-
 // --- Main Component ---
 
 interface HomepageFeedsProps {
@@ -101,13 +62,12 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
                         topItems={topArticles}
-                        latestItems={latestArticles}
                         viewAllLink="/articles"
                         viewAllText="عرض كل المقالات"
                         topItemsContainerClassName={feedStyles.topArticlesGrid}
                         renderTopItem={(item) => <TopArticleCard key={item.id} article={item} />}
-                        renderListItem={(item) => <LatestArticleListItem key={item.id} article={item} />}
                         enableTopSectionHoverEffect={false}
+                        latestSectionContent={<PaginatedLatestArticles items={latestArticles} />}
                     />
                 </ContentBlock>
             </motion.div>
@@ -116,19 +76,13 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                     <Feed
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
-                        topItems={pinnedNews}
-                        latestItems={newsList}
+                        topItems={pinnedNews} // Pass empty array as items will be handled by topSectionContent
                         viewAllLink="/news"
                         viewAllText="عرض كل الأخبار"
                         topItemsContainerClassName={feedStyles.pinnedNewsList}
-                        renderTopItem={(item, index) => (
-                            <React.Fragment key={item.id}>
-                                <PinnedNewsCard item={item} />
-                                {index < pinnedNews.length - 1 && <div className={feedStyles.pinnedNewsDivider} />}
-                            </React.Fragment>
-                        )}
-                        renderListItem={(item) => <LatestNewsListItem key={item.id} item={item} />}
-                        listDividerClassName={feedStyles.newsListDivider}
+                        renderTopItem={() => null} // Render nothing here
+                        topSectionContent={<KineticSpotlightNews items={pinnedNews} />} // Pass the new component here
+                        latestSectionContent={<NewsfeedStream items={newsList} />} // Pass the new component here
                         enableTopSectionHoverEffect={true}
                     />
                 </ContentBlock>
