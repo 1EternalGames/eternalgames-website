@@ -79,12 +79,12 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         if (isMobile) {
             style.width = `var(--${index === 1 ? 'center' : 'side'}-width)`;
             style.height = index === 1 ? '380px' : '300px';
-            const offset = '45vw'; // Use vw for responsive positioning
+            transform = 'translateX(-50%)'; // Center each card on its `left` property
 
             switch (index) {
-                case 0: transform = `translateX(-${offset}) scale(0.85)`; style.zIndex = 1; break;
-                case 1: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-                case 2: transform = `translateX(${offset}) scale(0.85)`; style.zIndex = 1; break;
+                case 0: style.left = '15%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
+                case 1: style.left = '50%'; transform += ' scale(1)'; style.zIndex = 2; break;
+                case 2: style.left = '85%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
                 default: style.opacity = 0;
             }
         } else { // Desktop
@@ -102,7 +102,7 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
             }
         }
 
-        if (hoveredId === itemId && !isMobile) { // Hover effect disabled on mobile for simplicity
+        if (hoveredId === itemId && !isMobile) {
             style.zIndex = 3;
             transform += ' translateY(-15px)';
         }

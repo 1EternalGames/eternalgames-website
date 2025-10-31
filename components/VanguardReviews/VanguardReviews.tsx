@@ -70,7 +70,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile }:
         ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
 
-    const showCredits = isCenter; // Only show for center card on both mobile and desktop
+    const showCredits = isCenter;
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={livingCardAnimation.onHoverStart} onMouseLeave={livingCardAnimation.onHoverEnd} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
@@ -142,10 +142,31 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         isMobile
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
 
+    const onDragEnd = (event: any, { offset, velocity }: any) => {
+        const swipeConfidenceThreshold = 10000;
+        const swipePower = Math.abs(offset.x) * velocity.x;
+
+        if (swipePower < -swipeConfidenceThreshold) {
+            const nextIndex = (currentIndex + 1) % reviews.length;
+            navigateToIndex(nextIndex);
+        } else if (swipePower > swipeConfidenceThreshold) {
+            const prevIndex = (currentIndex - 1 + reviews.length) % reviews.length;
+            navigateToIndex(prevIndex);
+        }
+    };
+
     if (reviews.length < VANGUARD_SLOTS) return null;
 
     return (
-        <div ref={containerRef} className={styles.vanguardContainer} data-hovered={!!hoveredId}>
+        <motion.div 
+            ref={containerRef} 
+            className={styles.vanguardContainer} 
+            data-hovered={!!hoveredId}
+            drag={isMobile ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.1}
+            onDragEnd={onDragEnd}
+        >
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
             {Array.from({ length: VANGUARD_SLOTS }).map((_, index) => {
@@ -176,6 +197,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             })}
             
             {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
-        </div>
+        </motion.div>
     );
 }
