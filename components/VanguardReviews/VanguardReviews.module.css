@@ -8,18 +8,16 @@
     position: relative;
     padding: 6rem 0 12rem 0;
     --card-gap: 1.5rem;
-    --center-width: 380px; /* <-- REDUCED */
-    --side-width: 260px;   /* <-- REDUCED */
+    --center-width: 400px;
+    --side-width: 280px;
     background-color: var(--bg-secondary);
-
-    /* THE DEFINITIVE FIX: Apply full-bleed layout and clipping */
     width: 100vw;
     position: relative;
     left: 50%;
     right: 50%;
     margin-left: -50vw;
     margin-right: -50vw;
-    overflow-x: clip; /* More performant than hidden */
+    overflow-x: clip;
 }
 
 .spotlightGlow {
@@ -37,6 +35,9 @@
 .cardSlot {
     position: absolute;
     transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease-out, left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    /* --- DEFINITIVE FIX: Set base size here --- */
+    width: var(--center-width);
+    height: 500px;
 }
 
 .cardWrapper {
@@ -234,10 +235,13 @@
 
 @media (max-width: 1024px) {
     .vanguardContainer {
-        --center-width: 60vw;   /* <-- REDUCED */
-        --side-width: 50vw;     /* <-- INCREASED RELATIVE TO CENTER */
+        --center-width: 65vw;
+        --side-width: 45vw;
         padding-bottom: 10rem;
         padding-top: 4rem;
+    }
+    .cardSlot {
+        height: 380px;
     }
 }
 

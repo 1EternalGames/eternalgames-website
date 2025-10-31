@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+const VANGUARD_SLOTS = 5;
 export const ANIMATION_COOLDOWN = 450;
 const AUTO_NAVIGATE_INTERVAL = 4000;
 const MOBILE_BREAKPOINT = 1024;
 const CENTER_SLOT_INDEX = 2;
-const TOTAL_VISIBLE_SLOTS = 5;
 
 export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolean) {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -72,24 +72,16 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     const getCardState = useCallback((reviewIndex: number, itemId: string | number) => {
         if (itemCount === 0) return { style: { opacity: 0 }, isCenter: false, isVisible: false };
 
-        // Calculate the card's position relative to the current center
         let diff = reviewIndex - currentIndex;
         if (diff > itemCount / 2) diff -= itemCount;
         if (diff < -itemCount / 2) diff += itemCount;
-
         const slotIndex = diff + CENTER_SLOT_INDEX;
 
-        // If the card is outside the visible slots, return a hidden style
-        if (slotIndex < 0 || slotIndex >= TOTAL_VISIBLE_SLOTS) {
+        if (slotIndex < 0 || slotIndex >= VANGUARD_SLOTS) {
             const isFarRight = diff > 0;
             return {
-                style: {
-                    opacity: 0,
-                    transform: `translateX(${isFarRight ? '150%' : '-150%'}) scale(0.5)`,
-                    zIndex: -1,
-                },
-                isCenter: false,
-                isVisible: false,
+                style: { opacity: 0, transform: `translateX(${isFarRight ? '150%' : '-150%'}) scale(0.5)`, zIndex: -1 },
+                isCenter: false, isVisible: false,
             };
         }
 
@@ -98,22 +90,16 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         let transform = '';
 
         if (isMobile) {
-            style.width = `var(--${isCenter ? 'center' : 'side'}-width)`;
-            style.height = isCenter ? '380px' : '300px';
             transform = 'translateX(-50%)';
-
             switch (slotIndex) {
-                case 0: style.left = '15%'; transform += ' scale(0.75)'; style.opacity = 0; style.zIndex = 0; break;
+                case 0: style.left = '-25%'; transform += ' scale(0.75)'; style.opacity = 0; style.zIndex = 0; break;
                 case 1: style.left = '15%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
                 case 2: style.left = '50%'; transform += ' scale(1)'; style.zIndex = 2; break;
                 case 3: style.left = '85%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
-                case 4: style.left = '85%'; transform += ' scale(0.75)'; style.opacity = 0; style.zIndex = 0; break;
+                case 4: style.left = '125%'; transform += ' scale(0.75)'; style.opacity = 0; style.zIndex = 0; break;
             }
         } else { // Desktop
-            style.width = `var(--${isCenter ? 'center' : 'side'}-width)`;
-            style.height = isCenter ? '500px' : '350px';
             const offset = 250;
-
             switch (slotIndex) {
                 case 0: transform = `translateX(${-offset * 1.7}px) scale(0.75)`; break;
                 case 1: transform = `translateX(${-offset}px) scale(0.85)`; style.zIndex = 1; break;

@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useVanguardCarousel, ANIMATION_COOLDOWN } from '@/hooks/useVanguardCarousel';
+import { useVanguardCarousel } from '@/hooks/useVanguardCarousel';
 import { urlFor } from '@/sanity/lib/image';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
@@ -130,7 +130,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const containerRef = useRef(null);
     const hasAnimatedIn = useInView(containerRef, { once: true, amount: 0.1 });
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
-    const [isJumping, setIsJumping] = useState(false);
 
     const {
         currentIndex,
@@ -141,30 +140,12 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         isMobile
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
 
-    const handleNavigate = useCallback((index: number) => {
-        const diff = Math.abs(index - currentIndex);
-        const jumpDistance = Math.min(diff, reviews.length - diff);
-        
-        if (jumpDistance > 1) {
-            setIsJumping(true);
-        }
-        
-        navigateToIndex(index);
-    }, [currentIndex, navigateToIndex, reviews.length]);
-    
-    useEffect(() => {
-        if (isJumping) {
-            const timer = setTimeout(() => setIsJumping(false), ANIMATION_COOLDOWN);
-            return () => clearTimeout(timer);
-        }
-    }, [isJumping]);
-
     const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const swipeThreshold = 50;
         if (info.offset.x < -swipeThreshold) {
-            handleNavigate((currentIndex + 1) % reviews.length);
+            navigateToIndex((currentIndex + 1) % reviews.length);
         } else if (info.offset.x > swipeThreshold) {
-            handleNavigate((currentIndex - 1 + reviews.length) % reviews.length);
+            navigateToIndex((currentIndex - 1 + reviews.length) % reviews.length);
         }
     };
 
@@ -200,10 +181,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                         onMouseLeave={() => setHoveredId(null)}
                         animate={style}
                         style={{pointerEvents: isVisible ? 'auto' : 'none'}}
-                        transition={isJumping 
-                            ? { type: 'tween', ease: 'easeInOut', duration: 0.35 }
-                            : { type: 'spring', stiffness: 400, damping: 40 }
-                        }
+                        transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.7 }}
                     >
                         <VanguardCard 
                             review={review} 
@@ -217,7 +195,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 );
             })}
             
-            {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={handleNavigate} />}
+            {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
         </div>
     );
 }
