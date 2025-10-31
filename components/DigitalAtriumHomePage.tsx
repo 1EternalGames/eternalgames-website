@@ -18,9 +18,11 @@ export default function DigitalAtriumHomePage({ reviews, children }: {
     <div className={styles.atriumPageContainer}>
       <AnimatedGridBackground />
       <div className={styles.vanguardSection}>
-        <ContentBlock title="ديوان الطليعة" variant="fullbleed">
-          <VanguardReviews reviews={adaptedReviews} />
-        </ContentBlock>
+        {/* THE DEFINITIVE FIX: Title is separated from the component */}
+        <div className={styles.vanguardTitleContainer}>
+            <ContentBlock title="ديوان الطليعة" />
+        </div>
+        <VanguardReviews reviews={adaptedReviews} />
       </div>
       
       <div className={`container ${styles.atriumMainContent}`}>

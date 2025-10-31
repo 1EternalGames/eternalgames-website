@@ -50,10 +50,10 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     );
 };
 
-const VanguardCard = memo(({ review, isCenter, isInView, isPriority }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean }) => {
+const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const [isCardHovered, setIsCardHovered] = useState(false); const layoutIdPrefix = "vanguard-reviews";
+    const layoutIdPrefix = "vanguard-reviews";
     const scoreRef = useRef<HTMLParagraphElement>(null);
     useEffect(() => {
         if (isInView && scoreRef.current && typeof review.score === 'number') {
@@ -70,9 +70,9 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority }: { review:
         ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
 
-    const showCredits = isCenter || isCardHovered;
+    const showCredits = isCenter; // Only show for center card on both mobile and desktop
     return (
-        <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsCardHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsCardHovered(false); }} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
+        <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={livingCardAnimation.onHoverStart} onMouseLeave={livingCardAnimation.onHoverEnd} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
@@ -138,7 +138,8 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         navigateToIndex,
         getSlotStyle,
         getReviewForSlot,
-        VANGUARD_SLOTS
+        VANGUARD_SLOTS,
+        isMobile
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
 
     if (reviews.length < VANGUARD_SLOTS) return null;
@@ -151,6 +152,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 const reviewIndex = getReviewForSlot(index);
                 if (reviewIndex === null) return null;
                 const review = reviews[reviewIndex];
+                const isCenter = isMobile ? index === 1 : index === 2;
                 
                 return (
                     <motion.div 
@@ -164,9 +166,10 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                     >
                         <VanguardCard 
                             review={review} 
-                            isCenter={index === 2} 
+                            isCenter={isCenter} 
                             isInView={hasAnimatedIn}
-                            isPriority={index === 2}
+                            isPriority={isCenter}
+                            isMobile={isMobile}
                         />
                     </motion.div>
                 );

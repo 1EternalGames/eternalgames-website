@@ -78,14 +78,13 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
 
         if (isMobile) {
             style.width = `var(--${index === 1 ? 'center' : 'side'}-width)`;
-            style.height = index === 1 ? '420px' : '320px';
-            // THE DEFINITIVE FIX: Use responsive viewport-width units for positioning
-            const offset = 35; // Represents 35vw
+            style.height = index === 1 ? '380px' : '300px';
+            const offset = '45vw'; // Use vw for responsive positioning
 
             switch (index) {
-                case 0: transform = `translateX(-${offset}vw) scale(0.85)`; style.zIndex = 1; break;
+                case 0: transform = `translateX(-${offset}) scale(0.85)`; style.zIndex = 1; break;
                 case 1: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-                case 2: transform = `translateX(${offset}vw) scale(0.85)`; style.zIndex = 1; break;
+                case 2: transform = `translateX(${offset}) scale(0.85)`; style.zIndex = 1; break;
                 default: style.opacity = 0;
             }
         } else { // Desktop
@@ -103,7 +102,7 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
             }
         }
 
-        if (hoveredId === itemId) {
+        if (hoveredId === itemId && !isMobile) { // Hover effect disabled on mobile for simplicity
             style.zIndex = 3;
             transform += ' translateY(-15px)';
         }
@@ -127,6 +126,7 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         navigateToIndex,
         getSlotStyle,
         getReviewForSlot,
-        VANGUARD_SLOTS
+        VANGUARD_SLOTS,
+        isMobile,
     };
 }

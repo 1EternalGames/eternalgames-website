@@ -10,6 +10,10 @@
     --card-gap: 1.5rem;
     --center-width: 400px;
     --side-width: 280px;
+    background-color: var(--bg-secondary); /* Moved from parent */
+    width: 100vw;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .spotlightGlow {
@@ -159,7 +163,7 @@
 
 .kineticNavigator {
     position: absolute;
-    bottom: -3rem;
+    bottom: 0;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -226,30 +230,45 @@
         --center-width: 65vw;
         --side-width: 45vw;
         padding-bottom: 10rem;
+        padding-top: 4rem;
     }
 }
 
 @media (max-width: 768px) {
     .vanguardContainer {
-        /* THE DEFINITIVE FIX: Use smaller VW units to prevent overflow */
-        --center-width: 75vw;
-        --side-width: 60vw;
-        padding-top: 2rem;
+        --center-width: 65vw;
+        --side-width: 48vw;
         min-height: 420px;
+        padding-top: 2rem;
+        padding-bottom: 8rem;
+    }
+    .cardContent h3 { font-size: 1.8rem; }
+    .vanguardScoreBadge {
+        width: 48px;
+        height: 48px;
+        font-size: 1.8rem;
+        top: 1rem;
+        right: 1rem;
     }
     .creatorBubbleContainer {
-        /* THE DEFINITIVE FIX: Reposition inside the card bounds */
-        top: auto;
-        bottom: 1.5rem;
-        right: 1.5rem;
-        flex-direction: row;
-        gap: 1rem;
+        bottom: 1rem;
+        right: 1rem;
+        gap: 0.5rem;
+        transform: translateZ(50px);
+        top: auto; /* Overwrite desktop style */
+        flex-direction: row; /* Overwrite desktop style */
     }
     .creatorBubble {
         padding: 0.2rem 1rem;
     }
     .creatorName { font-size: 1.1rem; }
-    .creatorBubble:hover .creatorArrow {
-        display: none;
+    .creatorBubble:hover .creatorArrow { display: none; }
+    .kineticNavigator { bottom: -1.5rem; }
+}
+
+@media (max-width: 480px) {
+    .vanguardContainer {
+        --center-width: 70vw;
+        --side-width: 55vw;
     }
 }
