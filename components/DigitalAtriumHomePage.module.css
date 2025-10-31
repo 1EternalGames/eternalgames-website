@@ -5,10 +5,10 @@
   padding-top: var(--nav-height-scrolled);
 }
 
-.vanguardSection {
-  margin-bottom: 5rem;
-  /* THE DEFINITIVE FIX: Prevent horizontal overflow */
-  overflow-x: hidden;
+.vanguardFullBleedContainer {
+    background-color: var(--bg-secondary);
+    padding-top: 4rem;
+    margin-bottom: 5rem;
 }
 
 .atriumMainContent {
@@ -22,26 +22,6 @@
   margin-bottom: 8rem;
 }
 
-.vanguardTitleContainer {
-    width: 100vw;
-    position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
-    padding-top: 4rem;
-    padding-bottom: 0; /* No bottom padding */
-    background-color: var(--bg-secondary);
-}
-.vanguardTitleContainer > section > h2 {
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-right: 3.5rem;
-    padding-left: 2rem;
-    margin-bottom: 0;
-}
-
 @media (max-width: 1024px) {
   .homeGrid {
     grid-template-columns: 1fr;
@@ -50,7 +30,7 @@
 }
 
 @media (max-width: 768px) {
-    .vanguardSection {
+    .vanguardFullBleedContainer {
         margin-bottom: 3rem;
     }
     .atriumMainContent {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, memo, useCallback } from 'react';
-import { motion, AnimatePresence, useInView, animate } from 'framer-motion';
+import { motion, AnimatePresence, useInView, animate, PanInfo } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -70,7 +70,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile }:
         ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
 
-    const showCredits = isCenter;
+    const showCredits = isCenter; // Only show for center card on both mobile and desktop
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={livingCardAnimation.onHoverStart} onMouseLeave={livingCardAnimation.onHoverEnd} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
@@ -142,32 +142,41 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         isMobile
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
 
-    const onDragEnd = (event: any, { offset, velocity }: any) => {
-        const swipeConfidenceThreshold = 10000;
-        const swipePower = Math.abs(offset.x) * velocity.x;
-
-        if (swipePower < -swipeConfidenceThreshold) {
-            const nextIndex = (currentIndex + 1) % reviews.length;
-            navigateToIndex(nextIndex);
-        } else if (swipePower > swipeConfidenceThreshold) {
-            const prevIndex = (currentIndex - 1 + reviews.length) % reviews.length;
-            navigateToIndex(prevIndex);
+    const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        const swipeThreshold = 50; // Minimum drag distance in pixels to trigger a swipe
+        if (info.offset.x < -swipeThreshold) {
+            // Swiped left (RTL: next item)
+            navigateToIndex((currentIndex + 1) % reviews.length);
+        } else if (info.offset.x > swipeThreshold) {
+            // Swiped right (RTL: previous item)
+            navigateToIndex((currentIndex - 1 + reviews.length) % reviews.length);
         }
     };
 
     if (reviews.length < VANGUARD_SLOTS) return null;
 
     return (
-        <motion.div 
+        <div 
             ref={containerRef} 
             className={styles.vanguardContainer} 
             data-hovered={!!hoveredId}
-            drag={isMobile ? "x" : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.1}
-            onDragEnd={onDragEnd}
         >
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
+            
+            {/* INVISIBLE DRAG LAYER FOR MOBILE */}
+            {isMobile && (
+                <motion.div
+                    style={{
+                        position: 'absolute',
+                        left: '0', right: '0', top: '0', bottom: '0',
+                        zIndex: 4, // Above cards, below bubbles/nav
+                    }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={handleDragEnd}
+                />
+            )}
             
             {Array.from({ length: VANGUARD_SLOTS }).map((_, index) => {
                 const reviewIndex = getReviewForSlot(index);
@@ -197,6 +206,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             })}
             
             {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
-        </motion.div>
+        </div>
     );
 }
