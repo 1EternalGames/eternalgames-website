@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useVanguardCarousel } from '@/hooks/useVanguardCarousel';
+import { useVanguardCarousel, ANIMATION_COOLDOWN } from '@/hooks/useVanguardCarousel';
 import { urlFor } from '@/sanity/lib/image';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
@@ -130,30 +130,45 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const containerRef = useRef(null);
     const hasAnimatedIn = useInView(containerRef, { once: true, amount: 0.1 });
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
+    const [isJumping, setIsJumping] = useState(false);
 
     const {
         currentIndex,
         hoveredId,
         setHoveredId,
         navigateToIndex,
-        getSlotStyle,
-        getReviewForSlot,
-        VANGUARD_SLOTS,
+        getCardState,
         isMobile
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
 
+    const handleNavigate = useCallback((index: number) => {
+        const diff = Math.abs(index - currentIndex);
+        const jumpDistance = Math.min(diff, reviews.length - diff);
+        
+        if (jumpDistance > 1) {
+            setIsJumping(true);
+        }
+        
+        navigateToIndex(index);
+    }, [currentIndex, navigateToIndex, reviews.length]);
+    
+    useEffect(() => {
+        if (isJumping) {
+            const timer = setTimeout(() => setIsJumping(false), ANIMATION_COOLDOWN);
+            return () => clearTimeout(timer);
+        }
+    }, [isJumping]);
+
     const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-        const swipeThreshold = 50; // Minimum drag distance in pixels to trigger a swipe
+        const swipeThreshold = 50;
         if (info.offset.x < -swipeThreshold) {
-            // Swiped left (RTL: next item)
-            navigateToIndex((currentIndex + 1) % reviews.length);
+            handleNavigate((currentIndex + 1) % reviews.length);
         } else if (info.offset.x > swipeThreshold) {
-            // Swiped right (RTL: previous item)
-            navigateToIndex((currentIndex - 1 + reviews.length) % reviews.length);
+            handleNavigate((currentIndex - 1 + reviews.length) % reviews.length);
         }
     };
 
-    if (reviews.length < VANGUARD_SLOTS) return null;
+    if (reviews.length === 0) return null;
 
     return (
         <div 
@@ -165,11 +180,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             
             {isMobile && (
                 <motion.div
-                    style={{
-                        position: 'absolute',
-                        left: '0', right: '0', top: '0', bottom: '0',
-                        zIndex: 4, 
-                    }}
+                    style={{ position: 'absolute', inset: 0, zIndex: 4 }}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.2}
@@ -177,22 +188,22 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 />
             )}
             
-            {Array.from({ length: VANGUARD_SLOTS }).map((_, index) => {
-                const reviewIndex = getReviewForSlot(index);
-                if (reviewIndex === null) return null;
-                const review = reviews[reviewIndex];
-                const isCenter = isMobile ? index === 1 : index === 2;
+            {reviews.map((review, reviewIndex) => {
+                const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
                 const isHovered = hoveredId === review.id;
                 
                 return (
                     <motion.div 
                         key={review.id} 
-                        layoutId={`vanguard-card-${review.id}`} 
                         className={styles.cardSlot} 
                         onMouseEnter={() => setHoveredId(review.id)} 
                         onMouseLeave={() => setHoveredId(null)}
-                        animate={getSlotStyle(index, review.id)}
-                        transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+                        animate={style}
+                        style={{pointerEvents: isVisible ? 'auto' : 'none'}}
+                        transition={isJumping 
+                            ? { type: 'tween', ease: 'easeInOut', duration: 0.35 }
+                            : { type: 'spring', stiffness: 400, damping: 40 }
+                        }
                     >
                         <VanguardCard 
                             review={review} 
@@ -206,7 +217,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 );
             })}
             
-            {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
+            {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={handleNavigate} />}
         </div>
     );
 }
