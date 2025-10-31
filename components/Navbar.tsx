@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 import UserProfile from './UserProfile';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +27,7 @@ const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
 
 const Navbar = () => {
     const scrolled = useScrolled(50);
+    const pathname = usePathname();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [loadSearch, setLoadSearch] = useState(false);
@@ -43,6 +45,8 @@ const Navbar = () => {
         setIsSearchOpen(false);
     }
     
+    const isHomepage = pathname === '/';
+
     const navItems = [
         { href: '/reviews', label: 'المراجعات' },
         { href: '/news', label: 'الأخبار' },
@@ -58,7 +62,7 @@ const Navbar = () => {
                 <div className={`container ${styles.navContainer}`}>
                     <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
                     <nav>
-                        <ul className={styles.navLinks}>
+                        <ul className={`${styles.navLinks} ${isHomepage ? styles.mobileHomepage : ''}`}>
                             {navItems.map(item => (
                                 <li key={item.href}><Link href={item.href}>{item.label}</Link></li>
                             ))}
@@ -70,7 +74,7 @@ const Navbar = () => {
                         <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
                             <SearchIcon />
                         </button>
-                        <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+                        <button className={`${styles.hamburgerButton} ${isHomepage ? styles.hideOnHomepage : ''}`} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
                             <HamburgerIcon isOpen={isMenuOpen} />
                         </button>
                     </div>

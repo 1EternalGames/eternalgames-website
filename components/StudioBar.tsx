@@ -31,9 +31,9 @@ export default function StudioBar() {
         <AnimatePresence>
             <motion.div
                 className={styles.studioBar}
-                initial={{ y: '100%' }}
-                animate={{ y: '0%' }}
-                exit={{ y: '100%' }}
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: '0%', opacity: 1 }}
+                exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
             >
                 <div className={styles.studioBarContent}>

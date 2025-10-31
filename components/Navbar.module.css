@@ -139,13 +139,28 @@
   align-items: center;
 }
 
+.navLinks.mobileHomepage {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none; /* For Firefox */
+    -ms-overflow-style: none;  /* for Internet Explorer, Edge */
+    padding: 0 1rem;
+    margin: 0 auto;
+}
+.navLinks.mobileHomepage::-webkit-scrollbar {
+    display: none; /* for Chrome, Safari, and Opera */
+}
+.navLinks.mobileHomepage li {
+    flex-shrink: 0;
+}
+
 @media (max-width: 1024px) {
   .navContainer {
     display: flex;
     justify-content: space-between;
   }
   
-  .navLinks {
+  .navLinks:not(.mobileHomepage) {
     display: none;
   }
   
@@ -153,5 +168,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  
+  .hamburgerButton.hideOnHomepage {
+    display: none;
+  }
+
+  .navControls {
+    gap: 1.5rem; /* Reduce gap on mobile */
   }
 }

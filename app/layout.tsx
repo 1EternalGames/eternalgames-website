@@ -39,12 +39,14 @@ return (
 <NextAuthProvider>
 <UserStoreHydration />
 <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-<ToastProvider />
-<Lightbox /> 
-<Navbar />
-<main>{children}</main>
-<Footer />
-<StudioBar />
+<div style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
+    <ToastProvider />
+    <Lightbox /> 
+    <Navbar />
+    <main>{children}</main>
+    <Footer />
+    <StudioBar />
+</div>
 </ThemeProvider>
 </NextAuthProvider>
 </body>

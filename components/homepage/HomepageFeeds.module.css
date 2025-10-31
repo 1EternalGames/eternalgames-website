@@ -9,6 +9,7 @@
 @media (max-width: 1024px) {
     .feedsGrid {
         grid-template-columns: 1fr;
-        gap: 8rem;
+        gap: 6rem;
+        margin-top: 4rem;
     }
 }

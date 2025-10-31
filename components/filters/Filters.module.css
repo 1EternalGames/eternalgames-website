@@ -79,13 +79,6 @@
   z-index: -1;
 }
 
-@media (max-width: 768px) {
-  .filterGroup {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
 /* --- Search Input (used in both filter bars) --- */
 .searchInput {
   flex-grow: 1;
@@ -198,4 +191,23 @@
 }
 [data-theme="dark"] .gameSelectedButton.active {
   color: var(--bg-primary);
+}
+
+@media (max-width: 768px) {
+  .filtersContainer {
+    padding: 1.5rem;
+    gap: 2rem;
+  }
+  .filterGroup {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filterLabel {
+    margin-bottom: 0.5rem;
+    margin-left: 0;
+  }
+  .searchInput {
+    width: 100%;
+    margin-bottom: 0 !important;
+  }
 }

@@ -13,12 +13,6 @@
   align-self: start;
 }
 
-@media (max-width: 1024px) {
-  .chronosFeedLayout {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Neural Cascade Grid */
 .neuralCascadeGrid {
   display: grid;
@@ -72,6 +66,7 @@
 .categoryTabs {
   display: flex;
   gap: 1.5rem;
+  flex-wrap: wrap; /* Allow tabs to wrap on mobile */
 }
 .categoryTab {
   position: relative;
@@ -103,6 +98,7 @@
   display: flex;
   gap: 1rem;
   align-items: center;
+  flex-wrap: wrap; /* Allow controls to wrap */
 }
 
 /* Terminal Ticker Sidebar */
@@ -123,7 +119,6 @@
   padding-bottom: 1.5rem;
   display: flex;
   align-items: center;
-  /* --- ENHANCEMENTS --- */
   border-bottom: 1px solid var(--accent);
   box-shadow: 0 5px 15px -8px color-mix(in srgb, var(--accent) 50%, transparent);
 }
@@ -145,4 +140,32 @@
   line-height: 1.5;
   margin: 0;
   min-height: 72px; /* Prevents layout shift */
+}
+
+@media (max-width: 1024px) {
+  .chronosFeedLayout {
+    grid-template-columns: 1fr;
+    gap: 4rem;
+  }
+  .chronosFeedSidebar {
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .newsFilterBar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem;
+  }
+  .categoryTabs {
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .filterControls {
+    justify-content: center;
+  }
 }
