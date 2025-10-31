@@ -50,7 +50,7 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     );
 };
 
-const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean }) => {
+const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean, isHovered: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
@@ -70,7 +70,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile }:
         ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
 
-    const showCredits = isCenter; // Only show for center card on both mobile and desktop
+    const showCredits = isCenter || isHovered;
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={livingCardAnimation.onHoverStart} onMouseLeave={livingCardAnimation.onHoverEnd} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
             <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
@@ -163,13 +163,12 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         >
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
-            {/* INVISIBLE DRAG LAYER FOR MOBILE */}
             {isMobile && (
                 <motion.div
                     style={{
                         position: 'absolute',
                         left: '0', right: '0', top: '0', bottom: '0',
-                        zIndex: 4, // Above cards, below bubbles/nav
+                        zIndex: 4, 
                     }}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
@@ -183,6 +182,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 if (reviewIndex === null) return null;
                 const review = reviews[reviewIndex];
                 const isCenter = isMobile ? index === 1 : index === 2;
+                const isHovered = hoveredId === review.id;
                 
                 return (
                     <motion.div 
@@ -200,6 +200,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                             isInView={hasAnimatedIn}
                             isPriority={isCenter}
                             isMobile={isMobile}
+                            isHovered={isHovered}
                         />
                     </motion.div>
                 );
