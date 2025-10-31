@@ -78,17 +78,17 @@ const Navbar = () => {
                     {/* --- MOBILE LAYOUT --- */}
                     <div className={styles.mobileView}>
                         <div className={styles.mobileNavGroupLeft}>
-                            <UserProfile />
-                            <ThemeToggle />
-                        </div>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
-                        <div className={styles.mobileNavGroupRight}>
                             <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
                                 <SearchIcon />
                             </button>
                             <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
                                 <HamburgerIcon isOpen={isMenuOpen} />
                             </button>
+                        </div>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
+                        <div className={styles.mobileNavGroupRight}>
+                            <UserProfile />
+                            <ThemeToggle />
                         </div>
                     </div>
                 </div>
