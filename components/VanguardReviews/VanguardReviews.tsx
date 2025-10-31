@@ -180,8 +180,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                         onMouseEnter={() => setHoveredId(review.id)} 
                         onMouseLeave={() => setHoveredId(null)}
                         animate={style}
-                        style={{pointerEvents: isVisible ? 'auto' : 'none'}}
-                        transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.7 }}
+                        transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.5 }}
                     >
                         <VanguardCard 
                             review={review} 

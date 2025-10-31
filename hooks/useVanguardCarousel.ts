@@ -92,11 +92,11 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         if (isMobile) {
             transform = 'translateX(-50%)';
             switch (slotIndex) {
-                case 0: style.left = '-25%'; transform += ' scale(0.75)'; style.opacity = 0; style.zIndex = 0; break;
+                case 0: style.left = '-25%'; transform += ' scale(0.75)'; style.zIndex = 0; break;
                 case 1: style.left = '15%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
                 case 2: style.left = '50%'; transform += ' scale(1)'; style.zIndex = 2; break;
                 case 3: style.left = '85%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
-                case 4: style.left = '125%'; transform += ' scale(0.75)'; style.opacity = 0; style.zIndex = 0; break;
+                case 4: style.left = '125%'; transform += ' scale(0.75)'; style.zIndex = 0; break;
             }
         } else { // Desktop
             const offset = 250;
@@ -113,6 +113,13 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
             style.zIndex = 3;
             transform += ' translateY(-15px)';
         }
+        
+        // Hide non-visible mobile cards by position instead of opacity to prevent flicker
+        const isVisibleOnMobile = isMobile ? slotIndex >= 1 && slotIndex <= 3 : true;
+        if (!isVisibleOnMobile) {
+             style.pointerEvents = 'none';
+        }
+
 
         style.transform = transform;
         return { style, isCenter, isVisible: true };
