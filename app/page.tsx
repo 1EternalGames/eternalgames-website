@@ -11,6 +11,7 @@ import { SanityAuthor } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
+import FeedSkeleton from '@/components/homepage/feed/FeedSkeleton';
 
 export const revalidate = 60;
 
@@ -47,7 +48,6 @@ async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<San
     }));
 }
 
-// THE FIX: The function now returns a serializable array of [id, score] tuples.
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
         try {
@@ -70,10 +70,10 @@ const getCachedEngagementScoresMap = unstable_cache(
                 const shareCount = shares.find(s => s.contentId === id)?._count.userId || 0;
                 scoresMap.set(id, (likeCount * 2) + (shareCount * 5));
             });
-            return Array.from(scoresMap.entries()); // Convert Map to array
+            return Array.from(scoresMap.entries());
         } catch (error) {
             console.warn('[CACHE WARNING] DB connection failed for engagement scores. Gracefully continuing. Error:', error);
-            return []; // Return empty array on error
+            return [];
         }
     },
     ['homepage-engagement-scores'],
@@ -83,8 +83,6 @@ const getCachedEngagementScoresMap = unstable_cache(
 
 async function ReleasesSection() {
     const releases = await client.fetch(allReleasesQuery);
-    // --- THE DEFINITIVE FIX ---
-    // Use the same robust sanitization check as the /releases page.
     const sanitizedReleases = (releases || []).filter((item: any) => 
         item?.mainImage?.url && item.releaseDate && item.title && item.slug
     );
@@ -96,7 +94,7 @@ export default async function HomePage() {
         reviews, 
         homepageArticlesRaw, 
         homepageNewsRaw, 
-        scoresArray // <-- THE FIX: Receive the serializable array.
+        scoresArray
     ] = await Promise.all([
         client.fetch(vanguardReviewsQuery),
         client.fetch(homepageArticlesQuery),
@@ -104,7 +102,6 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
-    // THE FIX: Reconstruct the Map instance from the cached array.
     const scoresMap = new Map(scoresArray);
     
     const enrichedReviews = await Promise.all(
@@ -143,7 +140,9 @@ export default async function HomePage() {
 
     return (
         <DigitalAtriumHomePage reviews={enrichedReviews}>
-            {topArticles.length > 0 && <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />}
+            <Suspense fallback={<FeedSkeleton />}>
+                <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />
+            </Suspense>
             <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
                 <ReleasesSection />
             </Suspense>

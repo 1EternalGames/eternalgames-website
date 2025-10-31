@@ -79,12 +79,13 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         if (isMobile) {
             style.width = `var(--${index === 1 ? 'center' : 'side'}-width)`;
             style.height = index === 1 ? '420px' : '320px';
-            const offset = (window.innerWidth > 480) ? 140 : 110;
+            // THE DEFINITIVE FIX: Use responsive viewport-width units for positioning
+            const offset = 35; // Represents 35vw
 
             switch (index) {
-                case 0: transform = `translateX(${-offset}px) scale(0.85)`; style.zIndex = 1; break;
+                case 0: transform = `translateX(-${offset}vw) scale(0.85)`; style.zIndex = 1; break;
                 case 1: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-                case 2: transform = `translateX(${offset}px) scale(0.85)`; style.zIndex = 1; break;
+                case 2: transform = `translateX(${offset}vw) scale(0.85)`; style.zIndex = 1; break;
                 default: style.opacity = 0;
             }
         } else { // Desktop

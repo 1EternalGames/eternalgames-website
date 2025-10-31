@@ -231,16 +231,25 @@
 
 @media (max-width: 768px) {
     .vanguardContainer {
-        --center-width: 70vw;
-        --side-width: 55vw;
+        /* THE DEFINITIVE FIX: Use smaller VW units to prevent overflow */
+        --center-width: 75vw;
+        --side-width: 60vw;
         padding-top: 2rem;
         min-height: 420px;
     }
     .creatorBubbleContainer {
+        /* THE DEFINITIVE FIX: Reposition inside the card bounds */
+        top: auto;
+        bottom: 1.5rem;
         right: 1.5rem;
+        flex-direction: row;
+        gap: 1rem;
     }
     .creatorBubble {
         padding: 0.2rem 1rem;
     }
     .creatorName { font-size: 1.1rem; }
+    .creatorBubble:hover .creatorArrow {
+        display: none;
+    }
 }

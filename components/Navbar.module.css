@@ -32,7 +32,13 @@
   font-size: 3rem;
   font-weight: 800;
   color: var(--text-primary);
-  justify-self: start;
+  grid-column: 2;
+  justify-self: center;
+}
+
+.desktopNav {
+    grid-column: 2;
+    justify-self: center;
 }
 
 .navLinks {
@@ -55,11 +61,20 @@
   text-shadow: 0 4px 8px color-mix(in srgb,var(--accent) 40%,transparent);
 }
 
-.navControls {
+.navLeftControls {
+    grid-column: 1;
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.navRightControls {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 2rem;
-  justify-self: end;
 }
 
 .navSearch {
@@ -70,17 +85,18 @@
   position: relative;
   width: 2.4rem;
   height: 2.4rem;
+  color: var(--text-primary);
 }
 
 .navSearch svg {
   width: 2.4rem;
   height: 2.4rem;
-  stroke: var(--text-primary);
-  transition: stroke 0.3s ease, transform 0.3s ease;
+  stroke: currentColor;
+  transition: stroke 0.3s ease, transform 0.3s ease, color 0.3s ease;
 }
 
 .navSearch:hover svg {
-  stroke: var(--accent);
+  color: var(--accent);
   transform: rotate(-15deg) scale(1.1);
 }
 
@@ -100,18 +116,24 @@
 .mobileNavOverlay {
   position: fixed;
   inset: 0;
-  background-color: color-mix(in srgb, var(--bg-primary) 95%, transparent);
-  backdrop-filter: blur(10px);
+  background-color: rgba(0,0,0,0.5);
   z-index: 1200;
 }
 
 .mobileNavContent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  gap: 4rem;
+  padding: calc(var(--nav-height-scrolled) + 4rem) 2rem 4rem 2rem;
 }
 
 .mobileNavLinks {
@@ -121,60 +143,50 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4rem;
+  gap: 3rem;
+  margin-bottom: 4rem;
 }
 
 .mobileNavLinks a {
   font-family: var(--font-main);
   font-weight: 700;
-  font-size: 3.2rem;
+  font-size: 2.8rem;
   color: var(--text-primary);
 }
 
 .mobileNavFooter {
-  position: absolute;
-  bottom: 4rem;
-  display: flex;
-  gap: 3rem;
-  align-items: center;
-}
-
-.navLinks.mobileHomepage {
-    display: flex;
-    overflow-x: auto;
-    scrollbar-width: none; /* For Firefox */
-    -ms-overflow-style: none;  /* for Internet Explorer, Edge */
-    padding: 0 1rem;
-    margin: 0 auto;
-}
-.navLinks.mobileHomepage::-webkit-scrollbar {
-    display: none; /* for Chrome, Safari, and Opera */
-}
-.navLinks.mobileHomepage li {
-    flex-shrink: 0;
+    display: none; /* Footer is removed, controls are persistent on navbar */
 }
 
 @media (max-width: 1024px) {
   .navContainer {
+    grid-template-columns: 1fr auto 1fr;
     display: flex;
     justify-content: space-between;
   }
-  
-  .navLinks:not(.mobileHomepage) {
+  .desktopNav {
     display: none;
   }
-  
   .hamburgerButton {
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  
-  .hamburgerButton.hideOnHomepage {
-    display: none;
-  }
-
   .navControls {
-    gap: 1.5rem; /* Reduce gap on mobile */
+    gap: 1.5rem;
+  }
+  .navLogo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .navLeftControls, .navRightControls {
+    flex: 1;
+  }
+  .navLeftControls {
+    justify-content: flex-start;
+  }
+  .navRightControls {
+    justify-content: flex-end;
   }
 }

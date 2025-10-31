@@ -8,7 +8,8 @@ import NextAuthProvider from '@/components/SessionProvider';
 import StudioBar from '@/components/StudioBar';
 import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
-import Lightbox from '@/components/Lightbox'; // <-- IMPORT LIGHTBOX
+import Lightbox from '@/components/Lightbox';
+import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 
 const cairo = Cairo({
 subsets: ['arabic', 'latin'],
@@ -46,6 +47,7 @@ return (
     <main>{children}</main>
     <Footer />
     <StudioBar />
+    <ScrollToTopButton />
 </div>
 </ThemeProvider>
 </NextAuthProvider>

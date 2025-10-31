@@ -53,3 +53,9 @@
     padding: 0;
     max-width: none;
 }
+
+@media (max-width: 480px) {
+    .contentBlockTitle {
+        font-size: 2.6rem;
+    }
+}

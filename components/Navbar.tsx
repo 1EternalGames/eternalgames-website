@@ -3,7 +3,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 import UserProfile from './UserProfile';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,15 +18,14 @@ const SearchIcon = () => (
 
 const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
     <div style={{ width: '24px', height: '24px', position: 'relative' }}>
-        <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '6px' }} animate={{ rotate: isOpen ? 45 : 0, y: isOpen ? 5 : 0 }} />
-        <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '11px' }} animate={{ opacity: isOpen ? 0 : 1 }} />
-        <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '16px' }} animate={{ rotate: isOpen ? -45 : 0, y: isOpen ? -5 : 0 }} />
+        <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '6px', borderRadius: '2px' }} animate={{ rotate: isOpen ? 45 : 0, y: isOpen ? 5 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
+        <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '11px', borderRadius: '2px' }} animate={{ opacity: isOpen ? 0 : 1 }} transition={{ duration: 0.1 }} />
+        <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '16px', borderRadius: '2px' }} animate={{ rotate: isOpen ? -45 : 0, y: isOpen ? -5 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
     </div>
 );
 
 const Navbar = () => {
     const scrolled = useScrolled(50);
-    const pathname = usePathname();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [loadSearch, setLoadSearch] = useState(false);
@@ -45,8 +43,6 @@ const Navbar = () => {
         setIsSearchOpen(false);
     }
     
-    const isHomepage = pathname === '/';
-
     const navItems = [
         { href: '/reviews', label: 'المراجعات' },
         { href: '/news', label: 'الأخبار' },
@@ -60,21 +56,26 @@ const Navbar = () => {
         <>
             <header className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
                 <div className={`container ${styles.navContainer}`}>
+                    <div className={styles.navLeftControls}>
+                        <ThemeToggle />
+                        <UserProfile />
+                    </div>
+
                     <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
-                    <nav>
-                        <ul className={`${styles.navLinks} ${isHomepage ? styles.mobileHomepage : ''}`}>
+
+                    <nav className={styles.desktopNav}>
+                        <ul className={styles.navLinks}>
                             {navItems.map(item => (
                                 <li key={item.href}><Link href={item.href}>{item.label}</Link></li>
                             ))}
                         </ul>
                     </nav>
-                    <div className={styles.navControls}>
-                        <ThemeToggle />
-                        <UserProfile />
+
+                    <div className={styles.navRightControls}>
                         <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
                             <SearchIcon />
                         </button>
-                        <button className={`${styles.hamburgerButton} ${isHomepage ? styles.hideOnHomepage : ''}`} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+                        <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
                             <HamburgerIcon isOpen={isMenuOpen} />
                         </button>
                     </div>
@@ -85,19 +86,26 @@ const Navbar = () => {
                 {isMenuOpen && (
                     <motion.div
                         className={styles.mobileNavOverlay}
+                        onClick={closeAll}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
                         <motion.div
                             className={styles.mobileNavContent}
-                            initial={{ y: -50, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1, transition: { delay: 0.1, staggerChildren: 0.05 } }}
-                            exit={{ y: -50, opacity: 0 }}
+                            initial={{ y: "-100%" }}
+                            animate={{ y: "0%" }}
+                            exit={{ y: "-100%" }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 40 }}
                         >
                             <ul className={styles.mobileNavLinks}>
-                                {navItems.map(item => (
-                                    <motion.li key={item.href} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+                                {navItems.map((item, i) => (
+                                    <motion.li 
+                                        key={item.href} 
+                                        initial={{ opacity: 0, y: -20 }} 
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 + i * 0.07 }}
+                                    >
                                         <Link href={item.href} onClick={() => setIsMenuOpen(false)}>{item.label}</Link>
                                     </motion.li>
                                 ))}
