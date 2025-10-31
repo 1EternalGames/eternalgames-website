@@ -56,28 +56,40 @@ const Navbar = () => {
         <>
             <header className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
                 <div className={`container ${styles.navContainer}`}>
-                    <div className={styles.navLeftControls}>
-                        <ThemeToggle />
-                        <UserProfile />
+                    {/* --- DESKTOP LAYOUT --- */}
+                    <div className={styles.desktopView}>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
+                        <nav>
+                            <ul className={styles.navLinks}>
+                                {navItems.map(item => (
+                                    <li key={item.href}><Link href={item.href}>{item.label}</Link></li>
+                                ))}
+                            </ul>
+                        </nav>
+                        <div className={styles.navControls}>
+                            <ThemeToggle />
+                            <UserProfile />
+                            <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
+                                <SearchIcon />
+                            </button>
+                        </div>
                     </div>
 
-                    <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
-
-                    <nav className={styles.desktopNav}>
-                        <ul className={styles.navLinks}>
-                            {navItems.map(item => (
-                                <li key={item.href}><Link href={item.href}>{item.label}</Link></li>
-                            ))}
-                        </ul>
-                    </nav>
-
-                    <div className={styles.navRightControls}>
-                        <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
-                            <SearchIcon />
-                        </button>
-                        <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
-                            <HamburgerIcon isOpen={isMenuOpen} />
-                        </button>
+                    {/* --- MOBILE LAYOUT --- */}
+                    <div className={styles.mobileView}>
+                        <div className={styles.mobileNavGroupLeft}>
+                            <UserProfile />
+                            <ThemeToggle />
+                        </div>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
+                        <div className={styles.mobileNavGroupRight}>
+                            <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
+                                <SearchIcon />
+                            </button>
+                            <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+                                <HamburgerIcon isOpen={isMenuOpen} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
