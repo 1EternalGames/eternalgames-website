@@ -220,3 +220,37 @@
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
     text-align: right;
 }
+
+@media (max-width: 1024px) {
+    .vanguardContainer {
+        --center-width: 80vw;
+        flex-direction: column;
+        height: auto;
+        padding: 4rem 0 10rem 0;
+        min-height: 550px;
+    }
+    .cardSlot {
+        position: relative;
+        transition: none;
+    }
+    .cardSlot[style*="translateX"] {
+        display: none;
+    }
+    .cardSlot[style*="translateX(0px)"] {
+        display: block;
+        transform: none !important;
+        width: var(--center-width);
+        max-width: 400px;
+    }
+    .creatorBubbleContainer {
+        top: auto;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+    }
+    .creatorBubble:hover .creatorArrow {
+        display: none;
+    }
+}

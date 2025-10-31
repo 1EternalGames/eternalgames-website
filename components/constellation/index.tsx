@@ -28,8 +28,8 @@ export default function Constellation() {
 
     const [isFullscreen, setIsFullscreen] = useState(false);
 
-    useBodyClass('constellation-active'); // <-- REFACTORED
-    useBodyClass('fullscreen-active', isFullscreen); // <-- REFACTORED
+    useBodyClass('constellation-active'); 
+    useBodyClass('fullscreen-active', isFullscreen); 
     
     const { resolvedTheme } = useTheme();
     const { bookmarks, likes, shares } = useUserStore();
@@ -38,6 +38,8 @@ export default function Constellation() {
     const [activeStarPosition, setActiveStarPosition] = useState<ScreenPosition | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [commentedContentSlugs, setCommentedContentSlugs] = useState<string[]>([]);
+
+    useBodyClass('editor-active', isPanelOpen);
 
     useEffect(() => {
         if (!isHydrated) return;

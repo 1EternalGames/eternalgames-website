@@ -124,3 +124,25 @@
   width: 20px;
   height: 20px;
 }
+
+@media (max-width: 768px) {
+  .timelineContainer {
+    padding: 4rem 0;
+    max-width: 100%;
+  }
+  .timelineSpine {
+    right: 2rem;
+    left: auto;
+    transform: none;
+  }
+  .timelineItemWrapper,
+  .timelineItemWrapper.left,
+  .timelineItemWrapper.right {
+    width: calc(100% - 6rem);
+    align-self: flex-start;
+  }
+  .dot {
+    right: auto;
+    left: -41px;
+  }
+}

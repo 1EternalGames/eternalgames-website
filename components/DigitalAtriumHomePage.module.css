@@ -26,3 +26,12 @@
     gap: 8rem;
   }
 }
+
+@media (max-width: 768px) {
+    .vanguardSection {
+        margin-bottom: 3rem;
+    }
+    .atriumMainContent {
+        padding-bottom: 4rem;
+    }
+}

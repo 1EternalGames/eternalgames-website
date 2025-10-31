@@ -84,4 +84,74 @@
   transform: rotate(-15deg) scale(1.1);
 }
 
+/* --- MOBILE NAVIGATION --- */
+.hamburgerButton {
+  display: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 1201;
+  color: var(--text-primary);
+  width: 2.4rem;
+  height: 2.4rem;
+}
 
+.mobileNavOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--bg-primary) 95%, transparent);
+  backdrop-filter: blur(10px);
+  z-index: 1200;
+}
+
+.mobileNavContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 4rem;
+}
+
+.mobileNavLinks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rem;
+}
+
+.mobileNavLinks a {
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 3.2rem;
+  color: var(--text-primary);
+}
+
+.mobileNavFooter {
+  position: absolute;
+  bottom: 4rem;
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .navContainer {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .navLinks {
+    display: none;
+  }
+  
+  .hamburgerButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

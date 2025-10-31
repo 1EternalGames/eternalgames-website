@@ -344,3 +344,30 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
 body.lightbox-active {
     overflow: hidden !important;
 }
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 1024px) {
+  html { font-size: 60%; }
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 4.2rem; }
+  h2 { font-size: 3.2rem; }
+  h3 { font-size: 2.4rem; }
+  .page-title { font-size: 3.8rem; }
+  .section { padding: 6rem 0; }
+  .page-container { padding-top: calc(var(--nav-height-scrolled) + 2rem); padding-bottom: 4rem; }
+  .container { padding: 0 1.5rem; }
+  .content-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+  .toast-container-global { bottom: 1.5rem; left: 1.5rem; right: 1.5rem !important; width: auto; }
+  .primary-button, .outline-button { padding: 1.2rem 2rem; font-size: 1.6rem; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 58%; }
+  body { font-size: 1.6rem; }
+  h1 { font-size: 3.6rem; }
+  h2 { font-size: 2.8rem; }
+  h3 { font-size: 2.2rem; }
+  .page-title { font-size: 3.2rem; }
+}

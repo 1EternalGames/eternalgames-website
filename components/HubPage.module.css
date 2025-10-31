@@ -31,4 +31,11 @@
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
-
+@media (max-width: 768px) {
+  .hubHero {
+    height: 35vh;
+  }
+  .heroTitle {
+    font-size: 4.8rem;
+  }
+}

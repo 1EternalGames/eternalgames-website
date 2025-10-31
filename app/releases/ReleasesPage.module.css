@@ -57,7 +57,13 @@
     margin-bottom: 1.5rem; 
 }
 
-
-
-
-
+@media (max-width: 768px) {
+    .chronoGamesGrid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+    .chronoTimelineSections {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+}

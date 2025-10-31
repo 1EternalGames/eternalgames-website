@@ -11,6 +11,7 @@ import { Editor } from '@tiptap/react';
 import { updateDocumentAction, publishDocumentAction, validateSlugAction } from '../../actions';
 import { useToast } from '@/lib/toastStore';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useBodyClass } from '@/hooks/useBodyClass';
 import Link from 'next/link';
 import { uploadFile } from './RichTextEditor';
 import { UploadQuality } from '@/lib/image-optimizer';
@@ -109,15 +110,13 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const debouncedSlug = useDebounce(slug, 500);
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
     
+    useBodyClass('sidebar-open', isSidebarOpen);
+    
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
     
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
-    // THE DEFINITIVE FIX: The dependency array now includes `_updatedAt`.
-    // This ensures that after ANY successful save (draft or publish), which always changes
-    // the `_updatedAt` timestamp, the form state is fully re-synchronized with the
-    // authoritative data returned from the server, mimicking the publish behavior.
     useEffect(() => { 
         dispatch({ 
             type: 'INITIALIZE_STATE', 
@@ -157,7 +156,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 editorInstance.commands.setContent(sourceOfTruth.tiptapContent, false);
             }
         }
-    }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance]); // <<< THE FIX IS HERE
+    }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance]);
     
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     

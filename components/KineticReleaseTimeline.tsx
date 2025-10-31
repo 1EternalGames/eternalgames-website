@@ -95,16 +95,16 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                     animate={isTerminusInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
                 >
-                    <Link href="/releases" passHref legacyBehavior>
-                        <motion.a 
-                            className={`${styles.timelineTerminusButton} no-underline`}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
+                    <motion.div 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ display: 'inline-block' }}
+                    >
+                        <Link href="/releases" className={`${styles.timelineTerminusButton} no-underline`}>
                             <ViewAllIcon className={styles.terminusIcon} />
                             <span>عرض كل الإصدارات</span>
-                        </motion.a>
-                    </Link>
+                        </Link>
+                    </motion.div>
                 </motion.div>
             )}
         </div>

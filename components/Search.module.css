@@ -144,3 +144,29 @@
 }
 
 
+@media (max-width: 768px) {
+    .searchOverlay {
+        padding-top: 10vh;
+    }
+    .searchContainer {
+        padding: 0 1rem;
+    }
+    .searchInput {
+        font-size: 1.8rem;
+        padding: 1.2rem 1.5rem;
+    }
+    .searchResultLink {
+        gap: 1.5rem;
+        padding: 1rem;
+    }
+    .searchResultThumbnail {
+        width: 80px;
+        height: 48px;
+    }
+    .searchResultDetails h4 {
+        font-size: 1.6rem;
+    }
+    .searchResultDetails p {
+        font-size: 1.2rem;
+    }
+}

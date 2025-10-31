@@ -94,6 +94,28 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
                     text-overflow: ellipsis;
                 }
                 .user-actions { text-align: right; }
+
+                @media (max-width: 768px) {
+                    .user-list-header {
+                        display: none;
+                    }
+                    .user-row {
+                        grid-template-columns: 1fr;
+                        gap: 1.5rem;
+                        padding: 1.5rem;
+                    }
+                    .user-info {
+                        grid-column: 1;
+                    }
+                    .user-roles {
+                        grid-column: 1;
+                        justify-self: start;
+                    }
+                    .user-actions {
+                        grid-column: 1;
+                        text-align: right;
+                    }
+                }
             `}</style>
             <div className="user-management-container">
                 <input
@@ -130,18 +152,3 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
         </>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

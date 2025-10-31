@@ -32,6 +32,7 @@
     display: flex;
     align-items: baseline; 
     gap: 0.8rem;
+    flex-wrap: wrap;
 }
 .commentTimestamp {
     font-size: 1.3rem;
@@ -41,7 +42,7 @@
 }
 
 .commentBody { padding-right: 52px; padding-left: 0; }
-.commentFooter { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-right: 52px; padding-left: 0; }
+.commentFooter { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-right: 52px; padding-left: 0; flex-wrap: wrap; gap: 1rem; }
 .commentVoteActions { display: flex; align-items: center; gap: 1.5rem; }
 .commentAuthorActions { display: flex; align-items: center; gap: 0.5rem; }
 
@@ -61,3 +62,33 @@
 .commentItem.deleted .commentAuthorInfo { opacity: 0.7; }
 .deletedAvatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--border-color); }
 .commentAuthorLink.deleted { color: var(--text-secondary); font-style: italic; }
+
+@media (max-width: 768px) {
+    .commentsBlock {
+        padding: 1.5rem;
+    }
+    .commentList {
+        padding-right: 1.5rem;
+        border-right-width: 1px;
+    }
+    .commentItem::before {
+        right: -2.3rem;
+    }
+    .commentBody, .commentFooter, .commentEditForm, .commentReplyFormContainer, .commentRepliesList {
+        padding-right: 0;
+    }
+    .commentRepliesList {
+        padding-right: 2rem;
+    }
+    .commentRepliesList::before {
+        right: 0;
+    }
+    .commentHeader {
+        gap: 0.5rem;
+    }
+    .authorAndTimestamp {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+}

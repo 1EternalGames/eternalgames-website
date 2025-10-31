@@ -86,7 +86,7 @@ export default function WelcomePageClient() {
     const isButtonDisabled = isPending || (!hasInitialUsername && usernameValidation.type !== 'valid') || !fullName || !termsAccepted;
 
     return (
-        <div className="container page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '15vh' }}>
+        <div className="container page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '10vh' }}>
             <motion.div 
                 style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}
                 initial={{ opacity: 0, y: -20 }}

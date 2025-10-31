@@ -9,10 +9,10 @@ const prismaClientSingleton = () => {
         databaseUrl = process.env.BUILD_DATABASE_URL;
         console.log("... [BUILD] Using direct database connection.");
     } 
-    // 2. Use the development-specific URL modification if in dev mode.
+    // 2. For development, also use the direct connection URL (BUILD_DATABASE_URL).
     else if (process.env.NODE_ENV === 'development') {
-        databaseUrl = process.env.DATABASE_URL?.replace('&pgbouncer=true', '') + '&connect_timeout=30';
-        console.log("... [DEV] Using modified development database connection.");
+        databaseUrl = process.env.BUILD_DATABASE_URL;
+        console.log("... [DEV] Using direct database connection for development.");
     } 
     // 3. Fallback to the default pooled URL for production runtime.
     else {
@@ -21,7 +21,7 @@ const prismaClientSingleton = () => {
     }
 
     if (!databaseUrl) {
-        throw new Error('DATABASE_URL (or BUILD_DATABASE_URL) is not set correctly in your environment variables');
+        throw new Error('DATABASE_URL and/or BUILD_DATABASE_URL are not set correctly in your environment variables');
     }
 
     return new PrismaClient({

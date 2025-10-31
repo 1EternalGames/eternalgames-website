@@ -85,3 +85,39 @@
 
 .image-grid-container { margin: 2rem 0; border-radius: 12px; transition: box-shadow 0.2s ease-out; padding: 1rem; border: 1px solid var(--border-color); background: var(--bg-primary); }
 .tiptap .ProseMirror-selectednode .image-grid-container { box-shadow: 0 0 0 3px var(--accent); }
+
+@media (max-width: 1024px) {
+    .sanctumMain {
+        position: relative;
+    }
+    .sanctumSidebar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        z-index: 5;
+        border-left: none;
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    body.sidebar-open .sanctumSidebar {
+        transform: translateX(0);
+    }
+    .sanctumCanvas {
+        transition: filter 0.4s ease;
+    }
+    body.sidebar-open .sanctumCanvas {
+        filter: blur(4px) brightness(0.7);
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .canvasContent {
+        padding: 3rem 1.5rem 6rem 1.5rem;
+    }
+    .canvasTitleInput {
+        font-size: 3.6rem;
+    }
+    .canvasEditorWrapper {
+        padding: 1.5rem;
+    }
+}
