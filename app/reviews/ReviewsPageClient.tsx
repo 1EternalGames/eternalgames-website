@@ -102,15 +102,18 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', zIndex: 5, color: '#fff', textAlign: 'center' }}
             initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}
         >
-            <div className="desktop-only" style={{fontFamily: 'var(--font-ui)', fontSize: '1.6rem', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--accent)', margin: 0}}>الأعلى تقييمًا</div>
-            <h1 className={styles.heroTitle} style={{fontSize: '4.8rem', marginBottom: '1rem'}}>{heroReview.title}</h1>
-             <div className={`${styles.heroMeta} desktop-only`}>
+            <p className={styles.heroCategory}>الأعلى تقييمًا</p>
+
+            <div className={styles.titleScoreWrapper}>
+                <h1 className={styles.heroTitle}>{heroReview.title}</h1>
                 <span className={styles.heroScore}>{heroReview.score?.toFixed(1)}</span>
-                {heroReview.game?.title && (
-                    <span className={styles.heroGame}>{heroReview.game.title}</span>
-                )}
             </div>
-            <Link href={`/reviews/${heroReview.slug}`} className="primary-button no-underline desktop-only" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>اقرأ المراجعة</Link>
+
+            {heroReview.game?.title && (
+                <span className={styles.heroGame}>{heroReview.game.title}</span>
+            )}
+
+            <Link href={`/reviews/${heroReview.slug}`} className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>اقرأ المراجعة</Link>
         </motion.div>
       </div>
       
@@ -135,12 +138,6 @@ export default function ReviewsPageClient({ heroReview, otherReviews, allGames, 
             )}
         </ContentBlock>
       </div>
-      <style jsx global>{`
-        .desktop-only { display: block; }
-        @media (max-width: 768px) {
-          .desktop-only { display: none !important; }
-        }
-      `}</style>
     </>
   );
 }

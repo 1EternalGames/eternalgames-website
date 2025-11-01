@@ -24,19 +24,27 @@
   z-index: -1;
 }
 
-.heroTitle {
-  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  margin: 0;
+.heroCategory {
+    font-family: var(--font-ui);
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
 }
 
-.heroMeta {
+.titleScoreWrapper {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-top: 1rem;
-    font-family: var(--font-heading);
-    font-size: 2.4rem;
+    gap: 1rem;
+}
+
+.heroTitle {
+  font-size: 4.8rem;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  margin: 0 0 1rem 0;
 }
 
 .heroScore {
@@ -56,6 +64,8 @@
 .heroGame {
     color: #fff;
     font-weight: 700;
+    font-size: 2.4rem;
+    margin-top: -0.5rem;
 }
 
 /* --- Review Filters Container --- */
@@ -124,13 +134,6 @@
   background-color: var(--accent);
   border-radius: 999px;
   z-index: -1;
-}
-
-@media (max-width: 768px) {
-  .filterGroup {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 /* --- Filter Popover Container --- */
@@ -228,19 +231,32 @@
   .reviewHero {
     height: 30vh;
     min-height: 220px;
-    margin-bottom: -6rem;
+    margin-bottom: -10rem;
     align-items: flex-end;
     padding-bottom: 8rem;
   }
-  .heroTitle {
-    font-size: 3.6rem !important;
+  .heroCategory {
+      font-size: 1.4rem;
   }
-  .heroMeta {
-    font-size: 2rem;
+  .titleScoreWrapper {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+  }
+  .heroTitle {
+    font-size: 3.2rem !important;
+    margin: 0;
   }
   .heroScore {
     width: 50px;
     height: 50px;
     font-size: 2rem;
+    flex-shrink: 0;
+  }
+  .heroGame {
+    display: none;
   }
 }
