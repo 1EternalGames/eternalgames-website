@@ -193,21 +193,30 @@
   color: var(--bg-primary);
 }
 
+.mobileTriggerBar {
+    display: none;
+}
+
 @media (max-width: 768px) {
+  .desktopFilters {
+    display: none;
+  }
   .filtersContainer {
     padding: 1.5rem;
-    gap: 2rem;
+    gap: 1.5rem;
+  }
+  .mobileTriggerBar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
   }
   .filterGroup {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
   }
   .filterLabel {
-    margin-bottom: 0.5rem;
     margin-left: 0;
-  }
-  .searchInput {
-    width: 100%;
-    margin-bottom: 0 !important;
+    margin-right: 1rem; /* RTL */
   }
 }

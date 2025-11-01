@@ -226,8 +226,11 @@
 
 @media (max-width: 768px) {
   .reviewHero {
-    height: 45vh;
+    height: 30vh;
+    min-height: 220px;
     margin-bottom: -6rem;
+    align-items: flex-end;
+    padding-bottom: 8rem;
   }
   .heroTitle {
     font-size: 3.6rem !important;
