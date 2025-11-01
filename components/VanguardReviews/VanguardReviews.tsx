@@ -159,40 +159,38 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         >
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
-            {isMobile && (
-                <motion.div
-                    style={{ position: 'absolute', inset: 0, zIndex: 4 }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.2}
-                    onDragEnd={handleDragEnd}
-                />
-            )}
-            
-            {reviews.map((review, reviewIndex) => {
-                const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
-                const isHovered = hoveredId === review.id;
-                
-                return (
-                    <motion.div 
-                        key={review.id} 
-                        className={styles.cardSlot} 
-                        onMouseEnter={() => setHoveredId(review.id)} 
-                        onMouseLeave={() => setHoveredId(null)}
-                        animate={style}
-                        transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.5 }}
-                    >
-                        <VanguardCard 
-                            review={review} 
-                            isCenter={isCenter} 
-                            isInView={hasAnimatedIn}
-                            isPriority={isCenter}
-                            isMobile={isMobile}
-                            isHovered={isHovered}
-                        />
-                    </motion.div>
-                );
-            })}
+            <motion.div
+                style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                drag={isMobile ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.1}
+                onDragEnd={handleDragEnd}
+            >
+                {reviews.map((review, reviewIndex) => {
+                    const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
+                    const isHovered = hoveredId === review.id;
+                    
+                    return (
+                        <motion.div 
+                            key={review.id} 
+                            className={styles.cardSlot} 
+                            onMouseEnter={() => setHoveredId(review.id)} 
+                            onMouseLeave={() => setHoveredId(null)}
+                            animate={style}
+                            transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.5 }}
+                        >
+                            <VanguardCard 
+                                review={review} 
+                                isCenter={isCenter} 
+                                isInView={hasAnimatedIn}
+                                isPriority={isCenter}
+                                isMobile={isMobile}
+                                isHovered={isHovered}
+                            />
+                        </motion.div>
+                    );
+                })}
+            </motion.div>
             
             {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
         </div>

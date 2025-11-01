@@ -93,31 +93,34 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
             transform = 'translateX(-50%)';
             switch (slotIndex) {
                 case 0: style.left = '-25%'; transform += ' scale(0.75)'; style.zIndex = 0; break;
-                case 1: style.left = '15%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
+                case 1: style.left = '15%'; transform += ' scale(0.8)'; style.zIndex = 1; break;
                 case 2: style.left = '50%'; transform += ' scale(1)'; style.zIndex = 2; break;
-                case 3: style.left = '85%'; transform += ' scale(0.85)'; style.zIndex = 1; break;
+                case 3: style.left = '85%'; transform += ' scale(0.8)'; style.zIndex = 1; break;
                 case 4: style.left = '125%'; transform += ' scale(0.75)'; style.zIndex = 0; break;
             }
         } else { // Desktop
             const offset = 250;
             switch (slotIndex) {
                 case 0: transform = `translateX(${-offset * 1.7}px) scale(0.75)`; break;
-                case 1: transform = `translateX(${-offset}px) scale(0.85)`; style.zIndex = 1; break;
+                case 1: transform = `translateX(${-offset}px) scale(0.8)`; style.zIndex = 1; break;
                 case 2: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-                case 3: transform = `translateX(${offset}px) scale(0.85)`; style.zIndex = 1; break;
+                case 3: transform = `translateX(${offset}px) scale(0.8)`; style.zIndex = 1; break;
                 case 4: transform = `translateX(${offset * 1.7}px) scale(0.75)`; break;
             }
         }
+        
+        // Apply universal vertical lift
+        transform += ' translateY(-50px)';
 
         if (hoveredId === itemId && !isMobile) {
             style.zIndex = 3;
-            transform += ' translateY(-15px)';
+            transform += ' translateY(-15px)'; // This composes with the base lift
         }
         
-        // Hide non-visible mobile cards by position instead of opacity to prevent flicker
         const isVisibleOnMobile = isMobile ? slotIndex >= 1 && slotIndex <= 3 : true;
         if (!isVisibleOnMobile) {
              style.pointerEvents = 'none';
+             style.opacity = 0;
         }
 
 
