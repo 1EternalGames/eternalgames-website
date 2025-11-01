@@ -25,27 +25,42 @@ const creatorBubbleItemVariants = {
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
+    const handleBubbleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+    };
+    
+    // Get the profile URL - try username first, then slug, then name as fallback
+    const profileSlug = creator.username || creator.slug?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
+    const hasPublicProfile = !!profileSlug;
+    
     const bubbleContent = (
         <motion.div 
             className={styles.creatorBubble} 
             whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
+            onClick={handleBubbleClick}
         >
             <span className={styles.creatorLabel}>{label}</span>
             <span className={styles.creatorName}>{creator.name}</span>
             <div className={styles.creatorArrow}><ArrowIcon /></div>
         </motion.div>
     );
+    
     return (
         <motion.div variants={creatorBubbleItemVariants}>
-            {creator.username ? (
+            {hasPublicProfile ? (
                 <Link
-                    href={`/creators/${creator.username}`}
-                    onClick={(e) => e.stopPropagation()}
+                    href={`/creators/${profileSlug}`}
+                    onClick={handleBubbleClick}
                     className="no-underline"
                 >
                     {bubbleContent}
                 </Link>
-            ) : (<div title={`${creator.name} (no public profile)`}>{bubbleContent}</div>)}
+            ) : (
+                <div title={`${creator.name} (no public profile)`} onClick={handleBubbleClick}>
+                    {bubbleContent}
+                </div>
+            )}
         </motion.div>
     );
 };
@@ -96,7 +111,16 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
             </Link>
             <AnimatePresence>
                 {showCredits && (
-                    <motion.div className={styles.creatorBubbleContainer} variants={creatorBubbleContainerVariants} initial="hidden" animate="visible" exit="hidden">
+                    <motion.div
+                        className={styles.creatorBubbleContainer}
+                        variants={creatorBubbleContainerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        style={{ pointerEvents: 'auto' }}
+                    >
                         {review.authors.map(author => <CreatorBubble key={author._id} label="بقلم" creator={author} />)}
                         {review.designers?.map(designer => <CreatorBubble key={designer._id} label="تصميم" creator={designer} />)}
                     </motion.div>
@@ -115,7 +139,16 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                 {reviews.map((review, index) => {
                     const isActive = currentIndex === index;
                     return (
-                        <motion.button key={review.id} ref={el => { itemRefs.current[index] = el }} className={styles.navItem} data-active={isActive} onClick={() => navigateToIndex(index)} animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
+                        <motion.button 
+                            key={review.id} 
+                            ref={el => { itemRefs.current[index] = el }} 
+                            className={styles.navItem} 
+                            data-active={isActive} 
+                            onTap={() => navigateToIndex(index)}
+                            whileTap={{ scale: 0.95 }}
+                            animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} 
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        >
                             <Image src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} alt={review.title} fill sizes="10vw" className={styles.navImage} unoptimized />
                             <AnimatePresence>{isActive && <motion.div className={styles.navTitle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{review.title}</motion.div>}</AnimatePresence>
                         </motion.button>
@@ -177,6 +210,9 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                             onMouseEnter={() => setHoveredId(review.id)} 
                             onMouseLeave={() => setHoveredId(null)}
                             animate={style}
+                            // --- THIS IS THE SMOOTHNESS CONTROL ---
+                            // 1. `duration`: The time in seconds the animation takes. Higher is slower.
+                            // 2. `ease`: The animation curve. This cubic-bezier is a "fast out, slow in" curve.
                             transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.5 }}
                         >
                             <VanguardCard 

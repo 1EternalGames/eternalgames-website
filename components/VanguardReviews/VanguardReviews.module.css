@@ -235,8 +235,8 @@
 
 @media (max-width: 1024px) {
     .vanguardContainer {
-        --center-width: 65vw;
-        --side-width: 45vw;
+        --center-width: 60vw;
+        --side-width: 40vw;
         padding-bottom: 10rem;
         padding-top: 4rem;
     }
@@ -247,10 +247,10 @@
 
 @media (max-width: 768px) {
     .vanguardContainer {
-        --center-width: 70vw;
-        --side-width: 55vw;
+        --center-width: 65vw;
+        --side-width: 45vw;
         min-height: 420px;
-        padding-top: 2rem;
+        padding-top: 5.5rem; /* Increased from 2rem to prevent overlap with title */
         padding-bottom: 8rem;
     }
     .cardContent h3 { font-size: 1.8rem; }
@@ -275,7 +275,7 @@
 
 @media (max-width: 480px) {
     .vanguardContainer {
-        --center-width: 75vw;
-        --side-width: 60vw;
+        --center-width: 70vw;
+        --side-width: 50vw;
     }
 }

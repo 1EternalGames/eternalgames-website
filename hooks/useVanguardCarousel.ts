@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const VANGUARD_SLOTS = 5;
 export const ANIMATION_COOLDOWN = 450;
-const AUTO_NAVIGATE_INTERVAL = 4000;
+const AUTO_NAVIGATE_INTERVAL = 3000;
 const MOBILE_BREAKPOINT = 1024;
 const CENTER_SLOT_INDEX = 2;
 
@@ -90,22 +90,42 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         let transform = '';
 
         if (isMobile) {
-            transform = 'translateX(-50%)';
+            // THE DEFINITIVE FIX: Animate only the transform property for mobile to match desktop's smoothness.
+            // All cards are positioned relative to the center (left: 50%) and then translated.
+            style.left = '50%';
+            const offsetVw = 35;
+            const baseTranslateX = '-50%'; // To center the card itself
+
             switch (slotIndex) {
-                case 0: style.left = '-25%'; transform += ' scale(0.75)'; style.zIndex = 0; break;
-                case 1: style.left = '15%'; transform += ' scale(0.8)'; style.zIndex = 1; break;
-                case 2: style.left = '50%'; transform += ' scale(1)'; style.zIndex = 2; break;
-                case 3: style.left = '85%'; transform += ' scale(0.8)'; style.zIndex = 1; break;
-                case 4: style.left = '125%'; transform += ' scale(0.75)'; style.zIndex = 0; break;
+                case 0: // Far Left
+                    transform = `translateX(calc(${baseTranslateX} - ${offsetVw * 1.8}vw)) scale(0.75)`;
+                    style.zIndex = 0;
+                    break;
+                case 1: // Near Left
+                    transform = `translateX(calc(${baseTranslateX} - ${offsetVw}vw)) scale(0.8)`;
+                    style.zIndex = 1;
+                    break;
+                case 2: // Center
+                    transform = `translateX(${baseTranslateX}) scale(1)`;
+                    style.zIndex = 2;
+                    break;
+                case 3: // Near Right
+                    transform = `translateX(calc(${baseTranslateX} + ${offsetVw}vw)) scale(0.8)`;
+                    style.zIndex = 1;
+                    break;
+                case 4: // Far Right
+                    transform = `translateX(calc(${baseTranslateX} + ${offsetVw * 1.8}vw)) scale(0.75)`;
+                    style.zIndex = 0;
+                    break;
             }
         } else { // Desktop
             const offset = 250;
             switch (slotIndex) {
-                case 0: transform = `translateX(${-offset * 1.7}px) scale(0.75)`; break;
-                case 1: transform = `translateX(${-offset}px) scale(0.8)`; style.zIndex = 1; break;
+                case 0: transform = `translateX(${-offset * 1.6}px) scale(0.6)`; break;
+                case 1: transform = `translateX(${-offset * 0.9}px) scale(0.65)`; style.zIndex = 1; break;
                 case 2: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-                case 3: transform = `translateX(${offset}px) scale(0.8)`; style.zIndex = 1; break;
-                case 4: transform = `translateX(${offset * 1.7}px) scale(0.75)`; break;
+                case 3: transform = `translateX(${offset * 0.9}px) scale(0.65)`; style.zIndex = 1; break;
+                case 4: transform = `translateX(${offset * 1.6}px) scale(0.6)`; break;
             }
         }
         
