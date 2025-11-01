@@ -93,6 +93,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                         </Link>
                         <div className={styles.cardMetadata}>
                             <CreatorCredit label="بقلم" creators={article.authors} />
+                            {article.date && <p className={styles.cardDate}>{article.date}</p>}
                         </div>
                     </div>
                     <div className={styles.tagContainer}>

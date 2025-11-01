@@ -359,8 +359,8 @@ body.lightbox-active {
   .page-container { padding-top: calc(var(--nav-height-scrolled) + 2rem); padding-bottom: 4rem; }
   .container { padding: 0 1.5rem; }
   .content-grid { 
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
   }
   .toast-container-global { bottom: 1.5rem; left: 1.5rem; right: 1.5rem !important; width: auto; }
   .primary-button, .outline-button { padding: 1.2rem 2rem; font-size: 1.6rem; }

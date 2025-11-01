@@ -14,6 +14,12 @@
   z-index: 2;
 }
 
+.desktopFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem; /* Reduced vertical gap between filter groups on desktop */
+}
+
 .filterGroup {
   display: flex;
   align-items: center;
