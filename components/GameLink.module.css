@@ -1,0 +1,44 @@
+/* components/GameLink.module.css */
+
+.kineticGameTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    font-family: var(--font-ui), sans-serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border: 1px solid var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+    color: var(--accent);
+    transition: all 0.25s ease-out;
+    white-space: nowrap;
+    flex-direction: row-reverse;
+}
+  
+.kineticGameTag:hover {
+    transform: translateY(-2px);
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #FFFFFF;
+    box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+  
+[data-theme="dark"] .kineticGameTag:hover {
+    color: var(--bg-primary);
+}
+  
+.gameTagArrow {
+    display: inline-block;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+  
+.kineticGameTag:hover .gameTagArrow {
+    opacity: 1;
+    transform: translateX(-0);
+}
+
+

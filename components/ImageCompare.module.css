@@ -1,0 +1,98 @@
+/* components/ImageCompare.module.css */
+.compareWrapper {
+  margin: 2rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  line-height: 0; 
+}
+
+.placeholder {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background-color: var(--bg-primary);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.dropzone {
+  aspect-ratio: 16 / 9;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-family: var(--font-main);
+  font-size: 1.4rem;
+  transition: border-color 0.2s, background-color 0.2s;
+  position: relative; /* For image positioning */
+  overflow: hidden; /* To contain the image */
+  cursor: pointer; /* For click-to-upload */
+}
+
+.dropzone.active {
+  border-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.uploadIcon {
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+
+.imagePreview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.dropzoneContent {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+.dropzone:hover .dropzoneContent {
+  opacity: 1;
+}
+
+.imageCompareContainer {
+  margin: 2rem 0;
+}
+
+.imageCompareContainer[data-size="small"] { max-width: 50%; margin-left: auto; margin-right: auto; }
+.imageCompareContainer[data-size="medium"] { max-width: 75%; margin-left: auto; margin-right: auto; }
+.imageCompareContainer[data-size="large"] { max-width: 100%; }
+
+.twoImageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.fourImageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+

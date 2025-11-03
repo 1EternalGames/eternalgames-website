@@ -1,0 +1,141 @@
+.authModalPanelContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+  min-height: 450px;
+}
+.authSatelliteContainer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+.authOrbRowTop {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  width: 100%;
+}
+.authFooterText {
+  font-family: var(--font-ui);
+  font-size: 1.6rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.authMorphWrapper {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.authCredentialsPanel {
+  width: 420px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+  padding: 3rem;
+  overflow: hidden;
+}
+.authCredentialsContent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.authBackButton {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  width: 24px;
+  height: 24px;
+  z-index: 20;
+}
+.authBackButton:hover {
+  color: var(--text-primary);
+}
+.formHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.formTitle {
+  font-size: 2.8rem;
+  margin: 0;
+  font-family: var(--font-heading);
+}
+.credentialsForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+.authInput {
+  width: 100%;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.2rem 1.5rem;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+.authInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.authSubmitButton {
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 1.2rem 2.4rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.6rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+[data-theme="dark"] .authSubmitButton {
+  color: var(--bg-primary);
+}
+.authViewSwitcher {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+}
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0.5rem;
+  font: inherit;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.authMessage {
+  margin-top: 1rem;
+  font-size: 1.4rem;
+  text-align: center;
+}
+.authMessage.error {
+  color: #DC2626;
+}
+.authMessage.success {
+  color: #16A34A;
+}
+
+

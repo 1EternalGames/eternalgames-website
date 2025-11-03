@@ -1,0 +1,55 @@
+/* app/studio/ActionDrawer.module.css */
+
+.actionDrawerContainer {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border-color);
+  border-top-left-radius: 12px;
+  border-top-left-radius: 12px;
+}
+
+.actionDrawerButtons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.actionDrawerButton {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary); /* <-- THE FIX IS HERE */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+.actionDrawerButton svg {
+  width: 22px;
+  height: 22px;
+}
+
+.actionDrawerButton:hover {
+  background-color: var(--border-color);
+  color: var(--accent);
+}
+.actionDrawerButton.delete:hover {
+  background-color: #3f1a1a;
+  color: #DC2626;
+}
+
+
+
+
+

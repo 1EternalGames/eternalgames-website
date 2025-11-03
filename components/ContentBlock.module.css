@@ -1,0 +1,78 @@
+/* components/ContentBlock.module.css */
+.contentBlock {
+    margin-bottom: 6rem;
+}
+
+.contentBlockTitle {
+    position: relative; /* Required for the pseudo-element */
+    font-size: clamp(2.8rem, 4vw, 3.6rem);
+    margin-bottom: 3rem;
+    font-weight: 700;
+    text-align: right;
+    border-right: 4px solid var(--accent);
+    padding-right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.titleIcon {
+    color: var(--accent);
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.contentBlockTitle span {
+    transform: translateY(-2px); /* THE FIX: Vertically align text */
+}
+
+
+/* --- THE DEFINITIVE FIX: ADDED PSEUDO-ELEMENT FOR BLOOM --- */
+.contentBlockTitle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -4px; /* Position over the 4px border */
+    width: 4px;
+    height: 100%;
+    box-shadow: 0 0 12px var(--accent);
+    pointer-events: none; /* Make it non-interactive */
+}
+
+.contentBlockBody {
+    /* Default body styles */
+}
+
+.variantFullbleed {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    background-color: var(--bg-secondary);
+}
+
+.variantFullbleed .contentBlockTitle {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-right: 3.5rem;
+    padding-left: 2rem;
+}
+
+.variantFullbleed .contentBlockBody {
+    padding: 0;
+    max-width: none;
+}
+
+@media (max-width: 480px) {
+    .contentBlockTitle {
+        font-size: 2.6rem;
+    }
+}
+
+

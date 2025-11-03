@@ -1,0 +1,31 @@
+/* components/modals/Modals.module.css */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--bg-primary) 50%, transparent);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  padding: 2rem;
+}
+
+.modalContent {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 3rem;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
+

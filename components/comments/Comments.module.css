@@ -1,0 +1,96 @@
+/* components/comments/Comments.module.css */
+@keyframes pulse-text {
+    0%, 100% {
+        color: var(--text-primary);
+    }
+    50% {
+        color: var(--text-secondary);
+    }
+}
+
+.pulsingText {
+    animation: pulse-text 2s ease-in-out infinite;
+}
+
+.commentsSection { margin-top: 8rem; padding-top: 4rem; border-top: 1px solid var(--border-color); }
+.commentsBlock .commentsSection { margin-top: 0; padding-top: 0; border-top: none; }
+.commentsBlock { margin-top: 8rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 3rem; }
+.commentSigninPrompt { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 4rem; text-align: center; margin-top: 2rem; }
+.commentFormWrapper { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 5rem; max-width: 700px; }
+.commentFormAvatar { flex-shrink: 0; margin-top: 0.5rem; }
+.commentFormMain { flex-grow: 1; }
+.commentFormMain .profileInput { min-height: 120px; margin-bottom: 1rem; }
+.commentList { position: relative; max-width: 700px; display: flex; flex-direction: column; gap: 4rem; border-right: 2px solid var(--border-color); padding-right: 3rem; border-left: none; padding-left: 0; }
+.commentItem { position: relative; }
+.commentItem::before { content: ''; position: absolute; right: -3.9rem; left: auto; top: 10px; width: 14px; height: 14px; border-radius: 50%; background-color: var(--bg-secondary); border: 3px solid var(--accent); }
+.commentHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.2rem; margin-bottom: 1rem; }
+.commentAuthorInfo { display: flex; align-items: center; gap: 1.2rem; flex-grow: 1; }
+.commentAuthorLink { font-family: var(--font-main), sans-serif; font-weight: 700; font-size: 1.8rem; color: var(--text-primary); transition: color 0.2s ease; }
+.commentAuthorLink:hover { color: var(--accent); }
+
+.authorAndTimestamp {
+    display: flex;
+    align-items: baseline; 
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+.commentTimestamp {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    font-family: var(--font-main), sans-serif;
+    margin: 0;
+}
+
+.commentBody { padding-right: 52px; padding-left: 0; }
+.commentFooter { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-right: 52px; padding-left: 0; flex-wrap: wrap; gap: 1rem; }
+.commentVoteActions { display: flex; align-items: center; gap: 1.5rem; }
+.commentAuthorActions { display: flex; align-items: center; gap: 0.5rem; }
+
+.viewRepliesButton { margin-left: auto; margin-right: 1.5rem; padding: 0.6rem 1.2rem !important; font-size: 1.3rem !important; }
+
+.voteButton { display: flex; align-items: center; gap: 0.6rem; background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0.4rem 0.8rem; margin: 0 -0.8rem; border-radius: 999px; transition: color 0.2s ease, background-color 0.2s ease; }
+.voteButton:hover:not(:disabled) { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+.voteButton.active { color: var(--accent); font-weight: 700; }
+.commentEditForm { margin-top: 1rem; padding-right: 52px; padding-left: 0; }
+.commentEditActions { display: flex; gap: 1rem; }
+.commentReplyFormContainer { padding-right: 52px; padding-left: 0; margin-top: 1.5rem; }
+.commentReplyFormContainer .commentFormWrapper { margin: 0; padding: 0; }
+.commentRepliesList { position: relative; display: flex; flex-direction: column; gap: 3rem; margin-top: 3rem; padding-right: 52px; padding-left: 0; }
+.commentRepliesList::before { content: ''; position: absolute; top: 0; right: 20px; left: auto; bottom: 0; width: 2px; background-color: var(--border-color); }
+.commentRepliesList .commentItem { padding-right: 0; border-right: none; }
+.commentRepliesList .commentItem::before { display: none; }
+.commentItem.deleted .commentAuthorInfo { opacity: 0.7; }
+.deletedAvatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--border-color); }
+.commentAuthorLink.deleted { color: var(--text-secondary); font-style: italic; }
+
+@media (max-width: 768px) {
+    .commentsBlock {
+        padding: 1.5rem;
+    }
+    .commentList {
+        padding-right: 1.5rem;
+        border-right-width: 1px;
+    }
+    .commentItem::before {
+        right: -2.3rem;
+    }
+    .commentBody, .commentFooter, .commentEditForm, .commentReplyFormContainer, .commentRepliesList {
+        padding-right: 0;
+    }
+    .commentRepliesList {
+        padding-right: 2rem;
+    }
+    .commentRepliesList::before {
+        right: 0;
+    }
+    .commentHeader {
+        gap: 0.5rem;
+    }
+    .authorAndTimestamp {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+}
+
+

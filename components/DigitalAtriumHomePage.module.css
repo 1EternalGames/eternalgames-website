@@ -1,0 +1,41 @@
+/* components/DigitalAtriumHomePage.module.css */
+.atriumPageContainer {
+  position: relative;
+  width: 100%;
+  padding-top: var(--nav-height-scrolled);
+}
+
+.vanguardFullBleedContainer {
+    background-color: var(--bg-secondary);
+    padding-top: 4rem;
+    margin-bottom: 5rem;
+}
+
+.atriumMainContent {
+  padding-bottom: 8rem;
+}
+
+.homeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.75fr;
+  gap: 4rem;
+  margin-bottom: 8rem;
+}
+
+@media (max-width: 1024px) {
+  .homeGrid {
+    grid-template-columns: 1fr;
+    gap: 8rem;
+  }
+}
+
+@media (max-width: 768px) {
+    .vanguardFullBleedContainer {
+        margin-bottom: 3rem;
+    }
+    .atriumMainContent {
+        padding-bottom: 4rem;
+    }
+}
+
+

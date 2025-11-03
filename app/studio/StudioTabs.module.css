@@ -1,0 +1,48 @@
+/* app/studio/StudioTabs.module.css */
+
+.studioTabsContainer {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .studioTabButton {
+    position: relative;
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 1.6rem;
+    color: var(--text-secondary);
+    transition: color 0.2s ease-in-out;
+  }
+  
+  .studioTabButton:hover {
+    color: var(--text-primary);
+  }
+  
+  .studioTabButton.active {
+    color: var(--accent);
+  }
+  
+  .studioTabUnderline {
+    position: absolute;
+    bottom: -1px;
+    right: 0;
+    left: 0;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 8px 0 var(--accent);
+  }
+
+
+
+
+
+
+
+

@@ -1,0 +1,17 @@
+/* app/studio/[contentType]/[id]/metadata/Metadata.module.css */
+
+.inputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.inputWrapper > input,
+.inputWrapper > div[class*="sidebarInput"] {
+    flex-grow: 1;
+}
+
+
+
+
+

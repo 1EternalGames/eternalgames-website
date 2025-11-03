@@ -1,0 +1,57 @@
+// app/api/articles/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { client } from '@/lib/sanity.client';
+import { paginatedArticlesQuery } from '@/lib/sanity.queries';
+import { adaptToCardProps } from '@/lib/adapters';
+import { unstable_cache } from 'next/cache';
+
+export const revalidate = 300;
+
+const getCachedPaginatedArticles = unstable_cache(
+    async (
+        gameSlug: string | undefined, 
+        tagSlugs: string[] | undefined, 
+        searchTerm: string | undefined, 
+        offset: number, 
+        limit: number,
+        sort: 'latest' | 'viral'
+    ) => {
+        const query = paginatedArticlesQuery(gameSlug, tagSlugs, searchTerm, offset, limit, sort);
+        const sanityData = await client.fetch(query);
+        return sanityData.map(adaptToCardProps).filter(Boolean);
+    },
+    ['paginated-articles'],
+    { revalidate: 300, tags: ['articles', 'paginated'] }
+);
+
+export async function GET(req: NextRequest) {
+    try {
+        const { searchParams } = new URL(req.url);
+        
+        const offset = parseInt(searchParams.get('offset') || '0');
+        const limit = parseInt(searchParams.get('limit') || '20');
+        const gameSlug = searchParams.get('game') || undefined;
+        const searchTerm = searchParams.get('q') || undefined;
+        const tagSlugsString = searchParams.get('tags');
+        const tagSlugs = tagSlugsString ? tagSlugsString.split(',') : undefined;
+        const sort = (searchParams.get('sort') as 'latest' | 'viral') || 'latest';
+
+        const data = await getCachedPaginatedArticles(
+            gameSlug, 
+            tagSlugs, 
+            searchTerm, 
+            offset, 
+            limit,
+            sort
+        );
+
+        return NextResponse.json({
+            data,
+            nextOffset: data.length === limit ? offset + limit : null,
+        });
+
+    } catch (error) {
+        console.error('Error fetching paginated articles:', error);
+        return NextResponse.json({ error: 'Failed to fetch articles data' }, { status: 500 });
+    }
+}

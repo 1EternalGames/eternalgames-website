@@ -1,0 +1,45 @@
+/* components/TagLinks.module.css */
+
+.tagLinksContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tagLinksContainer.small {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+  
+.tagLink {
+    display: inline-block; /* motion.div wrapper handles block display */
+    background-color: color-mix(in srgb,var(--accent) 15%,transparent);
+    color: var(--accent);
+    padding: 0.4rem 1.2rem;
+    border-radius: 999px;
+    font-family: var(--font-ui), sans-serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    cursor: pointer;
+}
+  
+.tagLink:hover {
+    background-color: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px -3px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+  
+[data-theme="dark"] .tagLink:hover {
+    color: var(--bg-primary);
+}
+
+
+
+
+
+
+
+

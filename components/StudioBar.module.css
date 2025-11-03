@@ -1,0 +1,61 @@
+/* components/StudioBar.module.css */
+
+.studioBar {
+  position: fixed;
+  bottom: 2rem;
+  right: 0;
+  left: 0;
+  width: max-content;
+  margin-right: auto;
+  margin-left: auto;
+  z-index: 1080;
+  background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px -5px color-mix(in srgb, var(--text-primary) 20%, transparent);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem;
+}
+
+.studioBarContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.studioBarButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.studioBarButton:hover {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.brand {
+  color: var(--accent);
+}
+
+.brand:hover {
+  color: var(--accent); /* Ensure hover doesn't change color from accent */
+}
+
+
+
+
+
+
+
+

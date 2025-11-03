@@ -1,0 +1,32 @@
+/* app/news/NewsPage.module.css */
+.newsPageContainer {
+    position: relative;
+    padding-top: var(--nav-height-scrolled);
+}
+
+.heroSection {
+    margin-bottom: 6rem;
+}
+
+.gridSection {
+    padding-top: 4rem;
+}
+
+.loadingSpinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem 0;
+    color: var(--accent);
+}
+
+.endOfFeedMessage {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--text-secondary);
+    font-size: 1.6rem;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+

@@ -1,0 +1,252 @@
+/* components/Navbar.module.css */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1070;
+  height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  transition: height 0.3s ease, background-color 0.3s ease, backdrop-filter 0.3s ease, border-bottom 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.navbar.scrolled {
+  height: var(--nav-height-scrolled);
+  background-color: color-mix(in srgb,var(--bg-primary) 80%,transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.navContainer {
+  width: 100%;
+}
+
+/* --- DESKTOP LAYOUT --- */
+.desktopView {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: 100%;
+}
+
+.navLogo {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.desktopView > .navLogo { justify-self: start; }
+.desktopView > nav { justify-self: center; }
+
+.navLinks {
+  display: flex;
+  gap: 3rem;
+  list-style: none;
+}
+
+.navLinks a {
+  font-family: var(--font-ui), sans-serif;
+  font-weight: 500;
+  font-size: 1.6rem;
+  color: var(--text-primary);
+  transition: color 0.3s ease, transform 0.3s ease, text-shadow 0.3s ease;
+}
+
+.navLinks a:hover {
+  color: var(--accent);
+  transform: translateY(-2px);
+  text-shadow: 0 4px 8px color-mix(in srgb,var(--accent) 40%,transparent);
+}
+
+.navControls {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navSearch {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--text-primary);
+}
+
+.navSearch svg {
+  width: 2.4rem;
+  height: 2.4rem;
+  stroke: currentColor;
+  transition: stroke 0.3s ease, transform 0.3s ease, color 0.3s ease;
+}
+
+.navSearch:hover svg {
+  color: var(--accent);
+  transform: rotate(-15deg) scale(1.1);
+}
+
+/* --- MOBILE LAYOUT & UTILITIES --- */
+.mobileView { display: none; }
+.hamburgerButton { display: none; }
+.mobileNavOverlay { display: none; }
+
+/* === NEW SUB-ORBITAL STYLES === */
+
+.orbitalCenter {
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 800;
+  font-size: 8rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1; /* Better vertical centering for the icon */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: all 0.2s ease-out;
+}
+
+.orbitalCenter:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.orbitalCenter.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.orbitalItemWrapper {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem; /* Space between orb and title */
+}
+
+.orbitalOrb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.orbitalOrb.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.orbitalOrb svg {
+  width: 28px;
+  height: 28px;
+}
+
+.orbitalTitle {
+  font-family: var(--font-main);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 2px 5px var(--bg-primary);
+}
+
+
+@media (max-width: 1024px) {
+  .desktopView { display: none; }
+
+  .mobileView {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .mobileNavGroupLeft, .mobileNavGroupRight {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 1;
+  }
+  .mobileNavGroupLeft { justify-content: flex-start; }
+  .mobileNavGroupRight { justify-content: flex-end; }
+  
+  .hamburgerButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 1201;
+    color: var(--text-primary);
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+  
+  .mobileNavOverlay {
+    display: flex; /* Changed from block */
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    inset: 0;
+    background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(10px);
+    z-index: 1200;
+  }
+
+  .mobileNavContent {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobileNavLinks {
+    /* This class is no longer used by the new design, but kept to avoid breaking other potential dependencies */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .mobileNavLinks a {
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 2.8rem;
+    color: var(--text-primary);
+  }
+}
+
+

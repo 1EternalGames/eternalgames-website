@@ -1,0 +1,147 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[] @relation("RoleToUser")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  name                String?
+  username            String?              @unique
+  email               String?              @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  createdAt           DateTime             @default(now())
+  bio                 String?
+  twitterHandle       String?
+  age                 Int?
+  country             String?
+  agePublic           Boolean              @default(true)
+  countryPublic       Boolean              @default(true)
+  instagramHandle     String?
+  accounts            Account[]
+  engagements         Engagement[]
+  comments            Comment[]
+  commentVotes        CommentVote[]
+  passwordResetTokens PasswordResetToken[]
+  sessions            Session[]
+  shares              Share[]
+  roles               Role[]               @relation("RoleToUser")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  token   String   @unique
+  expires DateTime
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Engagement {
+  id          String         @id @default(cuid())
+  createdAt   DateTime       @default(now())
+  type        EngagementType
+  userId      String
+  contentId   Int
+  contentType String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, contentType, type])
+}
+
+model Share {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  userId      String
+  contentId   Int
+  contentType String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id          String        @id @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  content     String
+  contentSlug String
+  isDeleted   Boolean       @default(false)
+  authorId    String
+  parentId    String?
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     Comment[]     @relation("CommentReplies")
+  votes       CommentVote[]
+}
+
+model CommentVote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  type      VoteType
+  userId    String
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+
+enum VoteType {
+  LIKE
+  DISLIKE
+}
+
+enum EngagementType {
+  LIKE
+  BOOKMARK
+}
+
+
+
+
+

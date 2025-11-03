@@ -1,0 +1,26 @@
+/* components/ui/ScrollToTopButton.module.css */
+
+.scrollToTopButton {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem; /* Consistent with toast position */
+    right: auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 5px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent);
+    z-index: 1000;
+}
+
+[data-theme="dark"] .scrollToTopButton {
+    color: var(--bg-primary);
+}
+
+

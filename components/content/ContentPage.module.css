@@ -1,0 +1,70 @@
+/* components/content/ContentPage.module.css */
+
+.contentLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5rem;
+}
+@media (min-width: 1024px) {
+  .contentLayout {
+    grid-template-columns: 2fr 1fr;
+  }
+  .contentLayout > main {
+    min-width: 0;
+  }
+}
+
+.heroImage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 5 / 1;
+    height: auto;
+    margin-bottom: 3rem;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.sidebar {
+    margin-top: 3rem;
+}
+
+.relatedGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* --- Header Layout --- */
+.headerContainer {
+    display: flex;
+    flex-direction: row-reverse; /* THE FIX IS HERE */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1.5rem;
+}
+
+.titleWrapper {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .heroImage {
+        aspect-ratio: 3 / 1;
+        margin-bottom: 2rem;
+    }
+
+    .headerContainer.shiftedLayout {
+        flex-direction: column-reverse;
+        align-items: flex-end;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .headerContainer.shiftedLayout .titleWrapper {
+        width: 100%;
+    }
+}
+
+

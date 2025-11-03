@@ -1,0 +1,71 @@
+/* app/releases/ReleasesPage.module.css */
+
+.chronoStreamLayoutWrapper {
+  position: relative;
+  min-height: 80vh;
+  padding-bottom: 6rem;
+}
+
+.chronoContentWrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.chronoTimelineSections {
+  padding-top: 2rem;
+  padding-right: 2rem;
+  padding-left: 2rem;
+}
+
+.platformFilters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 2rem 3rem 2rem;
+  font-family: var(--font-ui);
+}
+
+.platformFilters > span {
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.timelineMonthTitle {
+  font-size: 3.6rem;
+  border-bottom: none;
+  padding-bottom: 0.5rem;
+  display: block;
+  text-align: left;
+  margin: 0;
+  width: max-content;
+  border-bottom: 2px solid var(--accent);
+  color: var(--text-primary);
+  text-shadow: none;
+}
+
+.chronoGamesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 3rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.chronoGamesGrid > div[style*="grid-column: 1 / -1"] {
+    margin-bottom: 1.5rem; 
+}
+
+@media (max-width: 768px) {
+    .chronoGamesGrid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+    .chronoTimelineSections {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+}
+
+

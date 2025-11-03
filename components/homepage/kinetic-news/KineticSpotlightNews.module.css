@@ -1,0 +1,26 @@
+/* components/homepage/kinetic-news/KineticSpotlightNews.module.css */
+
+.spotlightContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.spotlightItem {
+    position: relative;
+    overflow: hidden; /* Ensures highlight bar corners are clipped */
+}
+
+.kineticHighlightBar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0; /* Aligned to the right for RTL */
+    left: auto;
+    width: 3px;
+    background-color: var(--accent);
+    box-shadow: 0 0 10px 1px var(--accent);
+    filter: blur(1px);
+    border-radius: 3px;
+}
+
+

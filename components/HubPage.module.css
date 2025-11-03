@@ -1,0 +1,43 @@
+/* components/HubPage.module.css */
+.hubPageContainer {
+  /* padding-top: var(--nav-height-scrolled); <-- REMOVED */
+}
+
+.hubHero {
+  height: 40vh; /* <-- REDUCED HEIGHT */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: -8rem; /* <-- PULLS CONTENT UP */
+}
+
+.heroBg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%); /* Adjusted gradient */
+  z-index: -1;
+}
+
+.heroTitle {
+  font-size: 6.4rem;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 768px) {
+  .hubHero {
+    height: 35vh;
+  }
+  .heroTitle {
+    font-size: 4.8rem;
+  }
+}
+
+

@@ -1,0 +1,107 @@
+/* components/CreatorCredit.module.css */
+
+.creatorCreditContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.creatorCredit {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.metadataIcon {
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.dateText {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.creatorLinkContainer {
+    position: relative;
+    display: inline-block;
+}
+
+/* --- THE DEFINITIVE FIX: Small Variant Styles --- */
+.creatorCredit.small {
+    gap: 0.5rem;
+}
+.creatorCredit.small .metadataIcon {
+    width: 14px;
+    height: 14px;
+}
+.creatorCredit.small .label,
+.creatorCredit.small span {
+    font-size: 1.2rem;
+}
+/* --- END FIX --- */
+
+.hoverCard {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 50%; /* Center relative to the link */
+    transform: translateX(50%);
+    width: 280px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.2);
+    padding: 1.5rem;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transform-origin: bottom center;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cardAvatar {
+    border-radius: 50%;
+}
+
+.cardName {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.cardUsername {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+}
+
+.cardBio {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    /* Clamp to 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+}
+
+

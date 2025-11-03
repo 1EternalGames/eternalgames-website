@@ -1,0 +1,17 @@
+/* components/homepage/HomepageFeeds.module.css */
+.feedsGrid {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr;
+    gap: 4rem;
+    margin-top: 6rem;
+}
+
+@media (max-width: 1024px) {
+    .feedsGrid {
+        grid-template-columns: 1fr;
+        gap: 6rem;
+        margin-top: 4rem;
+    }
+}
+
+

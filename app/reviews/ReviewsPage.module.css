@@ -1,0 +1,264 @@
+/* app/reviews/ReviewsPage.module.css */
+
+.reviewHero {
+  height: 55vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: -8rem;
+  padding-top: var(--nav-height-scrolled);
+}
+
+.heroBg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
+  z-index: -1;
+}
+
+.heroCategory {
+    font-family: var(--font-ui);
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+}
+
+.titleScoreWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.heroTitle {
+  font-size: 4.8rem;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  margin: 0 0 1rem 0;
+}
+
+.heroScore {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: var(--bg-primary);
+    font-weight: 800;
+    font-size: 2.4rem;
+    box-shadow: 0 0 20px 0 color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+.heroGame {
+    color: #fff;
+    font-weight: 700;
+    font-size: 2.4rem;
+    margin-top: -0.5rem;
+}
+
+/* --- Review Filters Container --- */
+.reviewFiltersContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 2.5rem;
+  margin-bottom: 4rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.filterButtonsGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filterButton {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.8rem 1.8rem;
+  border-radius: 999px;
+  font-family: var(--font-ui), sans-serif;
+  font-weight: 500;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+.filterButton:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filterButton.active {
+  color: #fff;
+  z-index: 2;
+}
+[data-theme="dark"] .filterButton.active {
+  color: var(--bg-primary);
+}
+
+.filterHighlight {
+  position: absolute;
+  inset: 0;
+  background-color: var(--accent);
+  border-radius: 999px;
+  z-index: -1;
+}
+
+/* --- Filter Popover Container --- */
+.filterPopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  z-index: 10;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.2);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.popoverSearchInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.popoverSearchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.popoverResultsList {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.popoverItemButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 1.5rem;
+  font-family: var(--font-ui);
+  transition: background-color 0.1s ease-out;
+}
+.popoverItemButton:hover {
+  background-color: var(--bg-primary);
+}
+.popoverItemButton.selected {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.gameSelectedButton {
+  display: flex;
+  align-items: center; 
+  justify-content: space-between;
+  max-width: 250px;
+}
+.gameClearButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  color: #000000; 
+  opacity: 0.8;
+  transition: opacity 0.2s ease-out;
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+}
+.gameClearButton:hover {
+  opacity: 1;
+}
+.gameSelectedButton.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+[data-theme="dark"] .gameSelectedButton.active {
+  color: var(--bg-primary);
+}
+
+@media (max-width: 768px) {
+  .reviewHero {
+    height: 30vh;
+    min-height: 220px;
+    margin-bottom: -10rem;
+    align-items: flex-end;
+    padding-bottom: 8rem;
+  }
+  .heroCategory {
+      font-size: 1.4rem;
+  }
+  .titleScoreWrapper {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+  }
+  .heroTitle {
+    font-size: 3.2rem !important;
+    margin: 0;
+  }
+  .heroScore {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+  .heroGame {
+    display: none;
+  }
+}
+
+

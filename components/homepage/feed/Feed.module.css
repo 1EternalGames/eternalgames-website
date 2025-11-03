@@ -1,0 +1,400 @@
+/* components/homepage/feed/Feed.module.css */
+@keyframes pulse-live {
+    0%, 100% { box-shadow: 0 0 5px 1px color-mix(in srgb, var(--accent) 60%, transparent); }
+    50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 80%, transparent); }
+}
+
+/* --- Generic Feed Container --- */
+.feedContainer {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.topSection {
+    padding: 2rem 2.5rem;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-start; /* Aligns label to the right in RTL */
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sectionLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 0.4rem 1.2rem;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    position: relative;
+    z-index: 2;
+}
+
+.liveIndicator {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    animation: pulse-live 1.5s infinite ease-in-out;
+}
+
+.topItemsContainer {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    order: 2; /* Ensure it's below the label */
+    margin-top: 1.5rem;
+}
+
+.latestSection {
+    padding: 1.5rem 2.5rem 0 2.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.latestItemsList {
+    flex-grow: 1;
+}
+
+.listDivider {
+    height: 1px;
+    background: linear-gradient(to left, transparent, var(--border-color) 20%, var(--border-color) 80%, transparent);
+}
+
+.viewAllLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 1.25rem;
+    margin-top: auto;
+    border-top: 1px solid var(--border-color);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    position: relative;
+    z-index: 2;
+}
+
+.viewAllLink:hover {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+}
+
+/* --- Article Feed Specifics --- */
+.topArticlesGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+}
+
+.topArticleCard {
+    display: block;
+    text-decoration: none;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    transform-style: preserve-3d;
+    will-change: transform;
+    cursor: pointer;
+    transform: translateZ(0px);
+}
+
+.topArticleImage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+}
+
+.topArticleImage img {
+    transition: transform 0.4s ease-out;
+}
+
+.topArticleCard:hover .topArticleImage img {
+    transform: scale(1.03);
+}
+
+.topArticleContent {
+    padding: 1.5rem;
+    text-align: right;
+    border-top: 1px solid var(--border-color);
+    transform: translateZ(20px);
+}
+
+.topArticleTitle {
+    font-family: var(--font-heading);
+    font-size: 1.9rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    margin: 0 0 0.75rem 0;
+    transition: color 0.2s ease;
+}
+
+.topArticleCard:hover .topArticleTitle {
+    color: var(--accent);
+}
+
+.topArticleMeta {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+}
+
+.latestArticleItem {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 2rem;
+    align-items: center;
+    position: relative;
+    padding: 1.5rem 0;
+}
+
+.latestArticleThumbnail {
+    width: 120px;
+    height: 75px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+    transition: border-color 0.3s ease;
+    cursor: pointer;
+}
+
+.latestArticleItem a:hover .latestArticleThumbnail {
+    border-color: var(--accent);
+}
+
+.latestArticleThumbnail img {
+    transition: transform 0.3s ease-out;
+}
+
+.latestArticleItem a:hover .latestArticleThumbnail img {
+    transform: scale(1.05);
+}
+
+.latestArticleInfo {
+    text-align: right;
+}
+
+.latestArticleTitle {
+    font-size: 1.7rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    transition: color 0.2s ease;
+    position: relative;
+    display: inline-block; /* Required for the underline effect */
+}
+
+.latestArticleInfo a:hover .latestArticleTitle {
+    color: var(--accent);
+}
+
+.latestArticleTitle::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    filter: drop-shadow(0 0 4px var(--accent));
+}
+
+.latestArticleInfo a:hover .latestArticleTitle::after {
+    transform: scaleX(1);
+}
+
+.latestArticleMeta {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.latestArticleDate {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* --- News Feed Specifics --- */
+.pinnedNewsList {
+    display: flex;
+    flex-direction: column;
+}
+
+.pinnedNewsDivider {
+    height: 1px;
+    background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    margin: 0.75rem 0;
+}
+
+.pinnedNewsItem {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    margin: -0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.pinnedNewsItem:hover {
+    background-color: var(--bg-primary);
+}
+
+.pinnedNewsThumbnail {
+    width: 80px;
+    height: 50px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+.pinnedNewsThumbnail img {
+    transition: transform 0.3s ease-out;
+}
+
+.pinnedNewsItem:hover .pinnedNewsThumbnail img {
+    transform: scale(1.05);
+}
+
+.pinnedNewsInfo {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.pinnedNewsTitle {
+    font-size: 1.7rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin: 0;
+    transition: color 0.2s ease;
+}
+
+.pinnedNewsItem:hover .pinnedNewsTitle {
+    color: var(--accent);
+}
+
+.pinnedNewsDate {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pinnedNewsCategory {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--accent);
+    margin: 0;
+}
+
+.newsListDivider {
+    height: 1px;
+    background: var(--border-color);
+}
+
+.newsListItem {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    text-decoration: none;
+    padding: 1.25rem 1rem;
+    border-radius: 8px;
+    margin: 0 -1rem;
+    transition: background-color 0.2s ease;
+}
+
+.newsListItem:hover {
+    background-color: var(--bg-primary);
+}
+
+.newsListItem:hover .newsListTitle {
+    color: var(--accent);
+}
+
+.newsListItem:hover .newsListThumbnail {
+    border-color: var(--accent);
+}
+
+.newsListThumbnail {
+    width: 60px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+    transition: border-color 0.3s ease;
+}
+.newsListThumbnail img {
+    transition: transform 0.3s ease-out;
+}
+.newsListItem:hover .newsListThumbnail img {
+    transform: scale(1.05);
+}
+
+.newsListInfo {
+    text-align: right;
+}
+
+.newsListCategory {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0 0 0.25rem 0;
+}
+
+.newsListTitle {
+    font-size: 1.4rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin: 0;
+    transition: color 0.2s ease;
+}
+
+/* --- Mobile Overrides --- */
+@media (max-width: 768px) {
+    .topArticlesGrid {
+        grid-template-columns: 1fr 1fr; /* THE FIX: Force two columns */
+        gap: 1.5rem; /* THE FIX: Reduce gap to give cards more space */
+    }
+    .topSection, .latestSection {
+        padding-left: 1.5rem; /* THE FIX: Reduce horizontal padding */
+        padding-right: 1.5rem; /* THE FIX: Reduce horizontal padding */
+    }
+}
+
+

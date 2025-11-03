@@ -1,0 +1,58 @@
+/* app/studio/[contentType]/[id]/BlockToolbar.module.css */
+
+.blockToolbarContainer {
+    position: fixed; /* THE FIX: Lock to viewport */
+    bottom: 1rem;
+    left: 10rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+.optionButtonWrapper {
+    position: relative;
+}
+
+.optionButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+}
+
+.optionTooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1.3rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    transform-origin: bottom center;
+}
+
+.optionButtonWrapper:hover .optionTooltip {
+    opacity: 1;
+    transform: translateY(-5px) translateX(-50%);
+}
+
+
+
+
+

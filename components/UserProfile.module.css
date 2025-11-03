@@ -1,0 +1,169 @@
+/* components/UserProfile.module.css */
+
+.userProfileContainer {
+  position: relative;
+}
+
+.userAvatarButton {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.userAvatar {
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+.userAvatarButton:hover .userAvatar {
+  border-color: var(--accent);
+}
+
+.userAvatarFallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 1.6rem;
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+.userAvatarButton:hover .userAvatarFallback {
+  border-color: var(--accent);
+}
+
+.userAvatarSkeleton {
+  width: 99px; /* Matches Sign In button */
+  height: 39px; /* Matches Sign In button */
+  background-color: var(--border-color);
+  border-radius: 5px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.userDropdown {
+  position: absolute;
+  top: calc(100% + 15px);
+  left: 0; /* RTL */
+  right: auto;
+  width: 240px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -5px color-mix(in srgb, var(--text-primary) 15%, transparent);
+  z-index: 1100;
+  overflow: hidden;
+  padding: 0.5rem 0;
+  transform-origin: top left; /* RTL */
+}
+
+.dropdownUserInfo {
+  padding: 0.75rem 1.25rem;
+  text-align: right; /* RTL */
+}
+
+.dropdownUserName {
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 1.6rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownUserEmail {
+  font-family: var(--font-main);
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userDropdownDivider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 0.5rem 0;
+}
+
+.userDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: right; /* RTL */
+  padding: 0.75rem 1.25rem;
+  font-family: var(--font-main);
+  font-size: 1.6rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dropdownItemIcon {
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.userDropdownItem:hover {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.userDropdownItem:hover .dropdownItemIcon {
+    color: var(--accent);
+}
+
+.userDropdownItem.signout {
+  color: #DC2626;
+}
+
+.userDropdownItem.signout:hover {
+  background-color: color-mix(in srgb, #DC2626 15%, transparent);
+  color: #DC2626;
+}
+
+.userDropdownItem.signout:hover .dropdownItemIcon {
+    color: #DC2626;
+}
+
+.signInButton {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 1rem 2.4rem;
+  border-radius: 5px;
+  font-family: var(--font-main), sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+[data-theme="dark"] .signInButton {
+  color: var(--bg-primary);
+}
+
+.signInButton:hover {
+  opacity: 0.85;
+}
+
+

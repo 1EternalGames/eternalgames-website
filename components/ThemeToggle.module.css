@@ -1,0 +1,27 @@
+/* components/ThemeToggle.module.css */
+
+.themeToggleButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-primary);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    transition: color 0.3s ease;
+}
+  
+.themeToggleButton:hover {
+    color: var(--accent);
+}
+
+
+
+
+
+
+
+

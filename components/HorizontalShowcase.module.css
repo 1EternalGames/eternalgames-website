@@ -1,0 +1,189 @@
+/* components/HorizontalShowcase.module.css */
+
+/* --- Page Structure & Background --- */
+.articlesPageContainer {
+  position: relative;
+  padding-top: var(--nav-height-scrolled);
+}
+
+.articlesPageBg {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+}
+.articlesPageBgOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--bg-primary) 80%, transparent);
+  backdrop-filter: blur(16px) saturate(120%);
+}
+
+.showcaseSection {
+  margin-bottom: 6rem;
+}
+.gridSection {
+  margin-top: 0;
+}
+
+/* --- Desktop Horizontal Showcase --- */
+.horizontalShowcaseWrapper {
+  position: relative;
+  height: 450px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  cursor: grab;
+}
+.horizontalShowcaseWrapper:active {
+  cursor: grabbing;
+}
+
+.horizontalShowcaseList {
+  display: flex;
+  align-items: center;
+  --showcase-card-width: 50vw;
+  --showcase-card-max-width: 600px;
+  --showcase-card-gap: 2rem;
+}
+
+.showcaseItemWrapper {
+  flex-shrink: 0;
+  width: var(--showcase-card-width);
+  max-width: var(--showcase-card-max-width);
+  margin-right: var(--showcase-card-gap);
+}
+.showcaseItemWrapper:first-child {
+  margin-left: var(--showcase-card-gap);
+}
+
+.showcaseCardContainer {
+  width: 100%;
+  perspective: 1000px;
+  flex-shrink: 0;
+  padding: 0 1.5rem;
+}
+
+.showcaseCardLink {
+  display: block;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  box-shadow: 0 20px 40px -15px color-mix(in srgb, var(--text-primary) 20%, transparent);
+  background-color: var(--bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.showcaseCardImageWrapper {
+  position: absolute;
+  inset: 0;
+}
+.showcaseCardImage {
+  transition: transform 0.4s ease;
+}
+.showcaseCardLink:hover .showcaseCardImage {
+  transform: scale(1.05);
+}
+
+.showcaseCardContent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2.5rem;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+  text-align: right;
+}
+.showcaseCardTitle {
+  font-family: var(--font-main);
+  font-size: 2.8rem;
+  line-height: 1.2;
+}
+.showcaseCardGame {
+  font-family: var(--font-main);
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 0.75rem;
+}
+[data-theme="dark"] .showcaseCardGame {
+  color: color-mix(in srgb, var(--text-secondary) 80%, #fff);
+}
+
+.showcaseArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+.showcaseArrow.left {
+  left: 3rem;
+  right: auto;
+}
+.showcaseArrow.right {
+  right: 3rem;
+  left: auto;
+}
+
+/* --- Mobile Vertical Showcase --- */
+.mobileShowcaseContainer {
+    position: relative;
+    width: 80%;
+    max-width: 400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobileShowcaseCardWrapper {
+    width: 100%;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+  .horizontalShowcaseWrapper {
+    display: none;
+  }
+
+  .articlesPageContainer .page-title {
+    margin-bottom: 2rem;
+  }
+
+  .showcaseSection {
+    margin-bottom: 4rem;
+  }
+
+  .showcaseArrow {
+    width: 40px;
+    height: 40px;
+  }
+
+  .showcaseArrow.left {
+    left: -1rem;
+  }
+
+  .showcaseArrow.right {
+    right: -1rem;
+  }
+
+  .showcaseCardTitle {
+    font-size: 2.2rem;
+  }
+}
+
+

@@ -1,0 +1,118 @@
+/* components/studio/GenesisOrb.module.css */
+
+.genesisContainer {
+  position: fixed;
+  bottom: 3rem;
+  right: 3rem; /* RTL */
+  left: auto;
+  z-index: 10;
+  width: 80px;
+  height: 80px;
+}
+
+.genesisOrb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--accent) 50%, transparent);
+  z-index: 12;
+}
+[data-theme="dark"] .genesisOrb {
+  color: var(--bg-primary);
+}
+
+.genesisSatellites {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.satelliteWrapper {
+  position: absolute;
+  margin-left: -28px;
+  margin-top: -28px;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+}
+
+.satelliteOrb {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+/* --- THE FIX IS HERE --- */
+[data-theme="dark"] .satelliteOrb {
+  color: var(--text-primary);
+}
+
+.satelliteOrb:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
+.satelliteOrb svg {
+  color: currentColor; /* Inherit color from the parent .satelliteOrb */
+  filter: grayscale(0) opacity(1) !important;
+}
+
+.satelliteLabel {
+  position: absolute;
+  left: calc(100% + 1rem); /* RTL */
+  right: auto;
+  font-family: var(--font-main);
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+
+.satelliteWrapper:hover .satelliteLabel {
+  opacity: 1;
+}
+
+.closeIcon {
+  color: #fff !important;
+}
+[data-theme="dark"] .closeIcon {
+  color: var(--bg-primary) !important;
+}
+
+.closeIcon:hover {
+  filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
+}
+
+

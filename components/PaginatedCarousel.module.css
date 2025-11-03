@@ -1,0 +1,49 @@
+/* components/PaginatedCarousel.module.css */
+.paginatedCarouselContainer {
+  position: relative;
+}
+.paginatedCarouselContent {
+  margin-bottom: 2rem;
+  min-height: 420px;
+}
+/* New CSS to enforce 2-column grid inside the carousel */
+.twoColumnGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3rem;
+  grid-auto-rows: 1fr;
+}
+@media (max-width: 768px) {
+  .twoColumnGrid {
+    grid-template-columns: 1fr;
+  }
+}
+/* End New CSS */
+.paginationControls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+.paginationDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--border-color);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+.paginationDot:hover {
+  background-color: var(--text-secondary);
+}
+.paginationDot.active {
+  background-color: var(--accent);
+  transform: scale(1.2);
+}
+
+
+
+
+
