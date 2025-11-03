@@ -5,12 +5,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 type PopoverIdentifier = string | null;
 
-/**
- * Manages the state for a group of popovers, including opening/closing
- * and handling clicks outside the component to close them.
- * @returns An object containing the popover ref, the currently open popover's ID,
- * and functions to toggle and close popovers.
- */
 export function usePopoverManager() {
     const [openPopover, setOpenPopover] = useState<PopoverIdentifier>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
@@ -25,21 +19,24 @@ export function usePopoverManager() {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            // THE DEFINITIVE FIX:
+            // The ref is now placed on the container of the popovers and their triggers.
+            // If a click happens AND the popoverRef exists AND the click is OUTSIDE the ref's boundary,
+            // then we close the currently open popover.
             if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
                 closePopover();
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [closePopover]);
+        
+        // We only add the listener if a popover is open.
+        if (openPopover) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [openPopover, closePopover]); // Re-run effect when the open popover changes
 
     return { popoverRef, openPopover, togglePopover, closePopover };
 }
-
-
-
-
-
-
-
-

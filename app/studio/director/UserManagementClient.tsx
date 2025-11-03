@@ -79,7 +79,7 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
                     padding: 1rem; 
                     border-bottom: 1px solid var(--border-color); 
                 }
-                .user-list-header { font-weight: 600; color: var(--text-secondary); font-family: var(--font-ui); }
+                .user-list-header { font-weight: 600; color: var(--text-secondary); font-family: var(--font-main); }
                 .user-info { display: flex; align-items: center; gap: 1rem; }
                 .user-name { font-weight: 600; margin: 0; }
                 .user-email { font-size: 1.4rem; color: var(--text-secondary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
@@ -93,7 +93,7 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
                     overflow: hidden; 
                     text-overflow: ellipsis;
                 }
-                .user-actions { text-align: right; }
+                .user-actions { text-align: left; }
 
                 @media (max-width: 768px) {
                     .user-list-header {
@@ -152,5 +152,3 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
         </>
     );
 }
-
-

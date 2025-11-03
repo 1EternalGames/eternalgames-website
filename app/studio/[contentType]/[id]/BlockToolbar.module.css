@@ -52,7 +52,10 @@
     transform: translateY(-5px) translateX(-50%);
 }
 
-
-
-
-
+@media (max-width: 1024px) {
+    .blockToolbarContainer {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 2rem;
+    }
+}

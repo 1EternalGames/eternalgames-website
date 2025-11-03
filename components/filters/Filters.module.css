@@ -123,6 +123,13 @@
   flex-direction: column;
 }
 
+.popoverBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    background: transparent;
+}
+
 .popoverSearchInput {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -242,5 +249,3 @@
     left: 0;
   }
 }
-
-

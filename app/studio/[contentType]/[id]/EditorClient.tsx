@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { EditorSidebar } from './EditorSidebar';
 import { EditorCanvas } from './EditorCanvas';
 import { BlockToolbar } from './BlockToolbar';
+import { MobileViewToggle } from './editor-components/MobileViewToggle'; // Import new component
 import { Editor } from '@tiptap/react';
 import { updateDocumentAction, publishDocumentAction, validateSlugAction } from '../../actions';
 import { useToast } from '@/lib/toastStore';
@@ -21,7 +22,7 @@ import styles from './Editor.module.css';
 type EditorDocument = {
     _id: string;
     _type: string;
-    _updatedAt: string; // <-- Ensure this is part of the type
+    _updatedAt: string; 
     title: string;
     slug?: { current: string };
     score?: number;
@@ -42,24 +43,16 @@ type EditorDocument = {
     content?: any;
 };
 
-const SidebarToggleIcon = () => ( <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 18H3M21 12H3M21 6H3"/></svg> );
 const ExitIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 const initialState = { _id: null, _type: null, title: '', slug: '', score: 0, verdict: '', pros: [], cons: [], game: null, tags: [], mainImage: { assetId: null, assetUrl: null }, authors: [], reporters: [], designers: [], publishedAt: null, isSlugManual: false, releaseDate: '', platforms: [], synopsis: '' };
 
 function editorReducer(state: any, action: { type: string; payload: any }) {
     switch (action.type) {
-        case 'INITIALIZE_STATE':
-            return {
-                ...action.payload,
-                isSlugManual: !!action.payload.slug,
-            };
-        case 'UPDATE_FIELD':
-            return { ...state, [action.payload.field]: action.payload.value };
-        case 'UPDATE_SLUG':
-            return { ...state, slug: clientSlugify(action.payload.slug), isSlugManual: action.payload.isManual };
-        default:
-            throw new Error(`Unhandled action type: ${action.type}`);
+        case 'INITIALIZE_STATE': return { ...action.payload, isSlugManual: !!action.payload.slug, };
+        case 'UPDATE_FIELD': return { ...state, [action.payload.field]: action.payload.value };
+        case 'UPDATE_SLUG': return { ...state, slug: clientSlugify(action.payload.slug), isSlugManual: action.payload.isManual };
+        default: throw new Error(`Unhandled action type: ${action.type}`);
     }
 }
 
@@ -88,9 +81,7 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (!compareIds(currentState.designers, (sourceOfTruth.designers || []).filter(Boolean))) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
 
     const sourceContentJson = JSON.stringify(sourceOfTruth.tiptapContent || {});
-    if (sourceOfTruth._type !== 'gameRelease' && editorContentJson !== sourceContentJson) {
-        patch.content = tiptapToPortableText(JSON.parse(editorContentJson));
-    }
+    if (sourceOfTruth._type !== 'gameRelease' && editorContentJson !== sourceContentJson) { patch.content = tiptapToPortableText(JSON.parse(editorContentJson)); }
 
     return patch;
 };
@@ -101,7 +92,8 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [state, dispatch] = useReducer(editorReducer, initialState);
     const { title, slug, isSlugManual } = state;
     const toast = useToast();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
     const [mainImageUploadQuality, setMainImageUploadQuality] = useState<UploadQuality>('1080p');
     const [blockUploadQuality, setBlockUploadQuality] = useState<UploadQuality>('1080p');
@@ -110,7 +102,18 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const debouncedSlug = useDebounce(slug, 500);
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
     
-    useBodyClass('sidebar-open', isSidebarOpen);
+    useBodyClass('sidebar-open', isSidebarOpen && isMobile);
+    
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth <= 1024;
+            setIsMobile(mobile);
+            if (!mobile) setIsSidebarOpen(true);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
@@ -118,101 +121,22 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => { 
-        dispatch({ 
-            type: 'INITIALIZE_STATE', 
-            payload: { 
-                _id: sourceOfTruth._id,
-                _type: sourceOfTruth._type,
-                title: sourceOfTruth.title ?? '', 
-                slug: sourceOfTruth.slug?.current ?? '', 
-                score: sourceOfTruth.score ?? 0, 
-                verdict: sourceOfTruth.verdict ?? '', 
-                pros: sourceOfTruth.pros ?? [], 
-                cons: sourceOfTruth.cons ?? [], 
-                game: sourceOfTruth.game || null, 
-                publishedAt: sourceOfTruth.publishedAt || null, 
-                mainImage: { assetId: sourceOfTruth.mainImage?._ref || null, assetUrl: sourceOfTruth.mainImage?.url || null }, 
-                authors: (sourceOfTruth.authors || []).filter(Boolean), 
-                reporters: (sourceOfTruth.reporters || []).filter(Boolean), 
-                designers: (sourceOfTruth.designers || []).filter(Boolean), 
-                tags: (sourceOfTruth.tags || []).filter(Boolean), 
-                releaseDate: sourceOfTruth.releaseDate || '', 
-                platforms: sourceOfTruth.platforms || [], 
-                synopsis: sourceOfTruth.synopsis || '', 
-            } 
-        });
-
+        dispatch({ type: 'INITIALIZE_STATE', payload: { _id: sourceOfTruth._id, _type: sourceOfTruth._type, title: sourceOfTruth.title ?? '', slug: sourceOfTruth.slug?.current ?? '', score: sourceOfTruth.score ?? 0, verdict: sourceOfTruth.verdict ?? '', pros: sourceOfTruth.pros ?? [], cons: sourceOfTruth.cons ?? [], game: sourceOfTruth.game || null, publishedAt: sourceOfTruth.publishedAt || null, mainImage: { assetId: sourceOfTruth.mainImage?._ref || null, assetUrl: sourceOfTruth.mainImage?.url || null }, authors: (sourceOfTruth.authors || []).filter(Boolean), reporters: (sourceOfTruth.reporters || []).filter(Boolean), designers: (sourceOfTruth.designers || []).filter(Boolean), tags: (sourceOfTruth.tags || []).filter(Boolean), releaseDate: sourceOfTruth.releaseDate || '', platforms: sourceOfTruth.platforms || [], synopsis: sourceOfTruth.synopsis || '', } });
         const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width;
-        if (imageWidth && imageWidth >= 3840) {
-            setMainImageUploadQuality('4k');
-        } else {
-            setMainImageUploadQuality('1080p');
-        }
-
+        if (imageWidth && imageWidth >= 3840) { setMainImageUploadQuality('4k'); } else { setMainImageUploadQuality('1080p'); }
         if (editorInstance) {
             const editorJSON = JSON.stringify(editorInstance.getJSON());
             const sourceJSON = JSON.stringify(sourceOfTruth.tiptapContent || {});
-            if (editorJSON !== sourceJSON) {
-                editorInstance.commands.setContent(sourceOfTruth.tiptapContent, false);
-            }
+            if (editorJSON !== sourceJSON) { editorInstance.commands.setContent(sourceOfTruth.tiptapContent, false); }
         }
     }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance]);
     
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
-    
     useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
-    
-    useEffect(() => { 
-        if (!state._id || !debouncedSlug) { 
-            setSlugValidationStatus('invalid'); 
-            setSlugValidationMessage(!state._id ? 'Waiting for document ID...' : 'المُعرّف لا يمكن أن يكون فارغًا.'); 
-            return; 
-        } 
-        setSlugValidationStatus('pending'); 
-        setSlugValidationMessage('جار التحقق...'); 
-        const checkSlug = async () => { 
-            const result = await validateSlugAction(debouncedSlug, state._id); 
-            setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); 
-            setSlugValidationMessage(result.message); 
-        }; 
-        checkSlug(); 
-    }, [debouncedSlug, state._id]);
-    
+    useEffect(() => { if (!state._id || !debouncedSlug) { setSlugValidationStatus('invalid'); setSlugValidationMessage(!state._id ? 'Waiting for document ID...' : 'المُعرّف لا يمكن أن يكون فارغًا.'); return; } setSlugValidationStatus('pending'); setSlugValidationMessage('جار التحقق...'); const checkSlug = async () => { const result = await validateSlugAction(debouncedSlug, state._id); setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); setSlugValidationMessage(result.message); }; checkSlug(); }, [debouncedSlug, state._id]);
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis } = state; const baseValid = title.trim() && slug.trim() && mainImage.assetId; if (!baseValid) return false; const type = sourceOfTruth._type; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0; if (type === 'gameRelease') return releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
-    
-    const saveWorkingCopy = async (): Promise<boolean> => {
-        if (!hasChanges) return true;
-        if (slugValidationStatus !== 'valid') { toast.error('لا يمكن الحفظ بمُعرّف غير صالح.', 'left'); return false; }
-    
-        const result = await updateDocumentAction(sourceOfTruth._id, patch);
-    
-        if (result.success && result.updatedDocument) {
-            setSourceOfTruth(result.updatedDocument);
-            return true;
-        } else {
-            toast.error(result.message || 'فشل حفظ التغييرات.', 'left');
-            return false;
-        }
-    };
-    
-    const handlePublish = async (publishTime?: string | null): Promise<boolean> => {
-        const didSave = await saveWorkingCopy();
-        if (!didSave) {
-            if (hasChanges) toast.error('يرجى حفظ التغييرات أولاً.', 'left');
-            return false;
-        }
-        
-        const result = await publishDocumentAction(sourceOfTruth._id, publishTime);
-        if (result.success && result.updatedDocument) {
-            setSourceOfTruth(result.updatedDocument);
-            toast.success(result.message || 'تم تحديث حالة النشر بنجاح!', 'left');
-            return true;
-        } else {
-            toast.error(result.message || 'فشل تحديث حالة النشر.', 'left');
-            return false;
-        }
-    };
-    
+    const saveWorkingCopy = async (): Promise<boolean> => { if (!hasChanges) return true; if (slugValidationStatus !== 'valid') { toast.error('لا يمكن الحفظ بمُعرّف غير صالح.', 'left'); return false; } const result = await updateDocumentAction(sourceOfTruth._id, patch); if (result.success && result.updatedDocument) { setSourceOfTruth(result.updatedDocument); return true; } else { toast.error(result.message || 'فشل حفظ التغييرات.', 'left'); return false; } };
+    const handlePublish = async (publishTime?: string | null): Promise<boolean> => { const didSave = await saveWorkingCopy(); if (!didSave) { if (hasChanges) toast.error('يرجى حفظ التغييرات أولاً.', 'left'); return false; } const result = await publishDocumentAction(sourceOfTruth._id, publishTime); if (result.success && result.updatedDocument) { setSourceOfTruth(result.updatedDocument); toast.success(result.message || 'تم تحديث حالة النشر بنجاح!', 'left'); return true; } else { toast.error(result.message || 'فشل تحديث حالة النشر.', 'left'); return false; } };
     useEffect(() => { if (hasChanges) { document.title = `*غير محفوظ* ${title || 'غير معنون'}`; window.onbeforeunload = () => "You have unsaved changes. Are you sure you want to leave?"; } else { document.title = title || "EternalGames الديوان"; window.onbeforeunload = null; } return () => { window.onbeforeunload = null; }; }, [hasChanges, title]);
     useEffect(() => { document.body.classList.add('editor-active'); return () => { document.body.classList.remove('editor-active'); } }, []);
     const getStatusInfo = () => { if (sourceOfTruth._type === 'gameRelease') return { text: 'إصدار', className: styles.statusPublished }; if (!state.publishedAt) return { text: 'مسودة', className: styles.statusDraft }; const date = new Date(state.publishedAt); if (date > new Date()) return { text: 'مجدولة', className: styles.statusScheduled }; return { text: 'منشورة', className: styles.statusPublished }; };
@@ -223,7 +147,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         <div className={styles.sanctumContainer}>
             <header className={styles.editorHeader}>
                 <div className={styles.headerLeft}>
-                    <button className={styles.sanctumSidebarToggle} onClick={() => setIsSidebarOpen(!isSidebarOpen)}><SidebarToggleIcon /></button>
                     <a href="/studio" className={`${styles.exitButton} no-underline`}><ExitIcon />عودة للديوان</a>
                     <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 0.5rem' }} />
                     <Link href="/" className="no-underline" title="Return to Homepage" style={{ color: 'var(--text-secondary)', display: 'flex' }}>
@@ -234,43 +157,56 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                     <div className={`${styles.documentStatus} ${statusInfo.className}`}>{statusInfo.text}</div>
                 </div>
             </header>
-            <motion.div className={styles.sanctumMain} layout transition={{ type: 'spring' as const, stiffness: 400, damping: 40 }}>
-                <EditorSidebar 
-                    document={sourceOfTruth} 
-                    isOpen={isSidebarOpen} 
-                    documentState={state} 
-                    dispatch={dispatch} 
-                    onSave={saveWorkingCopy} 
-                    hasChanges={hasChanges} 
-                    onPublish={handlePublish} 
-                    slugValidationStatus={slugValidationStatus} 
-                    slugValidationMessage={slugValidationMessage} 
-                    isDocumentValid={isDocumentValid} 
-                    uploadQuality={mainImageUploadQuality} 
-                    onUploadQualityChange={setMainImageUploadQuality}
-                    allGames={allGames}
-                    allTags={allTags}
-                    allCreators={allCreators}
-                />
-                <EditorCanvas document={sourceOfTruth} title={title} onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} onEditorCreated={setEditorInstance} editor={editorInstance} />
-            </motion.div>
+            <div className={styles.sanctumMain}>
+                <AnimatePresence>
+                    {!isMobile || isSidebarOpen ? (
+                        <EditorSidebar 
+                            key="sidebar"
+                            document={sourceOfTruth} 
+                            isOpen={isSidebarOpen} 
+                            documentState={state} 
+                            dispatch={dispatch} 
+                            onSave={saveWorkingCopy} 
+                            hasChanges={hasChanges} 
+                            onPublish={handlePublish} 
+                            slugValidationStatus={slugValidationStatus} 
+                            slugValidationMessage={slugValidationMessage} 
+                            isDocumentValid={isDocumentValid} 
+                            uploadQuality={mainImageUploadQuality} 
+                            onUploadQualityChange={setMainImageUploadQuality}
+                            allGames={allGames}
+                            allTags={allTags}
+                            allCreators={allCreators}
+                        />
+                    ) : null}
+                </AnimatePresence>
+                <AnimatePresence>
+                    {!isMobile || !isSidebarOpen ? (
+                        <EditorCanvas 
+                            key="canvas"
+                            document={sourceOfTruth} 
+                            title={title} 
+                            onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} 
+                            onEditorCreated={setEditorInstance} 
+                            editor={editorInstance} 
+                        />
+                    ) : null}
+                </AnimatePresence>
+            </div>
             
             <AnimatePresence>
-                {!isRelease && (
+                {!isRelease && (!isMobile || !isSidebarOpen) && (
                     <BlockToolbar 
                         editor={editorInstance}
-                        onFileUpload={(file) => {
-                            if (editorInstance) {
-                                uploadFile(file, editorInstance, toast, blockUploadQuality);
-                            }
-                        }}
-                        uploadQuality={blockUploadQuality}
+                        onFileUpload={(file) => { if (editorInstance) { uploadFile(file, editorInstance, toast, blockUploadQuality); } }}
+                        uploadQuality={blockUploadQuality} 
                         onUploadQualityChange={setBlockUploadQuality}
                     />
+                )}
+                {isMobile && (
+                    <MobileViewToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
                 )}
             </AnimatePresence>
         </div>
     );
 }
-
-

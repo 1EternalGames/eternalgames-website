@@ -19,6 +19,7 @@
     font-size: 1.6rem;
     color: var(--text-secondary);
     transition: color 0.2s ease-in-out;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
   }
   
   .studioTabButton:hover {
@@ -39,10 +40,19 @@
     box-shadow: 0 0 8px 0 var(--accent);
   }
 
+/* --- Mobile Overrides --- */
+@media (max-width: 768px) {
+    .studioTabsContainer {
+        justify-content: flex-start; /* Align to the start for scrolling */
+        overflow-x: auto;
+        padding: 0 1rem; /* Add some padding so items don't touch the edge */
+        margin: 0 -1.5rem 2rem -1.5rem; /* Negative margin to bleed to edges of .container */
 
-
-
-
-
-
-
+        /* Hide scrollbar */
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+    .studioTabsContainer::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, and Opera */
+    }
+}

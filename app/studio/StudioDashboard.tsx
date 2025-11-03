@@ -12,6 +12,7 @@ import { useToast } from '@/lib/toastStore';
 import { urlFor } from '@/sanity/lib/image';
 import Image from 'next/image';
 import { sanityLoader } from '@/lib/sanity.loader';
+import styles from './StudioDashboard.module.css'; // Import the new styles
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
@@ -107,13 +108,13 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
 
     return (
         <div className="container page-container">
-            <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                <h1 className="page-title">ديوان القيادة</h1>
-                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem' }}>قُد دفّة محتواك في رحاب EternalGames.</p>
+            <header className={styles.studioHeader}>
+                <h1 className={`${styles.studioTitle} page-title`}>ديوان القيادة</h1>
+                <p className={styles.studioSubtitle}>قُد دفّة محتواك في رحاب EternalGames.</p>
             </header>
 
-            <div style={{display: 'flex', justifyContent: 'center', marginBottom: '3rem'}}>
-                <input type="search" placeholder="ابحث في العناوين..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{width: '100%', maxWidth: '500px'}} className="profile-input" />
+            <div className={styles.searchWrapper}>
+                <input type="search" placeholder="ابحث في العناوين..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`${styles.searchInput} profile-input`} />
             </div>
 
             {shouldShowTabs && (
@@ -135,5 +136,3 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
         </div>
     );
 }
-
-

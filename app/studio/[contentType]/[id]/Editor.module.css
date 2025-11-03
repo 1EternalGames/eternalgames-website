@@ -8,7 +8,7 @@
 .statusDraft { background-color: color-mix(in srgb, var(--text-secondary) 15%, transparent); color: var(--text-secondary); }
 .statusPublished { background-color: color-mix(in srgb, #16A34A 15%, transparent); color: #16A34A; }
 .statusScheduled { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
-.sanctumContainer { width: 100vw; height: 100vh; background-color: var(--bg-primary); overflow: hidden; display: flex; flex-direction: column; --sidebar-width: 380px; }
+.sanctumContainer { position: fixed; inset: 0; z-index: 2000; background-color: var(--bg-primary); overflow: hidden; display: flex; flex-direction: column; --sidebar-width: 380px; }
 .sanctumMain { display: flex; flex-grow: 1; height: calc(100% - 60px); }
 .sanctumSidebar { background-color: var(--bg-secondary); border-left: 1px solid var(--border-color); flex-shrink: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; width: var(--sidebar-width); }
 
@@ -33,7 +33,7 @@
 .sidebarFooter { margin-top: auto; padding: 1.5rem; border-top: 1px solid var(--border-color); background-color: var(--bg-secondary); display: flex; justify-content: center; align-items: center; }
 .sanctumCanvas { flex-grow: 1; height: 100%; overflow-y: auto; background-color: var(--bg-primary); min-width: 0; }
 .canvasContent { max-width: 960px; margin: 0 auto; padding: 4rem 2rem 8rem 2rem; }
-.canvasTitleInput { font-family: var(--font-main); font-size: 4.8rem; font-weight: 800; line-height: 1.2; color: var(--text-primary); border: none; background: none; outline: none; width: 100%; padding: 0; margin-bottom: 3rem; text-align: right; }
+.canvasTitleInput { font-family: var(--font-main); font-size: 1.6rem; font-weight: 800; line-height: 1.2; color: var(--text-primary); border: none; background: none; outline: none; width: 100%; padding: 0; margin-bottom: 3rem; text-align: right; }
 .canvasTitleInput::placeholder { color: var(--border-color); }
 .canvasTitleInput:focus { box-shadow: 0 2px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 4px; }
 .canvasEditorWrapper { position: relative; padding: 3rem; border: 1px solid var(--border-color); border-radius: 12px; background-color: var(--bg-secondary); box-shadow: 0 10px 30px -15px color-mix(in srgb, var(--text-primary) 10%, transparent); transition: border-color 0.3s ease, box-shadow 0.3s ease; }
@@ -46,8 +46,6 @@
 .bubbleMenuButton { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 6px; background-color: transparent; border: none; cursor: pointer; color: var(--text-secondary); transition: background-color 0.15s ease-out, color 0.15s ease-out; }
 .bubbleMenuButton:hover { background-color: var(--bg-primary); color: var(--accent); }
 .bubbleMenuButton.active { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
-.sanctumSidebarToggle { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 6px; background-color: transparent; border: 1px solid transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease-out; }
-.sanctumSidebarToggle:hover { background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color); }
 
 .tiptap .image-node-container,
 .tiptap .image-compare-container,
@@ -89,37 +87,30 @@
 @media (max-width: 1024px) {
     .sanctumMain {
         position: relative;
+        overflow: hidden; /* Prevent content scroll bleed */
     }
     .sanctumSidebar {
         position: absolute;
         top: 0;
-        right: 0;
+        right: 0; /* Starts off-screen to the right */
         width: 100%;
-        z-index: 5;
+        max-width: none; /* Take full width */
+        z-index: 10;
         border-left: none;
-        transform: translateX(100%);
-        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    body.sidebar-open .sanctumSidebar {
-        transform: translateX(0);
+        height: 100%; /* Ensure it fills the screen */
     }
     .sanctumCanvas {
-        transition: filter 0.4s ease;
-    }
-    body.sidebar-open .sanctumCanvas {
-        filter: blur(4px) brightness(0.7);
-        pointer-events: none;
-        overflow: hidden;
+        width: 100%;
+        position: absolute;
+        inset: 0;
     }
     .canvasContent {
-        padding: 3rem 1.5rem 6rem 1.5rem;
+        padding: 3rem 1.5rem 10rem 1.5rem; /* Add padding-bottom for mobile toggle */
     }
     .canvasTitleInput {
-        font-size: 3.6rem;
+        font-size: 2.8rem;
     }
     .canvasEditorWrapper {
         padding: 1.5rem;
     }
 }
-
-

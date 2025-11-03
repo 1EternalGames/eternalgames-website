@@ -63,11 +63,11 @@ export default function NewsFilters({
             <FilterGroup label="التصفية بـ:">
                 <motion.div style={{ position: 'relative' }} layout>
                     <SelectedGameButton selectedGame={selectedGame} onClearGame={onGameSelect} onOpenPopover={() => togglePopover('game')} />
-                    <AnimatePresence>{openPopover === 'game' && (<GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game as SanityGame | null); closePopover(); }} onClose={closePopover} />)}</AnimatePresence>
+                    <AnimatePresence>{openPopover === 'game' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game as SanityGame | null); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                 </motion.div>
                 <div style={{ position: 'relative' }}>
                     <SelectedTagsButton selectedTags={selectedTags} onOpenPopover={() => togglePopover('tags')} />
-                    <AnimatePresence>{openPopover === 'tags' && (<TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); }} />)}</AnimatePresence>
+                    <AnimatePresence>{openPopover === 'tags' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); }} /></>}</AnimatePresence>
                 </div>
                 <AnimatePresence>{hasActiveFilters && (<motion.button className={`${styles.filterButton} ${styles.clear}`} onClick={onClearAll} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}><span>مسح المرشحات</span><FilterRemoveIcon height={18} width={18} /></motion.button>)}</AnimatePresence>
             </FilterGroup>
@@ -100,11 +100,11 @@ export default function NewsFilters({
                         <FilterGroup label="تصفية:">
                              <motion.div style={{ position: 'relative' }} layout>
                                 <SelectedGameButton selectedGame={selectedGame} onClearGame={onGameSelect} onOpenPopover={() => togglePopover('game')} />
-                                <AnimatePresence>{openPopover === 'game' && (<GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game as SanityGame | null); closePopover(); }} onClose={closePopover} />)}</AnimatePresence>
+                                <AnimatePresence>{openPopover === 'game' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game as SanityGame | null); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                             </motion.div>
                             <div style={{ position: 'relative' }}>
                                 <SelectedTagsButton selectedTags={selectedTags} onOpenPopover={() => togglePopover('tags')} />
-                                <AnimatePresence>{openPopover === 'tags' && (<TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); }} />)}</AnimatePresence>
+                                <AnimatePresence>{openPopover === 'tags' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); }} /></>}</AnimatePresence>
                             </div>
                         </FilterGroup>
                         {hasActiveFilters && (<motion.button className={`${styles.filterButton} ${styles.clear}`} onClick={onClearAll}><span>مسح المرشحات</span><FilterRemoveIcon height={18} width={18} /></motion.button>)}

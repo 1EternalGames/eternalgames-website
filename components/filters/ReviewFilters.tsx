@@ -48,18 +48,17 @@ export default function ReviewFilters({ activeSort, onSortChange, selectedScoreR
                 ))}
             </FilterGroup>
             <FilterGroup label="التصفية حسب:">
-                {/* ... Popover components ... */}
                 <div style={{ position: 'relative' }}>
                     <PopoverTriggerButton label={scoreButtonLabel} isActive={selectedScoreRange !== 'All'} onClick={() => togglePopover('score')} layoutId="review-score-highlight" />
-                    <AnimatePresence>{openPopover === 'score' && (<ScoreFilterPopover selectedScoreRange={selectedScoreRange} onScoreSelect={(score) => { onScoreSelect(score); closePopover(); }} onClose={closePopover} />)}</AnimatePresence>
+                    <AnimatePresence>{openPopover === 'score' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><ScoreFilterPopover selectedScoreRange={selectedScoreRange} onScoreSelect={(score) => { onScoreSelect(score); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                 </div>
                 <motion.div style={{ position: 'relative' }} layout>
                     <SelectedGameButton selectedGame={selectedGame} onClearGame={onGameSelect} onOpenPopover={() => togglePopover('game')} />
-                    <AnimatePresence>{openPopover === 'game' && (<GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game); closePopover(); }} onClose={closePopover} />)}</AnimatePresence>
+                    <AnimatePresence>{openPopover === 'game' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                 </motion.div>
                 <div style={{ position: 'relative' }}>
                     <SelectedTagsButton selectedTags={selectedTags} onOpenPopover={() => togglePopover('tags')} />
-                    <AnimatePresence>{openPopover === 'tags' && (<TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); closePopover(); }} />)}</AnimatePresence>
+                    <AnimatePresence>{openPopover === 'tags' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); }} /></>}</AnimatePresence>
                 </div>
                 <AnimatePresence>{hasActiveFilters && (<motion.button className={`${styles.filterButton} ${styles.clear}`} onClick={onClearAll} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}><span>مسح الكل</span><FilterRemoveIcon height={18} width={18} /></motion.button>)}</AnimatePresence>
             </FilterGroup>
@@ -92,15 +91,15 @@ export default function ReviewFilters({ activeSort, onSortChange, selectedScoreR
                         <FilterGroup label="التصفية حسب:">
                            <div style={{ position: 'relative' }}>
                                 <PopoverTriggerButton label={scoreButtonLabel} isActive={selectedScoreRange !== 'All'} onClick={() => togglePopover('score')} layoutId="review-score-highlight" />
-                                <AnimatePresence>{openPopover === 'score' && (<ScoreFilterPopover selectedScoreRange={selectedScoreRange} onScoreSelect={(score) => { onScoreSelect(score); closePopover(); }} onClose={closePopover} />)}</AnimatePresence>
+                                <AnimatePresence>{openPopover === 'score' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><ScoreFilterPopover selectedScoreRange={selectedScoreRange} onScoreSelect={(score) => { onScoreSelect(score); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                             </div>
                             <motion.div style={{ position: 'relative' }} layout>
                                 <SelectedGameButton selectedGame={selectedGame} onClearGame={onGameSelect} onOpenPopover={() => togglePopover('game')} />
-                                <AnimatePresence>{openPopover === 'game' && (<GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game); closePopover(); }} onClose={closePopover} />)}</AnimatePresence>
+                                <AnimatePresence>{openPopover === 'game' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><GameFilterPopover allGames={allGames} selectedGame={selectedGame} onGameSelect={(game) => { onGameSelect(game); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                             </motion.div>
                             <div style={{ position: 'relative' }}>
                                 <SelectedTagsButton selectedTags={selectedTags} onOpenPopover={() => togglePopover('tags')} />
-                                <AnimatePresence>{openPopover === 'tags' && (<TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); closePopover(); }} />)}</AnimatePresence>
+                                <AnimatePresence>{openPopover === 'tags' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><TagFilterPopover allTags={allTags} selectedTags={selectedTags} onTagToggle={(tag) => { onTagToggle(tag); }} /></>}</AnimatePresence>
                             </div>
                         </FilterGroup>
                         {hasActiveFilters && (<motion.button className={`${styles.filterButton} ${styles.clear}`} onClick={onClearAll}><span>مسح الكل</span><FilterRemoveIcon height={18} width={18} /></motion.button>)}
@@ -116,5 +115,3 @@ export default function ReviewFilters({ activeSort, onSortChange, selectedScoreR
         </FilterContainer>
     );
 }
-
-

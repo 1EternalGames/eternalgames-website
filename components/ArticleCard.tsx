@@ -103,7 +103,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                         </div>
                     </div>
                     <div className={styles.tagContainer}>
-                        <TagLinks tags={article.tags} small={true} />
+                        <TagLinks tags={article.tags.map(tag => tag.title)} small={true} />
                     </div>
                 </motion.div>
             </motion.div>
@@ -113,5 +113,3 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
 
 const ArticleCard = memo(ArticleCardComponent);
 export default ArticleCard;
-
-

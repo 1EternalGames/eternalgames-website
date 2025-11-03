@@ -1,9 +1,12 @@
-/* components/studio/GenesisOrb.module.css */
+/* app/studio/GenesisOrb.module.css */
 
 .genesisContainer {
   position: fixed;
-  bottom: 3rem;
-  right: 3rem; /* RTL */
+  /* --- CUSTOMIZATION POINT (Desktop) --- */
+  /* Adjust these values to change the orb's position on larger screens */
+  bottom: 1.5rem;
+  right: 1.5rem;
+  /* --- END CUSTOMIZATION --- */
   left: auto;
   z-index: 10;
   width: 80px;
@@ -20,12 +23,17 @@
   background-color: var(--accent);
   color: white;
   border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
   box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--accent) 50%, transparent);
   z-index: 12;
+  /* --- THE FIX: Centering styles applied directly to the button --- */
+  display: flex;
+  /* --- CUSTOMIZATION POINT (Icon Alignment) --- */
+  /* These two properties center the '+' icon inside the orb. */
+  /* You can adjust them if you use a different icon that is not symmetrical. */
+  align-items: center; /* Vertical alignment */
+  justify-content: center; /* Horizontal alignment */
+  /* --- END CUSTOMIZATION --- */
 }
 [data-theme="dark"] .genesisOrb {
   color: var(--bg-primary);
@@ -66,7 +74,6 @@
   flex-shrink: 0;
 }
 
-/* --- THE FIX IS HERE --- */
 [data-theme="dark"] .satelliteOrb {
   color: var(--text-primary);
 }
@@ -78,7 +85,7 @@
 }
 
 .satelliteOrb svg {
-  color: currentColor; /* Inherit color from the parent .satelliteOrb */
+  color: currentColor;
   filter: grayscale(0) opacity(1) !important;
 }
 
@@ -115,4 +122,22 @@
   filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
 }
 
-
+@media (max-width: 768px) {
+    .genesisContainer {
+        /* --- CUSTOMIZATION POINT (Mobile) --- */
+        /* Adjust these values for smaller screens */
+        bottom: 1rem;
+        right: 1rem;
+        /* --- END CUSTOMIZATION --- */
+        width: 64px;
+        height: 64px;
+    }
+    .satelliteWrapper {
+        margin-left: -24px;
+        margin-top: -24px;
+    }
+    .satelliteOrb {
+        width: 48px;
+        height: 48px;
+    }
+}

@@ -7,34 +7,39 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { CardProps } from '@/types';
 import { Calendar03Icon } from '@/components/icons/index';
+import { translateTag } from '@/lib/translations';
 import styles from './NewsfeedStream.module.css';
 import feedStyles from '../feed/Feed.module.css';
 
-const LatestNewsListItem = memo(({ item }: { item: CardProps }) => (
-    <Link href={`/news/${item.slug}`} className={`${feedStyles.newsListItem} no-underline`}>
-        <div className={feedStyles.newsListThumbnail}>
-            <Image 
-                src={item.imageUrl} 
-                alt={item.title} 
-                fill 
-                sizes="60px" 
-                placeholder="blur" 
-                blurDataURL={item.blurDataURL} 
-                style={{ objectFit: 'cover' }} 
-            />
-        </div>
-        <div className={feedStyles.newsListInfo}>
-            <p className={feedStyles.newsListCategory}>{item.category}</p>
-            <h5 className={feedStyles.newsListTitle}>{item.title}</h5>
-            {item.date && (
-                <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
-                    <span>{item.date.split(' - ')[0]}</span>
-                </div>
-            )}
-        </div>
-    </Link>
-));
+const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
+    const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
+
+    return (
+        <Link href={`/news/${item.slug}`} className={`${feedStyles.newsListItem} no-underline`}>
+            <div className={feedStyles.newsListThumbnail}>
+                <Image 
+                    src={item.imageUrl} 
+                    alt={item.title} 
+                    fill 
+                    sizes="60px" 
+                    placeholder="blur" 
+                    blurDataURL={item.blurDataURL} 
+                    style={{ objectFit: 'cover' }} 
+                />
+            </div>
+            <div className={feedStyles.newsListInfo}>
+                <p className={feedStyles.newsListCategory}>{primaryTag}</p>
+                <h5 className={feedStyles.newsListTitle}>{item.title}</h5>
+                {item.date && (
+                    <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
+                        <span>{item.date.split(' - ')[0]}</span>
+                    </div>
+                )}
+            </div>
+        </Link>
+    );
+});
 LatestNewsListItem.displayName = "LatestNewsListItem";
 
 export default function NewsfeedStream({ items }: { items: CardProps[] }) {
@@ -65,7 +70,6 @@ export default function NewsfeedStream({ items }: { items: CardProps[] }) {
 
     return (
         <div
-            className={styles.streamContainer}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -87,5 +91,3 @@ export default function NewsfeedStream({ items }: { items: CardProps[] }) {
         </div>
     );
 }
-
-

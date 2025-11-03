@@ -1,7 +1,7 @@
 // app/studio/GenesisOrb.tsx
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -29,6 +29,14 @@ export function GenesisOrb() {
     const router = useRouter();
     const { data: session } = useSession();
     const toast = useToast();
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const userRoles = (session?.user as any)?.roles || [];
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
@@ -54,6 +62,7 @@ export function GenesisOrb() {
     if (creationPermissions.size === 0 && !isAdminOrDirector) { return null; }
 
     const availableTypes = allContentTypes.filter(item => creationPermissions.has(item.type));
+    const radius = isMobile ? 85 : 100;
 
     return (
         <div className={styles.genesisContainer}>
@@ -63,15 +72,10 @@ export function GenesisOrb() {
                         <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="hidden" onClick={() => setIsOpen(false)} style={{ position: 'absolute', top: '-110px', right: '-110px', width: '300px', height: '300px', backgroundColor: 'transparent', borderRadius: '50%', zIndex: 10, cursor: 'default' }} />
                         <motion.div className={styles.genesisSatellites} variants={orbContainerVariants} initial="hidden" animate="visible" exit="hidden" >
                             {availableTypes.map((item, i) => {
-                                // --- THE DEFINITIVE FIX ---
-                                // The total arc of deployment is increased from 90 to 110 degrees.
-                                // The starting angle is shifted from 180 to 170 to re-center the arc.
                                 const totalAngle = 110;
                                 const startAngle = 170;
                                 const angleInDegrees = startAngle + (i * (totalAngle / (availableTypes.length -1 || 1) ));
-                                // --- END FIX ---
                                 const angleInRadians = angleInDegrees * (Math.PI / 180);
-                                const radius = 100;
                                 const x = Math.cos(angleInRadians) * radius;
                                 const y = Math.sin(angleInRadians) * radius;
 
@@ -95,5 +99,3 @@ export function GenesisOrb() {
         </div>
     );
 }
-
-
