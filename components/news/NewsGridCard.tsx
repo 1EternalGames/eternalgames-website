@@ -77,10 +77,6 @@ const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) 
                             />
                         </motion.div>
                         <div className={styles.cardInfo}>
-                            {/* ENHANCEMENT: Tactile Tag Interaction */}
-                            <motion.p className={styles.cardCategory}>
-                                {item.category || 'أخبار'}
-                            </motion.p>
                             <motion.h3 
                                 className={styles.cardTitle}
                                 layoutId={`news-grid-card-title-${item.id}`}
@@ -107,5 +103,3 @@ const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) 
 
 const NewsGridCard = memo(NewsGridCardComponent);
 export default NewsGridCard;
-
-

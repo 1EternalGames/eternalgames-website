@@ -9,14 +9,14 @@ import { CardProps } from '@/types';
 import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
+import { translateTag } from '@/lib/translations';
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
-// ENHANCEMENT: Variants for the new "Kinetic Wordstream" title animation
 const titleContainerVariants = {
     animate: {
         transition: {
-            staggerChildren: 0.08, // Time delay between each word animating in
+            staggerChildren: 0.08,
         },
     },
 };
@@ -26,47 +26,49 @@ const wordVariants = {
     animate: { opacity: 1, y: 0, transition: { ...transition, duration: 0.8 } },
 };
 
+const AnimatedStory = memo(({ item, isActive }: { item: CardProps; isActive: boolean }) => {
+    const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
 
-const AnimatedStory = memo(({ item, isActive }: { item: CardProps; isActive: boolean }) => (
-    <AnimatePresence>
-        {isActive && (
-            <motion.div 
-                key={item.id}
-                className={styles.activeStoryContainer}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-            >
-                <div className={styles.textContent}>
-                    <p className={styles.storyCategory}>{item.category || 'أخبار'}</p>
-                    <Link href={`/news/${item.slug}`} className={`${styles.storyLink} no-underline`}>
-                        {/* ENHANCEMENT: Kinetic Wordstream implementation */}
-                        <motion.h1 
-                            className={styles.storyTitle} 
-                            layoutId={`news-hero-title-${item.id}`}
-                            variants={titleContainerVariants}
-                            initial="initial"
-                            animate="animate"
-                        >
-                            {item.title.split(' ').map((word, index) => (
-                                <motion.span key={index} variants={wordVariants} style={{ display: 'inline-block', marginRight: '0.6rem' }}>
-                                    {word}
-                                </motion.span>
-                            ))}
-                        </motion.h1>
-                    </Link>
-                    <div className={styles.storyMeta}>
-                        <CreatorCredit label="بواسطة" creators={item.authors} small disableLink />
-                        <span className={styles.storyMetaDate}>
-                             <Calendar03Icon style={{width:'16px', height: '16px', color: 'var(--accent)'}} /> {item.date}
-                        </span>
+    return (
+        <AnimatePresence>
+            {isActive && (
+                <motion.div 
+                    key={item.id}
+                    className={styles.activeStoryContainer}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <div className={styles.textContent}>
+                        <p className={styles.storyCategory}>{primaryTag}</p>
+                        <Link href={`/news/${item.slug}`} className={`${styles.storyLink} no-underline`}>
+                            <motion.h1 
+                                className={styles.storyTitle} 
+                                layoutId={`news-hero-title-${item.id}`}
+                                variants={titleContainerVariants}
+                                initial="initial"
+                                animate="animate"
+                            >
+                                {item.title.split(' ').map((word, index) => (
+                                    <motion.span key={index} variants={wordVariants} style={{ display: 'inline-block', marginRight: '0.6rem' }}>
+                                        {word}
+                                    </motion.span>
+                                ))}
+                            </motion.h1>
+                        </Link>
+                        <div className={styles.storyMeta}>
+                            <CreatorCredit label="بواسطة" creators={item.authors} small disableLink />
+                            <span className={styles.storyMetaDate}>
+                                 <Calendar03Icon style={{width:'16px', height: '16px', color: 'var(--accent)'}} /> {item.date}
+                            </span>
+                        </div>
                     </div>
-                </div>
-            </motion.div>
-        )}
-    </AnimatePresence>
-));
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+});
 AnimatedStory.displayName = "AnimatedStory";
 
 
@@ -123,7 +125,6 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
                  <HeroBackground key={activeItem.id} imageUrl={activeItem.imageUrl} alt={activeItem.title} />
             </AnimatePresence>
             
-            {/* FIX: The overlay is now a self-contained element for the bottom-attached blur */}
             <div className={styles.heroOverlay} />
 
             <div className={`container ${styles.heroContentWrapper}`}>
@@ -147,5 +148,3 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
         </div>
     );
 }
-
-

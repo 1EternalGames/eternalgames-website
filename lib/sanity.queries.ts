@@ -15,7 +15,7 @@ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${main
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}}, 
-"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{_id, title, "slug": slug.current}, category
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
 `
 const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
@@ -24,7 +24,7 @@ score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}},
-"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{_id, title, "slug": slug.current}, category
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
 `
 
 // --- API Projections ---
@@ -35,7 +35,7 @@ score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}},
-"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{_id, title, "slug": slug.current}, category
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
 `
 
 // --- News Hub Specific Queries ---
@@ -52,7 +52,6 @@ export const paginatedNewsQuery = (
   gameSlug?: string, 
   tagSlugs?: string[], 
   searchTerm?: string, 
-  category?: string,
   offset: number = 0, 
   limit: number = 20,
   sort: 'latest' | 'viral' = 'latest'
@@ -60,7 +59,6 @@ export const paginatedNewsQuery = (
   let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`;
   
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
-  if (category) filter += ` && category == "${category}"`;
   if (tagSlugs && tagSlugs.length > 0) {
     const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' || ');
     filter += ` && (${tagFilter})`;
@@ -173,7 +171,7 @@ export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug &
 export const latestReviewsFallbackQuery = groq`*[_type == "review" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
 export const latestArticlesFallbackQuery = groq`*[_type == "article" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
 export const latestNewsFallbackQuery = groq`*[_type == "news" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
-export const latestNewsQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...15] { _id, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, category, "reporters": reporters[]->{name, prismaUserId}, publishedAt }`
+export const latestNewsQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...15] { _id, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, "reporters": reporters[]->{name, prismaUserId}, publishedAt, "tags": tags[]->{${tagFields}} }`
 export const heroContentQuery = groq`{
   "featuredReview": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} },
   "latestNews": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0] { ${cardProjection} },
@@ -184,7 +182,7 @@ export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFil
 export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] {
   _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt,
   "authors": authors[]->{name}, "reporters": reporters[]->{name}, 
-  "gameTitle": game->title, category
+  "gameTitle": game->title, "tags": tags[]->{title}
 }`
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
 export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(releaseDate)] | order(releaseDate asc) { _id, legacyId, title, "slug": slug.current, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, }`

@@ -4,7 +4,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { NewsCategory } from '@/types';
 import NewsHero from '@/components/news/NewsHero';
 import NewsFilters from '@/components/filters/NewsFilters';
 import NewsGrid from '@/components/news/NewsGrid';
@@ -40,10 +39,9 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const [activeSort, setActiveSort] = useState<'latest' | 'viral'>('latest');
     const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
     const [selectedTags, setSelectedTags] = useState<SanityTag[]>([]);
-    const [activeCategory, setActiveCategory] = useState<NewsCategory | 'all'>('all');
 
-    const currentFilters = useMemo(() => ({ searchTerm, activeSort, selectedGame, selectedTags, activeCategory }), [searchTerm, activeSort, selectedGame, selectedTags, activeCategory]);
-    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeCategory !== 'all' || activeSort !== 'latest';
+    const currentFilters = useMemo(() => ({ searchTerm, activeSort, selectedGame, selectedTags }), [searchTerm, activeSort, selectedGame, selectedTags]);
+    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
 
     useEffect(() => {
         const filtersAreDefault = !hasActiveFilters;
@@ -62,7 +60,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             if (activeSort !== 'latest') params.set('sort', activeSort);
             if (selectedGame) params.set('game', selectedGame.slug);
             if (selectedTags.length > 0) params.set('tags', selectedTags.map(t => t.slug).join(','));
-            if (activeCategory !== 'all') params.set('category', activeCategory);
 
             try {
                 const result = await fetchNews(params);
@@ -88,7 +85,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
                 if (activeSort !== 'latest') params.set('sort', activeSort);
                 if (selectedGame) params.set('game', selectedGame.slug);
                 if (selectedTags.length > 0) params.set('tags', selectedTags.map(t => t.slug).join(','));
-                if (activeCategory !== 'all') params.set('category', activeCategory);
 
                 try {
                     const result = await fetchNews(params);
@@ -112,7 +108,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         setSearchTerm('');
         setSelectedGame(null);
         setSelectedTags([]);
-        setActiveCategory('all');
         setActiveSort('latest');
     };
 
@@ -122,8 +117,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             <div className="container">
                 <ContentBlock title="أرشيف الأخبار">
                     <NewsFilters 
-                        activeCategory={activeCategory}
-                        onCategoryChange={setActiveCategory}
                         activeSort={activeSort}
                         onSortChange={setActiveSort}
                         searchTerm={searchTerm}

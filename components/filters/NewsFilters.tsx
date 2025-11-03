@@ -14,18 +14,8 @@ import styles from './Filters.module.css';
 import FilterContainer from './ui/FilterContainer';
 import FilterGroup from './ui/FilterGroup';
 import type { SanityGame, SanityTag } from '@/types/sanity';
-import { NewsCategory } from '@/types';
-
-const newsCategories: { label: string; value: NewsCategory | 'all' }[] = [
-    { label: 'الكل', value: 'all' },
-    { label: 'الصناعة', value: 'industry' },
-    { label: 'التقنية', value: 'technology' },
-    { label: 'الثقافة', value: 'culture' },
-];
 
 interface NewsFiltersProps {
-    activeCategory: NewsCategory | 'all';
-    onCategoryChange: (category: NewsCategory | 'all') => void;
     activeSort: 'latest' | 'viral';
     onSortChange: (sort: 'latest' | 'viral') => void;
     searchTerm: string;
@@ -40,7 +30,7 @@ interface NewsFiltersProps {
 }
 
 export default function NewsFilters({
-    activeCategory, onCategoryChange, activeSort, onSortChange,
+    activeSort, onSortChange,
     searchTerm, onSearchChange, allGames, selectedGame, onGameSelect,
     allTags, selectedTags, onTagToggle, onClearAll
 }: NewsFiltersProps) {
@@ -55,21 +45,12 @@ export default function NewsFilters({
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeCategory !== 'all' || activeSort !== 'latest';
+    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
 
     const desktopFilters = (
         <div className={styles.desktopFilters}>
             <input type="search" placeholder="ابحث في الأخبار بالعنوان..." className={styles.searchInput} value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} />
-
-            <FilterGroup label="النوع:">
-                {newsCategories.map(cat => (
-                    <motion.button key={cat.value} onClick={() => onCategoryChange(cat.value)} className={`${styles.filterButton} ${activeCategory === cat.value ? styles.active : ''}`}>
-                        {cat.label}
-                        {activeCategory === cat.value && <motion.div layoutId="news-category-highlight" className={styles.filterHighlight} />}
-                    </motion.button>
-                ))}
-            </FilterGroup>
-
+            
             <FilterGroup label="الفرز حسب:">
                 {[{ label: 'الأحدث', value: 'latest' as 'latest' | 'viral' }, { label: 'الأكثر رواجًا', value: 'viral' as 'latest' | 'viral' }].map(option => (
                     <motion.button key={option.value} onClick={() => onSortChange(option.value)} className={`${styles.filterButton} ${activeSort === option.value ? styles.active : ''}`}>
@@ -108,14 +89,6 @@ export default function NewsFilters({
                         exit={{ scaleY: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
-                        <FilterGroup label="النوع:">
-                            {newsCategories.map(cat => (
-                                <motion.button key={cat.value} onClick={() => onCategoryChange(cat.value)} className={`${styles.filterButton} ${activeCategory === cat.value ? styles.active : ''}`}>
-                                    {cat.label}
-                                    {activeCategory === cat.value && <motion.div layoutId="news-category-highlight" className={styles.filterHighlight} />}
-                                </motion.button>
-                            ))}
-                        </FilterGroup>
                         <FilterGroup label="الفرز حسب:">
                             {[{ label: 'الأحدث', value: 'latest' as 'latest' | 'viral' }, { label: 'الأكثر رواجًا', value: 'viral' as 'latest' | 'viral' }].map(option => (
                                 <motion.button key={option.value} onClick={() => onSortChange(option.value)} className={`${styles.filterButton} ${activeSort === option.value ? styles.active : ''}`}>

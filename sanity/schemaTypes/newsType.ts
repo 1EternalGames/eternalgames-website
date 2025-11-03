@@ -11,7 +11,6 @@ export default defineType({
         defineField({name: 'designers', title: 'Designers (Optional)', type: 'array', of: [{type: 'reference', to: {type: 'designer'}}]}),
         defineField({name: 'game', title: 'Game (Optional)', type: 'reference', to: {type: 'game'}}),
         defineField({name: 'mainImage', title: 'Main image', type: 'image', options: {hotspot: true}, validation: (Rule) => Rule.required()}),
-        defineField({name: 'category', title: 'Category', type: 'string', options: {list: ["Industry", "Hardware", "Updates", "Esports"], layout: 'radio'}, validation: (Rule) => Rule.required()}),
         defineField({name: 'tags', title: 'Tags', type: 'array', of: [{type: 'reference', to: {type: 'tag'}, options: { filter: 'category == "News"' }}]}),
         defineField({name: 'publishedAt', title: 'Published at', type: 'datetime'}),
         defineField({name: 'content', title: 'Content', type: 'blockContent'}),
@@ -22,5 +21,3 @@ export default defineType({
         select: {title: 'title', media: 'mainImage'},
     },
 })
-
-

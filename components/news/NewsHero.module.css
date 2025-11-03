@@ -24,7 +24,6 @@
     inset: 0;
     z-index: -1;
     background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.6) 35%, transparent 100%);
-    backdrop-filter: blur(4px) saturate(100%);
 }
 
 .heroContentWrapper {
@@ -89,7 +88,6 @@
 }
 
 /* --- Controls/Pagination --- */
-/* FIX: Positioning moved to the far RIGHT for desktop on RTL */
 .controlsContainer {
     position: absolute;
     right: 4rem;
@@ -145,5 +143,3 @@
         justify-content: center;
     }
 }
-
-

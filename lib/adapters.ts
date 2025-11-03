@@ -41,7 +41,6 @@ export const adaptToCardProps = (item: any): CardProps | null => {
         primaryCreators = item.authors || item.reporters || [];
     }
 
-
     return {
         type: item._type,
         id: item._id, 
@@ -56,14 +55,13 @@ export const adaptToCardProps = (item: any): CardProps | null => {
         imageUrl: imageUrl,
         mainImageRef: imageAsset,
         score: item.score,
-        tags: (item.tags || []).map((t: any) => t.title).filter(Boolean),
+        tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],
         content: item.content || [],
         relatedReviewIds: item.relatedReviewIds || [],
-        category: item.category,
         synopsis: item.synopsis,
     };
 };
