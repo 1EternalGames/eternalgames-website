@@ -6,24 +6,49 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ArticleCard from './ArticleCard';
 import type { CardProps } from '@/types'; 
 
+const kineticCardVariant = {
+    hidden: { 
+        opacity: 0, 
+        y: 50, 
+        rotateX: -20,
+        clipPath: "inset(100% 0% 0% 0%)"
+    },
+    visible: { 
+        opacity: 1, 
+        y: 0, 
+        rotateX: 0,
+        clipPath: "inset(0% 0% 0% 0%)",
+        transition: { 
+            duration: 0.8, 
+            ease: [0.22, 1, 0.36, 1] as const 
+        }
+    },
+    exit: { 
+        opacity: 0, 
+        y: -30, 
+        transition: { duration: 0.3 } 
+    }
+};
+
 export default function FilteredReviewsGrid({ reviews }: { reviews: CardProps[] }) {
   return (
     <motion.div layout className="content-grid">
       <AnimatePresence>
-        {reviews.map((review, index) => ( // <-- ADD INDEX
+        {reviews.map((review, index) => (
           <motion.div
             key={review.id}
             layout
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
-            style={{ height: '100%' }}
+            variants={kineticCardVariant}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
+            style={{ height: '100%', perspective: '800px' }}
           >
             <ArticleCard
               article={review}
               layoutIdPrefix="reviews"
-              isPriority={index < 3} // <-- PASS PROP TO FIRST 3 CARDS
+              isPriority={index < 3}
             />
           </motion.div>
         ))}
@@ -31,5 +56,3 @@ export default function FilteredReviewsGrid({ reviews }: { reviews: CardProps[] 
     </motion.div>
   );
 }
-
-

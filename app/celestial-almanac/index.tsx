@@ -42,12 +42,35 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
   }), []);
 
   const [settings, setSettings] = useState<ConstellationSettings>(PRESETS['متوازن']);
-  const lastValidBloom = useRef(settings.bloomIntensity);
+  const userIntentBloom = useRef(PRESETS['متوازن'].bloomIntensity);
 
-  useEffect(() => { if (settings.bloomIntensity > 0) lastValidBloom.current = settings.bloomIntensity; }, [settings.bloomIntensity]);
-  useEffect(() => { if (resolvedTheme === 'light') { if (settings.bloomIntensity > 0) setSettings(s => ({ ...s, bloomIntensity: 0, activePreset: 'custom' })); } else { setSettings(s => ({ ...s, bloomIntensity: lastValidBloom.current })); } }, [resolvedTheme]);
+  useEffect(() => {
+    if (resolvedTheme === 'light') {
+        if (settings.bloomIntensity > 0) {
+            setSettings(s => ({ ...s, bloomIntensity: 0 }));
+        }
+    } else {
+        if (settings.bloomIntensity !== userIntentBloom.current) {
+            setSettings(s => ({ ...s, bloomIntensity: userIntentBloom.current }));
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedTheme]);
 
-  const handlePresetChange = (preset: Preset) => { let newSettings = PRESETS[preset]; if (resolvedTheme === 'light') newSettings.bloomIntensity = 0; setSettings(newSettings); };
+  useEffect(() => {
+    if (resolvedTheme === 'dark' && settings.activePreset === 'custom') {
+        userIntentBloom.current = settings.bloomIntensity;
+    }
+  }, [settings.bloomIntensity, settings.activePreset, resolvedTheme]);
+
+  const handlePresetChange = (preset: Preset) => {
+    let newSettings = { ...PRESETS[preset] };
+    userIntentBloom.current = newSettings.bloomIntensity;
+    if (resolvedTheme === 'light') {
+        newSettings.bloomIntensity = 0;
+    }
+    setSettings(newSettings);
+  };
 
   const isDark = resolvedTheme === 'dark';
   const themeColors = isDark ? THEME_CONFIG.dark : THEME_CONFIG.light;
@@ -123,5 +146,3 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
     </>
   );
 }
-
-

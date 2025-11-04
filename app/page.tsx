@@ -11,9 +11,6 @@ import { SanityAuthor } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
-import FeedSkeleton from '@/components/homepage/feed/FeedSkeleton';
-import { ContentBlock } from '@/components/ContentBlock';
-import { ReleaseIcon } from '@/components/icons/index';
 
 export const revalidate = 60;
 
@@ -140,26 +137,22 @@ export default async function HomePage() {
         .map(adaptToCardProps)
         .filter(Boolean) as CardProps[];
 
+    const feedsContent = (
+        <HomepageFeeds 
+            topArticles={topArticles} 
+            latestArticles={latestArticles} 
+            pinnedNews={pinnedNews} 
+            newsList={newsList} 
+        />
+    );
+
+    const releasesSection = <ReleasesSection />;
+
     return (
-        <DigitalAtriumHomePage reviews={enrichedReviews}>
-            <div className="container">
-                <Suspense fallback={<FeedSkeleton />}>
-                    <HomepageFeeds topArticles={topArticles} latestArticles={latestArticles} pinnedNews={pinnedNews} newsList={newsList} />
-                </Suspense>
-            </div>
-            
-            <ContentBlock title="إصدارات هذا الشهر" Icon={ReleaseIcon} variant="fullbleed">
-                <div className="container">
-                    <p style={{textAlign: 'center', maxWidth: '600px', margin: '-2rem auto 4rem auto', color: 'var(--text-secondary)'}}>
-                        نظرة على الألعاب التي ترى النور هذا الشهر. ما صدر منها قد وُسِمَ بعلامة.
-                    </p>
-                    <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
-                        <ReleasesSection />
-                    </Suspense>
-                </div>
-            </ContentBlock>
-        </DigitalAtriumHomePage>
+        <DigitalAtriumHomePage 
+            reviews={enrichedReviews}
+            feedsContent={feedsContent}
+            releasesSection={releasesSection}
+        />
     );
 }
-
-

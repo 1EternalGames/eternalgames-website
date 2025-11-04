@@ -10,11 +10,30 @@ const gridContainerVariants = {
     visible: { transition: { staggerChildren: 0.05 } },
 };
 
-export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoading: boolean }) {
-    // NOTE: This component is purely for presentation.
-    // The incoming 'news' array is assumed to be correctly filtered and sorted
-    // by the parent NewsPageClient component. All sorting logic has been removed from here.
+const kineticCardVariant = {
+    hidden: { 
+        opacity: 0, 
+        y: 50, 
+        rotateX: -20,
+        clipPath: "inset(100% 0% 0% 0%)"
+    },
+    visible: { 
+        opacity: 1, 
+        y: 0, 
+        rotateX: 0,
+        clipPath: "inset(0% 0% 0% 0%)",
+        transition: { 
+            duration: 0.8, 
+            ease: [0.22, 1, 0.36, 1] as const 
+        }
+    },
+    exit: { 
+        opacity: 0, 
+        scale: 0.8 
+    }
+};
 
+export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoading: boolean }) {
     return (
         <motion.div 
             layout 
@@ -32,16 +51,13 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
                     <motion.div
                         key={item.id}
                         layout
-                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        variants={kineticCardVariant}
                         transition={{ 
-                            type: 'spring', 
-                            stiffness: 150, 
-                            damping: 20, 
-                            duration: 0.5 
+                            type: 'spring' as const, 
+                            stiffness: 400, 
+                            damping: 30, 
                         }}
-                        style={{ height: '100%', willChange: 'transform, opacity' }}
+                        style={{ height: '100%', willChange: 'transform, opacity', perspective: '800px' }}
                     >
                         <NewsGridCard item={item} isPriority={index < 3} />
                     </motion.div>
@@ -50,5 +66,3 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
         </motion.div>
     );
 }
-
-

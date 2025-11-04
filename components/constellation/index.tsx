@@ -79,29 +79,33 @@ export default function Constellation() {
     }), []);
 
     const [settings, setSettings] = useState<ConstellationSettings>(PRESETS['متوازن']);
-    const lastValidBloom = useRef(settings.bloomIntensity);
+    const userIntentBloom = useRef(PRESETS['متوازن'].bloomIntensity);
 
-    useEffect(() => {
-        if (settings.bloomIntensity > 0) {
-            lastValidBloom.current = settings.bloomIntensity;
-        }
-    }, [settings.bloomIntensity]);
-    
     useEffect(() => {
         if (resolvedTheme === 'light') {
             if (settings.bloomIntensity > 0) {
-                setSettings(s => ({ ...s, bloomIntensity: 0, activePreset: 'custom' }));
+                setSettings(s => ({ ...s, bloomIntensity: 0 }));
             }
         } else {
-            if (settings.bloomIntensity === 0 && lastValidBloom.current > 0) {
-                 setSettings(s => ({ ...s, bloomIntensity: lastValidBloom.current, activePreset: 'custom' }));
+            if (settings.bloomIntensity !== userIntentBloom.current) {
+                setSettings(s => ({ ...s, bloomIntensity: userIntentBloom.current }));
             }
         }
-    }, [resolvedTheme, settings.bloomIntensity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resolvedTheme]);
+
+    useEffect(() => {
+        if (resolvedTheme === 'dark' && settings.activePreset === 'custom') {
+            userIntentBloom.current = settings.bloomIntensity;
+        }
+    }, [settings.bloomIntensity, settings.activePreset, resolvedTheme]);
 
     const handlePresetChange = (preset: Preset) => {
-        let newSettings = PRESETS[preset];
-        if (resolvedTheme === 'light') newSettings.bloomIntensity = 0;
+        let newSettings = { ...PRESETS[preset] };
+        userIntentBloom.current = newSettings.bloomIntensity;
+        if (resolvedTheme === 'light') {
+            newSettings.bloomIntensity = 0;
+        }
         setSettings(newSettings);
     };
 
@@ -177,5 +181,3 @@ export default function Constellation() {
         </>
     );
 }
-
-

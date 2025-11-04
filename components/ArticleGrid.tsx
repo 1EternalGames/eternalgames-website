@@ -1,28 +1,50 @@
-// components/ArticleGrid.tsx
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import ArticleCard from './ArticleCard';
 import { CardProps } from '@/types';
 
+const kineticCardVariant = {
+    hidden: { 
+        opacity: 0, 
+        y: 50, 
+        rotateX: -20,
+        clipPath: "inset(100% 0% 0% 0%)"
+    },
+    visible: { 
+        opacity: 1, 
+        y: 0, 
+        rotateX: 0,
+        clipPath: "inset(0% 0% 0% 0%)",
+        transition: { 
+            duration: 0.8, 
+            ease: [0.22, 1, 0.36, 1] as const 
+        }
+    },
+    exit: { 
+        opacity: 0, 
+        y: -30, 
+        transition: { duration: 0.3 } 
+    }
+};
+
 export default function ArticleGrid({ articles }: { articles: CardProps[] }) {
   return (
     <motion.div layout className="content-grid">
       <AnimatePresence>
-        {articles.map((article, index) => ( // <-- ADD INDEX
+        {articles.map((article, index) => (
           <motion.div
             key={article.id}
             layout
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
-            style={{ height: '100%' }}
+            variants={kineticCardVariant}
+            // initial, animate, exit are inherited from parent ContentBlock
+            transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
+            style={{ height: '100%', perspective: '800px' }}
           >
             <ArticleCard
               article={article}
               layoutIdPrefix="articles-grid"
-              isPriority={index < 3} // <-- PASS PROP TO FIRST 3 CARDS
+              isPriority={index < 3}
             />
           </motion.div>
         ))}
@@ -30,5 +52,3 @@ export default function ArticleGrid({ articles }: { articles: CardProps[] }) {
     </motion.div>
   );
 }
-
-
