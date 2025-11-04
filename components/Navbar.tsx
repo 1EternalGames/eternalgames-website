@@ -99,6 +99,54 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
     );
 };
 
+const AnimatedPreviewIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <motion.circle 
+            cx="12" cy="12" r="3"
+            variants={{
+                hover: { scaleY: 0.1, transition: { duration: 0.1, ease: "easeOut" } },
+                rest: { scaleY: 1, transition: { duration: 0.2, delay: 0.1, ease: "easeIn" } }
+            }}
+        />
+    </svg>
+);
+
+const EditorPreviewButton = () => {
+    const { liveUrl } = useEditorStore();
+    const MotionLink = motion(Link);
+
+    const linkVariants = {
+        rest: { color: 'var(--text-primary)', scale: 1 },
+        hover: { color: 'var(--accent)', scale: 1.15 }
+    };
+
+    return liveUrl ? (
+        <MotionLink
+            href={liveUrl}
+            target="_blank"
+            className={`${editorStyles.iconButton} no-underline`}
+            title="Preview Live Page"
+            initial="rest"
+            whileHover="hover"
+            whileTap="hover"
+            animate="rest"
+            variants={linkVariants}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+        >
+            <AnimatedPreviewIcon />
+        </MotionLink>
+    ) : (
+        <motion.button
+            className={editorStyles.iconButton}
+            disabled
+            title="Document is not published"
+        >
+            <PreviewIcon />
+        </motion.button>
+    );
+};
+
 const Navbar = () => {
     const scrolled = useScrolled(50);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -138,11 +186,7 @@ const Navbar = () => {
                             </ul>
                         </nav>
                         <div className={styles.navControls}>
-                            {isEditorActive && liveUrl && (
-                                <Link href={liveUrl} target="_blank" className={`${editorStyles.iconButton} no-underline`} title="Preview Live Page">
-                                    <PreviewIcon />
-                                </Link>
-                            )}
+                            {isEditorActive && <EditorPreviewButton />}
                             {isEditorDashboard && (
                                 <Link href="/studio" className="no-underline" title="Return to Studio Dashboard">
                                     <StudioIcon style={{ color: 'var(--text-primary)', width: 24, height: 24 }} />
@@ -168,11 +212,6 @@ const Navbar = () => {
                                     isMobile={true}
                                 />
                             )}
-                             {isEditorActive && liveUrl && (
-                                <Link href={liveUrl} target="_blank" className={`${editorStyles.iconButton} no-underline`} title="Preview Live Page">
-                                    <PreviewIcon />
-                                </Link>
-                            )}
                             {isEditorDashboard && (
                                 <Link href="/studio" className="no-underline" title="Return to Studio Dashboard">
                                    <StudioIcon style={{ color: 'var(--text-primary)', width: 22, height: 22 }} />
@@ -184,6 +223,7 @@ const Navbar = () => {
                         </div>
                         <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
                         <div className={styles.mobileNavGroupRight}>
+                            {isEditorActive && <EditorPreviewButton />}
                             <ThemeToggle />
                             <UserProfile />
                         </div>

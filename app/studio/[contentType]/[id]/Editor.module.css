@@ -9,7 +9,7 @@
 .statusScheduled { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
 .headerIconGroup { display: flex; align-items: center; gap: 0.5rem; }
 .iconButton { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; color: var(--text-secondary); background-color: transparent; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-out; }
-.iconButton:hover { color: var(--text-primary); background-color: var(--bg-primary); border-color: var(--border-color); }
+.iconButton:hover:not(:disabled) { color: var(--accent); background-color: var(--bg-primary); border-color: var(--border-color); }
 .iconButtonDisabled { pointer-events: none; color: var(--border-color); }
 .mobileHeaderIcons { display: none; } /* Hidden by default */
 .sanctumContainer { position: fixed; top: var(--nav-height-scrolled); right: 0; bottom: 0; left: 0; z-index: 1060; background-color: var(--bg-primary); overflow: hidden; display: flex; flex-direction: column; --sidebar-width: 380px; }
