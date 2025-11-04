@@ -1,3 +1,4 @@
+// components/ContentBlock.tsx
 'use client';
 
 import React, { useRef } from 'react';
@@ -15,7 +16,7 @@ const blockVariants = {
     hidden: {},
     visible: {
         transition: {
-            staggerChildren: 0.2, // Stagger between title and body
+            staggerChildren: 0.1, // Faster stagger between title and body
         },
     },
 };
@@ -25,8 +26,14 @@ const titleContainerVariants = {
     visible: {
         transition: {
             staggerChildren: 0.06, // Stagger between icon and words
+            delayChildren: 0.3, // Wait for border to draw
         },
     },
+};
+
+const borderVariant = {
+    hidden: { scaleY: 0 },
+    visible: { scaleY: 1, transition: { duration: 0.4, ease: [0.6, 0.01, -0.05, 0.95] } }
 };
 
 const titleIconVariant = {
@@ -67,6 +74,9 @@ export function ContentBlock({ title, children, variant = 'default', Icon }: Con
             animate={isInView ? 'visible' : 'hidden'}
         >
             <motion.h2 className={styles.contentBlockTitle} variants={titleContainerVariants}>
+                <motion.div className={styles.contentBlockTitle_before} variants={borderVariant} style={{'--pseudo-selector': '::before'} as any} />
+                <motion.div className={styles.contentBlockTitle_after} variants={borderVariant} style={{'--pseudo-selector': '::after'} as any} />
+                
                 {Icon && (
                     <motion.div variants={titleIconVariant} style={{ display: 'flex' }}>
                         <Icon className={styles.titleIcon} />

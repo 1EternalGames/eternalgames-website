@@ -4,16 +4,16 @@
 }
 
 .contentBlockTitle {
-    position: relative; /* Required for the pseudo-element */
+    position: relative; 
     font-size: clamp(2.8rem, 4vw, 3.6rem);
     margin-bottom: 3rem;
     font-weight: 700;
     text-align: right;
-    border-right: 4px solid var(--accent);
     padding-right: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    /* Remove the static border properties */
 }
 
 .titleIcon {
@@ -24,21 +24,32 @@
 }
 
 .contentBlockTitle span {
-    transform: translateY(-2px); /* THE FIX: Vertically align text */
+    transform: translateY(-2px); 
 }
 
-
-/* --- THE DEFINITIVE FIX: ADDED PSEUDO-ELEMENT FOR BLOOM --- */
+/* --- NEW: Kinetic Border and Bloom Pseudo-elements --- */
+.contentBlockTitle::before,
 .contentBlockTitle::after {
     content: '';
     position: absolute;
     top: 0;
-    right: -4px; /* Position over the 4px border */
+    right: 0;
     width: 4px;
     height: 100%;
-    box-shadow: 0 0 12px var(--accent);
-    pointer-events: none; /* Make it non-interactive */
+    pointer-events: none;
 }
+
+.contentBlockTitle::before {
+    background-color: var(--accent);
+    transform-origin: top;
+}
+
+.contentBlockTitle::after {
+    box-shadow: 0 0 12px var(--accent);
+    transform-origin: top;
+}
+/* --- END NEW --- */
+
 
 .contentBlockBody {
     /* Default body styles */
@@ -74,5 +85,3 @@
         font-size: 2.6rem;
     }
 }
-
-
