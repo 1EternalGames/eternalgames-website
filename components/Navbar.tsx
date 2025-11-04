@@ -170,8 +170,6 @@ const Navbar = () => {
         setIsSearchOpen(false);
     }
     
-    const desktopNavItems = useMemo(() => navItems.filter(item => item.href !== '/celestial-almanac' && item.href !== '/constellation'), []);
-    
     return (
         <>
             <header className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
@@ -180,7 +178,7 @@ const Navbar = () => {
                         <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
                         <nav>
                             <ul className={styles.navLinks}>
-                                {desktopNavItems.map(item => (
+                                {navItems.map(item => (
                                     <li key={item.href}><Link href={item.href}>{item.label}</Link></li>
                                 ))}
                             </ul>
