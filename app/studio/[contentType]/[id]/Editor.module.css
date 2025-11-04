@@ -12,8 +12,8 @@
 .iconButton:hover { color: var(--text-primary); background-color: var(--bg-primary); border-color: var(--border-color); }
 .iconButtonDisabled { pointer-events: none; color: var(--border-color); }
 .mobileHeaderIcons { display: none; } /* Hidden by default */
-.sanctumContainer { position: fixed; inset: 0; z-index: 2000; background-color: var(--bg-primary); overflow: hidden; display: flex; flex-direction: column; --sidebar-width: 380px; }
-.sanctumMain { display: flex; flex-grow: 1; height: calc(100% - 60px); }
+.sanctumContainer { position: fixed; top: var(--nav-height-scrolled); right: 0; bottom: 0; left: 0; z-index: 1060; background-color: var(--bg-primary); overflow: hidden; display: flex; flex-direction: column; --sidebar-width: 380px; }
+.sanctumMain { display: flex; flex-grow: 1; height: 100%; }
 .sanctumSidebar { background-color: var(--bg-secondary); border-left: 1px solid var(--border-color); flex-shrink: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; width: var(--sidebar-width); }
 .sanctumSidebar fieldset { border: none; padding: 0; margin: 0; display: contents; }
 .sanctumSidebar fieldset:disabled { opacity: 0.6; pointer-events: none; }
@@ -37,7 +37,6 @@
 .tiptap h2 { font-family: var(--font-main), sans-serif; font-size: 2.8rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: right; color: var(--text-secondary); opacity: 0.7; pointer-events: none; height: 0; }
 
-/* --- THE DEFINITIVE FIX: REMOVED CONFLICTING POSITIONING --- */
 .formattingToolbar { 
     display: flex; 
     background-color: var(--bg-secondary); 
@@ -69,7 +68,11 @@
 .tiptap .ProseMirror-selectednode .image-grid-container { box-shadow: 0 0 0 3px var(--accent); }
 
 @media (max-width: 1024px) {
-    .sanctumMain { position: relative; overflow: hidden; }
+    .sanctumMain { 
+        position: relative; 
+        overflow: hidden; 
+        height: calc(100% - 60px);
+    }
     .sanctumSidebar { position: absolute; top: 0; right: 0; width: 100%; max-width: none; z-index: 10; border-left: none; height: 100%; }
     .sanctumCanvas { width: 100%; position: absolute; inset: 0; }
     .canvasContent { padding: 3rem 1.5rem 10rem 1.5rem; }

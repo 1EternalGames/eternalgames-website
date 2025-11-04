@@ -266,19 +266,17 @@ div[class*="sidebarInput"] > span[style*="position: absolute"] {
     left: auto !important;
 }
 
-/* THE DEFINITIVE FIX: Target main layout elements, not the generic header tag */
-body.editor-active > div > header,
-body.editor-active > div > footer {
-    display: none !important;
-}
+/* This rule is now removed to allow the header to show in the editor */
 
-/* Disable Main Scroll */
-body.editor-active {
+/* Disable Main Scroll for Editor and Mobile Menu */
+body.editor-active,
+body.mobile-menu-open {
     overflow: hidden !important;
 }
 
-/* Hide Footer in Constellation view */
-body.constellation-active > footer {
+/* Hide Footer in Editor and Constellation views */
+body.editor-active footer,
+body.constellation-active footer {
     display: none !important;
 }
 

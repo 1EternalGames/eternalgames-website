@@ -13,13 +13,10 @@ import { updateDocumentAction, publishDocumentAction, validateSlugAction } from 
 import { useToast } from '@/lib/toastStore';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useBodyClass } from '@/hooks/useBodyClass';
-import Link from 'next/link';
 import { uploadFile } from './RichTextEditor';
 import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
-import { StudioIcon, PreviewIcon } from '@/components/icons/index';
-import EternalGamesIcon from '@/components/icons/EternalGamesIcon';
-import { QualityToggle } from './editor-components/QualityToggle';
+import { useEditorStore } from '@/lib/editorStore';
 import styles from './Editor.module.css';
 
 type EditorDocument = {
@@ -73,7 +70,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [isMobile, setIsMobile] = useState(false);
     const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
     const [mainImageUploadQuality, setMainImageUploadQuality] = useState<UploadQuality>('1080p');
-    const [blockUploadQuality, setBlockUploadQuality] = useState<UploadQuality>('1080p');
+    const { blockUploadQuality, setBlockUploadQuality, setEditorActive, setLiveUrl } = useEditorStore();
     const [slugValidationStatus, setSlugValidationStatus] = useState<'pending' | 'valid' | 'invalid'>('pending');
     const [slugValidationMessage, setSlugValidationMessage] = useState('جار التحقق...');
     const debouncedSlug = useDebounce(slug, 500);
@@ -81,7 +78,27 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
-    // --- THE DEFINITIVE FIX: Prevent mobile viewport zoom ---
+    useEffect(() => {
+        setEditorActive(true);
+        return () => {
+            setEditorActive(false);
+            setLiveUrl(null); // Clean up on unmount
+        };
+    }, [setEditorActive, setLiveUrl]);
+
+    useEffect(() => {
+        const { _type, slug: docSlug, publishedAt } = sourceOfTruth;
+        const isPublished = publishedAt && new Date(publishedAt) <= new Date();
+
+        if (isPublished && docSlug?.current && _type !== 'gameRelease') {
+            const contentTypePlural = _type === 'review' ? 'reviews' : _type === 'article' ? 'articles' : 'news';
+            const url = `/${contentTypePlural}/${docSlug.current}`;
+            setLiveUrl(url);
+        } else {
+            setLiveUrl(null);
+        }
+    }, [sourceOfTruth, setLiveUrl]);
+    
     useEffect(() => {
         const viewport = document.querySelector('meta[name="viewport"]');
         if (viewport) {
@@ -109,31 +126,10 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     useEffect(() => { if (hasChanges) { document.title = `*غير محفوظ* ${title || 'غير معنون'}`; window.onbeforeunload = () => "You have unsaved changes. Are you sure you want to leave?"; } else { document.title = title || "EternalGames الديوان"; window.onbeforeunload = null; } return () => { window.onbeforeunload = null; }; }, [hasChanges, title]);
     useEffect(() => { document.body.classList.add('editor-active'); return () => { document.body.classList.remove('editor-active'); } }, []);
     
-    const getStatusInfo = () => { if (sourceOfTruth._type === 'gameRelease') return { text: 'إصدار', className: styles.statusPublished, isPublished: true }; if (!state.publishedAt) return { text: 'مسودة', className: styles.statusDraft, isPublished: false }; const date = new Date(state.publishedAt); const isPublished = date <= new Date(); return { text: isPublished ? 'منشورة' : 'مجدولة', className: isPublished ? styles.statusPublished : styles.statusScheduled, isPublished }; };
-    const statusInfo = getStatusInfo();
     const isRelease = initialDocument._type === 'gameRelease';
 
     return (
         <div className={styles.sanctumContainer}>
-            <header className={styles.editorHeader}>
-                <div className={styles.headerLeft}>
-                    <h2 className={styles.headerTitle}>ديوان القيادة</h2>
-                    <div className={styles.mobileHeaderIcons}>
-                         <Link href="/" className={`${styles.iconButton} no-underline`} title="العودة للصفحة الرئيسية"><EternalGamesIcon width={22} height={22} /></Link>
-                         <Link href="/studio" className={`${styles.iconButton} no-underline`} title="العودة للديوان"><StudioIcon width={22} height={22} /></Link>
-                         {!isRelease && <QualityToggle currentQuality={blockUploadQuality} onQualityChange={setBlockUploadQuality} isMobile={true} />}
-                    </div>
-                </div>
-                <div className={styles.headerRight}>
-                    <div className={styles.headerIconGroup}>
-                         <Link href="/" className={`${styles.iconButton} no-underline`} title="العودة للصفحة الرئيسية"><EternalGamesIcon width={20} height={20} /></Link>
-                         <Link href="/studio" className={`${styles.iconButton} no-underline`} title="العودة للديوان"><StudioIcon width={20} height={20} /></Link>
-                    </div>
-                    <div className="status-container" style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                        <div className={`${styles.documentStatus} ${statusInfo.className}`}>{statusInfo.text}</div>
-                    </div>
-                </div>
-            </header>
             <div className={styles.sanctumMain}>
                  {isMobile ? (
                     <AnimatePresence initial={false} mode="wait">

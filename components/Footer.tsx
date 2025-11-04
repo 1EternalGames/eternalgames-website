@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import styles from './Footer.module.css'; // <-- IMPORTED MODULE
+import styles from './Footer.module.css';
 
 //  Dedicated, Correctly Scaled Icon Components
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -36,7 +36,7 @@ const Footer = () => {
 return (
 <footer className={`${styles.footer} ${styles.newFooterLayout}`}>
 <div className={`container ${styles.footerContainer}`}>
-<div className={`${styles.footerSocials} ${styles.footerControls}`}>
+<div className={`${styles.footerSocialsWrapper}`}>
 <a href="https://x.com/1EternalGames" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter" className="no-underline">
 <div className={styles.socialLinkFrame}><XIcon className={styles.socialIconSvg} /></div>
 </a>
@@ -70,8 +70,3 @@ return (
 };
 
 export default Footer;
-
-
-
-
-

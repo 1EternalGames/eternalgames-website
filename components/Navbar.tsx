@@ -9,8 +9,12 @@ import UserProfile from './UserProfile';
 import { motion, AnimatePresence, Variants, Transition } from 'framer-motion';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useBodyClass } from '@/hooks/useBodyClass';
-import { ReviewIcon, NewsIcon, ArticleIcon, ReleaseIcon } from '@/components/icons/index';
+import { useUIStore } from '@/lib/uiStore';
+import { ReviewIcon, NewsIcon, ArticleIcon, ReleaseIcon, StudioIcon, PreviewIcon } from '@/components/icons/index';
+import { useEditorStore } from '@/lib/editorStore';
+import { QualityToggle } from '@/app/studio/[contentType]/[id]/editor-components/QualityToggle';
 import styles from './Navbar.module.css';
+import editorStyles from '@/app/studio/[contentType]/[id]/Editor.module.css';
 
 const Search = React.lazy(() => import('./Search'));
 
@@ -18,7 +22,7 @@ const SearchIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );
 
-const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
+export const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
     <div style={{ width: '24px', height: '24px', position: 'relative' }}>
         <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '6px', borderRadius: '2px' }} animate={{ rotate: isOpen ? 45 : 0, y: isOpen ? 5 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
         <motion.span style={{ position: 'absolute', right: 0, height: '2.5px', width: '24px', backgroundColor: 'currentColor', top: '11px', borderRadius: '2px' }} animate={{ opacity: isOpen ? 0 : 1 }} transition={{ duration: 0.1 }} />
@@ -98,20 +102,23 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
 const Navbar = () => {
     const scrolled = useScrolled(50);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { isMobileMenuOpen, toggleMobileMenu, setMobileMenuOpen } = useUIStore();
+    const { isEditorActive, blockUploadQuality, setBlockUploadQuality, liveUrl } = useEditorStore();
     const [loadSearch, setLoadSearch] = useState(false);
     const pathname = usePathname();
 
-    useBodyClass('editor-active', isMenuOpen);
+    const isEditorDashboard = pathname === '/studio';
+
+    useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
     const openSearch = () => {
         setLoadSearch(true);
         setIsSearchOpen(true);
-        setIsMenuOpen(false);
+        setMobileMenuOpen(false);
     };
 
     const closeAll = () => {
-        setIsMenuOpen(false);
+        setMobileMenuOpen(false);
         setIsSearchOpen(false);
     }
     
@@ -131,6 +138,16 @@ const Navbar = () => {
                             </ul>
                         </nav>
                         <div className={styles.navControls}>
+                            {isEditorActive && liveUrl && (
+                                <Link href={liveUrl} target="_blank" className={`${editorStyles.iconButton} no-underline`} title="Preview Live Page">
+                                    <PreviewIcon />
+                                </Link>
+                            )}
+                            {isEditorDashboard && (
+                                <Link href="/studio" className="no-underline" title="Return to Studio Dashboard">
+                                    <StudioIcon style={{ color: 'var(--text-primary)', width: 24, height: 24 }} />
+                                </Link>
+                            )}
                             <ThemeToggle />
                             <UserProfile />
                             <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
@@ -141,9 +158,26 @@ const Navbar = () => {
 
                     <div className={styles.mobileView}>
                         <div className={styles.mobileNavGroupLeft}>
-                            <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
-                                <HamburgerIcon isOpen={isMenuOpen} />
+                            <button className={styles.hamburgerButton} onClick={toggleMobileMenu} aria-label="Toggle menu">
+                                <HamburgerIcon isOpen={isMobileMenuOpen} />
                             </button>
+                            {isEditorActive && (
+                                <QualityToggle
+                                    currentQuality={blockUploadQuality}
+                                    onQualityChange={setBlockUploadQuality}
+                                    isMobile={true}
+                                />
+                            )}
+                             {isEditorActive && liveUrl && (
+                                <Link href={liveUrl} target="_blank" className={`${editorStyles.iconButton} no-underline`} title="Preview Live Page">
+                                    <PreviewIcon />
+                                </Link>
+                            )}
+                            {isEditorDashboard && (
+                                <Link href="/studio" className="no-underline" title="Return to Studio Dashboard">
+                                   <StudioIcon style={{ color: 'var(--text-primary)', width: 22, height: 22 }} />
+                               </Link>
+                            )}
                              <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
                                 <SearchIcon />
                             </button>
@@ -158,7 +192,7 @@ const Navbar = () => {
             </header>
             
             <AnimatePresence>
-                {isMenuOpen && (
+                {isMobileMenuOpen && (
                     <motion.div
                         className={styles.mobileNavOverlay}
                         onClick={closeAll}
@@ -204,5 +238,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-

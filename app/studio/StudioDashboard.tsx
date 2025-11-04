@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo, useTransition, useEffect } from 'react';
+import { useState, useMemo, useTransition, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StudioTabs, ContentType } from './StudioTabs';
 import { ActionDrawer } from './ActionDrawer';
@@ -12,15 +12,43 @@ import { useToast } from '@/lib/toastStore';
 import { urlFor } from '@/sanity/lib/image';
 import Image from 'next/image';
 import { sanityLoader } from '@/lib/sanity.loader';
-import styles from './StudioDashboard.module.css'; // Import the new styles
+import styles from './StudioDashboard.module.css';
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
 
-const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: (id: string) => Promise<void>; }) => {
+const ContentCanvas = ({ item, onDelete, isActive, onCardClick, isTouchDevice }: {
+    item: ContentCanvasItem;
+    onDelete: (id: string) => Promise<void>;
+    isActive: boolean;
+    onCardClick: () => void;
+    isTouchDevice: boolean;
+}) => {
     const [isHovered, setIsHovered] = useState(false);
-    const [isClicked, setIsClicked] = useState(false);
-    const isDrawerVisible = isHovered || isClicked;
+    const justClickedToClose = useRef(false);
+
+    const handleClick = () => {
+        if (isActive) {
+            justClickedToClose.current = true;
+            setIsHovered(false);
+        }
+        onCardClick();
+    };
+
+    const handleMouseEnter = () => {
+        if (isTouchDevice || justClickedToClose.current) {
+            return;
+        }
+        setIsHovered(true);
+    };
+
+    const handleMouseLeave = () => {
+        justClickedToClose.current = false;
+        setIsHovered(false);
+    };
+
+    const isDrawerVisible = isActive || isHovered;
+
     const imageUrlWithBuster = useMemo(() => {
         if (!item.mainImage?.asset) return null;
         const url = urlFor(item.mainImage).width(800).height(500).fit('crop').auto('format').url();
@@ -28,8 +56,19 @@ const ContentCanvas = ({ item, onDelete }: { item: ContentCanvasItem; onDelete: 
     }, [item.mainImage, item._updatedAt]);
 
     return (
-        <motion.div layoutId={`canvas-card-${item._id}`} style={{ position: 'relative', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16 / 10', cursor: 'pointer' }} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => setIsClicked(prev => !prev)} >
-            <motion.div className="canvas-image-container" animate={{ scale: isDrawerVisible ? 1.05 : 1, filter: isDrawerVisible ? 'brightness(0.8)' : 'brightness(1)' }} transition={{ type: 'spring' as const, damping: 20, stiffness: 150 }} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} >
+        <motion.div
+            layoutId={`canvas-card-${item._id}`}
+            style={{ position: 'relative', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16 / 10', cursor: 'pointer' }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+        >
+            <motion.div
+                className="canvas-image-container"
+                animate={{ scale: isDrawerVisible ? 1.05 : 1, filter: isDrawerVisible ? 'brightness(0.8)' : 'brightness(1)' }}
+                transition={{ type: 'spring' as const, damping: 20, stiffness: 150 }}
+                style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
                 {imageUrlWithBuster ? (
                     <Image 
                         src={imageUrlWithBuster} 
@@ -55,8 +94,14 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     const [content, setContent] = useState(initialContent);
     const [activeTab, setActiveTab] = useState<ContentType>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeCardId, setActiveCardId] = useState<string | null>(null);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
     const toast = useToast();
     const [isPending, startTransition] = useTransition();
+
+    useEffect(() => {
+        setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    }, []);
 
     const availableTabs = useMemo(() => {
         const tabs: { label: string; value: ContentType }[] = [];
@@ -105,6 +150,10 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
             }
         });
     };
+    
+    const handleCardClick = (cardId: string) => {
+        setActiveCardId(prevId => (prevId === cardId ? null : cardId));
+    };
 
     return (
         <>
@@ -125,7 +174,13 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                 <AnimatePresence>
                     {filteredContent.map(item => (
                         <motion.div key={item._id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ type: 'spring' as const, damping: 20, stiffness: 200 }} >
-                            <ContentCanvas item={item} onDelete={handleDelete} />
+                            <ContentCanvas
+                                item={item}
+                                onDelete={handleDelete}
+                                isActive={activeCardId === item._id}
+                                onCardClick={() => handleCardClick(item._id)}
+                                isTouchDevice={isTouchDevice}
+                            />
                         </motion.div>
                     ))}
                 </AnimatePresence>

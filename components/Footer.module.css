@@ -16,7 +16,7 @@
   margin: 0 auto;
   padding: 0 2rem;
 }
-.footerSocials {
+.footerSocialsWrapper {
   display: flex;
   justify-content: center;
   gap: 1.5rem;
@@ -57,10 +57,10 @@
 .infoSeparator {
   font-weight: 300;
 }
-.footerControls a {
+.footerSocialsWrapper a {
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.footerControls a:hover {
+.footerSocialsWrapper a:hover {
   filter: none !important;
   transform: translateY(-4px); 
 }
@@ -75,9 +75,9 @@
   color: var(--text-primary);
   background-color: transparent;
   transition: all 0.2s ease-out;
-  flex-shrink: 0; /* THE DEFINITIVE FIX */
+  flex-shrink: 0;
 }
-.footerControls a:hover .socialLinkFrame {
+.footerSocialsWrapper a:hover .socialLinkFrame {
   background-color: var(--bg-secondary);
   border-color: var(--accent);
   color: var(--accent);
@@ -96,14 +96,12 @@
   }
   .footerInfo {
     flex-direction: column;
-    gap: 1rem;
+    gap: 4rem;
   }
   .infoSeparator {
     display: none;
   }
-  .footerSocials {
+  .footerSocialsWrapper {
     gap: 1rem;
   }
 }
-
-

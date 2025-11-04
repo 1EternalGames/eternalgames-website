@@ -4,6 +4,7 @@
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from '../BlockToolbar.module.css';
 import bubbleStyles from '../Editor.module.css';
+import editorStyles from '../Editor.module.css';
 
 interface QualityToggleProps {
     currentQuality: UploadQuality;
@@ -35,7 +36,8 @@ export function QualityToggle({ currentQuality, onQualityChange, isMobile = fals
         return (
              <button
                 onClick={cycleQuality}
-                className={bubbleStyles.iconButton}
+                className={editorStyles.iconButton}
+                style={{ width: '36px', height: '36px' }}
                 title={`جودة الرفع: ${qualityTooltips[currentQuality]}`}
             >
                 <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>

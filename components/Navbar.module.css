@@ -249,4 +249,20 @@
   }
 }
 
+/* === EDITOR-SPECIFIC OVERRIDES === */
 
+/* On desktop, hide the center navigation links when editor is active */
+body.editor-active .desktopView > nav {
+  display: none;
+}
+/* This simplifies the grid for the editor view */
+body.editor-active .desktopView {
+  grid-template-columns: auto 1fr;
+}
+
+/* On mobile, hide the entire main mobile nav view, as the editor has its own */
+@media (max-width: 1024px) {
+  body.editor-active .mobileView {
+    display: none;
+  }
+}
