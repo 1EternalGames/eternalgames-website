@@ -36,7 +36,18 @@
 .tiptap > * + * { margin-top: 1.25em; }
 .tiptap h2 { font-family: var(--font-main), sans-serif; font-size: 2.8rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: right; color: var(--text-secondary); opacity: 0.7; pointer-events: none; height: 0; }
-.formattingToolbar { position: absolute; display: flex; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 5px 20px -5px color-mix(in srgb, var(--text-primary) 15%, transparent); padding: 0.4rem; z-index: 10; transform: translateX(-100%); }
+
+/* --- THE DEFINITIVE FIX: REMOVED CONFLICTING POSITIONING --- */
+.formattingToolbar { 
+    display: flex; 
+    background-color: var(--bg-secondary); 
+    border: 1px solid var(--border-color); 
+    border-radius: 8px; 
+    box-shadow: 0 5px 20px -5px color-mix(in srgb, var(--text-primary) 15%, transparent); 
+    padding: 0.4rem; 
+    z-index: 10; 
+}
+
 .bubbleMenuButton { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 6px; background-color: transparent; border: none; cursor: pointer; color: var(--text-secondary); transition: background-color 0.15s ease-out, color 0.15s ease-out; }
 .bubbleMenuButton:hover { background-color: var(--bg-primary); color: var(--accent); }
 .bubbleMenuButton.active { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
@@ -65,6 +76,6 @@
     .canvasTitleInput { font-size: 2.8rem; }
     .canvasEditorWrapper { padding: 1.5rem; }
     .headerRight { display: none; }
-    .headerLeft { flex-grow: 1; justify-content: space-between; } /* Make left group take space */
+    .headerLeft { flex-grow: 1; justify-content: space-between; }
     .mobileHeaderIcons { display: flex; align-items: center; gap: 1rem; }
 }

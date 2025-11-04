@@ -1,8 +1,7 @@
 // app/studio/[contentType]/[id]/RichTextEditor.tsx
 'use client';
 
-// ... (imports remain the same)
-import { useEditor, EditorContent, Editor, ReactNodeViewRenderer, BubbleMenu, FloatingMenu } from '@tiptap/react';
+import { useEditor, EditorContent, Editor, ReactNodeViewRenderer, BubbleMenu } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
@@ -18,7 +17,6 @@ import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
 import { clientAssetUploader } from '@/lib/sanity.client';
 import { FormattingToolbar } from './FormattingToolbar';
-import { BlockToolbar } from './BlockToolbar';
 import { LinkEditorModal } from './LinkEditorModal';
 import { ImageResizeComponent } from './ImageResizeComponent';
 import { ImageCompareComponent } from './ImageCompareComponent';
@@ -27,7 +25,7 @@ import { FourImageGridComponent } from './editor-components/FourImageGridCompone
 import styles from './Editor.module.css';
 
 
-const formatFileSize = (bytes: number): string => { // Helper function for toast
+const formatFileSize = (bytes: number): string => { 
     if (bytes < 1024) return `${bytes} B`;
     const kb = bytes / 1024;
     if (kb < 1024) return `${kb.toFixed(1)} KB`;
@@ -38,7 +36,6 @@ const formatFileSize = (bytes: number): string => { // Helper function for toast
 export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<typeof useToast>, quality: UploadQuality) => {
     try {
         toast.info('جار تحسين الصورة للرفع...', 'left');
-        // THE FIX: Get file and final quality from optimizer
         const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, quality);
         
         const reader = new FileReader();
@@ -49,7 +46,6 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
             const transaction = tr.replaceSelectionWith(node);
             editor.view.dispatch(transaction);
             
-            // THE FIX: Use final size and quality in the toast
             toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
             
             const asset = await clientAssetUploader.assets.upload('image', optimizedFile, {
@@ -95,7 +91,6 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
     }
 };
 
-// ... (rest of the file remains the same)
 const ImageCompareNode = Node.create({ name: 'imageCompare', group: 'block', atom: true, addAttributes() { return { src1: { default: null }, assetId1: { default: null }, src2: { default: null }, assetId2: { default: null }, 'data-size': { default: 'large' } }; }, parseHTML() { return [{ tag: 'div[data-type="image-compare"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'image-compare' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(ImageCompareComponent); }, });
 const CustomImage = Node.create({ name: 'image', group: 'block', atom: true, draggable: true, addAttributes() { return { src: { default: null }, alt: { default: null }, title: { default: null }, assetId: { default: null }, 'data-size': { default: 'large' }, }; }, parseHTML() { return [{ tag: 'img[src]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', { 'data-type': 'custom-image' }, ['img', HTMLAttributes]]; }, addNodeView() { return ReactNodeViewRenderer(ImageResizeComponent); }, });
 const TwoImageGridNode = Node.create({ name: 'twoImageGrid', group: 'block', atom: true, addAttributes() { return { src1: null, assetId1: null, src2: null, assetId2: null }; }, parseHTML() { return [{ tag: 'div[data-type="two-image-grid"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'two-image-grid' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(TwoImageGridComponent); }, });
@@ -157,7 +152,20 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
         <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'A' && target.classList.contains('editor-link')) { e.preventDefault(); } }}>
             <style jsx global>{`.tiptap a.editor-link { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent); cursor: default; }`}</style>
             
-            <BubbleMenu editor={editor} tippyOptions={{ duration: 100, placement: 'top-start', offset: [0, 8] }} shouldShow={({ editor, state }) => { const { from, to } = state.selection; const isTextSelection = from !== to; const isBlockNodeSelection = editor.isActive('image') || editor.isActive('imageCompare') || editor.isActive('twoImageGrid') || editor.isActive('fourImageGrid'); return isTextSelection && !isBlockNodeSelection; }}>
+            <BubbleMenu 
+                editor={editor} 
+                tippyOptions={{ 
+                    duration: 100, 
+                    placement: 'top-end', // <-- THE DEFINITIVE FIX
+                    offset: [0, 8] 
+                }} 
+                shouldShow={({ editor, state }) => { 
+                    const { from, to } = state.selection; 
+                    const isTextSelection = from !== to; 
+                    const isBlockNodeSelection = editor.isActive('image') || editor.isActive('imageCompare') || editor.isActive('twoImageGrid') || editor.isActive('fourImageGrid'); 
+                    return isTextSelection && !isBlockNodeSelection; 
+                }}
+            >
                  <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} />
             </BubbleMenu>
 
@@ -166,5 +174,3 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
         </div>
     );
 }
-
-
