@@ -8,6 +8,7 @@ import bubbleStyles from '../Editor.module.css';
 interface QualityToggleProps {
     currentQuality: UploadQuality;
     onQualityChange: (quality: UploadQuality) => void;
+    isMobile?: boolean;
 }
 
 const qualityCycle: UploadQuality[] = ['1080p', '4k', '8k'];
@@ -22,13 +23,27 @@ const qualityTooltips: Record<UploadQuality, string> = {
     '8k': 'Full Ultra HD (8K)'
 };
 
-export function QualityToggle({ currentQuality, onQualityChange }: QualityToggleProps) {
+export function QualityToggle({ currentQuality, onQualityChange, isMobile = false }: QualityToggleProps) {
     
     const cycleQuality = () => {
         const currentIndex = qualityCycle.indexOf(currentQuality);
         const nextIndex = (currentIndex + 1) % qualityCycle.length;
         onQualityChange(qualityCycle[nextIndex]);
     };
+
+    if (isMobile) {
+        return (
+             <button
+                onClick={cycleQuality}
+                className={bubbleStyles.iconButton}
+                title={`جودة الرفع: ${qualityTooltips[currentQuality]}`}
+            >
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>
+                    {qualityLabels[currentQuality]}
+                </span>
+            </button>
+        );
+    }
 
     return (
         <div className={styles.optionButtonWrapper}>
@@ -47,8 +62,3 @@ export function QualityToggle({ currentQuality, onQualityChange }: QualityToggle
         </div>
     );
 }
-
-
-
-
-

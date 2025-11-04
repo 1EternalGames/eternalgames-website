@@ -66,5 +66,3 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
         </motion.div>
     );
 }
-
-

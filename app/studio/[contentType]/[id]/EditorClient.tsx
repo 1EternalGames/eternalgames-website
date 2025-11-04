@@ -1,4 +1,4 @@
-// app/studio/[contentType]/[id]/EditorClient.tsx
+// app/studio/[contentType]/[id/EditorClient.tsx
 
 'use client';
 import { useState, useMemo, useEffect, useReducer, useRef } from 'react';
@@ -7,6 +7,7 @@ import { EditorSidebar } from './EditorSidebar';
 import { EditorCanvas } from './EditorCanvas';
 import { BlockToolbar } from './BlockToolbar';
 import { MobileViewToggle } from './editor-components/MobileViewToggle';
+import { MobileBlockCreator } from './editor-components/MobileBlockCreator';
 import { Editor } from '@tiptap/react';
 import { updateDocumentAction, publishDocumentAction, validateSlugAction } from '../../actions';
 import { useToast } from '@/lib/toastStore';
@@ -18,12 +19,14 @@ import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import { StudioIcon, PreviewIcon } from '@/components/icons/index';
 import EternalGamesIcon from '@/components/icons/EternalGamesIcon';
+import { QualityToggle } from './editor-components/QualityToggle';
 import styles from './Editor.module.css';
 
 type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any;
 };
 
+// ... (reducer, generateDiffPatch, etc. remain the same) ...
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 const initialState = { _id: null, _type: null, title: '', slug: '', score: 0, verdict: '', pros: [], cons: [], game: null, tags: [], mainImage: { assetId: null, assetUrl: null }, authors: [], reporters: [], designers: [], publishedAt: null, isSlugManual: false, releaseDate: '', platforms: [], synopsis: '' };
 
@@ -60,6 +63,7 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     return patch;
 };
 
+
 export function EditorClient({ document: initialDocument, allGames, allTags, allCreators }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[] }) {
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, initialState);
@@ -95,28 +99,19 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const statusInfo = getStatusInfo();
     const isRelease = initialDocument._type === 'gameRelease';
 
-    const getPreviewUrl = () => {
-        if (!statusInfo.isPublished || !state.slug) return null;
-        const typePlural = sourceOfTruth._type === 'gameRelease' ? 'releases' : `${sourceOfTruth._type}s`;
-        if (typePlural === 'releases') return '/releases';
-        return `/${typePlural}/${state.slug}`;
-    }
-    const previewUrl = getPreviewUrl();
-
     return (
         <div className={styles.sanctumContainer}>
             <header className={styles.editorHeader}>
                 <div className={styles.headerLeft}>
                     <h2 className={styles.headerTitle}>ديوان القيادة</h2>
                     <div className={styles.mobileHeaderIcons}>
-                         <Link href={previewUrl || ''} target="_blank" rel="noopener noreferrer" className={`${styles.iconButton} ${!previewUrl ? styles.iconButtonDisabled : ''}`} title="معاينة الصفحة الحية" onClick={(e) => !previewUrl && e.preventDefault()}><PreviewIcon width={22} height={22} /></Link>
                          <Link href="/" className={`${styles.iconButton} no-underline`} title="العودة للصفحة الرئيسية"><EternalGamesIcon width={22} height={22} /></Link>
                          <Link href="/studio" className={`${styles.iconButton} no-underline`} title="العودة للديوان"><StudioIcon width={22} height={22} /></Link>
+                         {!isRelease && <QualityToggle currentQuality={blockUploadQuality} onQualityChange={setBlockUploadQuality} isMobile={true} />}
                     </div>
                 </div>
                 <div className={styles.headerRight}>
                     <div className={styles.headerIconGroup}>
-                         <Link href={previewUrl || ''} target="_blank" rel="noopener noreferrer" className={`${styles.iconButton} ${!previewUrl ? styles.iconButtonDisabled : ''}`} title="معاينة الصفحة الحية" onClick={(e) => !previewUrl && e.preventDefault()}><PreviewIcon width={20} height={20} /></Link>
                          <Link href="/" className={`${styles.iconButton} no-underline`} title="العودة للصفحة الرئيسية"><EternalGamesIcon width={20} height={20} /></Link>
                          <Link href="/studio" className={`${styles.iconButton} no-underline`} title="العودة للديوان"><StudioIcon width={20} height={20} /></Link>
                     </div>
@@ -129,20 +124,25 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                  {isMobile ? (
                     <AnimatePresence initial={false} mode="wait">
                         {isSidebarOpen 
-                            ? <EditorSidebar key="sidebar-mobile" document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} uploadQuality={mainImageUploadQuality} onUploadQualityChange={setMainImageUploadQuality} allGames={allGames} allTags={allTags} allCreators={allCreators} /> 
+                            ? <EditorSidebar key="sidebar-mobile" document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} mainImageUploadQuality={mainImageUploadQuality} onMainImageUploadQualityChange={setMainImageUploadQuality} allGames={allGames} allTags={allTags} allCreators={allCreators} /> 
                             : <EditorCanvas key="canvas-mobile" document={sourceOfTruth} title={title} onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} onEditorCreated={setEditorInstance} editor={editorInstance} />
                         }
                     </AnimatePresence>
                 ) : (
                     <>
-                        <EditorSidebar key="sidebar-desktop" document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} uploadQuality={mainImageUploadQuality} onUploadQualityChange={setMainImageUploadQuality} allGames={allGames} allTags={allTags} allCreators={allCreators} />
+                        <EditorSidebar key="sidebar-desktop" document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} mainImageUploadQuality={mainImageUploadQuality} onMainImageUploadQualityChange={setMainImageUploadQuality} allGames={allGames} allTags={allTags} allCreators={allCreators} />
                         <EditorCanvas key="canvas-desktop" document={sourceOfTruth} title={title} onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} onEditorCreated={setEditorInstance} editor={editorInstance} />
                     </>
                 )}
             </div>
             
             <AnimatePresence>
-                {!isRelease && (!isMobile || !isSidebarOpen) && ( <BlockToolbar key="block-toolbar" editor={editorInstance} onFileUpload={(file) => { if (editorInstance) { uploadFile(file, editorInstance, toast, blockUploadQuality); } }} uploadQuality={blockUploadQuality} onUploadQualityChange={setBlockUploadQuality} /> )}
+                {!isRelease && !isMobile && (
+                    <BlockToolbar key="block-toolbar-desktop" editor={editorInstance} onFileUpload={(file) => { if (editorInstance) { uploadFile(file, editorInstance, toast, blockUploadQuality); } }} uploadQuality={blockUploadQuality} onUploadQualityChange={setBlockUploadQuality} />
+                )}
+                {!isRelease && isMobile && !isSidebarOpen && (
+                    <MobileBlockCreator key="block-creator-mobile" editor={editorInstance} onFileUpload={(file) => { if (editorInstance) { uploadFile(file, editorInstance, toast, blockUploadQuality); } }} />
+                )}
             </AnimatePresence>
              {isMobile && (
                 <MobileViewToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />

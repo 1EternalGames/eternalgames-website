@@ -18,13 +18,12 @@ const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 
 const AlertIcon = () => <svg width="18" height="18" viewBox="0 0 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 const CheckIcon = () => <svg width="18" height="18" viewBox="0 0 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 const ClockIcon = () => <svg width="18" height="18" viewBox="0 0 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
-const SaveIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
-const SuccessIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-const ToggleSwitch = ({ checked, onChange }: { checked: boolean, onChange: (checked: boolean) => void }) => ( <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`toggle ${checked ? 'active' : ''}`}> <motion.div className="toggle-handle" layout transition={{ type: 'spring' as const, stiffness: 700, damping: 30 }} /> </button> );
+const ToggleSwitch = ({ checked, onChange, name }: { checked: boolean, onChange: (checked: boolean) => void, name?: string }) => ( <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`toggle ${checked ? 'active' : ''}`}> <motion.div className="toggle-handle" layout transition={{ type: 'spring' as const, stiffness: 700, damping: 30 }} /> {name && <input type="checkbox" name={name} checked={checked} readOnly style={{ display: 'none' }} />} </button> );
 
 export function EditorSidebar({ 
     document, isOpen, documentState, dispatch, onSave, hasChanges, onPublish, 
-    slugValidationStatus, slugValidationMessage, isDocumentValid, uploadQuality, onUploadQualityChange,
+    slugValidationStatus, slugValidationMessage, isDocumentValid, 
+    mainImageUploadQuality, onMainImageUploadQualityChange,
     allGames, allTags, allCreators
 }: any) {
     const { title, slug, score, verdict, pros, cons, game, tags, publishedAt, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis } = documentState;
@@ -46,43 +45,19 @@ export function EditorSidebar({
     }, [isReview, isArticle, isNews]);
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
-
-    // This check is now robust; it works for releases by checking if a draft ID is being used.
+    
     const isPublished = !document._id.startsWith('drafts.');
     const isScheduled = publishedAt && new Date(publishedAt) > new Date();
     const isSlugValid = slugValidationStatus === 'valid';
     const isSlugPending = slugValidationStatus === 'pending';
 
-    const handlePublishClick = () => {
-        startPublishTransition(async () => {
-            // For releases, we don't pass a schedule date.
-            const publishDate = isRelease ? '' : (scheduledDateTime || '');
-            if (hasChanges) {
-                const saveSuccess = await onSave();
-                if (saveSuccess) {
-                    await onPublish(publishDate);
-                }
-            } else {
-                await onPublish(publishDate);
-            }
-        });
-    };
-
-    const publishButtonText = useMemo(() => {
-        if (isRelease) {
-            return isPublished ? "تحديث الإصدار" : "نشر الإصدار";
-        }
-        if (scheduledDateTime) return hasChanges ? "حفظ وجدولة" : "جدولة";
-        if (isPublished) return hasChanges ? "حفظ وتحديث" : "تحديث";
-        return hasChanges ? "حفظ ونشر" : "انشر الآن";
-    }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
-
+    const handlePublishClick = () => { startPublishTransition(async () => { const publishDate = isRelease ? '' : (scheduledDateTime || ''); if (hasChanges) { const saveSuccess = await onSave(); if (saveSuccess) { await onPublish(publishDate); } } else { await onPublish(publishDate); } }); };
+    const publishButtonText = useMemo(() => { if (isRelease) { return isPublished ? "تحديث الإصدار" : "نشر الإصدار"; } if (scheduledDateTime) return hasChanges ? "حفظ وجدولة" : "جدولة"; if (isPublished) return hasChanges ? "حفظ وتحديث" : "تحديث"; return hasChanges ? "حفظ ونشر" : "انشر الآن"; }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
     const isSaveDisabled = isSaving || !hasChanges || !isSlugValid || isSlugPending || isPublishing;
     const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending || isSaving;
     const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending || isSaving;
     const getSlugIcon = () => { if (isSlugPending) return <ClockIcon />; if (isSlugValid) return <CheckIcon />; return <AlertIcon />; };
     const handleFieldChange = (field: string, value: any) => { dispatch({ type: 'UPDATE_FIELD', payload: { field, value } }); };
-
     const creatorsForRole = (sanityType: string) => allCreators.filter((c: any) => c._type === sanityType);
 
     return (
@@ -95,13 +70,7 @@ export function EditorSidebar({
                     </motion.div>
                     
                     <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                        {/* THE DEFINITIVE FIX: Publishing controls are now correctly sectioned */}
-                        {!isRelease && (
-                            <>
-                                <label className={styles.sidebarLabel} style={{ marginBottom: '0.75rem' }}>جدولة (اختياري)</label>
-                                <input type="datetime-local" value={scheduledDateTime} onChange={(e) => setScheduledDateTime(e.target.value)} className={styles.sidebarInput} disabled={isPublishing || isSaving} />
-                            </>
-                        )}
+                        {!isRelease && ( <> <label className={styles.sidebarLabel} style={{ marginBottom: '0.75rem' }}>جدولة (اختياري)</label> <input type="datetime-local" value={scheduledDateTime} onChange={(e) => setScheduledDateTime(e.target.value)} className={styles.sidebarInput} disabled={isPublishing || isSaving} /> </> )}
                         <motion.button onClick={handlePublishClick} className="primary-button" style={{ width: '100%', marginTop: '1rem', height: '44px' }} disabled={isPublishDisabled}>
                             <AnimatePresence mode="wait">{isPublishing ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>{publishButtonText}</motion.span>}</AnimatePresence>
                         </motion.button>
@@ -112,14 +81,14 @@ export function EditorSidebar({
                     <fieldset disabled={isSaving || isPublishing} style={{border: 'none', padding: 0, margin: 0, minWidth: 0}}>
                         <motion.div className={styles.sidebarSection} variants={itemVariants}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                                <label className={styles.sidebarLabel} style={{marginBottom: 0}}>جودة الرفع</label>
+                                <label className={styles.sidebarLabel} style={{marginBottom: 0}}>جودة الصورة الرئيسية</label>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'var(--font-main)', fontSize: '1.4rem'}}>
                                     <span>1080p</span>
-                                    <ToggleSwitch checked={uploadQuality === '4k'} onChange={(isChecked) => onUploadQualityChange(isChecked ? '4k' : '1080p')} />
+                                    <ToggleSwitch checked={mainImageUploadQuality === '4k'} onChange={(isChecked) => onMainImageUploadQualityChange(isChecked ? '4k' : '1080p')} />
                                     <span>4K</span>
                                 </div>
                             </div>
-                            <MainImageInput currentAssetId={mainImage.assetId} currentAssetUrl={mainImage.assetUrl} onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} uploadQuality={uploadQuality} />
+                            <MainImageInput currentAssetId={mainImage.assetId} currentAssetUrl={mainImage.assetUrl} onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} uploadQuality={mainImageUploadQuality} />
                         </motion.div>
                         
                         <motion.div className={styles.sidebarSection} variants={itemVariants}>
@@ -137,13 +106,7 @@ export function EditorSidebar({
                     </fieldset>
                     
                     <div className={styles.sidebarFooter}>
-                        <motion.button onClick={handleSave} disabled={isSaveDisabled} className="primary-button" style={{ width: '100%', height: '44px' }}
-                            title={isSaveDisabled ? (hasChanges ? 'المُعرّف غير صالح' : 'لا تغييرات للحفظ') : 'حفظ التغييرات'}
-                            animate={{ 
-                                backgroundColor: saveStatus === 'success' ? '#16A34A' : 'var(--accent)',
-                                color: saveStatus === 'success' ? '#fff' : 'inherit'
-                            }}
-                        >
+                        <motion.button onClick={handleSave} disabled={isSaveDisabled} className="primary-button" style={{ width: '100%', height: '44px' }} title={isSaveDisabled ? (hasChanges ? 'المُعرّف غير صالح' : 'لا تغييرات للحفظ') : 'حفظ التغييرات'} animate={{ backgroundColor: saveStatus === 'success' ? '#16A34A' : 'var(--accent)', color: saveStatus === 'success' ? '#fff' : 'inherit' }}>
                             <AnimatePresence mode="wait">
                                 {isSaving && <ButtonLoader key="loader" />}
                                 {saveStatus === 'success' && <motion.span key="success" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>تم الحفظ!</motion.span>}
@@ -156,5 +119,3 @@ export function EditorSidebar({
         </AnimatePresence>
     );
 }
-
-
