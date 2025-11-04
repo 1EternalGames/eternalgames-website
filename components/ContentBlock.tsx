@@ -33,7 +33,8 @@ const titleContainerVariants = {
 
 const borderVariant = {
     hidden: { scaleY: 0 },
-    visible: { scaleY: 1, transition: { duration: 0.4, ease: [0.6, 0.01, -0.05, 0.95] } }
+    // THE DEFINITIVE FIX: Added 'as const' to the ease array.
+    visible: { scaleY: 1, transition: { duration: 0.4, ease: [0.6, 0.01, -0.05, 0.95] as const } }
 };
 
 const titleIconVariant = {
@@ -61,7 +62,7 @@ const bodyVariants = {
 
 export function ContentBlock({ title, children, variant = 'default', Icon }: ContentBlockProps) {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
+    const isInView = useInView(ref, { once: true, amount: 0 });
 
     const blockClasses = `${styles.contentBlock} ${variant === 'fullbleed' ? styles.variantFullbleed : ''}`;
 

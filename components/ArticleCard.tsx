@@ -42,6 +42,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
     const linkPath = `${getLinkBasePath()}${article.slug}`;
     
     const handleClick = (e: React.MouseEvent) => {
+        // If the original click target or its parent is an interactive element (a nested link or button), let it handle the event.
+        if ((e.target as HTMLElement).closest('a, button, [role="button"]')) {
+            return;
+        }
+
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
@@ -65,11 +70,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
             className={styles.livingCardWrapper}
             style={livingCardAnimation.style}
         >
-            <motion.div
-                layoutId={`${layoutIdPrefix}-card-container-${article.id}`}
-                className={styles.articleCard}
-            >
-                <Link href={linkPath} onClick={handleClick} className="no-underline">
+            <Link href={linkPath} onClick={handleClick} className={`${styles.cardLink} no-underline`}>
+                <motion.div
+                    layoutId={`${layoutIdPrefix}-card-container-${article.id}`}
+                    className={styles.articleCard}
+                >
                     <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
                         {hasScore && ( <motion.div className={styles.score}>{article.score!.toFixed(1)}</motion.div> )}
                         <Image 
@@ -86,12 +91,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                             priority={isPriority}
                         />
                     </motion.div>
-                </Link>
-                <motion.div className={styles.cardContent}>
-                    <div>
-                        <Link href={linkPath} onClick={handleClick} className={`${styles.cardTitleLink} no-underline`}>
+                    <motion.div className={styles.cardContent}>
+                        <div className={styles.cardTitleLink}> {/* Re-purposed class for styling */}
                             <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
-                        </Link>
+                        </div>
                         <div className={styles.cardMetadata}>
                             <CreatorCredit label="بقلم" creators={article.authors} />
                             {article.date && (
@@ -101,12 +104,12 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, isA
                                 </p>
                             )}
                         </div>
-                    </div>
-                    <div className={styles.tagContainer}>
-                        <TagLinks tags={article.tags.map(tag => tag.title)} small={true} />
-                    </div>
+                        <div className={styles.tagContainer}>
+                            <TagLinks tags={article.tags.map(tag => tag.title)} small={true} />
+                        </div>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
+            </Link>
         </motion.div>
     );
 };
