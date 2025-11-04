@@ -61,10 +61,8 @@ export default async function StudioPage() {
         : [];
 
     return (
-        <main>
+        <div className="container page-container">
             <StudioDashboard initialContent={content} userRoles={userRoles} />
-        </main>
+        </div>
     );
 }
-
-

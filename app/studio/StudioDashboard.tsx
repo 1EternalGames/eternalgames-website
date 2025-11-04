@@ -107,7 +107,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     };
 
     return (
-        <div className="container page-container">
+        <>
             <header className={styles.studioHeader}>
                 <h1 className={`${styles.studioTitle} page-title`}>ديوان القيادة</h1>
                 <p className={styles.studioSubtitle}>قُد دفّة محتواك في رحاب EternalGames.</p>
@@ -133,6 +133,6 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
             {filteredContent.length === 0 && <p style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}>لا يوجد محتوى.</p>}
 
             <GenesisOrb />
-        </div>
+        </>
     );
 }

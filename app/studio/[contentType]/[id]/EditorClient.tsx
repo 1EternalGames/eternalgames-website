@@ -1,4 +1,4 @@
-// app/studio/[contentType]/[id/EditorClient.tsx
+// app/studio/[contentType]/[id]/EditorClient.tsx
 
 'use client';
 import { useState, useMemo, useEffect, useReducer, useRef } from 'react';
@@ -81,6 +81,20 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
+    // --- THE DEFINITIVE FIX: Prevent mobile viewport zoom ---
+    useEffect(() => {
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+            const originalContent = viewport.getAttribute('content');
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            return () => {
+                if (originalContent) {
+                    viewport.setAttribute('content', originalContent);
+                }
+            };
+        }
+    }, []);
+
     useEffect(() => { const handleResize = () => { const mobile = window.innerWidth <= 1024; setIsMobile(mobile); if (!mobile) setIsSidebarOpen(true); }; handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize); }, []);
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
