@@ -1,0 +1,50 @@
+/* app/studio/StudioDashboard.module.css */
+.studioHeader {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.studioTitle {
+    margin-bottom: 1rem;
+}
+
+.studioSubtitle {
+    font-size: 1.8rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.searchWrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+.searchInput {
+    width: 100%;
+    max-width: 500px;
+}
+
+/* --- Mobile Overrides --- */
+@media (max-width: 768px) {
+    .studioHeader {
+        padding-top: calc(var(--nav-height-scrolled) + 2rem);
+        margin-bottom: 2rem;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+    .studioTitle {
+        font-size: 3.8rem;
+    }
+    .studioSubtitle {
+        font-size: 1.6rem;
+    }
+    .searchWrapper {
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+    }
+    .searchInput {
+        max-width: 100%;
+    }
+}

@@ -1,0 +1,83 @@
+/* app/studio/[contentType]/[id]/editor-components/MobileBlockCreator.module.css */
+
+.creatorContainer {
+    position: fixed;
+    bottom: 8rem; /* Position above the MobileViewToggle */
+    left: 2rem;   /* --- THE FIX: Anchored to the left --- */
+    right: auto;
+    z-index: 2001;
+}
+
+.creatorOrb {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 50%, transparent);
+    z-index: 122;
+    position: relative; /* Ensure it's on top */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition */
+}
+
+.creatorOrb.open {
+    background-color: #DC2626;
+    box-shadow: 0 8px 25px -5px rgba(220, 38, 38, 0.5);
+}
+
+
+[data-theme="dark"] .creatorOrb {
+    color: var(--bg-primary);
+}
+
+.iconContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.creatorSatellites {
+    position: absolute;
+    bottom: 55px; /* Centered on the orb */
+    left: 48px;   /* --- THE FIX: Centered on the orb (left side) --- */
+    z-index: 121;
+    pointer-events: none;
+}
+
+.satelliteWrapper {
+    position: absolute;
+    pointer-events: auto;
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+}
+
+.satelliteOrb {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+.satelliteOrb:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(1.1);
+}
+
+.satelliteLabel {
+    display: none;
+}
