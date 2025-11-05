@@ -46,7 +46,7 @@ export default function PaginatedCarousel({ items, itemsPerPage, layoutIdPrefix 
                         style={{ transformStyle: 'preserve-3d' }}
                     >
                         {currentItems.map((item) => (
-                            <ArticleCard key={item.id} article={item} isArticle={item.type === 'article'} layoutIdPrefix={layoutIdPrefix} />
+                            <ArticleCard key={item.id} article={item} layoutIdPrefix={layoutIdPrefix} disableLivingEffect={true} />
                         ))}
                     </motion.div>
                 </AnimatePresence>
@@ -66,8 +66,3 @@ export default function PaginatedCarousel({ items, itemsPerPage, layoutIdPrefix 
         </div>
     );
 }
-
-
-
-
-

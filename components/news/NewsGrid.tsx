@@ -47,8 +47,6 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
             style={{ 
                 opacity: isLoading && news.length === 0 ? 0.5 : 1, 
                 transition: 'opacity 0.3s',
-                transformStyle: 'preserve-3d', 
-                perspective: '1200px'
             }}
         >
             <AnimatePresence mode="popLayout">

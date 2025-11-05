@@ -34,7 +34,7 @@ const kineticCardVariant = {
 
 export default function ArticleGrid({ articles }: { articles: CardProps[] }) {
   return (
-    <motion.div layout className="content-grid" style={{ transformStyle: 'preserve-3d', perspective: '1200px' }}>
+    <motion.div layout className="content-grid">
       <AnimatePresence>
         {articles.map((article, index) => (
           <motion.div

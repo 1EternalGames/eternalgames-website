@@ -34,7 +34,7 @@ const kineticCardVariant = {
 
 export default function FilteredReviewsGrid({ reviews }: { reviews: CardProps[] }) {
   return (
-    <motion.div layout className="content-grid" style={{ transformStyle: 'preserve-3d', perspective: '1200px' }}>
+    <motion.div layout className="content-grid">
       <AnimatePresence>
         {reviews.map((review, index) => (
           <motion.div
