@@ -29,4 +29,8 @@
 @keyframes glint{0%,100%{transform:scale(1)}50%{transform:scale(1.2) rotate(10deg);filter:brightness(1.5)}}
 .badgeItem:hover .badgeIconFOUNDER{animation:glint .7s ease-in-out}
 
-
+@media (max-width: 768px) {
+  .profileSidebar {
+    padding-top: 8rem; /* Nudge the content down on mobile to avoid navbar overlap */
+  }
+}

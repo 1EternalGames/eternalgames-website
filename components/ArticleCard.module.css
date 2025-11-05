@@ -84,7 +84,7 @@
 }
 
 /* Make the title change color on card hover */
-.livingCardWrapper:hover .cardTitleLink h3 {
+.cardTitleLink:hover h3 {
     color: var(--accent);
 }
 

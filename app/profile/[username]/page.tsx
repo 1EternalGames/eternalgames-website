@@ -6,15 +6,11 @@ import Image from 'next/image';
 import { getBadgesForUser } from '@/lib/badges';
 import Link from 'next/link';
 import styles from '../ProfilePage.module.css';
+import { client } from '@/lib/sanity.client';
+import { groq } from 'next-sanity';
 
 function hasCreatorRole(userRoles: string[]): boolean {
     return userRoles.some(role => ['REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
-}
-
-function getCommentLink(comment: { contentSlug: string, content: string }) {
-    // Corrected logic for news path
-    const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'news';
-    return ( <Link href={`/${path}/${comment.contentSlug}`} className="author-link">{comment.content.slice(0, 30)}...</Link> );
 }
 
 export default async function PublicProfilePage({ params }: { params: { username: string } }) {
@@ -32,6 +28,21 @@ export default async function PublicProfilePage({ params }: { params: { username
 
     if (!user) { notFound(); }
     
+    // 1. Extract content slugs from the user's recent comments.
+    const commentSlugs = user.comments.map(c => c.contentSlug);
+    
+    // 2. Fetch the titles for these slugs from Sanity.
+    let contentTitles: { slug: string, title: string }[] = [];
+    if (commentSlugs.length > 0) {
+        contentTitles = await client.fetch(
+            groq`*[_type in ["review", "article", "news"] && slug.current in $slugs]{ "slug": slug.current, title }`,
+            { slugs: commentSlugs }
+        );
+    }
+    
+    // 3. Create a lookup map for easy access (slug -> title).
+    const titleMap = new Map(contentTitles.map(item => [item.slug, item.title]));
+
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const joinDate = new Date(user.createdAt);
@@ -67,14 +78,22 @@ export default async function PublicProfilePage({ params }: { params: { username
                         <h2 className={styles.profileSectionTitle}>النشاط الأخير</h2>
                         {user.comments.length > 0 ? (
                             <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '2rem'}}>
-                                {user.comments.map(comment => (
-                                    <li key={comment.id}>
-                                        <p style={{margin: '0 0 0.5rem 0'}}>علّق على {getCommentLink(comment)}</p>
-                                        <blockquote style={{margin: 0, padding: '1rem', background: 'var(--bg-secondary)', borderRight: '3px solid var(--border-color)', borderLeft: 'none', borderRadius: '4px'}}>
-                                            &quot;{comment.content.slice(0, 150)}{comment.content.length > 150 ? '...' : ''}&quot;
-                                        </blockquote>
-                                    </li>
-                                ))}
+                                {user.comments.map(comment => {
+                                    const contentTitle = titleMap.get(comment.contentSlug) || 'محتوى لم يعد متاحًا';
+                                    const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'news';
+                                    const linkHref = `/${path}/${comment.contentSlug}`;
+
+                                    return (
+                                        <li key={comment.id}>
+                                            <p style={{margin: '0 0 0.5rem 0'}}>
+                                                علّق على <Link href={linkHref} className="creator-credit-link">{contentTitle}</Link>
+                                            </p>
+                                            <blockquote style={{margin: 0, padding: '1rem', background: 'var(--bg-secondary)', borderRight: '3px solid var(--border-color)', borderLeft: 'none', borderRadius: '4px'}}>
+                                                &quot;{comment.content.slice(0, 150)}{comment.content.length > 150 ? '...' : ''}&quot;
+                                            </blockquote>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         ) : ( <p>{user.name} لم ينشر أي تعليقات بعد.</p> )}
                     </section>
@@ -83,5 +102,3 @@ export default async function PublicProfilePage({ params }: { params: { username
         </div>
     );
 }
-
-
