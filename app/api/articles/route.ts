@@ -5,6 +5,7 @@ import { paginatedArticlesQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 const getCachedPaginatedArticles = unstable_cache(

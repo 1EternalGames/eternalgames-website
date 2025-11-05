@@ -6,6 +6,7 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 import { ScoreFilter } from '@/components/filters/ReviewFilters';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 const getCachedPaginatedReviews = unstable_cache(
