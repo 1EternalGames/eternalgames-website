@@ -99,6 +99,24 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
                 >
+                    {/* START FIX: Move CreatorBubbleContainer inside the transforming motion.div */}
+                    <AnimatePresence>
+                        {showCredits && (
+                            <motion.div
+                                className={styles.creatorBubbleContainer}
+                                variants={creatorBubbleContainerVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="hidden"
+                                style={{ pointerEvents: 'auto', transform: 'translateZ(50px)' }} /* Added explicit translateZ to ensure 3D positioning */
+                            >
+                                {review.authors.map(author => <CreatorBubble key={author._id} label="بقلم" creator={author} />)}
+                                {review.designers?.map(designer => <CreatorBubble key={designer._id} label="تصميم" creator={designer} />)}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    {/* END FIX */}
+
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
                         <Image 
@@ -118,21 +136,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     </motion.div>
                 </motion.div>
             </a>
-            <AnimatePresence>
-                {showCredits && (
-                    <motion.div
-                        className={styles.creatorBubbleContainer}
-                        variants={creatorBubbleContainerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        style={{ pointerEvents: 'auto' }}
-                    >
-                        {review.authors.map(author => <CreatorBubble key={author._id} label="بقلم" creator={author} />)}
-                        {review.designers?.map(designer => <CreatorBubble key={designer._id} label="تصميم" creator={designer} />)}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* The old location of AnimatePresence is now empty */}
         </div>
     );
 });
