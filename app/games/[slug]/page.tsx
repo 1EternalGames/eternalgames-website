@@ -17,8 +17,19 @@ export default async function GameHubPage({ params }: { params: { slug: string }
         notFound();
     }
 
-    // MODIFIED: Using lean query for initial content load
     const allItems = await client.fetch(allContentByGameListQuery, { slug: gameSlug });
+    
+    // THE DEFINITIVE FIX: The check is now correctly placed *before* the HubPageClient is rendered.
+    if (!allItems || allItems.length === 0) {
+        return (
+             <div className="container page-container">
+                <h1 className="page-title">محور لعبة: &quot;{gameMeta.title}&quot;</h1>
+                <p style={{textAlign: 'center', color: 'var(--text-secondary)', fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto'}}>
+                    لم يُنشر أي محتوى حول هذه اللعبة بعد. الأرشيف يترقب المستجدات.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <HubPageClient
@@ -28,5 +39,3 @@ export default async function GameHubPage({ params }: { params: { slug: string }
         />
     );
 }
-
-

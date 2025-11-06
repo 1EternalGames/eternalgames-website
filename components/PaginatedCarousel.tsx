@@ -1,18 +1,70 @@
-// components/PaginatedCarousel.tsx
+// components/homepage/PaginatedLatestArticles.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ArticleCard from './ArticleCard';
-import styles from './PaginatedCarousel.module.css'; // <-- IMPORT MODULE
+import Image from 'next/image';
+import { CardProps } from '@/types';
+import CreatorCredit from '@/components/CreatorCredit';
+import { Calendar03Icon } from '@/components/icons/index';
+import styles from './PaginatedLatestArticles.module.css';
+import feedStyles from './feed/Feed.module.css';
+import { useRouter } from 'next/navigation';
+import { useLayoutIdStore } from '@/lib/layoutIdStore';
 
-type PaginatedCarouselProps = {
-    items: any[];
-    itemsPerPage: number;
-    layoutIdPrefix: string;
+const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
+    const router = useRouter();
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const layoutIdPrefix = "homepage-latest-articles";
+
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        e.preventDefault();
+        setPrefix(layoutIdPrefix);
+        router.push(`/articles/${article.slug}`, { scroll: false });
+    };
+
+    return (
+        <motion.div 
+            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+            className={feedStyles.latestArticleItem}
+            onClick={handleClick}
+            style={{ cursor: 'pointer' }}
+        >
+            <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
+                <Image 
+                    src={article.imageUrl} 
+                    alt={article.title} 
+                    fill 
+                    sizes="120px" 
+                    placeholder="blur" 
+                    blurDataURL={article.blurDataURL} 
+                    style={{ objectFit: 'cover' }} 
+                />
+            </motion.div>
+            <div className={feedStyles.latestArticleInfo}>
+                <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.latestArticleTitle}>{article.title}</motion.h4>
+                <div className={feedStyles.latestArticleMeta}>
+                    <CreatorCredit label="بقلم" creators={article.authors} />
+                    {article.date && (
+                        <div className={feedStyles.latestArticleDate}>
+                            <Calendar03Icon style={{ width: '16px', height: '16px', color: 'var(--accent)' }} />
+                            <span>{article.date}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+});
+LatestArticleListItem.displayName = "LatestArticleListItem";
+
+type PaginatedLatestArticlesProps = {
+    items: CardProps[];
+    itemsPerPage?: number;
 };
 
-export default function PaginatedCarousel({ items, itemsPerPage, layoutIdPrefix }: PaginatedCarouselProps) {
+export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: PaginatedLatestArticlesProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -22,8 +74,11 @@ export default function PaginatedCarousel({ items, itemsPerPage, layoutIdPrefix 
 
     useEffect(() => {
         resetTimeout();
-        if (!isHovered) {
-            timeoutRef.current = setTimeout( () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages), 5000 );
+        if (!isHovered && totalPages > 1) {
+            timeoutRef.current = setTimeout(
+                () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
+                5000
+            );
         }
         return () => resetTimeout();
     }, [currentPage, isHovered, totalPages]);
@@ -33,36 +88,44 @@ export default function PaginatedCarousel({ items, itemsPerPage, layoutIdPrefix 
     const currentItems = items.slice(startIndex, endIndex);
 
     return (
-        <div className={styles.paginatedCarouselContainer} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-            <div className={styles.paginatedCarouselContent}>
+        <div 
+            className={styles.paginatedContainer}
+            onMouseEnter={() => setIsHovered(true)} 
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div className={styles.paginatedContent}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentPage}
-                        className={styles.twoColumnGrid} // <-- APPLIED NEW CLASS
-                        initial={{ opacity: 0, x: 50 }}
+                        initial={{ opacity: 0, x: 30 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        transition={{ duration: 0.35, ease: 'easeInOut' }}
-                        style={{ transformStyle: 'preserve-3d' }}
+                        exit={{ opacity: 0, x: -30 }}
+                        transition={{ duration: 0.4, ease: 'easeInOut' }}
+                        className={styles.itemList}
                     >
-                        {currentItems.map((item) => (
-                            <ArticleCard key={item.id} article={item} layoutIdPrefix={layoutIdPrefix} disableLivingEffect={true} />
+                        {currentItems.map((item, index) => (
+                            <React.Fragment key={item.id}>
+                                <LatestArticleListItem article={item} />
+                                {index < currentItems.length - 1 && <div className={feedStyles.listDivider} />}
+                            </React.Fragment>
                         ))}
                     </motion.div>
                 </AnimatePresence>
             </div>
-            <div className={styles.paginationControls}>
-                {Array.from({ length: totalPages }).map((_, index) => (
-                    <motion.button
-                        key={index}
-                        className={`${styles.paginationDot} ${currentPage === index ? styles.active : ''}`}
-                        onClick={() => setCurrentPage(index)}
-                        aria-label={`Go to page ${index + 1}`}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                    />
-                ))}
-            </div>
+            {totalPages > 1 && (
+                <div className={styles.paginationControls}>
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                        <motion.button
+                            key={index}
+                            className={`${styles.paginationDot} ${currentPage === index ? styles.active : ''}`}
+                            onClick={() => setCurrentPage(index)}
+                            aria-label={`Go to page ${index + 1}`}
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.9 }}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

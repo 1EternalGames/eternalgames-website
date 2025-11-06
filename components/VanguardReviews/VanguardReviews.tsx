@@ -25,20 +25,12 @@ const creatorBubbleItemVariants = {
 const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
 
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
-    // This onClick handler is now only for stopping propagation if absolutely necessary,
-    // but the structural fix makes it primarily a safety measure.
-    const handleBubbleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-    };
-    
+    const handleBubbleClick = (e: React.MouseEvent) => { e.stopPropagation(); };
     const profileSlug = creator.username || (creator.slug as any)?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
     const hasPublicProfile = !!profileSlug;
     
     const bubbleContent = (
-        <motion.div 
-            className={styles.creatorBubble} 
-            whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
-        >
+        <motion.div className={styles.creatorBubble} whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}>
             <span className={styles.creatorLabel}>{label}</span>
             <span className={styles.creatorName}>{creator.name}</span>
             <div className={styles.creatorArrow}><ArrowIcon /></div>
@@ -48,11 +40,7 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     return (
         <motion.div variants={creatorBubbleItemVariants}>
             {hasPublicProfile ? (
-                <Link
-                    href={`/creators/${profileSlug}`}
-                    onClick={handleBubbleClick}
-                    className="no-underline"
-                >
+                <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline">
                     {bubbleContent}
                 </Link>
             ) : (
@@ -78,7 +66,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
             return () => controls.stop();
         }
     }, [isInView, review.score]);
-    const handleClick = (e: React.MouseEvent) => { e.preventDefault(); setPrefix(layoutIdPrefix); router.push(`/reviews/${review.slug}`, { scroll: false }); };
+
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        e.preventDefault();
+        setPrefix(layoutIdPrefix);
+        router.push(`/reviews/${review.slug}`, { scroll: false });
+    };
     
     const imageUrl = review.mainImageRef 
         ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
@@ -86,15 +80,12 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     const showCredits = isCenter || isHovered;
 
-    // THE DEFINITIVE FIX:
-    // The CreatorBubbleContainer is moved OUTSIDE the main <Link> component.
-    // They are now siblings, which produces valid HTML and fixes the unclickable link issue.
     return (
         <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={livingCardAnimation.onHoverStart} onMouseLeave={livingCardAnimation.onHoverEnd} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
-            <Link href={`/reviews/${review.slug}`} onClick={handleClick} className="no-underline" style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
+            <motion.div layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} onClick={handleClick} style={{ display: 'block', height: '100%', cursor: 'pointer' }}>
                 <div className={styles.vanguardCard}>
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
-                    <div className={styles.cardImageContainer}>
+                    <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
                         <Image 
                             src={imageUrl} 
                             alt={review.title} 
@@ -105,13 +96,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                             blurDataURL={review.blurDataURL} 
                             priority={isPriority}
                         />
-                    </div>
+                    </motion.div>
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
-                        <h3>{review.title}</h3>
+                        <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${review.legacyId}`}>{review.title}</motion.h3>
                         {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
                     </motion.div>
                 </div>
-            </Link>
+            </motion.div>
             <AnimatePresence>
                 {showCredits && (
                     <motion.div
@@ -231,5 +222,3 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         </div>
     );
 }
-
-

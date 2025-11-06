@@ -18,6 +18,7 @@ import KineticSpotlightNews from "./kinetic-news/KineticSpotlightNews";
 import NewsfeedStream from "./kinetic-news/NewsfeedStream";
 import gridStyles from './HomepageFeeds.module.css';
 import feedStyles from './feed/Feed.module.css';
+import { useLayoutIdStore } from "@/lib/layoutIdStore";
 
 // --- Specific Card Renderers ---
 
@@ -25,18 +26,28 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const [isHovered, setIsHovered] = useState(false);
     const router = useRouter();
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const layoutIdPrefix = "homepage-top-articles";
+
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a')) return;
-        router.push(`/articles/${article.slug}`);
+        e.preventDefault();
+        setPrefix(layoutIdPrefix);
+        router.push(`/articles/${article.slug}`, { scroll: false });
     };
+
     return (
-        <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} onClick={handleClick} className={feedStyles.topArticleCard}>
-            <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
-            <div className={feedStyles.topArticleImage}><Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
-            <div className={feedStyles.topArticleContent}>
-                <h3 className={feedStyles.topArticleTitle}>{article.title}</h3>
-                <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
-            </div>
+        <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} onClick={handleClick} >
+            <motion.div layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} className={feedStyles.topArticleCard}>
+                <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+                <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.topArticleImage}>
+                    <Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} />
+                </motion.div>
+                <div className={feedStyles.topArticleContent}>
+                    <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.topArticleTitle}>{article.title}</motion.h3>
+                    <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
+                </div>
+            </motion.div>
         </motion.div>
     );
 });
@@ -77,13 +88,13 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                     <Feed
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
-                        topItems={pinnedNews} // Pass empty array as items will be handled by topSectionContent
+                        topItems={pinnedNews}
                         viewAllLink="/news"
                         viewAllText="عرض كل الأخبار"
                         topItemsContainerClassName={feedStyles.pinnedNewsList}
-                        renderTopItem={() => null} // Render nothing here
-                        topSectionContent={<KineticSpotlightNews items={pinnedNews} />} // Pass the new component here
-                        latestSectionContent={<NewsfeedStream items={newsList} />} // Pass the new component here
+                        renderTopItem={() => null}
+                        topSectionContent={<KineticSpotlightNews items={pinnedNews} />}
+                        latestSectionContent={<NewsfeedStream items={newsList} />}
                         enableTopSectionHoverEffect={true}
                     />
                 </ContentBlock>
@@ -91,5 +102,3 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
         </div>
     );
 }
-
-

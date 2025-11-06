@@ -185,7 +185,10 @@ export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${pu
   "gameTitle": game->title, "tags": tags[]->{title}
 }`
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
-export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(releaseDate)] | order(releaseDate asc) { _id, legacyId, title, "slug": slug.current, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, }`
+export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(releaseDate)] | order(releaseDate asc) { 
+  _id, legacyId, title, "slug": slug.current, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}},
+  "game": game->{ "slug": slug.current }
+}`
 
 // --- Studio Editor Queries ---
 export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`;

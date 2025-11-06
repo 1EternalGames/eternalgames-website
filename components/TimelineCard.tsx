@@ -24,10 +24,8 @@ const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
 
 const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clipRule="evenodd" /></svg> );
 
-const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
+const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { game?: { slug?: string } } }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
-
-    // --- ENHANCEMENT: Glare effect logic from ChronoCard.tsx ---
     const mouseX = useMotionValue(0.5);
     const mouseY = useMotionValue(0.5);
     const smoothMouseX = useSpring(mouseX, { damping: 20, stiffness: 150, mass: 0.7 });
@@ -48,7 +46,6 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
         mouseX.set(0.5);
         mouseY.set(0.5);
     };
-    // --- END ENHANCEMENT ---
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -56,6 +53,9 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
     const day = date.getUTCDate();
     const monthIndex = date.getUTCMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}`;
+
+    // THE DEFINITIVE FIX: Use the game slug if available, otherwise default to a non-existent path.
+    const linkPath = release.game?.slug ? `/games/${release.game.slug}` : '/';
 
     return (
         <motion.div 
@@ -66,14 +66,10 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}
         >
-            <Link href={`/games/${release.slug}`} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
-                {/* --- ENHANCEMENT: Glare element --- */}
+            <Link href={linkPath} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
                 <motion.div
                     className={styles.livingCardGlare}
-                    style={{
-                        '--mouse-x': glareX,
-                        '--mouse-y': glareY,
-                    } as any}
+                    style={{ '--mouse-x': glareX, '--mouse-y': glareY } as any}
                 />
                 
                 <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
@@ -103,5 +99,3 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease }) => {
 }
 
 export default memo(TimelineCardComponent);
-
-

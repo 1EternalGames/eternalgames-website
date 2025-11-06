@@ -10,33 +10,45 @@ import CreatorCredit from '@/components/CreatorCredit';
 import { Calendar03Icon } from '@/components/icons/index';
 import styles from './PaginatedLatestArticles.module.css';
 import feedStyles from './feed/Feed.module.css';
+import { useRouter } from 'next/navigation';
+import { useLayoutIdStore } from '@/lib/layoutIdStore';
 
 const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
-    // This component is the source of the hydration error.
-    // The main container is now a <div> instead of a <Link>.
-    // The image and title are wrapped in their own separate <Link>s.
-    // This resolves the nested <a> tag issue caused by CreatorCredit rendering its own link.
+    const router = useRouter();
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const layoutIdPrefix = "homepage-latest-articles";
+
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        e.preventDefault();
+        setPrefix(layoutIdPrefix);
+        router.push(`/articles/${article.slug}`, { scroll: false });
+    };
+
     return (
-        <div className={feedStyles.latestArticleItem}>
-            <Link href={`/articles/${article.slug}`} className="no-underline" style={{ display: 'block' }}>
-                <div className={feedStyles.latestArticleThumbnail}>
-                    <Image 
-                        src={article.imageUrl} 
-                        alt={article.title} 
-                        fill 
-                        sizes="120px" 
-                        placeholder="blur" 
-                        blurDataURL={article.blurDataURL} 
-                        style={{ objectFit: 'cover' }} 
-                    />
-                </div>
-            </Link>
+        <motion.div 
+            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+            onClick={handleClick}
+            style={{ cursor: 'pointer' }}
+            className={feedStyles.latestArticleItem}
+        >
+            <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
+                <Image 
+                    src={article.imageUrl} 
+                    alt={article.title} 
+                    fill 
+                    sizes="120px" 
+                    placeholder="blur" 
+                    blurDataURL={article.blurDataURL} 
+                    style={{ objectFit: 'cover' }} 
+                />
+            </motion.div>
             <div className={feedStyles.latestArticleInfo}>
                 <Link href={`/articles/${article.slug}`} className="no-underline">
-                    <h4 className={feedStyles.latestArticleTitle}>{article.title}</h4>
+                    <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.latestArticleTitle}>{article.title}</motion.h4>
                 </Link>
                 <div className={feedStyles.latestArticleMeta}>
-                    <CreatorCredit label="بقلم" creators={article.authors} />
+                    <CreatorCredit label="بقلم" creators={article.authors} disableLink={true} />
                     {article.date && (
                         <div className={feedStyles.latestArticleDate}>
                             <Calendar03Icon style={{ width: '16px', height: '16px', color: 'var(--accent)' }} />
@@ -45,7 +57,7 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
                     )}
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 });
 LatestArticleListItem.displayName = "LatestArticleListItem";
@@ -120,5 +132,3 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
         </div>
     );
 }
-
-

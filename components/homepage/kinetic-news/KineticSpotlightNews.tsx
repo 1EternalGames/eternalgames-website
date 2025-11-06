@@ -3,19 +3,33 @@
 
 import React, { useState, useEffect, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import Image from 'next/image';
 import { CardProps } from '@/types';
 import { Calendar03Icon } from '@/components/icons/index';
 import { translateTag } from '@/lib/translations';
 import styles from './KineticSpotlightNews.module.css';
 import feedStyles from '../feed/Feed.module.css';
+import { useRouter } from 'next/navigation';
+import { useLayoutIdStore } from '@/lib/layoutIdStore';
 
 const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: boolean }) => {
     const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
+    const router = useRouter();
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const layoutIdPrefix = "homepage-pinned-news";
+
+    const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setPrefix(layoutIdPrefix);
+        router.push(`/news/${item.slug}`, { scroll: false });
+    };
 
     return (
-        <Link href={`/news/${item.slug}`} className={`${feedStyles.pinnedNewsItem} ${styles.spotlightItem} no-underline`}>
+        <motion.div 
+            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+            onClick={handleClick}
+            className={`${feedStyles.pinnedNewsItem} ${styles.spotlightItem} no-underline`}
+        >
             <AnimatePresence>
                 {isActive && (
                     <motion.div
@@ -28,7 +42,7 @@ const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: bo
                     />
                 )}
             </AnimatePresence>
-            <div className={feedStyles.pinnedNewsThumbnail}>
+            <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.pinnedNewsThumbnail}>
                 <Image 
                     src={item.imageUrl} 
                     alt={item.title} 
@@ -38,9 +52,9 @@ const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: bo
                     blurDataURL={item.blurDataURL} 
                     style={{ objectFit: 'cover' }} 
                 />
-            </div>
+            </motion.div>
             <div className={feedStyles.pinnedNewsInfo}>
-                <h4 className={feedStyles.pinnedNewsTitle}>{item.title}</h4>
+                <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className={feedStyles.pinnedNewsTitle}>{item.title}</motion.h4>
                 {item.date && (
                     <div className={feedStyles.pinnedNewsDate}>
                         <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
@@ -49,7 +63,7 @@ const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: bo
                 )}
                 <p className={feedStyles.pinnedNewsCategory}>{primaryTag}</p>
             </div>
-        </Link>
+        </motion.div>
     );
 });
 PinnedNewsCard.displayName = 'PinnedNewsCard';

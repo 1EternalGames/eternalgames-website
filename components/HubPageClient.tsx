@@ -19,6 +19,18 @@ interface HubPageClientProps {
 }
 
 export default function HubPageClient({ initialItems, hubTitle, hubType, headerAction }: HubPageClientProps) {
+    // THE DEFINITIVE FIX: Safeguard against empty initial items.
+    if (!initialItems || initialItems.length === 0) {
+        return (
+            <div className="container page-container">
+                <h1 className="page-title">{hubType}: &quot;{hubTitle}&quot;</h1>
+                <p style={{textAlign: 'center', color: 'var(--text-secondary)', fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto'}}>
+                    لم يُنشر أي محتوى يطابق هذا المحور بعد. الأرشيف يترقب المستجدات.
+                </p>
+            </div>
+        );
+    }
+    
     const [activeTypeFilter, setActiveTypeFilter] = useState<HubTypeFilter>('all');
     const [activeSort, setActiveSort] = useState<HubSortOrder>('latest');
     const [engagementScores, setEngagementScores] = useState<Map<number, number>>(new Map());
