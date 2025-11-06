@@ -10,10 +10,8 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
 export default function BookmarksGrid({ initialItems }: { initialItems: any[] }) {
-    // We still subscribe to the store to get real-time updates when a user bookmarks/unbookmarks.
     const bookmarksFromStore = useUserStore(state => state.bookmarks);
     
-    // THE DEFINITIVE FIX: Filter out nulls and then assert the final type.
     const initialBookmarkedItems = initialItems
         .map(adaptToCardProps)
         .filter(Boolean) as CardProps[];
@@ -21,21 +19,18 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
     const [bookmarkedItems, setBookmarkedItems] = useState<CardProps[]>(initialBookmarkedItems);
 
     useEffect(() => {
-        // This effect ensures the grid visually updates when the store changes,
-        // without needing a full page refresh.
-        const currentKeysInGrid = new Set(bookmarkedItems.map(item => `${item.type}-${item.id}`));
+        // THE DEFINITIVE FIX: The keys being compared must use the numeric `legacyId`
+        // to match the format used in the Zustand store (e.g., 'review-101').
+        const currentKeysInGrid = new Set(bookmarkedItems.map(item => `${item.type}-${item.legacyId}`));
         
         if (bookmarksFromStore.length < currentKeysInGrid.size) {
-            // An item was removed
-            setBookmarkedItems(prev => prev.filter(item => bookmarksFromStore.includes(`${item.type}-${item.id}`)));
+            // An item was removed from the store, so remove it from the displayed grid.
+            setBookmarkedItems(prev => prev.filter(item => bookmarksFromStore.includes(`${item.type}-${item.legacyId}`)));
         }
-        // Note: Adding items in real-time is more complex and would require a re-fetch.
-        // This implementation prioritizes correct removal, which is the more common action on this page.
-
     }, [bookmarksFromStore, bookmarkedItems]);
 
     if (initialItems.length === 0 && bookmarkedItems.length === 0) {
-        return <p>You haven&apos;t bookmarked any content yet.</p>;
+        return <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>لم تحفظ أي محتوى بعد.</p>;
     }
 
     return (
@@ -61,5 +56,3 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
         </motion.div>
     );
 }
-
-

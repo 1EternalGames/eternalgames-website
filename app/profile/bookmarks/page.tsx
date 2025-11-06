@@ -7,13 +7,21 @@ import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 async function getBookmarkedContent() {
+    let session;
     try {
-        const session = await getAuthenticatedSession();
+        // This first block specifically handles authentication.
+        // If the user is not logged in, a redirect is the correct action.
+        session = await getAuthenticatedSession();
+    } catch (error) {
+        redirect('/api/auth/signin');
+    }
 
-        // THE FIX: Query the 'engagement' table and filter by type 'BOOKMARK'
+    try {
+        // This second block handles data fetching, which should be resilient.
+        // On failure, we log the error and return an empty array to the page.
         const bookmarks = await prisma.engagement.findMany({
             where: { userId: session.user.id, type: 'BOOKMARK' },
-            select: { contentId: true, contentType: true },
+            select: { contentId: true },
             orderBy: { createdAt: 'desc' }
         });
         
@@ -23,8 +31,8 @@ async function getBookmarkedContent() {
         const content = await client.fetch(contentByIdsQuery, { ids });
         return content;
     } catch (error) {
-        // This catch block is what was causing the redirect.
-        redirect('/');
+        console.error("Failed to fetch bookmarked content:", error);
+        return []; // Gracefully return an empty array on DB/CMS error.
     }
 }
 
@@ -38,8 +46,3 @@ export default async function BookmarksPage() {
         </div>
     );
 }
-
-
-
-
-

@@ -20,6 +20,7 @@ async function setEngagement(userId: string, contentId: number, contentType: str
         await prisma.engagement.upsert({
             where: whereClause,
             update: {},
+            // THE DEFINITIVE FIX: The `create` payload must explicitly include all required fields.
             create: { userId, contentId, contentType, type: engagementType },
         });
     } else {
@@ -80,8 +81,3 @@ export async function recordShareAction(contentId: number, contentType: string, 
         return { success: false, error: error.message || 'Could not record share.' };
     }
 }
-
-
-
-
-
