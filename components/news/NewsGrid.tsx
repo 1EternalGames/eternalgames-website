@@ -6,15 +6,11 @@ import NewsGridCard from './NewsGridCard';
 import { CardProps } from '@/types';
 import React from 'react'; 
 
-export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoading: boolean }) {
+export default function NewsGrid({ news }: { news: CardProps[] }) {
     return (
         <motion.div 
             layout 
-            className="content-grid" 
-            style={{ 
-                opacity: isLoading && news.length === 0 ? 0.5 : 1, 
-                transition: 'opacity 0.3s',
-            }}
+            className="content-grid"
         >
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (
@@ -33,7 +29,7 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
                     >
                         <NewsGridCard 
                             item={item} 
-                            isPriority={index < 3}
+                            isPriority={index < 4}
                             layoutIdPrefix="news-grid"
                         />
                     </motion.div>

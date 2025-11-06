@@ -1,0 +1,68 @@
+/* components/skeletons/CardSkeleton.module.css */
+@keyframes pulse-skeleton {
+    0%, 100% {
+        background-color: var(--border-color);
+    }
+    50% {
+        background-color: color-mix(in srgb, var(--border-color) 60%, var(--bg-secondary));
+    }
+}
+
+.cardSkeleton {
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 100%;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.imageSkeleton {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    animation: pulse-skeleton 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.contentSkeleton {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 1.2rem;
+}
+
+.line {
+    height: 1.6rem;
+    border-radius: 4px;
+    animation: pulse-skeleton 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.line.title {
+    height: 2rem;
+    width: 80%;
+    margin-bottom: 0.5rem;
+}
+
+.line.meta {
+    width: 60%;
+}
+
+.line.metaShort {
+    width: 40%;
+}
+
+.tagArea {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.8rem;
+}
+
+.tag {
+    height: 2.4rem;
+    width: 70px;
+    border-radius: 999px;
+    animation: pulse-skeleton 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

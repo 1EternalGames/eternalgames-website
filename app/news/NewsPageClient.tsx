@@ -1,22 +1,16 @@
 // app/news/NewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import NewsHero from '@/components/news/NewsHero';
 import NewsFilters from '@/components/filters/NewsFilters';
 import NewsGrid from '@/components/news/NewsGrid';
 import { ContentBlock } from '@/components/ContentBlock';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
-import styles from './NewsPage.module.css';
-
-const fetchNews = async (params: URLSearchParams) => {
-    const res = await fetch(`/api/news?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch news');
-    return res.json();
-};
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 export default function NewsPageClient({ heroArticles, initialGridArticles, allGames, allTags }: {
   heroArticles: SanityNews[];
@@ -24,60 +18,35 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
   allGames: SanityGame[];
   allTags: SanityTag[];
 }) {
-    const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { margin: '400px' });
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const adaptedHeroArticles = useMemo(() => heroArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [heroArticles]);
-    
-    const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
-    const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
-    const [isLoading, setIsLoading] = useState(false);
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 50 ? 50 : null);
+    const newsItems = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeSort, setActiveSort] = useState<'latest' | 'viral'>('latest');
-    const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
-    const [selectedTags, setSelectedTags] = useState<SanityTag[]>([]);
-    
-    const newsItems = useMemo(() => {
-        let items = [...allFetchedNews];
+    // Initialize filter state from URL
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+    const [activeSort, setActiveSort] = useState<'latest' | 'viral'>((searchParams.get('sort') as any) || 'latest');
+    const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
+        const gameSlug = searchParams.get('game');
+        return gameSlug ? allGames.find(g => g.slug === gameSlug) || null : null;
+    });
+    const [selectedTags, setSelectedTags] = useState<SanityTag[]>(() => {
+        const tagSlugs = searchParams.get('tags')?.split(',') || [];
+        return allTags.filter(t => tagSlugs.includes(t.slug));
+    });
 
-        if (searchTerm) {
-            items = items.filter(news => news.title.toLowerCase().includes(searchTerm.toLowerCase()));
-        }
-        if (selectedGame) {
-            items = items.filter(news => news.game === selectedGame.title);
-        }
-        if (selectedTags.length > 0) {
-            const selectedTagTitles = new Set(selectedTags.map(t => t.title));
-            items = items.filter(news => news.tags.some(t => selectedTagTitles.has(t.title)));
-        }
-        
-        return items;
-    }, [allFetchedNews, searchTerm, selectedGame, selectedTags]);
-
-    const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !searchTerm && !selectedGame && selectedTags.length === 0;
-    }, [nextOffset, searchTerm, selectedGame, selectedTags]);
-
+    // Update URL when filters change
     useEffect(() => {
-        if (isInView && canLoadMore && !isLoading) {
-            const loadMore = async () => {
-                setIsLoading(true);
-                const params = new URLSearchParams({ offset: String(nextOffset), limit: '50', sort: activeSort });
-                try {
-                    const result = await fetchNews(params);
-                    setAllFetchedNews(prev => [...prev, ...result.data]);
-                    setNextOffset(result.nextOffset);
-                } catch (error) {
-                    console.error("Failed to load more news:", error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-            loadMore();
-        }
-    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort]);
+        const params = new URLSearchParams(searchParams);
+        if (searchTerm) params.set('q', searchTerm); else params.delete('q');
+        if (activeSort !== 'latest') params.set('sort', activeSort); else params.delete('sort');
+        if (selectedGame) params.set('game', selectedGame.slug); else params.delete('game');
+        if (selectedTags.length > 0) params.set('tags', selectedTags.map(t => t.slug).join(',')); else params.delete('tags');
+
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }, [searchTerm, activeSort, selectedGame, selectedTags, router, pathname, searchParams]);
 
     const handleTagToggle = (tag: SanityTag) => {
         setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]);
@@ -88,8 +57,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         setSelectedTags([]);
         setActiveSort('latest');
     };
-
-    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
 
     return (
         <div className="page-container">
@@ -109,27 +76,9 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
                         onTagToggle={handleTagToggle}
                         onClearAll={handleClearAll}
                     />
-                    <NewsGrid news={newsItems} isLoading={isLoading} />
+                    <NewsGrid news={newsItems} />
 
-                    <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
-
-                    <AnimatePresence>
-                        {isLoading && (
-                            <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                <div className="spinner" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    
-                    <AnimatePresence>
-                        {(!canLoadMore && !isLoading && newsItems.length > 0) && (
-                            <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'}
-                            </motion.p>
-                        )}
-                    </AnimatePresence>
-
-                    {newsItems.length === 0 && !isLoading && (
+                    {newsItems.length === 0 && (
                         <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                             لا توجد أخبار تطابق ما اخترت.
                         </motion.p>
