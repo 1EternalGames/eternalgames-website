@@ -1,93 +1,51 @@
 // app/reviews/ReviewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
 import ReviewFilters, { ScoreFilter } from '@/components/filters/ReviewFilters';
 import ArticleCard from '@/components/ArticleCard';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from './ReviewsPage.module.css';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useRouter } from 'next/navigation';
-
-const fetchReviews = async (params: URLSearchParams) => {
-    const res = await fetch(`/api/reviews?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch reviews');
-    return res.json();
-};
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 export default function ReviewsPageClient({ heroReview, initialGridReviews, allGames, allTags }: { heroReview: SanityReview, initialGridReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
-    const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { margin: '400px' });
-    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
 
-    const initialCards = useMemo(() => initialGridReviews.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridReviews]);
-    const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
-    const [isLoading, setIsLoading] = useState(false);
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);
+    const gridReviews = useMemo(() => initialGridReviews.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridReviews]);
     
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeSort, setActiveSort] = useState<'latest' | 'score'>('latest');
-    const [selectedScoreRange, setSelectedScoreRange] = useState<ScoreFilter>('All');
-    const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
-    const [selectedTags, setSelectedTags] = useState<SanityTag[]>([]);
+    // Initialize filter state from URL search params
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+    const [activeSort, setActiveSort] = useState<'latest' | 'score'>((searchParams.get('sort') as any) || 'latest');
+    const [selectedScoreRange, setSelectedScoreRange] = useState<ScoreFilter>((searchParams.get('score') as any) || 'All');
+    const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
+        const gameSlug = searchParams.get('game');
+        return gameSlug ? allGames.find(g => g.slug === gameSlug) || null : null;
+    });
+    const [selectedTags, setSelectedTags] = useState<SanityTag[]>(() => {
+        const tagSlugs = searchParams.get('tags')?.split(',') || [];
+        return allTags.filter(t => tagSlugs.includes(t.slug));
+    });
 
-    const gridReviews = useMemo(() => {
-        let items = [...allFetchedReviews];
-        
-        if (searchTerm) {
-            items = items.filter(review => review.title.toLowerCase().includes(searchTerm.toLowerCase()));
-        }
-        if (selectedScoreRange !== 'All') {
-            const rangeMap = { '9-10': [9, 10], '8-8.9': [8, 8.9], '7-7.9': [7, 7.9], '<7': [0, 6.9] };
-            if (rangeMap[selectedScoreRange]) {
-                const [min, max] = rangeMap[selectedScoreRange];
-                items = items.filter(review => review.score! >= min && review.score! <= max);
-            }
-        }
-        if (selectedGame) {
-            items = items.filter(review => review.game === selectedGame.title);
-        }
-        if (selectedTags.length > 0) {
-            const selectedTagTitles = new Set(selectedTags.map(t => t.title));
-            items = items.filter(review => review.tags.some(t => selectedTagTitles.has(t.title)));
-        }
-
-        if (activeSort === 'score') {
-            items.sort((a, b) => (b.score || 0) - (a.score || 0));
-        }
-
-        return items;
-    }, [allFetchedReviews, searchTerm, activeSort, selectedScoreRange, selectedGame, selectedTags]);
-    
-    const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !searchTerm && selectedScoreRange === 'All' && !selectedGame && selectedTags.length === 0;
-    }, [nextOffset, searchTerm, selectedScoreRange, selectedGame, selectedTags]);
-
+    // Update URL when filters change
     useEffect(() => {
-        if (isInView && canLoadMore && !isLoading) {
-            const loadMore = async () => {
-                setIsLoading(true);
-                const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: activeSort });
-                try {
-                    const result = await fetchReviews(params);
-                    setAllFetchedReviews(prev => [...prev, ...result.data]);
-                    setNextOffset(result.nextOffset);
-                } catch (error) { 
-                    console.error("Failed to load more reviews:", error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-            loadMore();
-        }
-    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort]);
-
+        const params = new URLSearchParams(searchParams);
+        if (searchTerm) params.set('q', searchTerm); else params.delete('q');
+        if (activeSort !== 'latest') params.set('sort', activeSort); else params.delete('sort');
+        if (selectedScoreRange !== 'All') params.set('score', selectedScoreRange); else params.delete('score');
+        if (selectedGame) params.set('game', selectedGame.slug); else params.delete('game');
+        if (selectedTags.length > 0) params.set('tags', selectedTags.map(t => t.slug).join(',')); else params.delete('tags');
+        
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }, [searchTerm, activeSort, selectedScoreRange, selectedGame, selectedTags, router, pathname, searchParams]);
+    
     const handleTagToggle = (tag: SanityTag) => { setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAll = () => { setSearchTerm(''); setSelectedScoreRange('All'); setSelectedGame(null); setSelectedTags([]); setActiveSort('latest'); };
 
@@ -138,25 +96,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                         </AnimatePresence>
                     </motion.div>
                     
-                    <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
-
-                    <AnimatePresence>
-                        {isLoading && (
-                            <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                <div className="spinner" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <AnimatePresence>
-                        {(!canLoadMore && !isLoading && gridReviews.length > 0) && (
-                             <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'}
-                             </motion.p>
-                        )}
-                    </AnimatePresence>
-
-                    {gridReviews.length === 0 && !isLoading && (
+                    {gridReviews.length === 0 && (
                         <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                             لا توجد مراجعات تطابق ما اخترت.
                         </motion.p>
