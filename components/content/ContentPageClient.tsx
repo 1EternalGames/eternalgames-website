@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react'; // <-- ADDED useCallback
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -18,8 +18,8 @@ import ContentActionBar from '@/components/ContentActionBar';
 import TagLinks from '@/components/TagLinks';
 import ReadingHud from '@/components/ReadingHud';
 import { ContentBlock } from '@/components/ContentBlock';
-import CreatorCredit from '@/components/CreatorCredit';
 import { SparklesIcon } from '@/components/icons/index';
+import CreatorCredit from '@/components/CreatorCredit';
 import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
 
@@ -40,10 +40,40 @@ export default function ContentPageClient({ item, type, children }: {
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     const contentContainerRef = useRef<HTMLDivElement>(null);
-
+    const [isLayoutStable, setIsLayoutStable] = useState(false); 
+    
+    // <--- FIX: Re-adding variable declarations that were mistakenly removed ---
     const isReview = type === 'reviews';
     const isNews = type === 'news';
+    // --- END FIX ---
     
+    // --- UTILITY FUNCTIONS ---
+    const measureHeadings = useCallback(() => {
+        const contentElement = contentContainerRef.current;
+        if (!contentElement) return;
+
+        const containerRect = contentElement.getBoundingClientRect();
+        const headingElements = Array.from(contentElement.querySelectorAll('h2'));
+        const navbarOffset = 90;
+        const seenIds = new Set<string>();
+        
+        const newHeadings = headingElements.map((h, index) => {
+            let id = h.id;
+            if (!id || seenIds.has(id)) { 
+                id = `${h.textContent?.trim().slice(0, 20).replace(/\s+/g, '-') || 'heading'}-${index}`;
+            }
+            seenIds.add(id);
+            h.id = id;
+            
+            const headingRect = h.getBoundingClientRect();
+            const relativeTop = (headingRect.top + window.scrollY - containerRect.top); 
+            return { id: id, title: h.textContent || '', top: Math.max(0, relativeTop - navbarOffset) };
+        });
+        setHeadings(newHeadings);
+    }, []);
+    // --- END UTILITY FUNCTIONS ---
+
+
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 768);
         checkMobile();
@@ -51,30 +81,36 @@ export default function ContentPageClient({ item, type, children }: {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
+    // 1. Scroll to top on first mount
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
+    // 2. Layout Stabilization Effect
     useEffect(() => {
-        const contentElement = contentContainerRef.current; if (!contentElement) return;
-        const measureHeadings = () => {
-            const containerRect = contentElement.getBoundingClientRect();
-            const headingElements = Array.from(contentElement.querySelectorAll('h2'));
-            const navbarOffset = 90;
-            const seenIds = new Set<string>();
-            const newHeadings = headingElements.map((h, index) => {
-                let id = h.id;
-                if (seenIds.has(id)) { id = `${id}-${index}`; }
-                seenIds.add(id);
-                h.id = id;
-                const headingRect = h.getBoundingClientRect();
-                const relativeTop = (headingRect.top - containerRect.top);
-                return { id: id, title: h.textContent || '', top: Math.max(0, relativeTop - navbarOffset) };
-            });
-            setHeadings(newHeadings);
-        };
-        const imagePromises = Array.from(contentElement.querySelectorAll('img')).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }));
-        Promise.all(imagePromises).then(measureHeadings);
-        if (imagePromises.length === 0) measureHeadings();
-    }, [item]);
+        const contentElement = contentContainerRef.current;
+        if (!contentElement) {
+             // If the main content ref isn't available after a short time, force stability
+            const fallbackTimeout = setTimeout(() => setIsLayoutStable(true), 1500); 
+            return () => clearTimeout(fallbackTimeout);
+        }
+
+        // Wait for all essential images (main and portable text) to load
+        const contentImages = Array.from(contentElement.querySelectorAll('img')).filter(img => !img.complete);
+        const imagePromises = contentImages.map(img => new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }));
+        
+        Promise.all(imagePromises).finally(() => {
+             // Give a small final delay to allow for the browser's post-load layout pass
+            const timeout = setTimeout(() => setIsLayoutStable(true), 150); 
+            clearTimeout(timeout);
+        });
+        
+    }, [item]); // Re-run when item changes
+
+    // 3. Heading Measurement Effect - ONLY RUNS WHEN STABLE
+    useEffect(() => {
+        if (isLayoutStable && headings.length === 0) { // Only measure if stable AND we haven't measured yet
+            measureHeadings();
+        }
+    }, [isLayoutStable, headings.length, measureHeadings]); 
 
     if (!item) return null;
 
@@ -103,7 +139,8 @@ export default function ContentPageClient({ item, type, children }: {
 
     return (
         <>
-            <ReadingHud contentContainerRef={contentContainerRef} headings={headings} />
+            {/* ReadingHud now conditionally renders based on stable state */}
+            {isLayoutStable && headings.length > 0 && <ReadingHud contentContainerRef={contentContainerRef} headings={headings} />}
 
             <motion.div
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
