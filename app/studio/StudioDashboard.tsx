@@ -47,7 +47,7 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick, isTouchDevice }:
         setIsHovered(false);
     };
 
-    const isDrawerVisible = isActive || isHovered;
+    const isDrawerVisible = isActive || (!isTouchDevice && isHovered);
 
     const imageUrlWithBuster = useMemo(() => {
         if (!item.mainImage?.asset) return null;
