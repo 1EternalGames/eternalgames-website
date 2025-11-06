@@ -27,7 +27,7 @@ type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedConten
 type ContentType = 'reviews' | 'articles' | 'news';
 
 export type Heading = { id: string; title: string; top: number; };
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.5, duration: 0.5 } } };
+const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.5 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
 export default function ContentPageClient({ item, type, children }: {
@@ -99,11 +99,18 @@ export default function ContentPageClient({ item, type, children }: {
     const isLongGameTitle = (item as any).game?.title?.length > GAME_TITLE_THRESHOLD;
     const shouldShiftLayout = isMobile && isLongGameTitle;
 
+    const springTransition = { type: 'spring', stiffness: 200, damping: 35 };
+
     return (
         <>
             <ReadingHud contentContainerRef={contentContainerRef} headings={headings} />
-            <div>
-                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={styles.heroImage} transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}>
+
+            <motion.div
+                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+                transition={springTransition}
+                style={{ backgroundColor: 'var(--bg-primary)' }}
+            >
+                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={styles.heroImage} transition={springTransition}>
                     <Image 
                         loader={sanityLoader} 
                         src={heroImageUrl} 
@@ -117,57 +124,60 @@ export default function ContentPageClient({ item, type, children }: {
                     />
                 </motion.div>
 
-                <motion.div initial="hidden" animate="visible" variants={contentVariants} className="container page-container" style={{ paddingTop: '0' }}>
-                    <div className={styles.contentLayout}>
-                        <main>
-                            <div className={`${styles.headerContainer} ${shouldShiftLayout ? styles.shiftedLayout : ''}`}>
-                                {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
-                                <div className={styles.titleWrapper}>
-                                    {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0' }}>{(item as SanityNews).category}</p>}
-                                    <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: isNews ? '0.5rem 0 0 0' : 0 }} transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}>{item.title}</motion.h1>
+                <div className="container page-container" style={{ paddingTop: '0' }}>
+                    <motion.div initial="hidden" animate="visible" variants={contentVariants} >
+                        <div className={styles.contentLayout}>
+                            <main>
+                                <div className={`${styles.headerContainer} ${shouldShiftLayout ? styles.shiftedLayout : ''}`}>
+                                    {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
+                                    <div className={styles.titleWrapper}>
+                                        {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0' }}>{(item as SanityNews).category}</p>}
+                                        <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: isNews ? '0.5rem 0 0 0' : 0 }} transition={springTransition}>{item.title}</motion.h1>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', fontSize: '1.5rem' }}>
-                                    <CreatorCredit label="بقلم" creators={primaryCreators} />
-                                    <CreatorCredit label="تصميم" creators={item.designers} />
-                                    <p style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-secondary)' }}>نُشر في {formattedDate}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', fontSize: '1.5rem' }}>
+                                        <CreatorCredit label="بقلم" creators={primaryCreators} />
+                                        <CreatorCredit label="تصميم" creators={item.designers} />
+                                        <p style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-secondary)' }}>نُشر في {formattedDate}</p>
+                                    </div>
+                                    <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={item.slug} />
                                 </div>
-                                <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={item.slug} />
-                            </div>
 
-                            <div ref={contentContainerRef} className="article-body">
-                                <PortableTextComponent content={item.content || []} />
-                                {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} />}
-                            </div>
-                            <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                                <TagLinks tags={(item.tags || []).map(t => t.title)} />
-                            </div>
-                        </main>
-                        <aside className={styles.sidebar}>
-                            <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
-                                <motion.div 
-                                    className={styles.relatedGrid}
-                                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="hidden"
-                                >
-                                    {adaptedRelatedContent.map(related => (
-                                        <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-                                            <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
-                                        </motion.div>
-                                    ))}
-                                </motion.div>
-                            </ContentBlock>
-                        </aside>
-                    </div>
-                </motion.div>
-                <div className="container" style={{ paddingBottom: '6rem' }}>
-                    <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
+                                <div ref={contentContainerRef} className="article-body">
+                                    <PortableTextComponent content={item.content || []} />
+                                    {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} />}
+                                </div>
+                                <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                                    <TagLinks tags={(item.tags || []).map(t => t.title)} />
+                                </div>
+                            </main>
+                            <aside className={styles.sidebar}>
+                                <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
+                                    <motion.div 
+                                        className={styles.relatedGrid}
+                                        variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="hidden"
+                                    >
+                                        {adaptedRelatedContent.map(related => (
+                                            <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                                <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+                                </ContentBlock>
+                            </aside>
+                        </div>
+                    </motion.div>
                 </div>
-            </div>
+            </motion.div>
+            
+            <motion.div initial="hidden" animate="visible" variants={contentVariants} className="container" style={{ paddingBottom: '6rem' }}>
+                <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
+            </motion.div>
         </>
     );
 }

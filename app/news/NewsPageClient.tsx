@@ -25,72 +25,56 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
   allTags: SanityTag[];
 }) {
     const intersectionRef = useRef(null);
-    const isIntersecting = useInView(intersectionRef);
+    const isInView = useInView(intersectionRef, { rootMargin: '400px' });
 
     const adaptedHeroArticles = useMemo(() => heroArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [heroArticles]);
+    
+    // --- REFACTORED STATE ---
     const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
-
-    const [newsItems, setNewsItems] = useState<CardProps[]>(initialCards);
+    const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 50 ? 50 : null);
-    const [isFeedExhausted, setIsFeedExhausted] = useState(initialCards.length < 50);
 
+    // --- FILTER STATE ---
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'viral'>('latest');
     const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
     const [selectedTags, setSelectedTags] = useState<SanityTag[]>([]);
+    
+    // --- DERIVED STATE FOR DISPLAY ---
+    const newsItems = useMemo(() => {
+        let items = [...allFetchedNews];
 
-    const currentFilters = useMemo(() => ({ searchTerm, activeSort, selectedGame, selectedTags }), [searchTerm, activeSort, selectedGame, selectedTags]);
-    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
-
-    useEffect(() => {
-        const filtersAreDefault = !hasActiveFilters;
-        if (filtersAreDefault) {
-            setNewsItems(initialCards);
-            setNextOffset(initialCards.length === 50 ? 50 : null);
-            setIsFeedExhausted(initialCards.length < 50);
-            return;
+        if (searchTerm) {
+            items = items.filter(news => news.title.toLowerCase().includes(searchTerm.toLowerCase()));
         }
+        if (selectedGame) {
+            items = items.filter(news => news.game === selectedGame.title);
+        }
+        if (selectedTags.length > 0) {
+            const selectedTagTitles = new Set(selectedTags.map(t => t.title));
+            items = items.filter(news => news.tags.some(t => selectedTagTitles.has(t.title)));
+        }
+        // Viral sort is handled by the API on initial load if selected, but client-side filtering won't re-sort.
+        // This is an acceptable trade-off for kinetic feel.
 
-        const fetchAndReplace = async () => {
-            setIsLoading(true);
-            setIsFeedExhausted(false);
-            const params = new URLSearchParams({ offset: '0', limit: '50' });
-            if (searchTerm) params.set('q', searchTerm);
-            if (activeSort !== 'latest') params.set('sort', activeSort);
-            if (selectedGame) params.set('game', selectedGame.slug);
-            if (selectedTags.length > 0) params.set('tags', selectedTags.map(t => t.slug).join(','));
+        return items;
+    }, [allFetchedNews, searchTerm, selectedGame, selectedTags]);
 
-            try {
-                const result = await fetchNews(params);
-                setNewsItems(result.data);
-                setNextOffset(result.nextOffset);
-                if (!result.nextOffset) setIsFeedExhausted(true);
-            } catch (error) {
-                console.error("Filter change fetch failed:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const canLoadMore = useMemo(() => {
+        return nextOffset !== null && !searchTerm && !selectedGame && selectedTags.length === 0;
+    }, [nextOffset, searchTerm, selectedGame, selectedTags]);
 
-        fetchAndReplace();
-    }, [currentFilters, initialCards, hasActiveFilters]);
-
+    // --- MODIFIED EFFECT: INFINITE SCROLL ---
     useEffect(() => {
-        if (isIntersecting && nextOffset !== null && !isLoading) {
+        if (isInView && canLoadMore && !isLoading) {
             const loadMore = async () => {
                 setIsLoading(true);
-                const params = new URLSearchParams({ offset: String(nextOffset), limit: '50' });
-                if (searchTerm) params.set('q', searchTerm);
-                if (activeSort !== 'latest') params.set('sort', activeSort);
-                if (selectedGame) params.set('game', selectedGame.slug);
-                if (selectedTags.length > 0) params.set('tags', selectedTags.map(t => t.slug).join(','));
-
+                const params = new URLSearchParams({ offset: String(nextOffset), limit: '50', sort: activeSort });
                 try {
                     const result = await fetchNews(params);
-                    setNewsItems(prev => [...prev, ...result.data]);
+                    setAllFetchedNews(prev => [...prev, ...result.data]);
                     setNextOffset(result.nextOffset);
-                    if (!result.nextOffset) setIsFeedExhausted(true);
                 } catch (error) {
                     console.error("Failed to load more news:", error);
                 } finally {
@@ -99,7 +83,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             };
             loadMore();
         }
-    }, [isIntersecting, nextOffset, isLoading, currentFilters]);
+    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort]);
 
     const handleTagToggle = (tag: SanityTag) => {
         setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]);
@@ -110,6 +94,8 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         setSelectedTags([]);
         setActiveSort('latest');
     };
+
+    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
 
     return (
         <div className="page-container">
@@ -130,22 +116,26 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
                         onClearAll={handleClearAll}
                     />
                     <NewsGrid news={newsItems} isLoading={isLoading} />
+
+                    <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
+
                     <AnimatePresence>
-                        {(isLoading && nextOffset !== null) && (
+                        {isLoading && (
                             <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                 <div className="spinner" />
                             </motion.div>
                         )}
                     </AnimatePresence>
-                    <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
+                    
                     <AnimatePresence>
-                        {(isFeedExhausted && newsItems.length > 0 && !isLoading) && (
+                        {(!canLoadMore && !isLoading && newsItems.length > 0) && (
                             <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                وصلت إلى نهاية الأرشيف.
+                                {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'}
                             </motion.p>
                         )}
                     </AnimatePresence>
-                    {(!isLoading && newsItems.length === 0 && hasActiveFilters) && (
+
+                    {newsItems.length === 0 && !isLoading && (
                         <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                             لا توجد أخبار تطابق ما اخترت.
                         </motion.p>

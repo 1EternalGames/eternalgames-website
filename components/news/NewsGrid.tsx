@@ -6,41 +6,11 @@ import NewsGridCard from './NewsGridCard';
 import { CardProps } from '@/types';
 import React from 'react'; 
 
-const gridContainerVariants = {
-    visible: { transition: { staggerChildren: 0.05 } },
-    exit: {
-        opacity: 0,
-    }
-};
-
-const kineticCardVariant = {
-    hidden: { 
-        opacity: 0, 
-        y: 60, 
-    },
-    visible: { 
-        opacity: 1, 
-        y: 0, 
-        transition: { 
-            duration: 0.8, 
-            ease: [0.22, 1, 0.36, 1] as const,
-        }
-    },
-    exit: { 
-        opacity: 0, 
-        scale: 0.8 
-    }
-};
-
 export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoading: boolean }) {
     return (
         <motion.div 
             layout 
             className="content-grid" 
-            variants={gridContainerVariants} 
-            initial="hidden" 
-            animate="visible"
-            exit="exit"
             style={{ 
                 opacity: isLoading && news.length === 0 ? 0.5 : 1, 
                 transition: 'opacity 0.3s',
@@ -51,7 +21,9 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
                     <motion.div
                         key={item.id}
                         layout
-                        variants={kineticCardVariant}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ 
                             type: 'spring' as const, 
                             stiffness: 400, 

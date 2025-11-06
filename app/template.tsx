@@ -6,10 +6,13 @@ import { usePathname } from 'next/navigation';
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div
         key={pathname}
-        // All animation props are removed. This component now only manages presence.
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
       >
         {children}
       </motion.div>

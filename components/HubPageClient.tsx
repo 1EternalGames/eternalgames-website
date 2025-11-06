@@ -18,21 +18,6 @@ interface HubPageClientProps {
     headerAction?: React.ReactNode;
 }
 
-const gridContainerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08, },
-    },
-    exit: { opacity: 0 }
-};
-
-const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { opacity: 1, y: 0 },
-    exit: { opacity: 0, transition: { duration: 0.2 } }
-};
-
 export default function HubPageClient({ initialItems, hubTitle, hubType, headerAction }: HubPageClientProps) {
     const [activeTypeFilter, setActiveTypeFilter] = useState<HubTypeFilter>('all');
     const [activeSort, setActiveSort] = useState<HubSortOrder>('latest');
@@ -146,34 +131,34 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                     layout 
                     className="content-grid" 
                     style={{ paddingBottom: '6rem' }}
-                    variants={gridContainerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
                 >
-                    {filteredAndSortedItems.length > 0 ? (
-                        filteredAndSortedItems.map(item => (
-                            <motion.div
-                                key={item.id}
-                                layout
-                                variants={cardVariants}
-                                transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
-                                style={{ height: '100%' }}
+                    <AnimatePresence>
+                        {filteredAndSortedItems.length > 0 ? (
+                            filteredAndSortedItems.map(item => (
+                                <motion.div
+                                    key={item.id}
+                                    layout
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
+                                    style={{ height: '100%' }}
+                                >
+                                    <ArticleCard
+                                        article={item}
+                                        layoutIdPrefix={layoutIdPrefix}
+                                    />
+                                </motion.div>
+                            ))
+                        ) : (
+                                <motion.div 
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
                             >
-                                <ArticleCard
-                                    article={item}
-                                    layoutIdPrefix={layoutIdPrefix}
-                                />
+                                لا يوجد محتوى يطابق بحثك.
                             </motion.div>
-                        ))
-                    ) : (
-                            <motion.div 
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                            style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
-                        >
-                            لا يوجد محتوى يطابق بحثك.
-                        </motion.div>
-                    )}
+                        )}
+                    </AnimatePresence>
                 </motion.div>
             </div>
         </div>
