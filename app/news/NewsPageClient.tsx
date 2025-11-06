@@ -25,23 +25,20 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
   allTags: SanityTag[];
 }) {
     const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { rootMargin: '400px' });
+    const isInView = useInView(intersectionRef, { margin: '400px' });
 
     const adaptedHeroArticles = useMemo(() => heroArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [heroArticles]);
     
-    // --- REFACTORED STATE ---
     const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 50 ? 50 : null);
 
-    // --- FILTER STATE ---
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'viral'>('latest');
     const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
     const [selectedTags, setSelectedTags] = useState<SanityTag[]>([]);
     
-    // --- DERIVED STATE FOR DISPLAY ---
     const newsItems = useMemo(() => {
         let items = [...allFetchedNews];
 
@@ -55,9 +52,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             const selectedTagTitles = new Set(selectedTags.map(t => t.title));
             items = items.filter(news => news.tags.some(t => selectedTagTitles.has(t.title)));
         }
-        // Viral sort is handled by the API on initial load if selected, but client-side filtering won't re-sort.
-        // This is an acceptable trade-off for kinetic feel.
-
+        
         return items;
     }, [allFetchedNews, searchTerm, selectedGame, selectedTags]);
 
@@ -65,7 +60,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         return nextOffset !== null && !searchTerm && !selectedGame && selectedTags.length === 0;
     }, [nextOffset, searchTerm, selectedGame, selectedTags]);
 
-    // --- MODIFIED EFFECT: INFINITE SCROLL ---
     useEffect(() => {
         if (isInView && canLoadMore && !isLoading) {
             const loadMore = async () => {

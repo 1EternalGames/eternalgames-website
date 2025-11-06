@@ -80,7 +80,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const [activeIndex, setActiveIndex] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { rootMargin: '400px' });
+    const isInView = useInView(intersectionRef, { margin: '400px' });
 
     const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);

@@ -99,7 +99,7 @@ export default function ContentPageClient({ item, type, children }: {
     const isLongGameTitle = (item as any).game?.title?.length > GAME_TITLE_THRESHOLD;
     const shouldShiftLayout = isMobile && isLongGameTitle;
 
-    const springTransition = { type: 'spring', stiffness: 200, damping: 35 };
+    const springTransition = { type: 'spring' as const, stiffness: 200, damping: 35 };
 
     return (
         <>

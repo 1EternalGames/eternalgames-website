@@ -22,24 +22,21 @@ const fetchReviews = async (params: URLSearchParams) => {
 
 export default function ReviewsPageClient({ heroReview, initialGridReviews, allGames, allTags }: { heroReview: SanityReview, initialGridReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
     const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { rootMargin: '400px' });
+    const isInView = useInView(intersectionRef, { margin: '400px' });
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
 
-    // --- REFACTORED STATE ---
     const initialCards = useMemo(() => initialGridReviews.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridReviews]);
-    const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards); // Holds ALL items fetched.
+    const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);
     
-    // --- FILTER STATE ---
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'score'>('latest');
     const [selectedScoreRange, setSelectedScoreRange] = useState<ScoreFilter>('All');
     const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
     const [selectedTags, setSelectedTags] = useState<SanityTag[]>([]);
 
-    // --- DERIVED STATE FOR DISPLAY ---
     const gridReviews = useMemo(() => {
         let items = [...allFetchedReviews];
         
@@ -72,7 +69,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         return nextOffset !== null && !searchTerm && selectedScoreRange === 'All' && !selectedGame && selectedTags.length === 0;
     }, [nextOffset, searchTerm, selectedScoreRange, selectedGame, selectedTags]);
 
-    // --- INFINITE SCROLL EFFECT ---
     useEffect(() => {
         if (isInView && canLoadMore && !isLoading) {
             const loadMore = async () => {
