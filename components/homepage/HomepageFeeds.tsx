@@ -80,7 +80,7 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
     return (
         <div className={gridStyles.feedsGrid} ref={containerRef}>
             <motion.div style={{ y: articlesY }}>
-                <ContentBlock title="ديوان الفن" Icon={ArticleIcon}>
+                <ContentBlock title="أحدث المقالات" Icon={ArticleIcon}>
                     <Feed
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"

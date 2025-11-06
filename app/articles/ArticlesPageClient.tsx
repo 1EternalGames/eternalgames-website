@@ -1,19 +1,26 @@
 // app/articles/ArticlesPageClient.tsx
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import HorizontalShowcase from '@/components/HorizontalShowcase';
 import ArticleFilters from '@/components/filters/ArticleFilters';
 import ArticleCard from '@/components/ArticleCard';
 import Image from 'next/image';
+import Link from 'next/link';
 import AnimatedGridBackground from '@/components/AnimatedGridBackground';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from '@/components/HorizontalShowcase.module.css';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+
+const fetchArticles = async (params: URLSearchParams) => {
+    const res = await fetch(`/api/articles?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch articles');
+    return res.json();
+};
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
     <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -72,48 +79,50 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
 }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
-    
-    const gridArticles = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
+    const intersectionRef = useRef(null);
+    const isInView = useInView(intersectionRef, { margin: '400px' });
 
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+    const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
+    const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
+    const [isLoading, setIsLoading] = useState(false);
+    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);
     
     useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener('resize', checkMobile); return () => window.removeEventListener('resize', checkMobile); }, []);
 
-    // Initialize filter state from URL
-    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-    const [sortOrder, setSortOrder] = useState<'latest' | 'viral'>((searchParams.get('sort') as any) || 'latest');
-    const [selectedGame, setSelectedGame] = useState<SanityGame | null>(() => {
-        const gameSlug = searchParams.get('game');
-        return gameSlug ? allGames.find(g => g.slug === gameSlug) || null : null;
-    });
-    const [selectedGameTags, setSelectedGameTags] = useState<SanityTag[]>(() => {
-        const tagSlugs = searchParams.get('tags')?.split(',') || [];
-        return allGameTags.filter(t => tagSlugs.includes(t.slug));
-    });
-    const [selectedArticleType, setSelectedArticleType] = useState<SanityTag | null>(() => {
-        // This assumes article type tags are also passed via 'tags' param
-        const tagSlugs = searchParams.get('tags')?.split(',') || [];
-        return allArticleTypeTags.find(t => tagSlugs.includes(t.slug)) || null;
-    });
-
-    // Update URL when filters change
-    useEffect(() => {
-        const params = new URLSearchParams(searchParams);
-        if (searchTerm) params.set('q', searchTerm); else params.delete('q');
-        if (sortOrder !== 'latest') params.set('sort', sortOrder); else params.delete('sort');
-        if (selectedGame) params.set('game', selectedGame.slug); else params.delete('game');
-
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortOrder, setSortOrder] = useState<'latest' | 'viral'>('latest');
+    const [selectedGame, setSelectedGame] = useState<SanityGame | null>(null);
+    const [selectedGameTags, setSelectedGameTags] = useState<SanityTag[]>([]);
+    const [selectedArticleType, setSelectedArticleType] = useState<SanityTag | null>(null);
+    
+    const gridArticles = useMemo(() => {
+        let items = [...allFetchedArticles];
+        if (searchTerm) { items = items.filter(article => article.title.toLowerCase().includes(searchTerm.toLowerCase())); }
+        if (selectedGame) { items = items.filter(article => article.game === selectedGame.title); }
         const allSelectedTags = [...selectedGameTags, ...(selectedArticleType ? [selectedArticleType] : [])];
-        if (allSelectedTags.length > 0) {
-            params.set('tags', allSelectedTags.map(t => t.slug).join(','));
-        } else {
-            params.delete('tags');
+        if (allSelectedTags.length > 0) { const selectedTagTitles = new Set(allSelectedTags.map(t => t.title)); items = items.filter(article => article.tags.some(t => selectedTagTitles.has(t.title))); }
+        return items;
+    }, [allFetchedArticles, searchTerm, selectedGame, selectedGameTags, selectedArticleType]);
+    
+    const canLoadMore = useMemo(() => {
+        return nextOffset !== null && !searchTerm && !selectedGame && selectedGameTags.length === 0 && !selectedArticleType;
+    }, [nextOffset, searchTerm, selectedGame, selectedGameTags, selectedArticleType]);
+
+    useEffect(() => {
+        if (isInView && canLoadMore && !isLoading) {
+            const loadMore = async () => {
+                setIsLoading(true);
+                const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: sortOrder });
+                try {
+                    const result = await fetchArticles(params);
+                    setAllFetchedArticles(prev => [...prev, ...result.data]);
+                    setNextOffset(result.nextOffset);
+                } catch (error) { console.error("Failed to load more articles:", error); } 
+                finally { setIsLoading(false); }
+            };
+            loadMore();
         }
-        
-        router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    }, [searchTerm, sortOrder, selectedGame, selectedGameTags, selectedArticleType, router, pathname, searchParams]);
+    }, [isInView, canLoadMore, isLoading, nextOffset, sortOrder]);
 
     const handleGameTagToggle = (tag: SanityTag) => { setSelectedGameTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAllFilters = () => { setSelectedGame(null); setSelectedGameTags([]); setSelectedArticleType(null); setSearchTerm(''); setSortOrder('latest'); };
@@ -127,7 +136,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
             <div className={styles.articlesPageContainer}>
                 <AnimatePresence>{activeBackgroundUrl && (<motion.div key={activeBackgroundUrl} className={styles.articlesPageBg} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Image src={activeBackgroundUrl} alt="Dynamic background" fill style={{ objectFit: 'cover' }} /><div className={styles.articlesPageBgOverlay} /></motion.div>)}</AnimatePresence>
                 <div className="container" style={{ paddingTop: '4rem', paddingBottom: '6rem', minHeight: '80vh' }}>
-                    <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>ديوان الفن</h1>
+                    <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>أحدث المقالات</h1>
                     <div className={styles.showcaseSection}>{isMobile ? (<MobileShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />) : (<HorizontalShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />)}</div>
                     <div className={styles.gridSection}> 
                         <div style={{marginBottom: '6rem'}}>
@@ -140,7 +149,17 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                                 </AnimatePresence>
                             </motion.div>
 
-                            {gridArticles.length === 0 && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالات تطابق مرادك. </motion.p> )}
+                            <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
+
+                            <AnimatePresence>
+                                {isLoading && ( <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <div className="spinner" /> </motion.div> )}
+                            </AnimatePresence>
+                            
+                            <AnimatePresence>
+                                {(!canLoadMore && !isLoading && gridArticles.length > 0) && ( <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'} </motion.p> )}
+                            </AnimatePresence>
+
+                            {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالات تطابق مرادك. </motion.p> )}
                         </div>
                     </div>
                 </div>

@@ -27,7 +27,7 @@ export default function DigitalAtriumHomePage({
       <AnimatedGridBackground />
       <div className={styles.vanguardFullBleedContainer}>
         <div className="container">
-            <ContentBlock title="ديوان الطليعة" Icon={ReviewIcon} />
+            <ContentBlock title="أحدث المراجعات" Icon={ReviewIcon} />
         </div>
         <VanguardReviews reviews={adaptedReviews} />
       </div>
