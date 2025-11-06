@@ -109,7 +109,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
                         onTagToggle={handleTagToggle}
                         onClearAll={handleClearAll}
                     />
-                    <NewsGrid news={newsItems} isLoading={isLoading} />
+                    <NewsGrid news={newsItems} />
 
                     <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
 
