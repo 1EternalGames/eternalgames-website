@@ -27,7 +27,7 @@ type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedConten
 type ContentType = 'reviews' | 'articles' | 'news';
 
 export type Heading = { id: string; title: string; top: number; };
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.3, duration: 0.5 } } };
+const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.5, duration: 0.5 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
 export default function ContentPageClient({ item, type, children }: {
@@ -101,9 +101,9 @@ export default function ContentPageClient({ item, type, children }: {
 
     return (
         <>
-            <motion.div initial="hidden" animate="visible" variants={contentVariants}><ReadingHud contentContainerRef={contentContainerRef} headings={headings} /></motion.div>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={styles.heroImage}>
+            <ReadingHud contentContainerRef={contentContainerRef} headings={headings} />
+            <div>
+                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={styles.heroImage} transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}>
                     <Image 
                         loader={sanityLoader} 
                         src={heroImageUrl} 
@@ -124,7 +124,7 @@ export default function ContentPageClient({ item, type, children }: {
                                 {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
                                 <div className={styles.titleWrapper}>
                                     {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0' }}>{(item as SanityNews).category}</p>}
-                                    <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: isNews ? '0.5rem 0 0 0' : 0 }}>{item.title}</motion.h1>
+                                    <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: isNews ? '0.5rem 0 0 0' : 0 }} transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}>{item.title}</motion.h1>
                                 </div>
                             </div>
 
@@ -147,11 +147,19 @@ export default function ContentPageClient({ item, type, children }: {
                         </main>
                         <aside className={styles.sidebar}>
                             <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
-                                <div className={styles.relatedGrid}>
+                                <motion.div 
+                                    className={styles.relatedGrid}
+                                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="hidden"
+                                >
                                     {adaptedRelatedContent.map(related => (
-                                        <ArticleCard key={related?.id} article={related} layoutIdPrefix={`related-${type}`} />
+                                        <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                            <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
+                                        </motion.div>
                                     ))}
-                                </div>
+                                </motion.div>
                             </ContentBlock>
                         </aside>
                     </div>
@@ -159,9 +167,7 @@ export default function ContentPageClient({ item, type, children }: {
                 <div className="container" style={{ paddingBottom: '6rem' }}>
                     <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
                 </div>
-            </motion.div>
+            </div>
         </>
     );
 }
-
-

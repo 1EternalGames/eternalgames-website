@@ -1,17 +1,18 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 
 export default function Template({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   return (
-    <motion.div
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ ease: 'easeInOut' as const, duration: 0.75 }}
-    >
-      {children}
-    </motion.div>
+    <AnimatePresence>
+      <motion.div
+        key={pathname}
+        // All animation props are removed. This component now only manages presence.
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
   );
 }
-
-

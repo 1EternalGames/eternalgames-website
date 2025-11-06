@@ -19,7 +19,7 @@ type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
     layoutIdPrefix: string;
     isPriority?: boolean;
-    disableLivingEffect?: boolean; // <-- NEW PROP
+    disableLivingEffect?: boolean; 
 };
 
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false }: ArticleCardProps) => {
@@ -59,7 +59,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const imageSource = article.imageUrl;
     if (!imageSource) return null;
 
-    // Conditionally apply the hook's props
     const wrapperProps = disableLivingEffect ? {} : {
         ref: livingCardRef,
         onMouseMove: livingCardAnimation.onMouseMove,
@@ -72,15 +71,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         <motion.div
             onClick={handleClick}
             className={styles.livingCardWrapper}
-            // Spread the conditional props here
             {...wrapperProps}
             style={disableLivingEffect ? { cursor: 'pointer', ...wrapperProps.style } : wrapperProps.style}
         >
             <motion.div
-                layoutId={`${layoutIdPrefix}-card-container-${article.id}`}
+                layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
                 className={styles.articleCard}
             >
-                <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.id}`}>
+                <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}>
                     {hasScore && ( <motion.div className={styles.score}>{article.score!.toFixed(1)}</motion.div> )}
                     <Image 
                         loader={sanityLoader}
@@ -98,7 +96,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                 </motion.div>
                 <motion.div className={styles.cardContent}>
                     <div className={styles.cardTitleLink}>
-                        <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.id}`}>{article.title}</motion.h3>
+                        <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}>{article.title}</motion.h3>
                     </div>
                     <div className={styles.cardMetadata}>
                         <CreatorCredit label="بقلم" creators={article.authors} />

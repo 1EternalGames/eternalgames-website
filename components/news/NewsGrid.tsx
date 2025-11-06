@@ -8,26 +8,22 @@ import React from 'react';
 
 const gridContainerVariants = {
     visible: { transition: { staggerChildren: 0.05 } },
+    exit: {
+        opacity: 0,
+    }
 };
 
 const kineticCardVariant = {
     hidden: { 
         opacity: 0, 
         y: 60, 
-        rotateX: -20,
-        skewY: 5,
-        clipPath: "inset(100% 0% 0% 0%)"
     },
     visible: { 
         opacity: 1, 
         y: 0, 
-        rotateX: 0,
-        skewY: 0,
-        clipPath: "inset(0% 0% 0% 0%)",
         transition: { 
             duration: 0.8, 
             ease: [0.22, 1, 0.36, 1] as const,
-            y: { type: 'spring', stiffness: 120, damping: 20 }
         }
     },
     exit: { 
@@ -44,6 +40,7 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
             variants={gridContainerVariants} 
             initial="hidden" 
             animate="visible"
+            exit="exit"
             style={{ 
                 opacity: isLoading && news.length === 0 ? 0.5 : 1, 
                 transition: 'opacity 0.3s',
