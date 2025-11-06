@@ -90,19 +90,17 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         let transform = '';
 
         if (isMobile) {
-            // THE DEFINITIVE FIX: Animate only the transform property for mobile to match desktop's smoothness.
-            // All cards are positioned relative to the center (left: 50%) and then translated.
             style.left = '50%';
-            const offsetVw = 35;
-            const baseTranslateX = '-50%'; // To center the card itself
+            const offsetPx = 140; 
+            const baseTranslateX = '-50%';
 
             switch (slotIndex) {
                 case 0: // Far Left
-                    transform = `translateX(calc(${baseTranslateX} - ${offsetVw * 1.8}vw)) scale(0.75)`;
+                    transform = `translateX(calc(${baseTranslateX} - ${offsetPx * 1.6}px)) scale(0.75)`;
                     style.zIndex = 0;
                     break;
                 case 1: // Near Left
-                    transform = `translateX(calc(${baseTranslateX} - ${offsetVw}vw)) scale(0.8)`;
+                    transform = `translateX(calc(${baseTranslateX} - ${offsetPx * 0.9}px)) scale(0.8)`;
                     style.zIndex = 1;
                     break;
                 case 2: // Center
@@ -110,11 +108,11 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
                     style.zIndex = 2;
                     break;
                 case 3: // Near Right
-                    transform = `translateX(calc(${baseTranslateX} + ${offsetVw}vw)) scale(0.8)`;
+                    transform = `translateX(calc(${baseTranslateX} + ${offsetPx * 0.9}px)) scale(0.8)`;
                     style.zIndex = 1;
                     break;
                 case 4: // Far Right
-                    transform = `translateX(calc(${baseTranslateX} + ${offsetVw * 1.8}vw)) scale(0.75)`;
+                    transform = `translateX(calc(${baseTranslateX} + ${offsetPx * 1.6}px)) scale(0.75)`;
                     style.zIndex = 0;
                     break;
             }
@@ -157,5 +155,3 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         isMobile,
     };
 }
-
-

@@ -40,7 +40,7 @@ return (
 <NextAuthProvider>
 <UserStoreHydration />
 <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-<div style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
+<div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
     <ToastProvider />
     <Lightbox /> 
     <Navbar />
@@ -55,5 +55,3 @@ return (
 </html>
 );
 }
-
-

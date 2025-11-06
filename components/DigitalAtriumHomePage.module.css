@@ -9,6 +9,7 @@
     background-color: var(--bg-secondary);
     padding-top: 4rem;
     margin-bottom: 5rem;
+    overflow-x: clip; /* THE DEFINITIVE FIX: Contain overflow here */
 }
 
 .atriumMainContent {
@@ -37,5 +38,3 @@
         padding-bottom: 4rem;
     }
 }
-
-

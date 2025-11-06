@@ -19,6 +19,10 @@
 --border-color:#2a2e3c;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
 html{
 font-size:62.5%;
 scroll-behavior:smooth;
@@ -35,7 +39,6 @@ color:var(--text-primary);
 font-family:var(--font-main), sans-serif;
 font-size:1.8rem;
 line-height:1.7;
-overflow-x:hidden;
 transition:background-color 0.3s ease,color 0.3s ease;
 }
 h1,h2,h3,h4,h5,h6{
