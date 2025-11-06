@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
-import { clientAssetUploader } from '@/lib/sanity.client';
+import { uploadSanityAssetAction } from '../../actions';
 import { FormattingToolbar } from './FormattingToolbar';
 import { LinkEditorModal } from './LinkEditorModal';
 import { ImageResizeComponent } from './ImageResizeComponent';
@@ -48,10 +48,9 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
             
             toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
             
-            const asset = await clientAssetUploader.assets.upload('image', optimizedFile, {
-                filename: optimizedFile.name,
-                contentType: optimizedFile.type,
-            });
+            const formData = new FormData();
+            formData.append('file', optimizedFile);
+            const result = await uploadSanityAssetAction(formData);
 
             let imagePos: number | null = null;
             editor.state.doc.descendants((node, pos) => {
@@ -63,16 +62,16 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
             });
             
             if (imagePos !== null) {
-                if (asset?._id && asset?.url) {
+                if (result.success && result.asset) {
                     const finalTransaction = editor.state.tr.setNodeMarkup(imagePos, undefined, {
                         ...editor.state.doc.nodeAt(imagePos)?.attrs,
-                        src: asset.url,
-                        assetId: asset._id,
+                        src: result.asset.url,
+                        assetId: result.asset._id,
                     });
                     editor.view.dispatch(finalTransaction);
                     toast.success('تم رفع الصورة بنجاح.', 'left');
                 } else {
-                    throw new Error('فشل رفع أصل الصورة إلى Sanity.');
+                    throw new Error(result.error || 'فشل رفع أصل الصورة إلى Sanity.');
                 }
             }
         };
@@ -156,7 +155,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 editor={editor} 
                 tippyOptions={{ 
                     duration: 100, 
-                    placement: 'top-end', // <-- THE DEFINITIVE FIX
+                    placement: 'top-end',
                     offset: [0, 8] 
                 }} 
                 shouldShow={({ editor, state }) => { 

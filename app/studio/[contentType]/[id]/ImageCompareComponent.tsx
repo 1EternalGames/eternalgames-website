@@ -5,17 +5,17 @@ import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
 import { useState, useRef, useCallback } from 'react';
 import { optimizeImageForUpload } from '@/lib/image-optimizer';
-import { clientAssetUploader } from '@/lib/sanity.client';
+import { uploadSanityAssetAction } from '../../actions';
 import { useToast } from '@/lib/toastStore';
 import styles from '@/components/ImageCompare.module.css';
 import editorStyles from './Editor.module.css';
 import Image from 'next/image';
 
-const UploadIcon = () => <svg className={styles.uploadIcon} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>;
-const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
-const SizeSmallIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="6" rx="1"/><rect x="3" y="15" width="18" height="6" rx="1"/></svg>;
-const SizeMediumIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="10" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>;
-const SizeLargeIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>;
+const UploadIcon = () => <svg className={styles.uploadIcon} fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>;
+const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+const SizeSmallIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="6" rx="1"/><rect x="3" y="15" width="18" height="6" rx="1"/></svg>;
+const SizeMediumIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="10" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>;
+const SizeLargeIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>;
 
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -40,24 +40,22 @@ export const ImageCompareComponent = ({ node, updateAttributes, editor, getPos }
         try {
             toast.info('جار تحسين الصورة للرفع...', 'left');
             const quality = editor.storage.uploadQuality || '1080p';
-            // THE DEFINITIVE FIX: Destructure the object to get the file.
             const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, quality);
 
             toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
             
-            const asset = await clientAssetUploader.assets.upload('image', optimizedFile, {
-                filename: optimizedFile.name,
-                contentType: optimizedFile.type,
-            });
+            const formData = new FormData();
+            formData.append('file', optimizedFile);
+            const result = await uploadSanityAssetAction(formData);
 
-            if (asset?._id && asset?.url) {
+            if (result.success && result.asset) {
                 updateAttributes({
-                    [side === 'left' ? 'src1' : 'src2']: asset.url,
-                    [side === 'left' ? 'assetId1' : 'assetId2']: asset._id,
+                    [side === 'left' ? 'src1' : 'src2']: result.asset.url,
+                    [side === 'left' ? 'assetId1' : 'assetId2']: result.asset._id,
                 });
                 toast.success('تم رفع الصورة بنجاح.', 'left');
             } else {
-                throw new Error('فشل رفع أصل الصورة إلى Sanity.');
+                throw new Error(result.error || 'فشل رفع أصل الصورة إلى Sanity.');
             }
         } catch (error: any) {
             toast.error(error.message || 'فشل معالجة الصورة.', 'left');
@@ -92,5 +90,3 @@ export const ImageCompareComponent = ({ node, updateAttributes, editor, getPos }
         </NodeViewWrapper>
     );
 };
-
-

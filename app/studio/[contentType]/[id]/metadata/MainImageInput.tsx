@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
-import { clientAssetUploader } from '@/lib/sanity.client';
+import { uploadSanityAssetAction } from '../../../actions';
 import avatarStyles from '../../../../components/ProfileEditForm.module.css';
 
 const UploadIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24"> <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /> </svg> );
@@ -44,24 +44,21 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
         startUpload(async () => {
             try {
                 toast.info('جار تحسين الصورة...', 'left');
-                // THE FIX: Get file and final quality from optimizer
                 const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, uploadQuality);
                 const localUrl = URL.createObjectURL(optimizedFile);
                 setPreviewUrl(localUrl);
 
-                // THE FIX: Use final size and quality in the toast
                 toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
                 
-                const asset = await clientAssetUploader.assets.upload('image', optimizedFile, {
-                    filename: optimizedFile.name,
-                    contentType: optimizedFile.type,
-                });
+                const formData = new FormData();
+                formData.append('file', optimizedFile);
+                const result = await uploadSanityAssetAction(formData);
                 
-                if (asset?._id && asset?.url) {
-                    onImageChange(asset._id, asset.url);
+                if (result.success && result.asset) {
+                    onImageChange(result.asset._id, result.asset.url);
                     toast.success('تم رفع الصورة الرئيسية بنجاح.', 'left');
                 } else {
-                    throw new Error('فشل رفع الصورة إلى Sanity.');
+                    throw new Error(result.error || 'فشل رفع الصورة إلى Sanity.');
                 }
             } catch (error: any) {
                 setPreviewUrl(currentAssetUrl);
@@ -71,7 +68,6 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
         });
     }, [onImageChange, toast, currentAssetUrl, currentAssetId, uploadQuality]);
     
-    // ... (rest of the component is the same)
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
@@ -137,5 +133,3 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
         </>
     );
 }
-
-

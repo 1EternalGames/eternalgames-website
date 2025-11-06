@@ -309,4 +309,30 @@ export async function validateSlugAction(slug: string, docId: string): Promise<{
     }
 }
 
+export async function uploadSanityAssetAction(formData: FormData): Promise<{ success: boolean; asset?: { _id: string; url: string }; error?: string }> {
+    const session = await getServerSession(authOptions);
+    const userRoles = session?.user?.roles || [];
+    const isCreatorOrAdmin = userRoles.some((role: string) =>
+      ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
+    );
 
+    if (!session?.user?.id || !isCreatorOrAdmin) {
+        return { success: false, error: 'Unauthorized' };
+    }
+    
+    const file = formData.get('file') as File | null;
+    if (!file) {
+        return { success: false, error: 'No file provided' };
+    }
+
+    try {
+        const asset = await sanityWriteClient.assets.upload('image', file, {
+            filename: file.name,
+            contentType: file.type,
+        });
+        return { success: true, asset: { _id: asset._id, url: asset.url } };
+    } catch (error: any) {
+        console.error("Sanity asset upload failed:", error);
+        return { success: false, error: 'Failed to upload asset to Sanity.' };
+    }
+}

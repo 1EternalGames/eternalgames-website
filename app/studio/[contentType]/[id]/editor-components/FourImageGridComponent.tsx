@@ -4,14 +4,14 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload } from '@/lib/image-optimizer';
-import { clientAssetUploader } from '@/lib/sanity.client';
+import { uploadSanityAssetAction } from '../../../actions';
 import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import styles from '../Editor.module.css';
 import compareStyles from '@/components/ImageCompare.module.css';
 
-const UploadIcon = () => ( <svg className={compareStyles.uploadIcon} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg> );
-const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+const UploadIcon = () => ( <svg className={compareStyles.uploadIcon} fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg> );
+const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -46,23 +46,18 @@ export const FourImageGridComponent = ({ node, updateAttributes, editor, getPos 
         try {
             toast.info('جار تحسين الصورة للرفع...', 'left');
             const quality = editor.storage.uploadQuality || '1080p';
-            // --- THE FIX IS HERE (PART 1) ---
-            // Correctly destructure the object returned by the optimizer.
             const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, quality);
 
-            // --- THE FIX IS HERE (PART 2) ---
-            // Use the final size and quality percentage in the toast.
             toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
 
-            const asset = await clientAssetUploader.assets.upload('image', optimizedFile, {
-                filename: optimizedFile.name,
-                contentType: optimizedFile.type,
-            });
+            const formData = new FormData();
+            formData.append('file', optimizedFile);
+            const result = await uploadSanityAssetAction(formData);
 
-            if (asset?._id && asset?.url) {
-                updateAttributes({ [`src${slot}`]: asset.url, [`assetId${slot}`]: asset._id });
+            if (result.success && result.asset) {
+                updateAttributes({ [`src${slot}`]: result.asset.url, [`assetId${slot}`]: result.asset._id });
                 toast.success('تم رفع الصورة بنجاح.', 'left');
-            } else { throw new Error('فشل الرفع'); }
+            } else { throw new Error(result.error || 'فشل الرفع'); }
         } catch (error: any) { toast.error(error.message, 'left'); }
     }, [updateAttributes, toast, editor.storage.uploadQuality]);
     
@@ -82,5 +77,3 @@ export const FourImageGridComponent = ({ node, updateAttributes, editor, getPos 
         </NodeViewWrapper>
     );
 };
-
-

@@ -2,7 +2,7 @@
 'use server';
 
 import prisma from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { put } from '@vercel/blob';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedSession } from '@/lib/auth';
@@ -60,7 +60,9 @@ export async function updateUserProfile(formData: FormData) {
                 countryPublic,
             },
         });
-
+        
+        revalidateTag('enriched-creators', '');
+        revalidateTag('enriched-creator-details', '');
         revalidatePath('/profile');
         revalidatePath(`/profile/${session.user.id}`);
         if (username) revalidatePath(`/creators/${username}`);
@@ -112,6 +114,8 @@ export async function completeOnboardingAction(formData: FormData) {
             },
         });
 
+        revalidateTag('enriched-creators', '');
+        revalidateTag('enriched-creator-details', '');
         revalidatePath('/profile');
         if (username) revalidatePath(`/profile/${username}`);
         
@@ -257,5 +261,3 @@ export async function getCommentedContentIds() {
         return [];
     }
 }
-
-

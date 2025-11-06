@@ -5,7 +5,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/authOptions";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { Role } from "@prisma/client";
 import { sanityWriteClient } from "@/lib/sanity.server";
 
@@ -79,6 +79,10 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
             }
         }
         // --- END NEW LOGIC ---
+        
+        // --- ADDED TAG REVALIDATION ---
+        revalidateTag('enriched-creators', '');
+        revalidateTag('enriched-creator-details', '');
 
         revalidatePath('/studio/director');
         revalidatePath(`/profile/${userId}`);
@@ -92,5 +96,3 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
         return { success: false, message: "A database error occurred." };
     }
 }
-
-
