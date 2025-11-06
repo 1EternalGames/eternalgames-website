@@ -17,17 +17,20 @@ const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-news-stream";
+    const linkPath = `/news/${item.slug}`;
     
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.ctrlKey || e.metaKey) return; // Allow new tab
         e.preventDefault();
         setPrefix(layoutIdPrefix);
-        router.push(`/news/${item.slug}`, { scroll: false });
+        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.div 
-            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+        <motion.a
+            href={linkPath}
             onClick={handleClick}
+            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
             className={`${feedStyles.newsListItem} no-underline`}
         >
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
@@ -51,7 +54,7 @@ const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
                     </div>
                 )}
             </div>
-        </motion.div>
+        </motion.a>
     );
 });
 LatestNewsListItem.displayName = "LatestNewsListItem";

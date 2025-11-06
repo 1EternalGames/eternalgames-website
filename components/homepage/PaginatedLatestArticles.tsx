@@ -17,20 +17,22 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-latest-articles";
+    const linkPath = `/articles/${article.slug}`;
 
-    const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a')) return;
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.ctrlKey || e.metaKey) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
-        router.push(`/articles/${article.slug}`, { scroll: false });
+        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.div 
-            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+        <motion.a
+            href={linkPath}
             onClick={handleClick}
-            style={{ cursor: 'pointer' }}
-            className={feedStyles.latestArticleItem}
+            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+            className={`${feedStyles.latestArticleItem} no-underline`}
         >
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
                 <Image 
@@ -44,11 +46,9 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
                 />
             </motion.div>
             <div className={feedStyles.latestArticleInfo}>
-                <Link href={`/articles/${article.slug}`} className="no-underline">
-                    <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.latestArticleTitle}>{article.title}</motion.h4>
-                </Link>
+                <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.latestArticleTitle}>{article.title}</motion.h4>
                 <div className={feedStyles.latestArticleMeta}>
-                    <CreatorCredit label="بقلم" creators={article.authors} disableLink={true} />
+                    <CreatorCredit label="بقلم" creators={article.authors} />
                     {article.date && (
                         <div className={feedStyles.latestArticleDate}>
                             <Calendar03Icon style={{ width: '16px', height: '16px', color: 'var(--accent)' }} />
@@ -57,7 +57,7 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
                     )}
                 </div>
             </div>
-        </motion.div>
+        </motion.a>
     );
 });
 LatestArticleListItem.displayName = "LatestArticleListItem";

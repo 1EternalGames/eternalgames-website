@@ -28,17 +28,24 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-top-articles";
+    const linkPath = `/articles/${article.slug}`;
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.ctrlKey || e.metaKey) return; // Allow new tab
         if ((e.target as HTMLElement).closest('a')) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
-        router.push(`/articles/${article.slug}`, { scroll: false });
+        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} onClick={handleClick} >
-            <motion.div layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} className={feedStyles.topArticleCard}>
+        <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} >
+            <motion.a
+                href={linkPath}
+                onClick={handleClick}
+                layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+                className={`${feedStyles.topArticleCard} no-underline`}
+            >
                 <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
                 <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.topArticleImage}>
                     <Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} />
@@ -47,7 +54,7 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
                     <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.topArticleTitle}>{article.title}</motion.h3>
                     <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
                 </div>
-            </motion.div>
+            </motion.a>
         </motion.div>
     );
 });

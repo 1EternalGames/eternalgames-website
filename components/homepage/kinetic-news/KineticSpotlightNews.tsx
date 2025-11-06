@@ -17,17 +17,20 @@ const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: bo
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-pinned-news";
+    const linkPath = `/news/${item.slug}`;
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.ctrlKey || e.metaKey) return; // Allow new tab
         e.preventDefault();
         setPrefix(layoutIdPrefix);
-        router.push(`/news/${item.slug}`, { scroll: false });
+        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.div 
-            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+        <motion.a
+            href={linkPath}
             onClick={handleClick}
+            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
             className={`${feedStyles.pinnedNewsItem} ${styles.spotlightItem} no-underline`}
         >
             <AnimatePresence>
@@ -63,7 +66,7 @@ const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: bo
                 )}
                 <p className={feedStyles.pinnedNewsCategory}>{primaryTag}</p>
             </div>
-        </motion.div>
+        </motion.a>
     );
 });
 PinnedNewsCard.displayName = 'PinnedNewsCard';
