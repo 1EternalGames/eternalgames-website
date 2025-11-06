@@ -2,7 +2,6 @@
 'use client';
 
 import React, { memo } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -17,9 +16,10 @@ import CreatorCredit from '../CreatorCredit';
 type NewsGridCardProps = {
     item: CardProps;
     isPriority?: boolean;
+    layoutIdPrefix: string;
 };
 
-const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) => {
+const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: NewsGridCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const { livingCardRef, livingCardAnimation } = useLivingCard();
@@ -27,8 +27,11 @@ const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) 
     const linkPath = `/news/${item.slug}`;
     
     const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a, button, [role="button"]')) {
+            return;
+        }
         e.preventDefault();
-        setPrefix('news-grid');
+        setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
     };
 
@@ -45,22 +48,23 @@ const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) 
             onMouseMove={livingCardAnimation.onMouseMove}
             onMouseEnter={() => { livingCardAnimation.onHoverStart(); handleMouseEnter(); }}
             onMouseLeave={livingCardAnimation.onHoverEnd}
+            onClick={handleClick}
             className={styles.cardContainer}
             style={livingCardAnimation.style}
         >
             <motion.div
-                layoutId={`news-grid-card-container-${item.id}`}
+                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
                 className={styles.newsCard}
                 initial={{ opacity: 0, y: 50, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 25 }}
             >
-                <Link href={linkPath} onClick={handleClick} className={`${styles.cardLink} no-underline`}>
+                <div className={`${styles.cardLink} no-underline`}>
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
                             className={styles.imageContainer} 
-                            layoutId={`news-grid-card-image-${item.id}`}
+                            layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`}
                         >
                             <Image 
                                 loader={sanityLoader}
@@ -79,7 +83,7 @@ const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) 
                         <div className={styles.cardInfo}>
                             <motion.h3 
                                 className={styles.cardTitle}
-                                layoutId={`news-grid-card-title-${item.id}`}
+                                layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
                             >
                                 {item.title}
                             </motion.h3>
@@ -95,7 +99,7 @@ const NewsGridCardComponent = ({ item, isPriority = false }: NewsGridCardProps) 
                             </div>
                         )}
                     </div>
-                </Link>
+                </div>
             </motion.div>
         </motion.div>
     );

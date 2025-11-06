@@ -19,7 +19,7 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (
                     <motion.div
-                        key={item.id}
+                        key={item.legacyId}
                         layout
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -31,7 +31,11 @@ export default function NewsGrid({ news, isLoading }: { news: CardProps[], isLoa
                         }}
                         style={{ height: '100%', willChange: 'transform, opacity' }}
                     >
-                        <NewsGridCard item={item} isPriority={index < 3} />
+                        <NewsGridCard 
+                            item={item} 
+                            isPriority={index < 3}
+                            layoutIdPrefix="news-grid"
+                        />
                     </motion.div>
                 ))}
             </AnimatePresence>
