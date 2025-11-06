@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
 import { CardProps } from '@/types';
 import CreatorCredit from '@/components/CreatorCredit';
 import { Calendar03Icon } from '@/components/icons/index';

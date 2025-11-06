@@ -32,7 +32,7 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (e.ctrlKey || e.metaKey) return; // Allow new tab
-        if ((e.target as HTMLElement).closest('a')) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
@@ -40,21 +40,25 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
 
     return (
         <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} >
-            <motion.a
+            <a
                 href={linkPath}
                 onClick={handleClick}
-                layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
                 className={`${feedStyles.topArticleCard} no-underline`}
             >
-                <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
-                <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.topArticleImage}>
-                    <Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} />
+                <motion.div 
+                    layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+                    style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}
+                >
+                    <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+                    <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.topArticleImage}>
+                        <Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} />
+                    </motion.div>
+                    <div className={feedStyles.topArticleContent}>
+                        <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.topArticleTitle}>{article.title}</motion.h3>
+                        <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
+                    </div>
                 </motion.div>
-                <div className={feedStyles.topArticleContent}>
-                    <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.topArticleTitle}>{article.title}</motion.h3>
-                    <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
-                </div>
-            </motion.a>
+            </a>
         </motion.div>
     );
 });

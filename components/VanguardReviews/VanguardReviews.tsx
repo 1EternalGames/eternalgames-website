@@ -70,7 +70,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const linkPath = `/reviews/${review.slug}`;
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (e.ctrlKey || e.metaKey) return; // Allow opening in new tab
-        if ((e.target as HTMLElement).closest('a')) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
@@ -83,15 +83,22 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const showCredits = isCenter || isHovered;
 
     return (
-        <motion.div ref={livingCardRef} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={livingCardAnimation.onHoverStart} onMouseLeave={livingCardAnimation.onHoverEnd} className={styles.cardWrapper} style={{...livingCardAnimation.style, transformStyle: 'preserve-3d'}}>
-            <motion.a 
+        <div className={styles.cardWrapper}>
+            <a 
                 href={linkPath}
                 onClick={handleClick}
-                layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
             >
-                <div className={styles.vanguardCard}>
+                <motion.div
+                    ref={livingCardRef}
+                    onMouseMove={livingCardAnimation.onMouseMove}
+                    onMouseEnter={livingCardAnimation.onHoverStart}
+                    onMouseLeave={livingCardAnimation.onHoverEnd}
+                    style={{ ...livingCardAnimation.style, transformStyle: 'preserve-3d', height: '100%' }}
+                    layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
+                    className={styles.vanguardCard}
+                >
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
                         <Image 
@@ -109,8 +116,8 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${review.legacyId}`}>{review.title}</motion.h3>
                         {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
                     </motion.div>
-                </div>
-            </motion.a>
+                </motion.div>
+            </a>
             <AnimatePresence>
                 {showCredits && (
                     <motion.div
@@ -126,7 +133,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.div>
+        </div>
     );
 });
 VanguardCard.displayName = "VanguardCard";

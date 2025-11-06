@@ -27,34 +27,38 @@ const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
     };
 
     return (
-        <motion.a
+        <a
             href={linkPath}
             onClick={handleClick}
-            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
             className={`${feedStyles.newsListItem} no-underline`}
         >
-            <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
-                <Image 
-                    src={item.imageUrl} 
-                    alt={item.title} 
-                    fill 
-                    sizes="60px" 
-                    placeholder="blur" 
-                    blurDataURL={item.blurDataURL} 
-                    style={{ objectFit: 'cover' }} 
-                />
+            <motion.div 
+                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+                style={{ display: 'contents' }} /* This allows the grid layout to apply directly to children */
+            >
+                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
+                    <Image 
+                        src={item.imageUrl} 
+                        alt={item.title} 
+                        fill 
+                        sizes="60px" 
+                        placeholder="blur" 
+                        blurDataURL={item.blurDataURL} 
+                        style={{ objectFit: 'cover' }} 
+                    />
+                </motion.div>
+                <div className={feedStyles.newsListInfo}>
+                    <p className={feedStyles.newsListCategory}>{primaryTag}</p>
+                    <motion.h5 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className={feedStyles.newsListTitle}>{item.title}</motion.h5>
+                    {item.date && (
+                        <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
+                            <span>{item.date.split(' - ')[0]}</span>
+                        </div>
+                    )}
+                </div>
             </motion.div>
-            <div className={feedStyles.newsListInfo}>
-                <p className={feedStyles.newsListCategory}>{primaryTag}</p>
-                <motion.h5 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className={feedStyles.newsListTitle}>{item.title}</motion.h5>
-                {item.date && (
-                    <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
-                        <span>{item.date.split(' - ')[0]}</span>
-                    </div>
-                )}
-            </div>
-        </motion.a>
+        </a>
     );
 });
 LatestNewsListItem.displayName = "LatestNewsListItem";
