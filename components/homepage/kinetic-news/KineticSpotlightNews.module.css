@@ -7,20 +7,21 @@
 
 .spotlightItem {
     position: relative;
-    overflow: hidden; /* Ensures highlight bar corners are clipped */
+    /* overflow: hidden; <-- This was preventing the highlight from showing, removed. */
 }
 
 .kineticHighlightBar {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    top: 8;
+    bottom: 8;
     right: 0; /* Aligned to the right for RTL */
     left: auto;
-    width: 3px;
-    background-color: var(--accent);
-    box-shadow: 0 0 10px 1px var(--accent);
-    filter: blur(1px);
-    border-radius: 3px;
+    width: 4px; /* INCREASED */
+    background: 
+        linear-gradient(
+            var(--accent), 
+            color-mix(in srgb, var(--accent) 60%, #00ffff)
+        ); /* ADDED GRADIENT */
+    box-shadow: 0 0 12px 8px var(--accent); /* INCREASED */
+    border-radius: 4px;
 }
-
-

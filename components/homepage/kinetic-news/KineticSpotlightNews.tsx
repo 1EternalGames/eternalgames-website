@@ -33,18 +33,13 @@ const PinnedNewsCard = memo(({ item, isActive }: { item: CardProps, isActive: bo
             layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
             className={`${feedStyles.pinnedNewsItem} ${styles.spotlightItem} no-underline`}
         >
-            <AnimatePresence>
-                {isActive && (
-                    <motion.div
-                        className={styles.kineticHighlightBar}
-                        layoutId="kinetic-spotlight-highlight-bar"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                )}
-            </AnimatePresence>
+            {isActive && (
+                <motion.div
+                    className={styles.kineticHighlightBar}
+                    layoutId="kinetic-spotlight-highlight-bar"
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                />
+            )}
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.pinnedNewsThumbnail}>
                 <Image 
                     src={item.imageUrl} 

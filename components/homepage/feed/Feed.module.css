@@ -262,6 +262,7 @@
     margin: -0.5rem;
     border-radius: 8px;
     transition: background-color 0.2s ease;
+    min-height: 80px; /* NEW: Enforce consistent height */
 }
 
 .pinnedNewsItem:hover {
@@ -300,6 +301,12 @@
     color: var(--text-primary);
     margin: 0;
     transition: color 0.2s ease;
+    /* NEW: Handle text overflow for consistency */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .pinnedNewsItem:hover .pinnedNewsTitle {
