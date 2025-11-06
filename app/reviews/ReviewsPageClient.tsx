@@ -11,6 +11,8 @@ import ArticleCard from '@/components/ArticleCard';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from './ReviewsPage.module.css';
+import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { useRouter } from 'next/navigation';
 
 const fetchReviews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/reviews?${params.toString()}`);
@@ -21,6 +23,8 @@ const fetchReviews = async (params: URLSearchParams) => {
 export default function ReviewsPageClient({ heroReview, initialGridReviews, allGames, allTags }: { heroReview: SanityReview, initialGridReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
     const intersectionRef = useRef(null);
     const isInView = useInView(intersectionRef, { rootMargin: '400px' });
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const router = useRouter();
 
     // --- REFACTORED STATE ---
     const initialCards = useMemo(() => initialGridReviews.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridReviews]);
@@ -60,7 +64,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         if (activeSort === 'score') {
             items.sort((a, b) => (b.score || 0) - (a.score || 0));
         }
-        // 'latest' sort is the default from the API, so no client-side sort is needed.
 
         return items;
     }, [allFetchedReviews, searchTerm, activeSort, selectedScoreRange, selectedGame, selectedTags]);
@@ -69,7 +72,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         return nextOffset !== null && !searchTerm && selectedScoreRange === 'All' && !selectedGame && selectedTags.length === 0;
     }, [nextOffset, searchTerm, selectedScoreRange, selectedGame, selectedTags]);
 
-    // --- MODIFIED EFFECT: INFINITE SCROLL ---
+    // --- INFINITE SCROLL EFFECT ---
     useEffect(() => {
         if (isInView && canLoadMore && !isLoading) {
             const loadMore = async () => {
@@ -92,21 +95,34 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const handleTagToggle = (tag: SanityTag) => { setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAll = () => { setSearchTerm(''); setSelectedScoreRange('All'); setSelectedGame(null); setSelectedTags([]); setActiveSort('latest'); };
 
+    const handleHeroClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setPrefix('reviews-hero');
+        router.push(`/reviews/${heroReview.slug}`, { scroll: false });
+    };
+
     return (
         <>
-            <div className={styles.reviewHero}>
-                <Image src={heroReview.mainImage.url} alt={`Background for ${heroReview.title}`} fill className={styles.heroBg} style={{ objectFit: 'cover' }} priority placeholder='blur' blurDataURL={heroReview.mainImage.blurDataURL} />
+            <motion.div
+                layoutId={`reviews-hero-card-container-${heroReview.legacyId}`}
+                className={styles.reviewHero}
+                onClick={handleHeroClick}
+                style={{ cursor: 'pointer' }}
+            >
+                <motion.div layoutId={`reviews-hero-card-image-${heroReview.legacyId}`} className={styles.heroBg}>
+                    <Image src={heroReview.mainImage.url} alt={`Background for ${heroReview.title}`} fill style={{ objectFit: 'cover' }} priority placeholder='blur' blurDataURL={heroReview.mainImage.blurDataURL} />
+                </motion.div>
                 <div className={styles.heroOverlay} />
                 <motion.div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', zIndex: 5, color: '#fff', textAlign: 'center' }} initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}>
                     <p className={styles.heroCategory}>الأعلى تقييمًا</p>
                     <div className={styles.titleScoreWrapper}>
-                        <h1 className={styles.heroTitle}>{heroReview.title}</h1>
+                        <motion.h1 layoutId={`reviews-hero-card-title-${heroReview.legacyId}`} className={styles.heroTitle}>{heroReview.title}</motion.h1>
                         <span className={styles.heroScore}>{heroReview.score?.toFixed(1)}</span>
                     </div>
                     {heroReview.game?.title && (<span className={styles.heroGame}>{heroReview.game.title}</span>)}
-                    <Link href={`/reviews/${heroReview.slug}`} className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>اقرأ المراجعة</Link>
+                    <div className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem', pointerEvents: 'none'}}>اقرأ المراجعة</div>
                 </motion.div>
-            </div>
+            </motion.div>
             
             <div className="container" style={{paddingTop: '4rem'}}>
                 <ReviewFilters activeSort={activeSort} onSortChange={setActiveSort} selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} searchTerm={searchTerm} onSearchChange={setSearchTerm} />

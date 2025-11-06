@@ -10,15 +10,13 @@ import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { translateTag } from '@/lib/translations';
+import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { useRouter } from 'next/navigation';
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
 const titleContainerVariants = {
-    animate: {
-        transition: {
-            staggerChildren: 0.08,
-        },
-    },
+    animate: { transition: { staggerChildren: 0.08 } },
 };
 
 const wordVariants = {
@@ -26,8 +24,16 @@ const wordVariants = {
     animate: { opacity: 1, y: 0, transition: { ...transition, duration: 0.8 } },
 };
 
-const AnimatedStory = memo(({ item, isActive }: { item: CardProps; isActive: boolean }) => {
+const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProps; isActive: boolean, layoutIdPrefix: string }) => {
     const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const router = useRouter();
+
+    const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setPrefix(layoutIdPrefix);
+        router.push(`/news/${item.slug}`, { scroll: false });
+    };
 
     return (
         <AnimatePresence>
@@ -39,13 +45,15 @@ const AnimatedStory = memo(({ item, isActive }: { item: CardProps; isActive: boo
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
+                    onClick={handleClick}
+                    style={{ cursor: 'pointer' }}
                 >
                     <div className={styles.textContent}>
                         <p className={styles.storyCategory}>{primaryTag}</p>
-                        <Link href={`/news/${item.slug}`} className={`${styles.storyLink} no-underline`}>
+                        <div className={`${styles.storyLink} no-underline`}>
                             <motion.h1 
                                 className={styles.storyTitle} 
-                                layoutId={`news-hero-title-${item.id}`}
+                                layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
                                 variants={titleContainerVariants}
                                 initial="initial"
                                 animate="animate"
@@ -56,7 +64,7 @@ const AnimatedStory = memo(({ item, isActive }: { item: CardProps; isActive: boo
                                     </motion.span>
                                 ))}
                             </motion.h1>
-                        </Link>
+                        </div>
                         <div className={styles.storyMeta}>
                             <CreatorCredit label="بواسطة" creators={item.authors} small disableLink />
                             <span className={styles.storyMetaDate}>
@@ -72,11 +80,12 @@ const AnimatedStory = memo(({ item, isActive }: { item: CardProps; isActive: boo
 AnimatedStory.displayName = "AnimatedStory";
 
 
-const HeroBackground = memo(({ imageUrl, alt }: { imageUrl: string; alt: string; }) => {
+const HeroBackground = memo(({ imageUrl, alt, layoutId }: { imageUrl: string; alt: string; layoutId: string }) => {
     return (
         <motion.div 
             key={imageUrl} 
             className={styles.heroBackground} 
+            layoutId={layoutId}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
@@ -87,10 +96,7 @@ const HeroBackground = memo(({ imageUrl, alt }: { imageUrl: string; alt: string;
                 alt={alt}
                 fill
                 priority
-                style={{ 
-                    objectFit: 'cover', 
-                    filter: 'grayscale(10%) brightness(0.7)',
-                }}
+                style={{ objectFit: 'cover', filter: 'grayscale(10%) brightness(0.7)'}}
                 sizes="100vw"
             />
         </motion.div>
@@ -114,22 +120,24 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
     if (newsItems.length === 0) return null;
 
     const activeItem = newsItems[activeIndex];
+    const layoutIdPrefix = "news-hero";
 
     return (
-        <div 
+        <motion.div 
+            layoutId={`${layoutIdPrefix}-card-container-${activeItem.legacyId}`}
             className={styles.heroContainer}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
         >
             <AnimatePresence>
-                 <HeroBackground key={activeItem.id} imageUrl={activeItem.imageUrl} alt={activeItem.title} />
+                 <HeroBackground key={activeItem.id} imageUrl={activeItem.imageUrl} alt={activeItem.title} layoutId={`${layoutIdPrefix}-card-image-${activeItem.legacyId}`} />
             </AnimatePresence>
             
             <div className={styles.heroOverlay} />
 
             <div className={`container ${styles.heroContentWrapper}`}>
                 <AnimatePresence mode="wait">
-                    <AnimatedStory key={activeItem.id} item={activeItem} isActive={true} />
+                    <AnimatedStory key={activeItem.id} item={activeItem} isActive={true} layoutIdPrefix={layoutIdPrefix} />
                 </AnimatePresence>
             </div>
 
@@ -145,6 +153,6 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
                     />
                 ))}
             </div>
-        </div>
+        </motion.div>
     );
 }
