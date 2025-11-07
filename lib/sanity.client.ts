@@ -11,5 +11,7 @@ export const client = createClient({
     dataset,
     apiVersion,
     useCdn: false,
-    token: process.env.SANITY_API_READ_TOKEN,
+    // THE DEFINITIVE FIX: The public, client-side client should NOT use a secret token.
+    // Server-side fetching will use the authenticated `sanityWriteClient`.
+    // token: process.env.SANITY_API_READ_TOKEN, // <-- THIS LINE IS REMOVED
 })
