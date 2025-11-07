@@ -1,93 +1,48 @@
 // app/studio/[contentType]/[id]/page.tsx
-'use client'; 
 
-import { createClient } from 'next-sanity';
-import { projectId, dataset, apiVersion } from '@/lib/sanity.client';
+import { sanityWriteClient } from '@/lib/sanity.server';
 import { editorDocumentQuery, allGamesForStudioQuery, allTagsForStudioQuery, allCreatorsForStudioQuery } from '@/lib/sanity.queries';
 import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
-import { useState, useEffect, use } from 'react';
+import { notFound } from 'next/navigation';
 
-const studioClient = createClient({
-    projectId,
-    dataset,
-    apiVersion,
-    useCdn: false,
-    token: process.env.NEXT_PUBLIC_SANITY_API_WRITE_TOKEN,
-});
+// This is now a Server Component
+export default async function EditorPage({ params }: { params: { contentType: string; id: string } }) {
+    const { id } = params;
 
-const EditorLoading = () => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)' }}>
-        <div className="spinner" style={{ width: '60px', height: '60px' }} />
-    </div>
-);
+    try {
+        const [document, allGames, allTags, allCreators] = await Promise.all([
+            sanityWriteClient.fetch(editorDocumentQuery, { id }),
+            sanityWriteClient.fetch(allGamesForStudioQuery),
+            sanityWriteClient.fetch(allTagsForStudioQuery),
+            sanityWriteClient.fetch(allCreatorsForStudioQuery)
+        ]);
 
-export default function EditorPage({ params }: { params: Promise<{ contentType: string; id: string }> }) {
-    const resolvedParams = use(params);
-
-    const [isLoading, setIsLoading] = useState(true);
-    const [editorData, setEditorData] = useState<any>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const { id } = resolvedParams;
-                
-                const [document, allGames, allTags, allCreators] = await Promise.all([
-                    studioClient.fetch(editorDocumentQuery, { id }),
-                    studioClient.fetch(allGamesForStudioQuery),
-                    studioClient.fetch(allTagsForStudioQuery),
-                    studioClient.fetch(allCreatorsForStudioQuery)
-                ]);
-
-                if (!document) {
-                    setError('Document not found. It may have been deleted or the ID is incorrect.');
-                    setIsLoading(false);
-                    return;
-                }
-                
-                const tiptapContent = portableTextToTiptap(document.content ?? []);
-                const documentWithTiptapContent = { ...document, tiptapContent };
-                
-                setEditorData({
-                    document: documentWithTiptapContent,
-                    allGames,
-                    allTags,
-                    allCreators,
-                });
-            } catch (err: any) {
-                console.error("Failed to load editor data:", err);
-                setError('Failed to load editor data. Please check the console for details.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        
-        if (resolvedParams) {
-            fetchData();
+        if (!document) {
+            // Use notFound() for a proper 404 page in Next.js App Router
+            notFound();
         }
-    }, [resolvedParams]);
+        
+        const tiptapContent = portableTextToTiptap(document.content ?? []);
+        const documentWithTiptapContent = { ...document, tiptapContent };
+        
+        return (
+            <EditorClient 
+                document={documentWithTiptapContent} 
+                allGames={allGames}
+                allTags={allTags}
+                allCreators={allCreators}
+            />
+        );
 
-    if (isLoading) {
-        return <EditorLoading />;
-    }
-
-    if (error || !editorData) {
+    } catch (err: any) {
+        console.error("Failed to load editor data:", err);
+        // Render an error state if fetching fails
         return (
             <div className="container page-container" style={{ textAlign: 'center' }}>
                 <h1 className="page-title">Error Loading Editor</h1>
-                <p style={{color: 'var(--text-secondary)'}}>{error || 'The requested document could not be loaded.'}</p>
+                <p style={{color: 'var(--text-secondary)'}}>Failed to load editor data. Please check the console for details.</p>
             </div>
         );
     }
-    
-    return <EditorClient 
-                document={editorData.document} 
-                allGames={editorData.allGames}
-                allTags={editorData.allTags}
-                allCreators={editorData.allCreators}
-           />;
 }
-
-
