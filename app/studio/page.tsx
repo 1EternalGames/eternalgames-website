@@ -9,6 +9,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 
+// THE DEFINITIVE FIX: Force this page to use the Node.js runtime on Vercel.
+export const runtime = 'nodejs';
+
 const studioClient = createClient({
     projectId,
     dataset,

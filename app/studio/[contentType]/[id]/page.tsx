@@ -6,6 +6,9 @@ import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
 
+// THE DEFINITIVE FIX: Force this page to use the Node.js runtime on Vercel.
+export const runtime = 'nodejs';
+
 // This is now a Server Component
 export default async function EditorPage({ params }: { params: { contentType: string; id: string } }) {
     const { id } = params;
