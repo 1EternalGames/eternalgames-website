@@ -1,9 +1,11 @@
 // lib/sanity.client.ts
 
-import { createClient } from '@sanity/client'
-import { sanityConfig } from './sanity.config'
+import { createClient } from 'next-sanity'
+import { apiVersion, dataset, projectId } from '@/sanity/env'
 
 export const client = createClient({
-    ...sanityConfig,
-    useCdn: false,
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: true,
 });

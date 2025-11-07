@@ -1,23 +1,14 @@
 // app/studio/page.tsx
 
-import { createClient } from 'next-sanity';
 import { groq } from 'next-sanity';
 import { StudioDashboard } from './StudioDashboard';
-import { sanityConfig } from '@/lib/sanity.config';
+import { sanityWriteClient } from '@/lib/sanity.server'; // CORRECTED: Use server client
 import { unstable_noStore as noStore } from 'next/cache';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 
 export const runtime = 'nodejs';
-
-const studioClient = createClient({
-    projectId: sanityConfig.projectId,
-    dataset: sanityConfig.dataset,
-    apiVersion: sanityConfig.apiVersion,
-    useCdn: false,
-    token: process.env.SANITY_API_WRITE_TOKEN,
-});
 
 const allEditableContentQuery = groq`
 *[_type in $allowedTypes] | order(_updatedAt desc) {
@@ -27,10 +18,11 @@ const allEditableContentQuery = groq`
     title,
     "slug": slug.current,
     "status": select(
+        _id in path("drafts.**") => "draft",
         _type == "gameRelease" => "published",
+        defined(publishedAt) && publishedAt > now() => "scheduled",
         defined(publishedAt) && publishedAt < now() => "published",
-        !defined(publishedAt) => "draft",
-        "scheduled"
+        "draft"
     ),
     "mainImage": mainImage,
     "blurDataURL": mainImage.asset->metadata.lqip
@@ -62,7 +54,7 @@ export default async function StudioPage() {
 
     const content =
         allowedContentTypes.length > 0
-            ? await studioClient.fetch(allEditableContentQuery, {
+            ? await sanityWriteClient.fetch(allEditableContentQuery, { // CORRECTED: Use server client
                   allowedTypes: allowedContentTypes,
               })
             : [];

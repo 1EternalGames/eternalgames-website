@@ -2,11 +2,7 @@ import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './schemaTypes'
-
-const projectId = '0zany1dm'
-const dataset = 'production'
-// THE FIX: Aligned the API version to match the rest of the application.
-const apiVersion = '2025-09-30'
+import {apiVersion, dataset, projectId} from './env' // CORRECTED: Import from env
 
 export default defineConfig({
   basePath: '/studio',
