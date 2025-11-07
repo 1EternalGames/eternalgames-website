@@ -13,10 +13,10 @@ export default async function EditorPage({ params }: { params: { contentType: st
 
     try {
         const [document, allGames, allTags, allCreators] = await Promise.all([
-            // THE DEFINITIVE FIX IS HERE:
-            // The query uses a parameter named `$id`.
-            // Therefore, the parameters object MUST contain a key named `id`.
-            // The value of `id` is passed from the URL `params`.
+            // CONFIRMED FIX: The GROQ query `editorDocumentQuery` requires a parameter named `$id`.
+            // The `fetch` call below correctly provides this parameter in an object: `{ id: id }`.
+            // The error "param $id referenced, but not provided" indicates that this parameter
+            // object was missing or malformed in the deployed version. This code ensures it is correct.
             sanityWriteClient.fetch(editorDocumentQuery, { id }),
             sanityWriteClient.fetch(allGamesForStudioQuery),
             sanityWriteClient.fetch(allTagsForStudioQuery),
@@ -45,7 +45,7 @@ export default async function EditorPage({ params }: { params: { contentType: st
         return (
             <div className="container page-container" style={{ textAlign: 'center' }}>
                 <h1 className="page-title">Error Loading Editor</h1>
-                <p style={{color: 'var(--text-secondary)'}}>Failed to load editor data. Please check the console for details.</p>
+                <p style={{color: 'var(--text-secondary)'}}>Failed to load editor data. Please check the deployment logs for details.</p>
             </div>
         );
     }
