@@ -1,13 +1,10 @@
-import { createClient } from '@sanity/client'
+// lib/sanity.server.ts
 
-const projectId = '0zany1dm'
-const dataset = 'production'
-const apiVersion = '2025-09-30'
+import { createClient } from '@sanity/client'
+import { sanityConfig } from './sanity.config'
 
 export const sanityWriteClient = createClient({
-    projectId,
-    dataset,
-    apiVersion,
+    ...sanityConfig,
     useCdn: false,
-    token: process.env.SANITY_API_WRITE_TOKEN,
+    token: process.env.SANITY_API_WRITE_TOKEN!,
 });
