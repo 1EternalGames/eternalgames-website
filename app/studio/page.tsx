@@ -3,19 +3,18 @@
 import { createClient } from 'next-sanity';
 import { groq } from 'next-sanity';
 import { StudioDashboard } from './StudioDashboard';
-import { projectId, dataset, apiVersion } from '@/lib/sanity.client';
+import { sanityConfig } from '@/lib/sanity.config';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 
-// THE DEFINITIVE FIX: Force this page to use the Node.js runtime on Vercel.
 export const runtime = 'nodejs';
 
 const studioClient = createClient({
-    projectId,
-    dataset,
-    apiVersion,
+    projectId: sanityConfig.projectId,
+    dataset: sanityConfig.dataset,
+    apiVersion: sanityConfig.apiVersion,
     useCdn: false,
     token: process.env.SANITY_API_WRITE_TOKEN,
 });
@@ -44,7 +43,9 @@ export default async function StudioPage() {
     const session = await getServerSession(authOptions);
     const userRoles = (session?.user as any)?.roles || [];
     
-    const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+    const isAdminOrDirector =
+        userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+
     const allowedContentTypes: string[] = [];
 
     if (isAdminOrDirector) {
@@ -54,18 +55,24 @@ export default async function StudioPage() {
         if (userRoles.includes('AUTHOR')) allowedContentTypes.push('article');
         if (userRoles.includes('REPORTER')) allowedContentTypes.push('news');
     }
-    
+
     if (allowedContentTypes.length === 0 && !userRoles.includes('DESIGNER')) {
-        redirect('/'); 
+        redirect('/');
     }
 
-    const content = allowedContentTypes.length > 0
-        ? await studioClient.fetch(allEditableContentQuery, { allowedTypes: allowedContentTypes })
-        : [];
+    const content =
+        allowedContentTypes.length > 0
+            ? await studioClient.fetch(allEditableContentQuery, {
+                  allowedTypes: allowedContentTypes,
+              })
+            : [];
 
     return (
         <div className="container page-container">
-            <StudioDashboard initialContent={content} userRoles={userRoles} />
+            <StudioDashboard
+                initialContent={content}
+                userRoles={userRoles}
+            />
         </div>
     );
 }
