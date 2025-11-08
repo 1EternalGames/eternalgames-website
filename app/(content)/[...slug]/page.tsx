@@ -12,8 +12,6 @@ import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
 
-export const revalidate = 60;
-
 const contentConfig = {
     reviews: {
         query: reviewBySlugQuery,
@@ -138,5 +136,3 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         </ContentPageClient>
     );
 }
-
-

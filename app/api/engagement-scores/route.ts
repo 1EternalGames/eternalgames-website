@@ -2,8 +2,6 @@
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
-export const revalidate = 60;
-
 export async function GET() {
   try {
     const contentTypes = ['review', 'article', 'news'];
@@ -47,5 +45,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch engagement metrics' }, { status: 500 });
   }
 }
-
-

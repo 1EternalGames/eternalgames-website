@@ -3,8 +3,6 @@
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
-export const revalidate = 60; // Cache this data for 60 seconds
-
 export async function GET() {
   try {
     // 1. Find all unique legacyIds (contentIds) tagged as 'خبر' and of type 'LIKE'
@@ -51,8 +49,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch engagement metrics' }, { status: 500 });
   }
 }
-
-
-
-
-

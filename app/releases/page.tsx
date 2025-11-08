@@ -5,8 +5,6 @@ import { allReleasesQuery } from '@/lib/sanity.queries';
 import type { SanityGameRelease } from '@/types/sanity';
 import ReleasePageClient from './ReleasePageClient';
 
-export const revalidate = 60; // Revalidate every 60 seconds
-
 export default async function ReleasesPage() {
   const releases: SanityGameRelease[] = await client.fetch(allReleasesQuery);
 
@@ -20,21 +18,3 @@ export default async function ReleasesPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -5,9 +5,6 @@ import { paginatedNewsQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 300;
-
 const getCachedPaginatedNews = unstable_cache(
     async (
         gameSlug: string | undefined, 

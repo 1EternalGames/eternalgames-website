@@ -6,8 +6,6 @@ import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
 import { Suspense } from 'react';
 
-export const revalidate = 60;
-
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
 const allTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}`;
 

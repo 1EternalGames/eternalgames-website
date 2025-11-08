@@ -12,8 +12,6 @@ import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
-export const revalidate = 60;
-
 const getCachedEnrichedCreators = unstable_cache(
     async (creatorIds: string[]): Promise<[string, string | null][]> => {
         if (creatorIds.length === 0) return [];

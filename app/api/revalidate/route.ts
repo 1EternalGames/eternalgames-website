@@ -1,51 +1,95 @@
-// app/api/revalidate/route.ts
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { type NextRequest, NextResponse } from 'next/server';
+import { parseBody } from 'next-sanity/webhook';
 
-import { revalidatePath } from 'next/cache';
-import { NextRequest, NextResponse } from 'next/server';
-
-// Helper function to delay execution
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { path, delay, token } = body;
-
-  // 1. Security Check: Validate the secret token
-  if (token !== process.env.REVALIDATION_SECRET_TOKEN) {
-    return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
-  }
-
-  // 2. Input Validation
-  if (!path || typeof path !== 'string' || typeof delay !== 'number') {
-    return NextResponse.json({ message: 'Invalid request body' }, { status: 400 });
-  }
-
-  // 3. Perform the delayed revalidation
-  if (delay > 0) {
-    await wait(delay);
-  }
-
-  try {
-    revalidatePath(path);
-    return NextResponse.json({ revalidated: true, path, now: Date.now() });
-  } catch (err) {
-    return NextResponse.json({ message: `Error revalidating path: ${path}` }, { status: 500 });
-  }
+// Define a type for the expected webhook body for better type-safety
+interface WebhookBody {
+  _type: string;
+  slug?: {
+    current?: string;
+  };
 }
 
+// Ensure the secret is defined in your environment variables
+const secret = process.env.REVALIDATION_SECRET_TOKEN;
+if (!secret) {
+  throw new Error('Missing REVALIDATION_SECRET_TOKEN in environment variables.');
+}
 
+export async function POST(req: NextRequest) {
+  try {
+    const { body, isValidSignature } = await parseBody<WebhookBody>(req, secret);
 
+    if (!isValidSignature) {
+      const message = 'Invalid signature';
+      return new Response(JSON.stringify({ message, isValidSignature, body }), { status: 401 });
+    }
 
+    if (!body?._type) {
+      return NextResponse.json({ message: 'Bad Request: Missing _type in body' }, { status: 400 });
+    }
 
+    const { _type: type, slug } = body;
 
+    // --- Revalidate Tags for Cached API Data ---
+    const tagsToRevalidate: string[] = [];
+    if (['review', 'article', 'news'].includes(type)) {
+      tagsToRevalidate.push(`${type}s`); // e.g., 'reviews'
+      tagsToRevalidate.push('paginated'); // Common tag for paginated content
+      tagsToRevalidate.push('engagement-scores'); // Homepage scores depend on this
+    }
+    if (['author', 'reviewer', 'reporter', 'designer'].includes(type)) {
+      tagsToRevalidate.push('enriched-creators');
+      tagsToRevalidate.push('enriched-creator-details');
+    }
+    tagsToRevalidate.forEach(tag => revalidateTag(tag));
 
+    // --- Revalidate Specific Page Paths ---
+    const pathsToRevalidate: string[] = ['/'];
+    const currentSlug = slug?.current;
 
+    switch (type) {
+      case 'review':
+        pathsToRevalidate.push('/reviews');
+        if (currentSlug) pathsToRevalidate.push(`/reviews/${currentSlug}`);
+        break;
+      case 'article':
+        pathsToRevalidate.push('/articles');
+        if (currentSlug) pathsToRevalidate.push(`/articles/${currentSlug}`);
+        break;
+      case 'news':
+        pathsToRevalidate.push('/news');
+        if (currentSlug) pathsToRevalidate.push(`/news/${currentSlug}`);
+        break;
+      case 'gameRelease':
+        pathsToRevalidate.push('/releases', '/celestial-almanac');
+        break;
+      case 'game':
+        if (currentSlug) pathsToRevalidate.push(`/games/${currentSlug}`);
+        // Revalidate list pages as game info might appear there
+        pathsToRevalidate.push('/reviews', '/articles', '/news');
+        break;
+      case 'tag':
+        if (currentSlug) pathsToRevalidate.push(`/tags/${currentSlug}`);
+        break;
+    }
+    
+    // Use a Set to ensure unique paths before revalidating
+    const uniquePaths = [...new Set(pathsToRevalidate)];
+    uniquePaths.forEach(path => revalidatePath(path));
 
+    return NextResponse.json({
+      status: 200,
+      revalidated: true,
+      now: Date.now(),
+      message: `Revalidated paths and tags for type: ${type}`,
+      revalidatedTags: tagsToRevalidate,
+      revalidatedPaths: uniquePaths,
+    });
 
-
-
-
-
-
-
-
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error("Error in revalidate-sanity webhook:", errorMessage);
+    return new Response(errorMessage, { status: 500 });
+  }
+}
