@@ -22,7 +22,9 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
     if (!canCreate) throw new Error('صلاحيات غير كافية.');
 
-    const highestIdQuery = groq`*[_type in ["review", "article", "news", "gameRelease"]] | order(legacyId desc)[0].legacyId`;
+    // THE DEFINITIVE FIX: The query now explicitly filters for documents where `legacyId` is defined.
+    // This prevents `order()` from failing and ensures `[0]` doesn't access an empty set incorrectly.
+    const highestIdQuery = groq`*[_type in ["review", "article", "news", "gameRelease"] && defined(legacyId)] | order(legacyId desc)[0].legacyId`;
     const lastId = await sanityWriteClient.fetch<number>(highestIdQuery, {}, { perspective: 'previewDrafts' });
     const newLegacyId = (lastId || 0) + 1;
 
@@ -58,8 +60,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     }
     
     if (contentType === 'review') { doc.score = 0; doc.verdict = '...'; doc.pros = []; doc.cons = []; }
-    // THE DEFINITIVE FIX: Removed the faulty default category logic. The schema's `initialValue`
-    // within the Studio is more reliable and avoids client/server state mismatches.
     if (contentType === 'article') doc.publishedYear = new Date().getFullYear();
     if (contentType === 'gameRelease') { doc.releaseDate = new Date().toISOString().split('T')[0]; doc.synopsis = '...'; doc.platforms = []; }
     
