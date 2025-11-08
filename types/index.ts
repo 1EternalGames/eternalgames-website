@@ -19,6 +19,7 @@ export type CardProps = {
     score?: number;
     tags: { title: string, slug: string }[]; // Changed to object array
     blurDataURL: string;
+    category?: string; // ADDED: For news/article categories
     verdict?: string;
     pros?: any[];
     cons?: any[];

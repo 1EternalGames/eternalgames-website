@@ -12,6 +12,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { Calendar03Icon } from '@/components/icons';
 import styles from './NewsGridCard.module.css';
 import CreatorCredit from '../CreatorCredit';
+import { translateTag } from '@/lib/translations';
 
 type NewsGridCardProps = {
     item: CardProps;
@@ -81,6 +82,9 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                             />
                         </motion.div>
                         <div className={styles.cardInfo}>
+                            {item.category && (
+                                <p className={styles.cardCategory}>{translateTag(item.category)}</p>
+                            )}
                             <motion.h3 
                                 className={styles.cardTitle}
                                 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}

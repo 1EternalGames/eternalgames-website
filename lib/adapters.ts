@@ -64,6 +64,7 @@ export const adaptToCardProps = (item: any): CardProps | null => {
         score: item.score,
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
+        category: item.category?.title, // ADDED: Map the category title
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],
