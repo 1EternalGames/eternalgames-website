@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NewsGridCard from './NewsGridCard';
 import { CardProps } from '@/types';
 import React from 'react'; 
+import styles from './NewsGrid.module.css';
 
 export default function NewsGrid({ news }: { news: CardProps[] }) {
     return (
         <motion.div 
             layout 
-            className="content-grid"
+            className={styles.newsGrid}
         >
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (

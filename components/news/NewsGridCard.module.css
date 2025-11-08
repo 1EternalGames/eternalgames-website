@@ -61,6 +61,8 @@
 .cardInfo {
     text-align: right;
     transform: translateZ(20px);
+    /* NEW: Prevent child from overflowing */
+    overflow: hidden;
 }
 
 /* ENHANCEMENT: Styles for Tactile Tag Interaction */
@@ -100,8 +102,9 @@
     font-weight: 600;
     margin: 0;
     position: relative;
-    display: inline-block;
+    /* display: inline-block; <-- REMOVED: This was causing the overflow issue. */
     transition: color 0.2s ease;
+    overflow-wrap: break-word; /* ADDED: Ensures long strings without spaces can wrap. */
 }
 
 .cardTitle::after {
@@ -160,5 +163,3 @@
         font-size: 1.2rem;
     }
 }
-
-

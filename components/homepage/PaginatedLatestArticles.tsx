@@ -79,7 +79,7 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
         if (!isHovered && totalPages > 1) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
-                5000
+                3500 // <-- UPDATED: Changed from 5000 to 3500
             );
         }
         return () => resetTimeout();

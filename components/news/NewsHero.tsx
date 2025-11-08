@@ -113,7 +113,7 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
         if (isPaused || newsItems.length <= 1) return;
         const interval = setInterval(() => {
             setActiveIndex((prevIndex) => (prevIndex + 1) % newsItems.length);
-        }, 6000);
+        }, 2500); // <-- UPDATED: Changed from 6000 to 4000
         return () => clearInterval(interval);
     }, [isPaused, newsItems.length]);
     
