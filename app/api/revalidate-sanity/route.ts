@@ -42,8 +42,9 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push('enriched-creators');
       tagsToRevalidate.push('enriched-creator-details');
     }
-    // THE FIX: Explicitly provide the second argument to revalidateTag
-    tagsToRevalidate.forEach(tag => revalidateTag(tag));
+    
+    // THE DEFINITIVE FIX: Explicitly provide the 'page' argument to revalidateTag.
+    tagsToRevalidate.forEach(tag => revalidateTag(tag, 'page'));
 
     // --- Revalidate Specific Page Paths ---
     const pathsToRevalidate: string[] = ['/'];
