@@ -62,9 +62,11 @@
   width: 24px;
   height: 24px;
   z-index: 20;
+  transition: color 0.2s ease-out, transform 0.2s ease-out;
 }
 .authBackButton:hover {
   color: var(--text-primary);
+  transform: translateX(2px);
 }
 .formHeader {
   text-align: center;
@@ -137,5 +139,3 @@
 .authMessage.success {
   color: #16A34A;
 }
-
-

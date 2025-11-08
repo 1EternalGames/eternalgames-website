@@ -16,20 +16,22 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-latest-articles";
+    const linkPath = `/articles/${article.slug}`;
 
-    const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a')) return;
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.ctrlKey || e.metaKey) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
-        router.push(`/articles/${article.slug}`, { scroll: false });
+        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.div 
-            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
-            className={feedStyles.latestArticleItem}
+        <motion.a
+            href={linkPath}
             onClick={handleClick}
-            style={{ cursor: 'pointer' }}
+            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+            className={`${feedStyles.latestArticleItem} no-underline`}
         >
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
                 <Image 
@@ -54,7 +56,7 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
                     )}
                 </div>
             </div>
-        </motion.div>
+        </motion.a>
     );
 });
 LatestArticleListItem.displayName = "LatestArticleListItem";
@@ -77,7 +79,7 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
         if (!isHovered && totalPages > 1) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
-                5000
+                3500
             );
         }
         return () => resetTimeout();
@@ -120,7 +122,6 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
                             className={`${styles.paginationDot} ${currentPage === index ? styles.active : ''}`}
                             onClick={() => setCurrentPage(index)}
                             aria-label={`Go to page ${index + 1}`}
-                            whileHover={{ scale: 1.2 }}
                             whileTap={{ scale: 0.9 }}
                         />
                     ))}

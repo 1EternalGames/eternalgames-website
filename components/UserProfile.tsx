@@ -102,12 +102,12 @@ const UserProfile = () => {
 
     return (
         <>
-            <motion.button
+            <button
                 onClick={() => setSignInModalOpen(true)}
                 className={styles.signInButton}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 700, damping: 30 }}
-            >ولوج</motion.button>
+            >
+                ولوج
+            </button>
             <Suspense fallback={null}>
                 <SignInModal />
             </Suspense>
@@ -116,5 +116,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-
-

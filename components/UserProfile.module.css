@@ -155,7 +155,7 @@
   font-family: var(--font-main), sans-serif;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease-out;
 }
 
 [data-theme="dark"] .signInButton {
@@ -164,6 +164,5 @@
 
 .signInButton:hover {
   opacity: 0.85;
+  transform: scale(1.05);
 }
-
-

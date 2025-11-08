@@ -4,18 +4,16 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 50%;
-    /* --- THE FIX IS HERE --- */
     width: 36px;
     height: 36px;
     aspect-ratio: 1 / 1;
     flex-shrink: 0;
-    /* --- END FIX --- */
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-secondary);
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease-out, border-color 0.2s ease-out, color 0.2s ease-out, transform 0.2s ease-out, box-shadow 0.2s ease-out;
     z-index: 10;
 }
 
@@ -24,15 +22,9 @@
     color: #fff;
     border-color: var(--accent);
     box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 50%, transparent);
-    /* NEW: Explicitly transition transform and box-shadow quickly */
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    transform: scale(1.15);
 }
 
 [data-theme="dark"] .actionButton:hover:not(:disabled) {
     color: var(--bg-primary);
 }
-
-
-
-
-

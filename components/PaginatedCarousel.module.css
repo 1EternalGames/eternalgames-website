@@ -1,49 +1,48 @@
-/* components/PaginatedCarousel.module.css */
-.paginatedCarouselContainer {
-  position: relative;
+/* components/homepage/PaginatedLatestArticles.module.css */
+
+.paginatedContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
-.paginatedCarouselContent {
-  margin-bottom: 2rem;
-  min-height: 420px;
+
+.paginatedContent {
+    flex-grow: 1;
+    position: relative;
+    min-height: 380px; /* Adjust based on item height to prevent layout shift */
 }
-/* New CSS to enforce 2-column grid inside the carousel */
-.twoColumnGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 3rem;
-  grid-auto-rows: 1fr;
+
+.itemList {
+    display: flex;
+    flex-direction: column;
 }
-@media (max-width: 768px) {
-  .twoColumnGrid {
-    grid-template-columns: 1fr;
-  }
-}
-/* End New CSS */
+
 .paginationControls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1.5rem;
 }
+
 .paginationDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--border-color);
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.3s ease;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease-out;
 }
+
 .paginationDot:hover {
-  background-color: var(--text-secondary);
+    background-color: var(--text-secondary);
+    transform: scale(1.2);
 }
+
 .paginationDot.active {
-  background-color: var(--accent);
-  transform: scale(1.2);
+    background-color: var(--accent);
+    transform: scale(1.2);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
 }
-
-
-
-
-

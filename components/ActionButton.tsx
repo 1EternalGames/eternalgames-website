@@ -17,8 +17,6 @@ const ActionButton = ({ children, ...props }: ActionButtonProps) => {
         <motion.button
             className={styles.actionButton}
             whileTap={{ scale: 0.9, y: 0 }}
-            whileHover={{ scale: 1.15, y: 0 }}
-            transition={{ duration: 0.05, ease: "easeInOut" as const }}
             {...props}
         >
             {children}
@@ -27,5 +25,3 @@ const ActionButton = ({ children, ...props }: ActionButtonProps) => {
 };
 
 export default ActionButton;
-
-

@@ -50,7 +50,6 @@ export const AuthOrb = ({ Icon, onClick, ariaLabel, isLarge = false, isLoading =
                 scale: isLoading ? 1.2 : (isDisabled ? 0.8 : 1),
                 opacity: isLoading ? 1 : (isDisabled ? 0.4 : 1),
             }}
-            whileHover={!isDisabled ? { scale: 1.1, y: -5 } : {}}
             whileTap={!isDisabled ? { scale: 0.95 } : {}}
             transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
             style={{ cursor: isDisabled ? 'default' : 'pointer' }}
@@ -68,5 +67,3 @@ export const AuthOrb = ({ Icon, onClick, ariaLabel, isLarge = false, isLoading =
         </motion.button>
     );
 };
-
-
