@@ -65,6 +65,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         onMouseEnter: () => { livingCardAnimation.onHoverStart(); handleMouseEnter(); },
         onMouseLeave: livingCardAnimation.onHoverEnd,
     };
+    
+    // THE DEFINITIVE FIX:
+    // The style object is now defined conditionally. If the effect is disabled, only the cursor
+    // style is applied. If it's enabled, the animation styles are spread correctly.
+    // This resolves the TypeScript error where `.style` was accessed on an empty object.
+    const motionStyle = disableLivingEffect 
+        ? { cursor: 'pointer' } 
+        : { ...livingCardAnimation.style, cursor: 'pointer' };
 
     return (
         <motion.div
@@ -72,7 +80,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             onClick={handleClick}
             className={styles.livingCardWrapper}
             {...wrapperProps}
-            style={disableLivingEffect ? { cursor: 'pointer', ...wrapperProps.style } : { ...livingCardAnimation.style, cursor: 'pointer' }}
+            style={motionStyle}
         >
             <div
                 className={styles.articleCard}
