@@ -79,7 +79,7 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
         if (!isHovered && totalPages > 1) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
-                3500 // <-- UPDATED: Changed from 5000 to 3500
+                3500
             );
         }
         return () => resetTimeout();
@@ -117,13 +117,11 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
             {totalPages > 1 && (
                 <div className={styles.paginationControls}>
                     {Array.from({ length: totalPages }).map((_, index) => (
-                        <motion.button
+                        <button
                             key={index}
                             className={`${styles.paginationDot} ${currentPage === index ? styles.active : ''}`}
                             onClick={() => setCurrentPage(index)}
                             aria-label={`Go to page ${index + 1}`}
-                            whileHover={{ scale: 1.2 }}
-                            whileTap={{ scale: 0.9 }}
                         />
                     ))}
                 </div>

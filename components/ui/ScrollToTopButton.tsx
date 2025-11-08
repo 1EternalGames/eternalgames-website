@@ -32,6 +32,7 @@ export default function ScrollToTopButton() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 50 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     aria-label="Scroll to top"
                 >

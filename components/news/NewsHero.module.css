@@ -10,6 +10,7 @@
     flex-direction: column;
     justify-content: flex-end;
     color: #fff;
+    padding-top: var(--nav-height-scrolled);
 }
 
 .heroBackground {
@@ -107,7 +108,13 @@
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease-out;
+    border: none;
+    padding: 0;
+}
+
+.progressDot:hover {
+    transform: scale(1.6);
 }
 
 .progressDot.active {

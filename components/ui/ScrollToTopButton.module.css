@@ -17,11 +17,6 @@
     cursor: pointer;
     box-shadow: 0 5px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent);
     z-index: 1000;
-    transition: transform 0.2s ease-out;
-}
-
-.scrollToTopButton:hover {
-    transform: scale(1.1);
 }
 
 [data-theme="dark"] .scrollToTopButton {

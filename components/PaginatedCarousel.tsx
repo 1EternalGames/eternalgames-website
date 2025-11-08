@@ -117,12 +117,11 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
             {totalPages > 1 && (
                 <div className={styles.paginationControls}>
                     {Array.from({ length: totalPages }).map((_, index) => (
-                        <motion.button
+                        <button
                             key={index}
                             className={`${styles.paginationDot} ${currentPage === index ? styles.active : ''}`}
                             onClick={() => setCurrentPage(index)}
                             aria-label={`Go to page ${index + 1}`}
-                            whileTap={{ scale: 0.9 }}
                         />
                     ))}
                 </div>

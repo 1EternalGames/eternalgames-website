@@ -113,7 +113,7 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
         if (isPaused || newsItems.length <= 1) return;
         const interval = setInterval(() => {
             setActiveIndex((prevIndex) => (prevIndex + 1) % newsItems.length);
-        }, 2500); // <-- UPDATED: Changed from 6000 to 4000
+        }, 4000);
         return () => clearInterval(interval);
     }, [isPaused, newsItems.length]);
     
@@ -143,13 +143,10 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
 
             <div className={styles.controlsContainer}>
                 {newsItems.map((item, index) => (
-                    <motion.div
+                    <button
                         key={item.id}
                         className={`${styles.progressDot} ${activeIndex === index ? styles.active : ''}`}
                         onClick={() => setActiveIndex(index)}
-                        whileHover={{ scale: 1.6 }}
-                        whileTap={{ scale: 0.8 }}
-                        transition={transition}
                     />
                 ))}
             </div>

@@ -92,7 +92,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
 
     return (
-        <div className="page-container">
+        <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
             <div className="container">
                 <ContentBlock title="أرشيف الأخبار">
