@@ -4,13 +4,12 @@
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserStore } from '@/lib/store';
 import { UserCircleIcon, UserSettings01Icon, AllBookmarkIcon, Logout03Icon } from '@/components/icons/index';
+import SignInModal from './SignInModal';
 import styles from './UserProfile.module.css';
-
-const SignInModal = lazy(() => import('./SignInModal'));
 
 const UserProfile = () => {
     const { data: session, status } = useSession();
@@ -108,9 +107,7 @@ const UserProfile = () => {
             >
                 ولوج
             </button>
-            <Suspense fallback={null}>
-                <SignInModal />
-            </Suspense>
+            <SignInModal />
         </>
     );
 };
