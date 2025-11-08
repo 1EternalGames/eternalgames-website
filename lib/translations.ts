@@ -35,7 +35,7 @@ const TAG_TRANSLATIONS: Record<string, string> = {
     "Classic": "كلاسيكي",
     "Indie": "ألعاب مستقلة",
 
-    // === News-Specific Tags ===
+    // === News-Specific Tags (Now also used for Category) ===
     "Acquisition": "استحواذ",
     "Sales": "أرقام المبيعات",
     "Game Announcement": "الكشف عن لعبة",
@@ -58,17 +58,6 @@ const TAG_TRANSLATIONS: Record<string, string> = {
     "Story": "قصة",
 };
 
-/**
- * Translates an English tag title to Arabic.
- * If no translation is found, it returns the original English title.
- * @param tagTitle The English tag title from Sanity.
- * @returns The translated Arabic string or the original string.
- */
 export const translateTag = (tagTitle: string): string => {
     return TAG_TRANSLATIONS[tagTitle] || tagTitle;
 };
-
-
-
-
-

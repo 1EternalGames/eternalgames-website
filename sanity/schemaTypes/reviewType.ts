@@ -29,5 +29,3 @@ return {...selection, subtitle: author && `by ${author}`}
 },
 },
 })
-
-

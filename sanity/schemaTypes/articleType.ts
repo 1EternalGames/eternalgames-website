@@ -11,7 +11,17 @@ defineField({name: 'game', title: 'Game', type: 'reference', to: {type: 'game'},
 defineField({name: 'authors', title: 'Authors', type: 'array', of: [{type: 'reference', to: {type: 'author'}}], validation: (Rule) => Rule.required().min(1)}),
 defineField({name: 'designers', title: 'Designers (Optional)', type: 'array', of: [{type: 'reference', to: {type: 'designer'}}]}),
 defineField({name: 'mainImage', title: 'Main image', type: 'image', options: {hotspot: true}, validation: (Rule) => Rule.required()}),
-defineField({name: 'tags', title: 'Tags', type: 'array', of: [{type: 'reference', to: {type: 'tag'}, options: { filter: 'category in ["Game", "Article"]' }}]}),
+// THE DEFINITIVE FIX: This is now a single reference for the primary category.
+defineField({
+    name: 'category',
+    title: 'Category',
+    type: 'reference',
+    to: [{type: 'tag'}],
+    options: { filter: 'category == "Article"' },
+    validation: (Rule) => Rule.required()
+}),
+// The multi-select 'tags' field is now for general game tags.
+defineField({name: 'tags', title: 'Tags', type: 'array', of: [{type: 'reference', to: {type: 'tag'}, options: { filter: 'category == "Game"' }}]}),
 defineField({name: 'publishedAt', title: 'Published at', type: 'datetime'}),
 defineField({name: 'content', title: 'Content', type: 'blockContent'}),
 defineField({name: 'legacyId', title: 'Legacy ID', type: 'number', readOnly: true}),
@@ -21,5 +31,3 @@ preview: {
 select: {title: 'title', media: 'mainImage'},
 },
 })
-
-

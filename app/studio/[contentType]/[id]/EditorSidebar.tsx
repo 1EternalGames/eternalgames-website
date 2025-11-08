@@ -1,8 +1,8 @@
-// components/studio/[contentType]/[id/EditorSidebar.tsx
+// components/studio/[contentType]/[id/EditorSidebar.tsx]
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useCallback } from 'react';
 import ButtonLoader from '@/components/ui/ButtonLoader';
 import { ProsConsInput } from './metadata/ProsConsInput';
 import { GameInput } from './metadata/GameInput';
@@ -12,6 +12,8 @@ import { CreatorInput } from './metadata/CreatorInput';
 import { PlatformInput } from './metadata/PlatformInput';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './Editor.module.css';
+
+type Tag = { _id: string; title: string; category: 'Game' | 'Article' | 'News' };
 
 const sidebarVariants = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 40 } }, exit: { opacity: 0, x: 50, transition: { duration: 0.2, ease: 'easeInOut' as const } } };
 const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
@@ -26,7 +28,7 @@ export function EditorSidebar({
     mainImageUploadQuality, onMainImageUploadQualityChange,
     allGames, allTags, allCreators
 }: any) {
-    const { title, slug, score, verdict, pros, cons, game, tags, publishedAt, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis } = documentState;
+    const { title, slug, score, verdict, pros, cons, game, tags, publishedAt, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
     const [isSaving, startSaveTransition] = useTransition();
     const [isPublishing, startPublishTransition] = useTransition();
@@ -43,6 +45,20 @@ export function EditorSidebar({
         if (isNews) return { label: 'المراسلون', sanityType: 'reporter', field: 'reporters' };
         return { label: 'المنشئون', sanityType: 'author', field: 'authors' };
     }, [isReview, isArticle, isNews]);
+
+    // --- De-duplication logic with CORRECTED TYPING ---
+    const getUniqueTagsByCategory = useCallback((categoryToFilter: 'Game' | 'Article' | 'News'): Tag[] => {
+        if (!allTags) return [];
+        const filtered = allTags.filter((t: any) => t && t.category === categoryToFilter);
+        // Explicitly type the Map to ensure correct inference for .values()
+        const uniqueMap = new Map<string, Tag>(filtered.map((item: any) => [item.title, item]));
+        return Array.from(uniqueMap.values());
+    }, [allTags]);
+
+    const uniqueNewsCategories = useMemo(() => getUniqueTagsByCategory('News'), [getUniqueTagsByCategory]);
+    const uniqueArticleCategories = useMemo(() => getUniqueTagsByCategory('Article'), [getUniqueTagsByCategory]);
+    const uniqueGameTags = useMemo(() => getUniqueTagsByCategory('Game'), [getUniqueTagsByCategory]);
+    // --- END FIX ---
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
     
@@ -103,13 +119,39 @@ export function EditorSidebar({
                         {isRelease ? ( <> 
                             <motion.div variants={itemVariants}><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></motion.div>
                             <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>تاريخ الإصدار</label> <input type="date" value={releaseDate} onChange={(e) => handleFieldChange('releaseDate', e.target.value)} className={styles.sidebarInput} /> </motion.div> 
-                            <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div> 
+                            <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div>
+                             <motion.div variants={itemVariants}><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." allTags={uniqueGameTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></motion.div>
                             <motion.div variants={itemVariants}><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></motion.div>
                             <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> 
                         </> ) : ( <> 
                             <div><CreatorInput allCreators={creatorsForRole(primaryCreatorConfig.sanityType)} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> 
                             <div><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> 
-                            <div><TagInput allTags={allTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} /></div>
+                            
+                            {isNews && (
+                                <motion.div variants={itemVariants}>
+                                    <TagInput
+                                        label="التصنيف"
+                                        placeholder="اختر تصنيف الخبر..."
+                                        allTags={uniqueNewsCategories}
+                                        selectedTags={category ? [category] : []}
+                                        onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)}
+                                        singleSelection={true}
+                                        categoryForCreation="News"
+                                    />
+                                </motion.div>
+                            )}
+
+                            {isArticle && (
+                                <>
+                                    <div><TagInput label="نوع المقال" placeholder="اختر نوع المقال..." allTags={uniqueArticleCategories} selectedTags={category ? [category] : []} onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)} singleSelection={true} categoryForCreation="Article" /></div>
+                                    <div><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." allTags={uniqueGameTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></div>
+                                </>
+                            )}
+
+                            {isReview && (
+                                <div><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." allTags={uniqueGameTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game"/></div>
+                            )}
+
                             <div><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
                         </> )}
                         

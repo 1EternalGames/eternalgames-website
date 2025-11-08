@@ -25,9 +25,9 @@ export default defineType({
             type: 'string',
             options: {
                 list: [
-                    { title: 'Game (For Reviews & Articles)', value: 'Game' },
-                    { title: 'News (For News only)', value: 'News' },
-                    { title: 'Article (For Articles only)', value: 'Article' }
+                    { title: 'Game Tag (For Reviews & Releases)', value: 'Game' },
+                    { title: 'Article Category (For Articles)', value: 'Article' },
+                    { title: 'News Category (For News)', value: 'News' }
                 ],
                 layout: 'radio'
             },
@@ -36,5 +36,3 @@ export default defineType({
         }),
     ],
 })
-
-

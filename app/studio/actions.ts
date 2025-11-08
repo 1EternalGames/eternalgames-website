@@ -14,8 +14,6 @@ import { editorDocumentQuery } from '@/lib/sanity.queries';
 import type { QueryParams, IdentifiedSanityDocumentStub } from '@sanity/client';
 
 
-// --- uploadImageFromUrlAction REMOVED as it's no longer needed ---
-
 export async function createDraftAction(contentType: 'review' | 'article' | 'news' | 'gameRelease') {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.roles) throw new Error('غير مصرح لك.');
@@ -24,10 +22,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
     if (!canCreate) throw new Error('صلاحيات غير كافية.');
 
-    // THE DEFINITIVE FIX:
-    // The query now runs with `{ perspective: 'previewDrafts' }`. This is the correct, type-safe
-    // value that forces the query to see ALL documents, including drafts, guaranteeing
-    // that it finds the true highest `legacyId` and prevents collisions.
     const highestIdQuery = groq`*[_type in ["review", "article", "news", "gameRelease"]] | order(legacyId desc)[0].legacyId`;
     const lastId = await sanityWriteClient.fetch<number>(highestIdQuery, {}, { perspective: 'previewDrafts' });
     const newLegacyId = (lastId || 0) + 1;
@@ -64,7 +58,8 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     }
     
     if (contentType === 'review') { doc.score = 0; doc.verdict = '...'; doc.pros = []; doc.cons = []; }
-    if (contentType === 'news') doc.category = 'Industry';
+    // THE DEFINITIVE FIX: Removed the faulty default category logic. The schema's `initialValue`
+    // within the Studio is more reliable and avoids client/server state mismatches.
     if (contentType === 'article') doc.publishedYear = new Date().getFullYear();
     if (contentType === 'gameRelease') { doc.releaseDate = new Date().toISOString().split('T')[0]; doc.synopsis = '...'; doc.platforms = []; }
     
@@ -104,7 +99,6 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
         revalidatePath('/studio');
         
-        // --- THE FIX: Fetch and return the authoritative document state ---
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
         if (!finalDoc) {
              const publicDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
@@ -167,7 +161,6 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
         const publicId = docId.replace('drafts.', '');
         const draftId = `drafts.${publicId}`;
 
-        // UNPUBLISH action (won't trigger for gameRelease)
         if (publishTime === null) {
             const tx = sanityWriteClient.transaction();
             tx.delete(publicId);
@@ -261,11 +254,11 @@ export async function searchTagsAction(query: string): Promise<{_id: string, tit
     } catch (error) { console.error("Tag search failed:", error); return []; }
 }
 
-export async function createTagAction(title: string): Promise<{_id: string, title: string} | null> {
+export async function createTagAction(title: string, category: 'Game' | 'Article' | 'News'): Promise<{_id: string, title: string} | null> {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.roles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
-        const newTag = await sanityWriteClient.create({ _type: 'tag', title, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } });
+        const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } });
         return { _id: newTag._id, title: newTag.title };
     } catch (error) { console.error("Failed to create tag:", error); return null; }
 }

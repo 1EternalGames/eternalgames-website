@@ -15,8 +15,7 @@ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${main
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}}, 
-"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
-`
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}`
 const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
 "mainImageRef": mainImage.asset, 
@@ -24,7 +23,7 @@ score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}},
-"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}
 `
 
 // --- API Projections ---
@@ -35,7 +34,7 @@ score,
 "authors": authors[]->{${creatorFields}},
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}},
-"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}
 `
 
 // --- News Hub Specific Queries ---
@@ -142,7 +141,7 @@ export const allReviewsListQuery = groq`*[_type == "review" && ${publishedFilter
 export const allArticlesListQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
 export const allContentByCreatorListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`
 export const allContentByGameListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`
-export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && $slug in tags[]->slug.current] | order(publishedAt desc) { ${cardListProjection} }`
+export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && ($slug in tags[]->slug.current || category->slug.current == $slug)] | order(publishedAt desc) { ${cardListProjection} }`
 
 // --- Detail Page Queries ---
 const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} } }`
@@ -156,13 +155,13 @@ export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $sl
 }`
 export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
-  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title, "slug": slug.current},
   "relatedArticles": relatedArticles[${publishedFilter}]->${relatedContentProjection},
   ${contentProjection}
 }`
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
-  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "category": category->{_id, title, "slug": slug.current},
   "relatedNews": relatedNews[${publishedFilter}]->${relatedContentProjection},
   ${contentProjection}
 }`
@@ -192,7 +191,8 @@ export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(release
 
 // --- Studio Editor Queries ---
 export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`;
-export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title}`;
+// THE DEFINITIVE FIX: The category field is now fetched for all tags.
+export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`;
 export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`;
 
 export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] | order(_updatedAt desc)[0]{
@@ -202,6 +202,7 @@ export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] 
   "designers": designers[]->{_id, name, prismaUserId},
   "game": game->{_id, title},
   "tags": tags[]->{_id, title},
+  "category": category->{_id, title},
   "mainImage": mainImage.asset->{
     "_ref": _id,
     "url": url,
