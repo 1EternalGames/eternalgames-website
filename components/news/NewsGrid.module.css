@@ -1,0 +1,15 @@
+/* components/news/NewsGrid.module.css */
+
+.newsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3rem;
+    grid-auto-rows: 1fr;
+}
+
+@media (max-width: 768px) {
+    .newsGrid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
