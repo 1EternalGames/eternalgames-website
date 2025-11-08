@@ -67,7 +67,7 @@ position:absolute;width:1px;height:1px;padding:0;margin:-1px;
 overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;
 }
 .page-container{padding-top:calc(var(--nav-height-scrolled) + 4rem);padding-bottom:6rem;min-height:80vh;}
-.page-title{font-size:4.8rem;font-weight:800;text-align:center;margin-bottom:4rem;color:var(--text-primary);}
+.page-title{font-size:4.8rem;font-weight:800;text-align:center;margin-bottom:4rem;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word;}
 .content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:3rem;grid-auto-rows:1fr;}
 
 .portable-text-content {
@@ -255,6 +255,18 @@ gap: 1rem;
   font-weight: 500;
 }
 
+.news-card-category {
+    display: inline-block;
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    padding: 0.4rem 1.2rem;
+    border-radius: 999px;
+    font-family: var(--font-main), sans-serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border: 1px solid var(--accent);
+}
+
 /* --- FINAL UI POLISH FIXES --- */
 
 /* RTL Placeholder Text Alignment for Studio Inputs */
@@ -367,6 +379,10 @@ body.lightbox-active {
   }
   .toast-container-global { bottom: 1.5rem; left: 1.5rem; right: 1.5rem !important; width: auto; }
   .primary-button, .outline-button { padding: 1.2rem 2rem; font-size: 1.6rem; }
+  .news-card-category {
+    font-size: 1.2rem;
+    padding: 0.3rem 1rem;
+  }
 }
 
 @media (max-width: 480px) {
