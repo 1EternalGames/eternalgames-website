@@ -126,16 +126,14 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 <div style={{marginBottom: '6rem'}}>
                     <h2 className="section-title" style={{textAlign: 'right', marginBottom: '3rem', fontSize: 'clamp(2.8rem, 4vw, 3.6rem)'}}>جميع المراجعات</h2>
                     <motion.div layout className="content-grid">
-                        <AnimatePresence>
-                            {gridReviews.map((review, index) => (
-                                <ArticleCard
-                                    key={review.id}
-                                    article={review}
-                                    layoutIdPrefix="reviews"
-                                    isPriority={index < 3}
-                                />
-                            ))}
-                        </AnimatePresence>
+                        {gridReviews.map((review, index) => (
+                            <ArticleCard
+                                key={review.id}
+                                article={review}
+                                layoutIdPrefix="reviews"
+                                isPriority={index < 3}
+                            />
+                        ))}
                     </motion.div>
                     
                     <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />

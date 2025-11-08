@@ -1,20 +1,19 @@
 // app/template.tsx
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
-    // Removed AnimatePresence to ensure layout state is reset immediately on key change.
-    // The key on the motion.div already handles the transition logic.
-    // This simplifies the top-level transition, often fixing layout-related render issues.
       <motion.div
         key={pathname}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        // The 'exit' prop, which caused the conflict with layoutId animations, has been removed.
+        // This allows the component-level layout animations to handle the transition exclusively,
+        // resolving the bug where cards would become invisible upon navigating back.
         transition={{ duration: 0.2, ease: 'easeInOut' }}
       >
         {children}

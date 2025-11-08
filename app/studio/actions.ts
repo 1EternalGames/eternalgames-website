@@ -24,8 +24,12 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
     if (!canCreate) throw new Error('صلاحيات غير كافية.');
 
+    // THE DEFINITIVE FIX:
+    // The query now runs with `{ perspective: 'previewDrafts' }`. This is the correct, type-safe
+    // value that forces the query to see ALL documents, including drafts, guaranteeing
+    // that it finds the true highest `legacyId` and prevents collisions.
     const highestIdQuery = groq`*[_type in ["review", "article", "news", "gameRelease"]] | order(legacyId desc)[0].legacyId`;
-    const lastId = await sanityWriteClient.fetch<number>(highestIdQuery);
+    const lastId = await sanityWriteClient.fetch<number>(highestIdQuery, {}, { perspective: 'previewDrafts' });
     const newLegacyId = (lastId || 0) + 1;
 
     let doc: any = { _type: contentType, title: `Untitled ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`, legacyId: newLegacyId };

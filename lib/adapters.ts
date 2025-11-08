@@ -5,7 +5,14 @@ import { CardProps } from '@/types';
 const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
 export const adaptToCardProps = (item: any): CardProps | null => {
-    if (!item) return null;
+    // THE DEFINITIVE FIX:
+    // If an item from Sanity is missing a `legacyId` or the item itself is null,
+    // it is considered corrupt data. We return `null` immediately. This prevents
+    // items with `undefined` IDs from reaching the UI, which was the root cause of
+    // both the disappearing cards (layoutId collision) and phantom bookmarks (state key collision).
+    if (!item || item.legacyId === null || item.legacyId === undefined) {
+        return null;
+    }
 
     const imageAsset = item.mainImage?.asset || item.mainImageRef;
     let imageUrl = null;
