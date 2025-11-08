@@ -1,0 +1,18 @@
+{"_id":"news-category-acquisition","_type":"tag","title":"Acquisition","category":"News","slug":{"_type":"slug","current":"acquisition"}}
+{"_id":"news-category-sales","_type":"tag","title":"Sales","category":"News","slug":{"_type":"slug","current":"sales"}}
+{"_id":"news-category-game-announcement","_type":"tag","title":"Game Announcement","category":"News","slug":{"_type":"slug","current":"game-announcement"}}
+{"_id":"news-category-industry-news","_type":"tag","title":"Industry News","category":"News","slug":{"_type":"slug","current":"industry-news"}}
+{"_id":"news-category-financials","_type":"tag","title":"Financials","category":"News","slug":{"_type":"slug","current":"financials"}}
+{"_id":"news-category-technology","_type":"tag","title":"Technology","category":"News","slug":{"_type":"slug","current":"technology"}}
+{"_id":"news-category-esports","_type":"tag","title":"Esports","category":"News","slug":{"_type":"slug","current":"esports"}}
+{"_id":"news-category-game-update","_type":"tag","title":"Game Update","category":"News","slug":{"_type":"slug","current":"game-update"}}
+{"_id":"news-category-layoffs","_type":"tag","title":"Layoffs","category":"News","slug":{"_type":"slug","current":"layoffs"}}
+{"_id":"news-category-game-size","_type":"tag","title":"Game Size","category":"News","slug":{"_type":"slug","current":"game-size"}}
+{"_id":"news-category-release-date","_type":"tag","title":"Release Date","category":"News","slug":{"_type":"slug","current":"release-date"}}
+{"_id":"news-category-age-ratings","_type":"tag","title":"Age Ratings","category":"News","slug":{"_type":"slug","current":"age-ratings"}}
+{"_id":"article-category-opinion","_type":"tag","title":"Opinion","category":"Article","slug":{"_type":"slug","current":"opinion"}}
+{"_id":"article-category-guide","_type":"tag","title":"Guide","category":"Article","slug":{"_type":"slug","current":"guide"}}
+{"_id":"article-category-everything-you-need-to-know","_type":"tag","title":"Everything You Need to Know","category":"Article","slug":{"_type":"slug","current":"everything-you-need-to-know"}}
+{"_id":"article-category-analysis","_type":"tag","title":"Analysis","category":"Article","slug":{"_type":"slug","current":"analysis"}}
+{"_id":"article-category-biography","_type":"tag","title":"Biography","category":"Article","slug":{"_type":"slug","current":"biography"}}
+{"_id":"article-category-story","_type":"tag","title":"Story","category":"Article","slug":{"_type":"slug","current":"story"}}
