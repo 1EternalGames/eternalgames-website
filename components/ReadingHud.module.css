@@ -10,7 +10,8 @@
   height: 300px;
   z-index: 100;
 }
-@media (max-width: 1200px) {
+
+@media (max-width: 1024px) {
   .readingHud {
     display: none;
   }
@@ -39,30 +40,45 @@
   right: 50%;
   width: 1px;
   height: 100%;
-  transform: translateX(50%);
+  margin-right: -5px; /* THE FIX: Offset the markers container by half the marker width (10px/2) to center it */
 }
 
 .marker {
   position: absolute;
   right: 50%;
-  transform: translateX(50%);
-  width: 10px;
-  height: 10px;
-  background-color: var(--border-color);
+  width: 10px; 
+  height: 10px; 
   border: 2px solid var(--bg-primary);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 0;
 }
-.marker:hover {
-  background-color: var(--accent);
-  transform: translateX(50%) scale(1.5);
+
+/* New element for the visual dot and its animated state */
+.markerDot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    /* --- THE FIX: CSS-driven animation logic --- */
+    transition: transform 0.15s ease-out, background-color 0.15s ease-out, box-shadow 0.15s ease-out;
+    will-change: transform, background-color, box-shadow;
+    transform: scale(1);
 }
-.marker.active {
-  background-color: var(--accent);
-  transform: translateX(50%) scale(1.8);
-  box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 70%, transparent);
+
+.marker.active .markerDot {
+    background-color: var(--accent);
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 70%, transparent);
+    transform: scale(1.8);
 }
+
+.marker:hover .markerDot {
+    background-color: var(--accent);
+    transform: scale(2.2);
+    z-index: 2; /* Ensure hover state is visually on top of active state */
+}
+
+/* This is the part with the glow and hover text */
 .marker::after {
   content: attr(data-title);
   position: absolute;
@@ -79,7 +95,7 @@
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease, right 0.3s ease;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out, left 0.15s ease-out;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   border: 1px solid var(--border-color);
 }
@@ -89,10 +105,37 @@
   left: 25px;
 }
 
+/* --- NEW: Mobile Version --- */
+.readingHudMobile {
+  position: fixed;
+  top: var(--nav-height-scrolled);
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 100;
+  pointer-events: none;
+}
 
+.mobileTrack {
+  width: 100%;
+  height: 100%;
+  background-color: color-mix(in srgb, var(--border-color) 50%, transparent);
+  position: relative;
+}
 
+.mobileProgress {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0; /* RTL support */
+  width: 100%;
+  background-color: var(--accent);
+  transform-origin: right; /* RTL support */
+  box-shadow: 0 0 10px 0 var(--accent);
+}
 
-
-
-
-
+@media (min-width: 1025px) {
+  .readingHudMobile {
+    display: none;
+  }
+}

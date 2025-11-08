@@ -10,12 +10,12 @@ import styles from './ScoreBox.module.css';
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.25, delayChildren: 0.2 }, }, };
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } }, };
 
-const ScoreBoxComponent = ({ review }: { review: any }) => {
+const ScoreBoxComponent = ({ review, className }: { review: any, className?: string }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.5 });
 
     return (
-        <motion.div ref={ref} className={styles.scoreBox} initial="hidden" animate={isInView ? "visible" : "hidden"} variants={containerVariants}>
+        <motion.div ref={ref} className={`${styles.scoreBox} ${className || ''}`} initial="hidden" animate={isInView ? "visible" : "hidden"} variants={containerVariants}>
             <svg className={styles.scoreBoxBorder} width="100%" height="100%">
                 <motion.rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="12" stroke="var(--accent)" strokeWidth="2" fill="transparent" initial={{ pathLength: 0 }} animate={{ pathLength: isInView ? 1 : 0 }} transition={{ duration: 1, ease: 'easeInOut' }} />
             </svg>
@@ -38,5 +38,3 @@ const ScoreBoxComponent = ({ review }: { review: any }) => {
 };
 
 export default memo(ScoreBoxComponent);
-
-

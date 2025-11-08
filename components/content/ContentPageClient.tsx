@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react'; // <-- ADDED useCallback
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -22,6 +22,7 @@ import { SparklesIcon } from '@/components/icons/index';
 import CreatorCredit from '@/components/CreatorCredit';
 import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
+import { translateTag } from '@/lib/translations';
 
 type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedContent?: any[] };
 type ContentType = 'reviews' | 'articles' | 'news';
@@ -39,25 +40,32 @@ export default function ContentPageClient({ item, type, children }: {
     const layoutIdPrefix = useLayoutIdStore((state) => state.prefix) || defaultPrefix;
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
-    const contentContainerRef = useRef<HTMLDivElement>(null);
+    
+    // Ref for the content area containing h2s/scorebox (to measure offset)
+    const articleBodyRef = useRef<HTMLDivElement>(null); 
+    // Ref for the entire content column (to serve as the top anchor, though window scroll is still primary)
+    const scrollTrackerRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
-    // <--- FIX: Re-adding variable declarations that were mistakenly removed ---
     const isReview = type === 'reviews';
     const isNews = type === 'news';
-    // --- END FIX ---
     
     // --- UTILITY FUNCTIONS ---
     const measureHeadings = useCallback(() => {
-        const contentElement = contentContainerRef.current;
-        if (!contentElement) return;
+        const contentElement = articleBodyRef.current;
+        const trackerElement = scrollTrackerRef.current;
+        if (!contentElement || !trackerElement) return;
 
-        const containerRect = contentElement.getBoundingClientRect();
-        const headingElements = Array.from(contentElement.querySelectorAll('h2'));
-        const navbarOffset = 90;
+        const navbarOffset = 90; // Approximate height of the fixed navbar
+        const documentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        const trackerOffsetTop = trackerElement.getBoundingClientRect().top + documentScrollTop; // Absolute top of tracker
         const seenIds = new Set<string>();
         
-        const newHeadings = headingElements.map((h, index) => {
+        let newHeadings: Heading[] = [];
+
+        // 1. Collect H2 headings
+        const headingElements = Array.from(contentElement.querySelectorAll('h2'));
+        headingElements.forEach((h, index) => {
             let id = h.id;
             if (!id || seenIds.has(id)) { 
                 id = `${h.textContent?.trim().slice(0, 20).replace(/\s+/g, '-') || 'heading'}-${index}`;
@@ -65,52 +73,66 @@ export default function ContentPageClient({ item, type, children }: {
             seenIds.add(id);
             h.id = id;
             
-            const headingRect = h.getBoundingClientRect();
-            const relativeTop = (headingRect.top + window.scrollY - containerRect.top); 
-            return { id: id, title: h.textContent || '', top: Math.max(0, relativeTop - navbarOffset) };
+            // CORRECTED: Define topPosition
+            const topPosition = h.getBoundingClientRect().top + documentScrollTop;
+            
+            // The value to scroll to is the absolute position minus the navbar offset.
+            const scrollToPosition = topPosition - navbarOffset;
+            
+            newHeadings.push({ id: id, title: h.textContent || '', top: Math.max(0, scrollToPosition) });
         });
-        setHeadings(newHeadings);
-    }, []);
+
+        // 2. Add the final marker (Score Box) for Reviews
+        if (isReview) {
+             const scoreBoxElement = contentElement.querySelector('.score-box-container');
+             if (scoreBoxElement) {
+                 const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
+                 const scoreBoxScrollPosition = topPosition - navbarOffset;
+                 
+                 newHeadings.push({ 
+                     id: 'verdict-summary', 
+                     title: 'الخلاصة', 
+                     top: Math.max(0, scoreBoxScrollPosition) 
+                 });
+             }
+        }
+        
+        if (newHeadings.length > 0) {
+            setHeadings(newHeadings);
+        }
+
+    }, [isReview]);
     // --- END UTILITY FUNCTIONS ---
 
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
         checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+        const handleResize = () => {
+            checkMobile();
+            if (isLayoutStable) measureHeadings();
+        }
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isLayoutStable, measureHeadings]);
 
     // 1. Scroll to top on first mount
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
     // 2. Layout Stabilization Effect
     useEffect(() => {
-        const contentElement = contentContainerRef.current;
-        if (!contentElement) {
-             // If the main content ref isn't available after a short time, force stability
-            const fallbackTimeout = setTimeout(() => setIsLayoutStable(true), 1500); 
-            return () => clearTimeout(fallbackTimeout);
-        }
+        const timeout = setTimeout(() => setIsLayoutStable(true), 1500); 
+        return () => clearTimeout(timeout);
+    }, [item]);
 
-        // Wait for all essential images (main and portable text) to load
-        const contentImages = Array.from(contentElement.querySelectorAll('img')).filter(img => !img.complete);
-        const imagePromises = contentImages.map(img => new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }));
-        
-        Promise.all(imagePromises).finally(() => {
-             // Give a small final delay to allow for the browser's post-load layout pass
-            const timeout = setTimeout(() => setIsLayoutStable(true), 150); 
-            clearTimeout(timeout);
-        });
-        
-    }, [item]); // Re-run when item changes
-
-    // 3. Heading Measurement Effect - ONLY RUNS WHEN STABLE
+    // 3. Heading Measurement Effect - GUARANTEED RUN
     useEffect(() => {
-        if (isLayoutStable && headings.length === 0) { // Only measure if stable AND we haven't measured yet
-            measureHeadings();
+        if (isLayoutStable) {
+            requestAnimationFrame(() => {
+                measureHeadings();
+            });
         }
-    }, [isLayoutStable, headings.length, measureHeadings]); 
+    }, [isLayoutStable, measureHeadings]); 
 
     if (!item) return null;
 
@@ -139,8 +161,11 @@ export default function ContentPageClient({ item, type, children }: {
 
     return (
         <>
-            {/* ReadingHud now conditionally renders based on stable state */}
-            {isLayoutStable && headings.length > 0 && <ReadingHud contentContainerRef={contentContainerRef} headings={headings} />}
+            <ReadingHud 
+                contentContainerRef={scrollTrackerRef}
+                headings={headings} 
+                isMobile={isMobile} 
+            />
 
             <motion.div
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
@@ -164,11 +189,11 @@ export default function ContentPageClient({ item, type, children }: {
                 <div className="container page-container" style={{ paddingTop: '0' }}>
                     <motion.div initial="hidden" animate="visible" variants={contentVariants} >
                         <div className={styles.contentLayout}>
-                            <main>
+                            <main ref={scrollTrackerRef}>
                                 <div className={`${styles.headerContainer} ${shouldShiftLayout ? styles.shiftedLayout : ''}`}>
                                     {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
                                     <div className={styles.titleWrapper}>
-                                        {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0' }}>{(item as SanityNews).category}</p>}
+                                        {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0' }}>{translateTag((item as any).category?.title)}</p>}
                                         <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: isNews ? '0.5rem 0 0 0' : 0 }} transition={springTransition}>{item.title}</motion.h1>
                                     </div>
                                 </div>
@@ -182,9 +207,9 @@ export default function ContentPageClient({ item, type, children }: {
                                     <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={item.slug} />
                                 </div>
 
-                                <div ref={contentContainerRef} className="article-body">
+                                <div ref={articleBodyRef} className="article-body">
                                     <PortableTextComponent content={item.content || []} />
-                                    {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} />}
+                                    {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
                                 </div>
                                 <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
                                     <TagLinks tags={(item.tags || []).map(t => t.title)} />

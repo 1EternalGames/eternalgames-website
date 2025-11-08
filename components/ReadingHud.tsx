@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
-import styles from './ReadingHud.module.css'; // <-- IMPORTED
+import { motion, useScroll, useSpring, AnimatePresence, MotionValue, useTransform } from 'framer-motion';
+import styles from './ReadingHud.module.css';
 
 type Heading = {
     id: string;
@@ -11,55 +11,80 @@ type Heading = {
     top: number;
 };
 
-export default function ReadingHud({ contentContainerRef, headings }: { contentContainerRef: React.RefObject<HTMLDivElement | null>, headings: Heading[] }) {
+// We don't need a custom hook; useScroll with a null target handles window scroll.
+export default function ReadingHud({ 
+    contentContainerRef, 
+    headings,
+    isMobile 
+}: { 
+    contentContainerRef: React.RefObject<HTMLDivElement | null>, 
+    headings: Heading[],
+    isMobile: boolean
+}) {
     const [activeHeadings, setActiveHeadings] = useState<Set<string>>(new Set());
-    const [isVisible, setIsVisible] = useState(false);
-    const scrollableHeightRef = useRef(0);
-    const { scrollYProgress } = useScroll({ target: contentContainerRef, offset: ['start start', 'end end'] });
+    const [showHud, setShowHud] = useState(false);
+    
+    const { scrollYProgress } = useScroll({ offset: ['start start', 'end end'] });
+    
     const springyProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 40, restDelta: 0.001 });
+    const progressValue = useTransform(scrollYProgress, (p) => p); // Raw progress MotionValue
 
     useEffect(() => {
-        const contentElement = contentContainerRef.current;
-        if (!contentElement || headings.length === 0) {
-            setIsVisible(false);
-            return;
-        }
+        const unsubscribe = progressValue.on('change', (latestProgress) => {
+            
+            const documentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const documentScrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            
+            setShowHud(documentScrollTop > 100 && latestProgress < 0.99);
 
-        const newScrollableHeight = contentElement.scrollHeight - window.innerHeight;
-        scrollableHeightRef.current = Math.max(1, newScrollableHeight);
-
-        const visibilityObserver = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { rootMargin: "0px 0px -40% 0px" });
-        visibilityObserver.observe(contentElement);
-
-        const unsubscribeFromScroll = scrollYProgress.on("change", (latestProgress) => {
+            if (headings.length === 0 || documentScrollHeight <= 0) return;
+            
             const currentlyActive = new Set<string>();
-            headings.forEach(heading => {
-                const headingProgressPosition = heading.top / scrollableHeightRef.current;
+
+            for (let i = 0; i < headings.length; i++) {
+                const heading = headings[i];
+                const headingProgressPosition = heading.top / documentScrollHeight;
                 if (latestProgress >= headingProgressPosition) {
                     currentlyActive.add(heading.id);
                 }
-            });
+            }
+            
             setActiveHeadings(currentlyActive);
         });
 
-        return () => {
-            visibilityObserver.disconnect();
-            unsubscribeFromScroll();
-        };
-    }, [contentContainerRef, headings, scrollYProgress]);
+        return () => unsubscribe();
+    }, [headings, progressValue, contentContainerRef]); 
 
     const handleMarkerClick = (headingId: string) => {
-        const headingElement = document.getElementById(headingId);
-        if (!headingElement) return;
-        const navbarOffset = 80;
-        const elementTop = headingElement.getBoundingClientRect().top + window.scrollY;
-        const targetScrollPosition = elementTop - navbarOffset;
-        window.scrollTo({ top: targetScrollPosition, behavior: 'smooth' });
+        const targetScrollPosition = headings.find(h => h.id === headingId)?.top;
+
+        if (targetScrollPosition !== undefined) {
+             window.scrollTo({ top: targetScrollPosition, behavior: 'smooth' });
+        }
     };
+
+    if (isMobile) {
+        return (
+            <AnimatePresence>
+                {showHud && (
+                    <motion.aside
+                        className={styles.readingHudMobile}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <div className={styles.mobileTrack}>
+                            <motion.div className={styles.mobileProgress} style={{ scaleX: springyProgress }} /> 
+                        </div>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
+        );
+    }
 
     return (
         <AnimatePresence>
-            {isVisible && headings.length > 0 && (
+            {showHud && headings.length > 0 && (
                 <motion.aside
                     className={styles.readingHud}
                     initial={{ opacity: 0, x: 20 }}
@@ -73,15 +98,25 @@ export default function ReadingHud({ contentContainerRef, headings }: { contentC
                     <div className={styles.markers}>
                         {headings.map((h) => {
                             const isActive = activeHeadings.has(h.id);
+                            
+                            const documentScrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                            if (documentScrollHeight <= 0) return null;
+                            
+                            const topPercentage = (h.top / documentScrollHeight) * 100;
+                            
                             return (
                                 <button
                                     key={h.id}
                                     className={`${styles.marker} ${isActive ? styles.active : ''}`}
-                                    style={{ top: `${(h.top / scrollableHeightRef.current) * 100}%` }}
+                                    style={{ 
+                                        top: `${topPercentage}%`,
+                                    }}
                                     onClick={() => handleMarkerClick(h.id)}
                                     data-title={h.title}
                                     aria-label={`Scroll to ${h.title}`}
-                                />
+                                >
+                                    <div className={styles.markerDot} />
+                                </button>
                             )
                         })}
                     </div>
@@ -90,5 +125,3 @@ export default function ReadingHud({ contentContainerRef, headings }: { contentC
         </AnimatePresence>
     );
 };
-
-
