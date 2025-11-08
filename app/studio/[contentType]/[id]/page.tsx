@@ -5,19 +5,26 @@ import { editorDocumentQuery, allGamesForStudioQuery, allTagsForStudioQuery, all
 import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export const runtime = 'nodejs';
 
-export default async function EditorPage({ params }: { params: { contentType: string; id: string } }) {
-    const { id } = params;
+// THE DEFINITIVE FIX: The component function is now `async` to handle promise-based props.
+export default async function EditorPage({ params: paramsPromise }: { params: Promise<{ contentType: string; id: string }> }) {
+    noStore();
+
+    // Await the params promise to get the resolved object.
+    const params = await paramsPromise;
+
+    if (!params || !params.id) {
+        notFound();
+    }
+
+    const publicId = params.id.replace('drafts.', '');
 
     try {
         const [document, allGames, allTags, allCreators] = await Promise.all([
-            // CONFIRMED FIX: The GROQ query `editorDocumentQuery` requires a parameter named `$id`.
-            // The `fetch` call below correctly provides this parameter in an object: `{ id: id }`.
-            // The error "param $id referenced, but not provided" indicates that this parameter
-            // object was missing or malformed in the deployed version. This code ensures it is correct.
-            sanityWriteClient.fetch(editorDocumentQuery, { id }),
+            sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }),
             sanityWriteClient.fetch(allGamesForStudioQuery),
             sanityWriteClient.fetch(allTagsForStudioQuery),
             sanityWriteClient.fetch(allCreatorsForStudioQuery)
@@ -41,7 +48,6 @@ export default async function EditorPage({ params }: { params: { contentType: st
 
     } catch (err: any) {
         console.error("Failed to load editor data:", err);
-        // This error message is what you are seeing on Vercel.
         return (
             <div className="container page-container" style={{ textAlign: 'center' }}>
                 <h1 className="page-title">Error Loading Editor</h1>
