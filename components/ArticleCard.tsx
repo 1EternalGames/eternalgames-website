@@ -64,18 +64,17 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         onMouseMove: livingCardAnimation.onMouseMove,
         onMouseEnter: () => { livingCardAnimation.onHoverStart(); handleMouseEnter(); },
         onMouseLeave: livingCardAnimation.onHoverEnd,
-        style: { ...livingCardAnimation.style, cursor: 'pointer' }
     };
 
     return (
         <motion.div
+            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
             onClick={handleClick}
             className={styles.livingCardWrapper}
             {...wrapperProps}
-            style={disableLivingEffect ? { cursor: 'pointer', ...wrapperProps.style } : wrapperProps.style}
+            style={disableLivingEffect ? { cursor: 'pointer', ...wrapperProps.style } : { ...livingCardAnimation.style, cursor: 'pointer' }}
         >
-            <motion.div
-                layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
+            <div
                 className={styles.articleCard}
             >
                 <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}>
@@ -108,10 +107,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         )}
                     </div>
                     <div className={styles.tagContainer}>
-                        <TagLinks tags={article.tags.map(tag => tag.title)} small={true} />
+                        {/* THE DEFINITIVE FIX: Slice the tags array to a maximum of 5. */}
+                        <TagLinks tags={article.tags.slice(0, 5).map(tag => tag.title)} small={true} />
                     </div>
                 </motion.div>
-            </motion.div>
+            </div>
         </motion.div>
     );
 };
