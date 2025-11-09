@@ -19,6 +19,31 @@ const GoogleIcon = dynamic(() => import('@/components/icons/GoogleIcon'));
 const XIcon = dynamic(() => import('@/components/icons/XIcon'));
 const EternalGamesIcon = dynamic(() => import('@/components/icons/EternalGamesIcon'));
 
+const formContentVariants = {
+    hidden: { opacity: 0, transition: { duration: 0.1 } },
+    visible: { opacity: 1, transition: { delay: 0.2, duration: 0.3 } },
+    exit: { opacity: 0, transition: { duration: 0.1 } }
+};
+
+const satelliteVariants = {
+    initial: { y: -50, opacity: 0, scale: 0.5 },
+    animate: {
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        // THE FIX: Added 'as const' to satisfy TypeScript's literal type requirement for 'type'.
+        transition: { type: 'spring' as const, stiffness: 300, damping: 20 }
+    },
+    exit: {
+        y: 280, // Move down below the panel
+        scale: 0,
+        opacity: 0,
+        rotate: 720, // Spin on the way out
+        // THE FIX: Added 'as const' to satisfy TypeScript's literal type requirement for 'ease'.
+        transition: { duration: 0.5, ease: 'easeIn' as const }
+    }
+};
+
 const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl }: { onBack: () => void, onAuthSuccess: () => void, onForgotPassword: () => void, callbackUrl: string }) => {
     const [view, setView] = useState<'signin' | 'signup'>('signin');
     const [isPending, startTransition] = useTransition();
@@ -74,7 +99,7 @@ const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl 
     };
 
     return (
-        <motion.div className={styles.authCredentialsContent} initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.25, duration: 0.3 } }} exit={{ opacity: 0, transition: { duration: 0.15 } }}>
+        <motion.div className={styles.authCredentialsContent} variants={formContentVariants} initial="hidden" animate="visible" exit="hidden">
             <button onClick={onBack} className={styles.authBackButton}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg>
             </button>
@@ -132,7 +157,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
     };
 
     return (
-        <motion.div className={styles.authCredentialsContent} initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.25, duration: 0.3 } }} exit={{ opacity: 0, transition: { duration: 0.15 } }}>
+        <motion.div className={styles.authCredentialsContent} variants={formContentVariants} initial="hidden" animate="visible" exit="hidden">
             <button onClick={onBack} className={styles.authBackButton}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg></button>
             <div className={styles.formHeader}><h2 className={styles.formTitle}>إعادة تعيين كلمة السر</h2><p style={{color: 'var(--text-secondary)', fontSize: '1.5rem'}}>أدخل بريدك لتلقي رابط إعادة التعيين.</p></div>
             <form onSubmit={handleSubmit} className={styles.credentialsForm}>
@@ -145,6 +170,12 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
         </motion.div>
     );
 };
+
+const authProviders = [
+    { id: 'github', Icon: GitHubIcon, label: 'GitHub' },
+    { id: 'google', Icon: GoogleIcon, label: 'Google' },
+    { id: 'twitter', Icon: XIcon, label: 'X/Twitter' },
+];
 
 export default function SignInModal() {
     const { isSignInModalOpen, setSignInModalOpen } = useUserStore();
@@ -166,46 +197,64 @@ export default function SignInModal() {
         signIn(provider, { callbackUrl: pathname });
     };
 
-    const renderContent = () => {
-        switch(view) {
-            case 'credentials':
-                return <CredentialsForm onBack={() => setView('orbs')} onAuthSuccess={handleClose} onForgotPassword={() => setView('forgotPassword')} callbackUrl={pathname} />;
-            case 'forgotPassword':
-                return <ForgotPasswordForm onBack={() => setView('credentials')} />;
-            case 'orbs':
-            default:
-                return (
-                    <motion.div key="center-orb" style={{ zIndex: loadingProvider ? 0 : 'auto' }}>
-                        <AuthOrb Icon={EternalGamesIcon} onClick={() => setView('credentials')} ariaLabel="الولوج بالبريد" isLarge isDisabled={!!loadingProvider} />
-                    </motion.div>
-                );
-        }
-    }
-
     const modalContent = (
         <AnimatePresence>
             {isSignInModalOpen && (
                 <motion.div className={modalStyles.modalOverlay} onClick={handleClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <motion.div className={styles.authModalPanelContainer} onClick={(e) => e.stopPropagation()} initial="hidden" animate="visible" >
-                        <AnimatePresence>
-                            {view === 'orbs' && (
-                                <div className={styles.authSatelliteContainer}>
-                                    <motion.div className={styles.authOrbRowTop}>
-                                        <AuthOrb Icon={GitHubIcon} onClick={() => handleProviderSignIn('github')} ariaLabel="الولوج عبر GitHub" isLoading={loadingProvider === 'github'} isDisabled={!!loadingProvider} />
-                                        <AuthOrb Icon={GoogleIcon} onClick={() => handleProviderSignIn('google')} ariaLabel="الولوج عبر Google" isLoading={loadingProvider === 'google'} isDisabled={!!loadingProvider} />
-                                        <AuthOrb Icon={XIcon} onClick={() => handleProviderSignIn('twitter')} ariaLabel="الولوج عبر X/Twitter" isLoading={loadingProvider === 'twitter'} isDisabled={!!loadingProvider} />
-                                    </motion.div>
-                                    <motion.p className={styles.authFooterText}>انضم إلى EternalGames عبر مزود خدمة أو تابع بالبريد.</motion.p>
-                                </div>
-                            )}
-                        </AnimatePresence>
-                        <motion.div layoutId="auth-panel" className={styles.authMorphWrapper} transition={{ type: 'spring', stiffness: 500, damping: 30, mass: 0.7 }}>
-                            <AnimatePresence mode="wait" initial={false}>
-                                <div key={view} className={view !== 'orbs' ? styles.authCredentialsPanel : ''}>
-                                    {renderContent()}
-                                </div>
+                        <div className={styles.authSatelliteContainer}>
+                            <div className={styles.authOrbRowTop}>
+                                <AnimatePresence>
+                                    {view === 'orbs' && authProviders.map((provider) => (
+                                        <motion.div
+                                            key={provider.id}
+                                            variants={satelliteVariants}
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                        >
+                                            <AuthOrb 
+                                                Icon={provider.Icon} 
+                                                onClick={() => handleProviderSignIn(provider.id)} 
+                                                ariaLabel={`الولوج عبر ${provider.label}`} 
+                                                isLoading={loadingProvider === provider.id} 
+                                                isDisabled={!!loadingProvider} 
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                            <AnimatePresence>
+                                {view === 'orbs' && (
+                                    <motion.p 
+                                        className={styles.authFooterText}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                                    >
+                                        انضم إلى EternalGames عبر مزود خدمة أو تابع بالبريد.
+                                    </motion.p>
+                                )}
                             </AnimatePresence>
-                        </motion.div>
+                        </div>
+                        
+                        <div className={styles.authMorphWrapper}>
+                            <AnimatePresence mode="popLayout" initial={false}>
+                                {view === 'orbs' ? (
+                                    <motion.div key="orbs" layoutId="auth-panel" style={{ zIndex: loadingProvider ? 0 : 'auto' }}>
+                                        <AuthOrb Icon={EternalGamesIcon} onClick={() => setView('credentials')} ariaLabel="الولوج بالبريد" isLarge isDisabled={!!loadingProvider} />
+                                    </motion.div>
+                                ) : view === 'credentials' ? (
+                                    <motion.div key="credentials" layoutId="auth-panel" className={styles.authCredentialsPanel}>
+                                        <CredentialsForm onBack={() => setView('orbs')} onAuthSuccess={handleClose} onForgotPassword={() => setView('forgotPassword')} callbackUrl={pathname} />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div key="forgot-password" layoutId="auth-panel" className={styles.authCredentialsPanel}>
+                                        <ForgotPasswordForm onBack={() => setView('credentials')} />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}
