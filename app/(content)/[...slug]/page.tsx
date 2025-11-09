@@ -80,8 +80,10 @@ export async function generateStaticParams() {
             return { slug: [type, c.slug] };
         });
     } catch (error) {
-        console.warn(`[BUILD WARNING] Failed to fetch slugs for generateStaticParams. This may be due to a network or API issue. Skipping static generation for content pages. Error:`, error);
-        return [];
+        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for generateStaticParams. The build process cannot continue without a connection to the CMS.`, error);
+        // THE DEFINITIVE FIX: Throwing the error will cause the build to fail,
+        // preventing a silent deployment of a non-static site.
+        throw error;
     }
 }
 

@@ -4,6 +4,18 @@ import { allContentByGameListQuery } from '@/lib/sanity.queries'; // Use LEAN qu
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 
+export async function generateStaticParams() {
+    try {
+        const slugs = await client.fetch<string[]>(`*[_type == "game" && defined(slug.current)][].slug.current`);
+        return slugs.map((slug) => ({
+            slug,
+        }));
+    } catch (error) {
+        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for game hub pages. Build cannot continue.`, error);
+        throw error;
+    }
+}
+
 export default async function GameHubPage({ params }: { params: { slug: string } }) {
     const { slug } = await params;
     const gameSlug = decodeURIComponent(slug);

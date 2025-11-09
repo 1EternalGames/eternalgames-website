@@ -6,6 +6,28 @@ import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
 
+export async function generateStaticParams() {
+    try {
+        const usersWithUsernames = await prisma.user.findMany({
+            where: {
+                username: {
+                    not: null,
+                },
+            },
+            select: {
+                username: true,
+            },
+        });
+
+        return usersWithUsernames.map((user) => ({
+            username: encodeURIComponent(user.username!),
+        }));
+    } catch (error) {
+        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch usernames for creator pages. Build cannot continue.`, error);
+        throw error;
+    }
+}
+
 export default async function CreatorHubPage({ params }: { params: { username: string } }) {
     const { username: encodedUsername } = await params;
     const username = decodeURIComponent(encodedUsername);
@@ -59,5 +81,3 @@ export default async function CreatorHubPage({ params }: { params: { username: s
         />
     );
 }
-
-

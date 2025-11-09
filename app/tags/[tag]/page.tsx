@@ -5,6 +5,18 @@ import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 
+export async function generateStaticParams() {
+    try {
+        const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
+        return slugs.map((slug) => ({
+            tag: slug,
+        }));
+    } catch (error) {
+        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for tag hub pages. Build cannot continue.`, error);
+        throw error;
+    }
+}
+
 export default async function TagPage({ params }: { params: { tag: string } }) {
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
@@ -38,5 +50,3 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
         />
     );
 }
-
-
