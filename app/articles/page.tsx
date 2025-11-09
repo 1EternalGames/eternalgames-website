@@ -23,7 +23,7 @@ export default async function ArticlesPage() {
     return (
         <div className="container page-container">
             <h1 className="page-title">أحدث المقالات</h1>
-            <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>الأرشيف هادئ. المزيد من المقالات قريبًا.</p>
+            <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>بلغتَ المنتهى. مقالاتٌ أخرى تلوحُ في الأفق.</p>
         </div>
     );
   }

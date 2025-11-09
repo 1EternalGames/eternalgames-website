@@ -15,37 +15,37 @@ export const authOptions = {
             id: 'credentials',
             name: "Credentials",
             credentials: {
-                email: { label: "البريد الإلكتروني", type: "email" },
+                email: { label: "البريد", type: "email" },
                 password: { label: "كلمة السر", type: "password" },
                 returnTo: { label: "Return To", type: "text" },
             },
             async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) throw new Error("البيانات ناقصة.");
+                if (!credentials?.email || !credentials?.password) throw new Error("البياناتُ ناقصة.");
                 const user = await prisma.user.findUnique({ where: { email: credentials.email } });
                 if (!user) throw new Error("لا حساب بهذا البريد. تفضل بالتسجيل.");
-                if (!user.password) throw new Error("هذا الحساب مرتبط بمزود خارجي.");
+                if (!user.password) throw new Error("هذا الحساب مربوط بمزود خارجي.");
                 const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
                 if (isPasswordValid) return user;
-                else throw new Error("كلمة السر غير صحيحة.");
+                else throw new Error("كلمة السر خاطئة.");
             }
         }),
         CredentialsProvider({
             id: 'signup',
             name: "SignUp",
             credentials: {
-                email: { label: "البريد الإلكتروني", type: "email" },
+                email: { label: "البريد", type: "email" },
                 password: { label: "كلمة السر", type: "password" },
                 returnTo: { label: "Return To", type: "text" },
             },
             async authorize(credentials) {
-                if (!credentials) throw new Error("Missing sign-up details.");
+                if (!credentials) throw new Error("تفاصيل التسجيل ناقصة.");
                 const { email, password } = credentials;
-                if (!email || !password) throw new Error("كافة الحقول إلزامية.");
+                if (!email || !password) throw new Error("الحقولُ كلُّها لازمة.");
                 if (!/\S+@\S+\.\S+/.test(email)) throw new Error('البريد الإلكتروني غير صالح.');
-                if (password.length < 8) throw new Error('يجب ألا تقل كلمة السر عن ثمانية أحرف.');
+                if (password.length < 8) throw new Error('كلمة السر لا تقل عن ثمانيةِ حروف.');
                 
                 const existingEmail = await prisma.user.findUnique({ where: { email } });
-                if (existingEmail) throw new Error('هذا البريد مسجل بالفعل.');
+                if (existingEmail) throw new Error('بريدٌ مسجل.');
 
                 const hashedPassword = await bcrypt.hash(credentials.password, 10);
                 const newUser = await prisma.user.create({

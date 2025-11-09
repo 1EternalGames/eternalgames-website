@@ -57,7 +57,7 @@ const BookmarkButton = ({ contentId, contentType }: { contentId: number; content
     return (
         <ActionButton
             onClick={handleClick}
-            aria-label="Bookmark article"
+            aria-label="إحفظ"
         >
             <motion.div
                 initial={false}

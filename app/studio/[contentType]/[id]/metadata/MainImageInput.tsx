@@ -37,18 +37,18 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
 
     const handleFile = useCallback(async (file: File) => {
         if (!file.type.startsWith('image/')) {
-            toast.error('نوع الملف غير صالح. يرجى رفع صورة.', 'left');
+            toast.error('نوع ملف غير صالح. يرجى رفع صورة.', 'left');
             return;
         }
 
         startUpload(async () => {
             try {
-                toast.info('جار تحسين الصورة...', 'left');
+                toast.info('جارٍ تهيئة الصورة...', 'left');
                 const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, uploadQuality);
                 const localUrl = URL.createObjectURL(optimizedFile);
                 setPreviewUrl(localUrl);
 
-                toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
+                toast.info(`جارٍ رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
                 
                 const formData = new FormData();
                 formData.append('file', optimizedFile);
@@ -56,14 +56,14 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
                 
                 if (result.success && result.asset) {
                     onImageChange(result.asset._id, result.asset.url);
-                    toast.success('تم رفع الصورة الرئيسية بنجاح.', 'left');
+                    toast.success('رُفِعت الصورة الرئيسية.', 'left');
                 } else {
                     throw new Error(result.error || 'فشل رفع الصورة إلى Sanity.');
                 }
             } catch (error: any) {
                 setPreviewUrl(currentAssetUrl);
                 onImageChange(currentAssetId, currentAssetUrl);
-                toast.error(error.message || 'فشل تحسين الصورة.', 'left');
+                toast.error(error.message || 'أخفقت تهيئة الصورة.', 'left');
             }
         });
     }, [onImageChange, toast, currentAssetUrl, currentAssetId, uploadQuality]);
@@ -80,7 +80,7 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
         setPreviewUrl(null);
         onImageChange(null, null);
         if (fileInputRef.current) fileInputRef.current.value = '';
-        toast.info('تمت إزالة الصورة الرئيسية.', 'left');
+        toast.info('أُزيلت الصورة الرئيسية.', 'left');
     };
 
     return (
@@ -116,8 +116,8 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
                         <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
                             {isUploading ? ( <div className="spinner" /> ) : (
                                 <>
-                                    <p style={{ margin: 0 }}>اسحب وأفلت أو انقر للرفع</p>
-                                    <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0 0' }}>سيتم تحسين الصور الكبيرة تلقائيًا</p>
+                                    <p style={{ margin: 0 }}>أفلت أو انقر للرفع</p>
+                                    <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0 0' }}>الصورُ الكبيرةُ تُهَيَّأُ تلقائيًا</p>
                                 </>
                             )}
                         </motion.div>

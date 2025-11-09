@@ -36,7 +36,7 @@ export default function ContentActionBar({ contentId, contentType, contentSlug }
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <ActionButton onClick={handleLike} aria-label={isLiked ? 'Unlike' : 'Like'}><HeartIcon isLiked={isLiked} /></ActionButton>
-            <ActionButton onClick={handleShare} aria-label="Share"><AnimatePresence mode="wait" initial={false}><motion.div key={justCopied ? 'check' : 'share'} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>{justCopied ? <CheckIcon /> : <ShareIcon />}</motion.div></AnimatePresence></ActionButton>
+            <ActionButton onClick={handleShare} aria-label="مشاركة"><AnimatePresence mode="wait" initial={false}><motion.div key={justCopied ? 'check' : 'share'} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>{justCopied ? <CheckIcon /> : <ShareIcon />}</motion.div></AnimatePresence></ActionButton>
             <BookmarkButton contentId={contentId} contentType={contentType} />
         </div>
     );

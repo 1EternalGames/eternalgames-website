@@ -16,12 +16,12 @@ export function EditorCanvas({ document, title, onTitleChange, onEditorCreated, 
     return (
         <motion.div className={styles.sanctumCanvas} style={{position: 'relative'}} transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}>
             <div className={styles.canvasContent}>
-                <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="إصدار غير معنون" className={styles.canvasTitleInput} />
+                <input type="text" value={title} onChange={(e) => onTitleChange(e.target.value)} placeholder="إصدارٌ بلا عنوان" className={styles.canvasTitleInput} />
                 
                 <div className={styles.canvasEditorWrapper}>
                     {isRelease ? (
                         <div style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                            <p>لا يوجد محتوى نصي للإصدارات.<br />يتم تحرير جميع البيانات من الشريط الجانبي.</p>
+                            <p>لا نصَّ للإصدارات.<br />تُحرَّرُ البياناتُ من الشريط الجانبي.</p>
                         </div>
                     ) : (
                         <RichTextEditor onEditorCreated={onEditorCreated} initialContent={document.tiptapContent} />

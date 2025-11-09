@@ -78,7 +78,7 @@ export default function PasswordChangeForm() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder=" "
                 />
-                <label className="profile-form-label" htmlFor="confirmPassword">تأكيد كلمة السر الجديدة</label>
+                <label className="profile-form-label" htmlFor="confirmPassword">تأكيد الجديدة</label>
             </div>
             <motion.button 
                 type="submit" 

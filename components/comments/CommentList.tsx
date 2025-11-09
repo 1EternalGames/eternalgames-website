@@ -33,8 +33,3 @@ export default function CommentList({ comments, session, slug, onVoteUpdate, onP
         </div>
     )
 }
-
-
-
-
-

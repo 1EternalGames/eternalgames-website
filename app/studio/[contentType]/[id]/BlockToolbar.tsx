@@ -57,8 +57,8 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             exit={{ opacity: 0, y: 20 }}
             transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
         >
-            <TooltipButton onClick={() => addBlock('image')} title="صورة واحدة" disabled={!editor}><SingleImageIcon /></TooltipButton>
-            <TooltipButton onClick={() => addBlock('imageCompare')} title="مقارنة صور" disabled={!editor}><CompareIcon /></TooltipButton>
+            <TooltipButton onClick={() => addBlock('image')} title="صورة مفردة" disabled={!editor}><SingleImageIcon /></TooltipButton>
+            <TooltipButton onClick={() => addBlock('imageCompare')} title="مضاهاة صورتين" disabled={!editor}><CompareIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('twoImageGrid')} title="شبكة صورتين" disabled={!editor}><TwoImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('fourImageGrid')} title="شبكة 4 صور" disabled={!editor}><FourImageIcon /></TooltipButton>
             <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 0.4rem' }} />

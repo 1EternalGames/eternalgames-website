@@ -50,7 +50,7 @@ export function ActionDrawer({ item, onDelete }: { item: ContentCanvasItem, onDe
 
     const actions = [
         { label: 'تحرير', icon: <EditIcon />, href: studioEditUrl, isLink: true },
-        { label: 'Preview', icon: <PreviewIcon />, href: livePreviewUrl, isLink: true },
+        { label: 'معاينة', icon: <PreviewIcon />, href: livePreviewUrl, isLink: true },
         { label: 'حذف', icon: <DeleteIcon />, onClick: () => setDeleteModalOpen(true), isLink: false },
     ];
 
@@ -74,7 +74,7 @@ export function ActionDrawer({ item, onDelete }: { item: ContentCanvasItem, onDe
                     {actions.map((action) => (
                         <motion.div key={action.label} variants={itemVariants}>
                             {action.isLink ? (
-                                <Link href={action.href!} className={styles.actionDrawerButton} aria-label={action.label} target={action.label === 'Preview' ? '_blank' : '_self'}>
+                                <Link href={action.href!} className={styles.actionDrawerButton} aria-label={action.label} target={action.label === 'معاينة' ? '_blank' : '_self'}>
                                     {action.icon}
                                 </Link>
                             ) : (
@@ -89,5 +89,3 @@ export function ActionDrawer({ item, onDelete }: { item: ContentCanvasItem, onDe
         </>
     );
 }
-
-

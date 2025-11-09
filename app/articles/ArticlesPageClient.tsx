@@ -103,10 +103,14 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         if (allSelectedTags.length > 0) { const selectedTagTitles = new Set(allSelectedTags.map(t => t.title)); items = items.filter(article => article.tags.some(t => selectedTagTitles.has(t.title))); }
         return items;
     }, [allFetchedArticles, searchTerm, selectedGame, selectedGameTags, selectedArticleType]);
+
+    const hasActiveFilters = useMemo(() => {
+        return !!searchTerm || !!selectedGame || selectedGameTags.length > 0 || !!selectedArticleType || sortOrder !== 'latest';
+    }, [searchTerm, selectedGame, selectedGameTags, selectedArticleType, sortOrder]);
     
     const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !searchTerm && !selectedGame && selectedGameTags.length === 0 && !selectedArticleType;
-    }, [nextOffset, searchTerm, selectedGame, selectedGameTags, selectedArticleType]);
+        return nextOffset !== null && !hasActiveFilters;
+    }, [nextOffset, hasActiveFilters]);
 
     useEffect(() => {
         if (isInView && canLoadMore && !isLoading) {
@@ -156,10 +160,14 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                             </AnimatePresence>
                             
                             <AnimatePresence>
-                                {(!canLoadMore && !isLoading && gridArticles.length > 0) && ( <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'} </motion.p> )}
+                                {(!isLoading && gridArticles.length > 0 && (nextOffset === null || hasActiveFilters)) && (
+                                    <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                        {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
+                                    </motion.p>
+                                )}
                             </AnimatePresence>
 
-                            {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالات تطابق مرادك. </motion.p> )}
+                            {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالاتٍ توافقُ مُرادك. </motion.p> )}
                         </div>
                     </div>
                 </div>

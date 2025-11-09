@@ -9,7 +9,7 @@ defineField({name: 'title', title: 'Title', type: 'string', validation: (Rule) =
 defineField({name: 'slug', title: 'Slug', type: 'slug', options: {source: 'title', maxLength: 96}, validation: (Rule) => Rule.required()}),
 defineField({name: 'game', title: 'Game', type: 'reference', to: {type: 'game'}, validation: (Rule) => Rule.required()}),
 defineField({name: 'releaseDate', title: 'Release Date', type: 'date', validation: (Rule) => Rule.required()}),
-defineField({name: 'platforms', title: 'Platforms', type: 'array', of: [{type: 'string'}], options: {list: ['PC', 'PS5', 'Xbox', 'Switch']}}),
+defineField({name: 'platforms', title: 'Platforms', type: 'array', of: [{type: 'string'}], options: {list: ['PC', 'PlayStation 5', 'Xbox', 'Switch']}}),
 defineField({name: 'mainImage', title: 'Main Image', type: 'image', options: {hotspot: true}, validation: (Rule) => Rule.required()}),
 defineField({name: 'synopsis', title: 'Synopsis', type: 'text', validation: (Rule) => Rule.required()}),
 defineField({name: 'tags', title: 'Tags', type: 'array', of: [{type: 'reference', to: {type: 'tag'}, options: { filter: 'category == "Game"' }}]}),

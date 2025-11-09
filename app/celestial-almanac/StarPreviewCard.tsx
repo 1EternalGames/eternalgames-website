@@ -14,7 +14,7 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   'PC': PCIcon,
-  'PS5': PS5Icon,
+  'PlayStation 5': PS5Icon,
   'Xbox': XboxIcon,
   'Switch': SwitchIcon,
 };
@@ -59,7 +59,7 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
           position: 'absolute', top: '10px', right: '10px', zIndex: 2, width: '32px', height: '32px',
           borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.3)', color: 'white',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)'
-        }} aria-label="إغلاق المعاينة"
+        }} aria-label="إغلاق"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </motion.button>
@@ -82,7 +82,7 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
 
       <div style={{ padding: '1.5rem', textAlign: 'right' }}>
         <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-main)', fontSize: '1.3rem', margin: '0 0 0.5rem 0' }}>
-          الإصدار: {formattedDate}
+          الإصدار:{formattedDate}
         </p>
         <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.7rem' }}>{content.title}</h3>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', justifyContent: 'flex-end' }}>
@@ -96,7 +96,7 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
           })}
         </div>
         <Link href={linkPath} onClick={onClose} className="primary-button no-underline" style={{ display: 'block', textAlign: 'center' }}>
-          عرض محور اللعبة
+          محور اللعبة
         </Link>
       </div>
     </motion.div>

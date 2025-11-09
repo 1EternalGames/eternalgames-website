@@ -30,9 +30,9 @@ export default async function CreatorHubPage({ params }: { params: { username: s
         return (
              <div className="container page-container">
                 <h1 className="page-title">{user.name || 'Creator'}</h1>
-                <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم ينشر هذا المستخدم أي محتوى عام بعد.</p>
+                <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُرَ لهذا المستخدمِ أثرٌ بعد.</p>
                 <div style={{textAlign: 'center', marginTop: '2rem'}}>
-                    <Link href={`/profile/${user.username}`} className="primary-button">عرض الملف الشخصي للمستخدم</Link>
+                    <Link href={`/profile/${user.username}`} className="primary-button">ملف المستخدم</Link>
                 </div>
             </div>
         );
@@ -53,7 +53,7 @@ export default async function CreatorHubPage({ params }: { params: { username: s
             hubType="أعمال"
             headerAction={
                 <Link href={`/profile/${user.username}`} className="outline-button no-underline" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }}>
-                    → عرض الملف الشخصي
+                    → الملف الشخصي
                 </Link>
             }
         />

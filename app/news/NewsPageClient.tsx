@@ -56,9 +56,13 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         return items;
     }, [allFetchedNews, searchTerm, selectedGame, selectedTags]);
 
+    const hasActiveFilters = useMemo(() => {
+        return !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
+    }, [searchTerm, selectedGame, selectedTags, activeSort]);
+
     const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !searchTerm && !selectedGame && selectedTags.length === 0;
-    }, [nextOffset, searchTerm, selectedGame, selectedTags]);
+        return nextOffset !== null && !hasActiveFilters;
+    }, [nextOffset, hasActiveFilters]);
 
     useEffect(() => {
         if (isInView && canLoadMore && !isLoading) {
@@ -89,13 +93,11 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         setActiveSort('latest');
     };
 
-    const hasActiveFilters = !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
-
     return (
         <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
             <div className="container">
-                <ContentBlock title="أرشيف الأخبار">
+                <ContentBlock title="أرشيف الأنباء">
                     <NewsFilters 
                         activeSort={activeSort}
                         onSortChange={setActiveSort}
@@ -122,16 +124,16 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
                     </AnimatePresence>
                     
                     <AnimatePresence>
-                        {(!canLoadMore && !isLoading && newsItems.length > 0) && (
+                        {(!isLoading && newsItems.length > 0 && (nextOffset === null || hasActiveFilters)) && (
                             <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'}
+                                {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
                             </motion.p>
                         )}
                     </AnimatePresence>
 
                     {newsItems.length === 0 && !isLoading && (
                         <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            لا توجد أخبار تطابق ما اخترت.
+                            لا أنباءَ توافقُ ما اخترت.
                         </motion.p>
                     )}
                 </ContentBlock>

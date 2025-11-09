@@ -29,7 +29,7 @@ const ScoreBoxComponent = ({ review, className }: { review: any, className?: str
                     <ul>{review.pros.map((pro: string, index: number) => (<li key={`pro-${index}`}>{pro} <CheckIcon style={{flexShrink:0,width:'3.5rem',height:'3.5rem',marginTop:'-0.3rem',color:'#16A34A'}} /></li>))}</ul>
                 </motion.div>
                 <motion.div variants={itemVariants}>
-                    <h4>المآخذ</h4>
+                    <h4>المساوئ</h4>
                     <ul>{review.cons.map((con: string, index: number) => (<li key={`con-${index}`}>{con} <CancelIcon style={{flexShrink:0,width:'1.8rem',height:'1.8rem',marginTop:'0.6rem',color:'#DC2626'}} /></li>))}</ul>
                 </motion.div>
             </div>

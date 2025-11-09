@@ -65,12 +65,12 @@ export default function WelcomePageClient() {
         startTransition(async () => {
             const result = await completeOnboardingAction(formData);
             if (result.success) {
-                toast.success('اكتمل ملفك. أهلاً بك في EternalGames.');
+                toast.success('اكتمل ملفك. أهلًا بك في EternalGames.');
                 await update(); 
                 const callbackUrl = searchParams.get('callbackUrl') || '/';
                 router.push(callbackUrl);
             } else {
-                toast.error(result.message || 'فشل إكمال الملف الشخصي.');
+                toast.error(result.message || 'أخفق إكمال الملف.');
             }
         });
     };
@@ -93,7 +93,7 @@ export default function WelcomePageClient() {
                 animate={{ opacity: 1, y: 0 }}
             >
                 <h1 className="page-title">أهلاً بك في رحاب EternalGames!</h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1.8rem', marginTop: '-2rem', marginBottom: '3rem' }}>بقيت خطوة أخيرة. أكمل ملفك الشخصي لتدخل مجتمعنا.</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1.8rem', marginTop: '-2rem', marginBottom: '3rem' }}>خطوةٌ أخيرة تفصلك. أكمل ملفك الشخصي لتدخل مَعيَّتنا.</p>
                 <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
                     <div className="profile-form-group">
                         <input id="fullName" name="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="profile-input" placeholder=" " required />

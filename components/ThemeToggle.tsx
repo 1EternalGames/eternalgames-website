@@ -22,8 +22,8 @@ export const ThemeToggle = () => {
         <motion.button
             className={styles.themeToggleButton} // <-- UPDATED CLASS
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            aria-label={isDark ? 'Activate light mode' : 'Activate dark mode'}
-            title={isDark ? 'Activate light mode' : 'Activate dark mode'}
+            aria-label={isDark ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الليلي'}
+            title={isDark ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الليلي'}
             whileHover={{ scale: 1.2, rotate: 90 }}
             whileTap={{ scale: 0.9, rotate: -90 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}

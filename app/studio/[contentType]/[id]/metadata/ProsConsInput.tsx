@@ -6,7 +6,7 @@ import ActionButton from '@/components/ActionButton';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
 
-interface ProsConsInputProps { label: 'المحاسن' | 'المآخذ'; items: string[]; setItems: (newItems: string[]) => void; }
+interface ProsConsInputProps { label: 'المحاسن' | 'المساوئ'; items: string[]; setItems: (newItems: string[]) => void; }
 const itemVariants = { hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -20, transition: { duration: 0.2 } }, };
 const RemoveIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
@@ -15,7 +15,7 @@ export function ProsConsInput({ label, items, setItems }: ProsConsInputProps) {
     const handleRemoveItem = (index: number) => { setItems(items.filter((_, i) => i !== index)); };
     const handleItemChange = (index: number, value: string) => { const newItems = [...items]; newItems[index] = value; setItems(newItems); };
 
-    const buttonText = label === 'المحاسن' ? '+ إضافة محسن' : '+ إضافة مأخذ';
+    const buttonText = label === 'المحاسن' ? '+ إضافة حَسَنة' : '+ إضافة سيئة';
     const ariaLabel = label === 'المحاسن' ? 'إزالة المحسن' : 'إزالة المأخذ';
 
     return (

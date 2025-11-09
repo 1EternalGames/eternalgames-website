@@ -37,7 +37,7 @@ export async function deleteComment(commentId: string) {
         if (commentToDelete._count.replies > 0) {
             const updatedComment = await prisma.comment.update({
                 where: { id: commentId },
-                data: { content: '[Comment deleted]', isDeleted: true }
+                data: { content: '[طُمِسَ التعليق]', isDeleted: true }
             });
             return { success: true, wasDeleted: false, updatedComment };
         } else {
@@ -45,7 +45,7 @@ export async function deleteComment(commentId: string) {
             return { success: true, wasDeleted: true, deletedId: commentId };
         }
     } catch (error: any) {
-        return { success: false, error: error.message || 'Could not delete comment.' };
+        return { success: false, error: error.message || 'يأبى التعليقُ الحذف.' };
     }
 }
 
@@ -72,7 +72,7 @@ export async function updateComment(commentId: string, content: string) {
         revalidatePath(`/news/${comment.contentSlug}`);
         return { success: true, updatedComment };
     } catch (error: any) {
-        return { success: false, error: error.message || "فشل التحديث." };
+        return { success: false, error: error.message || "أخفق التحديث." };
     }
 }
 
@@ -92,7 +92,7 @@ export async function voteOnComment(commentId: string, voteType: VoteType) {
         if (!updatedComment) throw new Error("Comment not found after vote update.");
         return { success: true, updatedVotes: updatedComment.votes };
     } catch (error: any) {
-        return { success: false, error: error.message || 'تعذر تسجيل التصويت.' };
+        return { success: false, error: error.message || 'تعذّر تسجيل التصويت.' };
     }
 }
 
@@ -109,14 +109,6 @@ export async function getReplies(parentId: string) {
         });
         return { success: true, replies };
     } catch (error) {
-        return { success: false, error: 'فشل جلب الردود.' };
+        return { success: false, error: 'أبت الردودُ أن تُجلَب.' };
     }
 }
-
-
-
-
-
-
-
-

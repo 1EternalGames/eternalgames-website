@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import Modal from '@/components/modals/Modal'; // <-- THE FIX: Import generic modal
+import Modal from '@/components/modals/Modal';
 import modalStyles from '@/components/modals/Modals.module.css';
 
 interface DeleteConfirmationModalProps {
@@ -26,7 +26,7 @@ export function DeleteConfirmationModal({ isOpen, onClose, onConfirm, itemName }
         <Modal isOpen={isOpen} onClose={onClose} style={{ padding: '2rem', maxWidth: '450px' }}>
             <h3 style={{ marginTop: 0, fontFamily: 'var(--font-main)', fontSize: '2rem' }}>تأكيد الحذف</h3>
             <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 2rem 0' }}>
-                هل أنت متأكد من رغبتك في حذف <strong style={{ color: 'var(--text-primary)' }}>&quot;{itemName}&quot;</strong>? This action cannot be undone.
+                هل أنت متأكد من رغبتك في حذف <strong style={{ color: 'var(--text-primary)' }}>&quot;{itemName}&quot;</strong>? لا رجعةَ في هذا.
             </p>
             <div className={modalStyles.modalActions}>
                 <button onClick={onClose} className="outline-button" disabled={isPending}>إلغاء</button>
@@ -36,11 +36,9 @@ export function DeleteConfirmationModal({ isOpen, onClose, onConfirm, itemName }
                     style={{ backgroundColor: '#DC2626', boxShadow: 'none' }}
                     disabled={isPending}
                 >
-                    {isPending ? 'جار الحذف...' : 'حذف نهائي'}
+                    {isPending ? 'جارٍ الحذف...' : 'حذفٌ نهائي'}
                 </motion.button>
             </div>
         </Modal>
     );
 }
-
-

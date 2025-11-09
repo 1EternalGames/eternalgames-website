@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import styles from './ConstellationControlPanel.module.css';
 
-export type Preset = 'أداء' | 'متوازن' | 'فائق';
+export type Preset = 'أداء' | 'مُتَّزِن' | 'فائق';
 export type ConstellationSettings = {
     activePreset: Preset | 'custom';
     starCountMultiplier: number;
@@ -55,7 +55,7 @@ export default function ConstellationControlPanel({ settings, setSettings, onClo
                 <motion.div className={styles.section} variants={itemVariants}>
                     <label className={styles.label}>إعدادات الجودة</label>
                     <div className={styles.presetButtons}>
-                        {(['أداء', 'متوازن', 'فائق'] as Preset[]).map(p => (
+                        {(['أداء', 'مُتَّزِن', 'فائق'] as Preset[]).map(p => (
                             <motion.button key={p} className={`${styles.presetButton} ${settings.activePreset === p ? styles.active : ''}`} onClick={() => onPresetChange(p)} whileTap={{ scale: 0.95 }}>
                                 {p}
                             </motion.button>
@@ -71,7 +71,7 @@ export default function ConstellationControlPanel({ settings, setSettings, onClo
                 </motion.div>
 
                 <motion.div className={styles.section} variants={itemVariants} style={{ opacity: isLightMode ? 0.5 : 1 }}>
-                    <label className={styles.label} htmlFor="bloom-intensity">Bloom Intensity {isLightMode && "(Disabled)"}</label>
+                    <label className={styles.label} htmlFor="bloom-intensity">كثافة التوهج {isLightMode && "(معطل)"}</label>
                     <input id="bloom-intensity" type="range" min="0" max="2.5" step="0.1" value={settings.bloomIntensity} onChange={(e) => handleValueChange('bloomIntensity', parseFloat(e.target.value))} disabled={isLightMode} className={styles.rangeInput} />
                 </motion.div>
 
@@ -83,7 +83,7 @@ export default function ConstellationControlPanel({ settings, setSettings, onClo
                 </motion.div>
 
                 <motion.div className={styles.section} variants={itemVariants}>
-                    <label className={styles.label}>إظهار المدارات دائمًا</label>
+                    <label className={styles.label}>إظهار المدارات دومًا</label>
                     <button className={`${styles.toggle} ${settings.alwaysShowOrbits ? styles.active : ''}`} onClick={() => handleValueChange('alwaysShowOrbits', !settings.alwaysShowOrbits)}>
                         <motion.div className={styles.toggleHandle} layout transition={{ type: 'spring', stiffness: 500, damping: 25 }} />
                     </button>

@@ -45,7 +45,7 @@ export function GenesisOrb() {
 
     const handleCreate = (contentType: 'review' | 'article' | 'news' | 'gameRelease') => {
         if (isPending) return;
-        if (!creationPermissions.has(contentType)) { toast.error("ليس لديك الصلاحية لإنشاء هذا المحتوى.", "left"); return; }
+        if (!creationPermissions.has(contentType)) { toast.error("ليس لكَ إذنُ الإنشاء.", "left"); return; }
         setIsOpen(false);
         startTransition(async () => {
             try {
@@ -54,7 +54,7 @@ export function GenesisOrb() {
                 const route = contentType === 'gameRelease' ? `/studio/releases/${newDraft._id}` : `/studio/${contentTypePlural}/${newDraft._id}`;
                 router.push(route);
             } catch (error: any) {
-                toast.error(error.message || "فشل إنشاء المسودة.", "left");
+                toast.error(error.message || "أخفق إنشاء المسودة.", "left");
             }
         });
     };

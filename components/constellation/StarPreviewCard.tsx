@@ -75,7 +75,7 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
                     position: 'absolute', top: '10px', right: '10px', zIndex: 2, width: '32px', height: '32px',
                     borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.3)', color: 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)'
-                }} aria-label="إغلاق المعاينة"
+                }} aria-label="إغلاق"
             >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </motion.button>

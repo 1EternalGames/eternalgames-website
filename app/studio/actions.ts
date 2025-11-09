@@ -16,11 +16,11 @@ import type { QueryParams, IdentifiedSanityDocumentStub } from '@sanity/client';
 
 export async function createDraftAction(contentType: 'review' | 'article' | 'news' | 'gameRelease') {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles) throw new Error('غير مصرح لك.');
+    if (!session?.user?.id || !session.user.roles) throw new Error('غير مُخَوَّل.');
     
     const userRoles = session.user.roles;
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
-    if (!canCreate) throw new Error('صلاحيات غير كافية.');
+    if (!canCreate) throw new Error('صلاحياتٌ قاصرة.');
 
     // THE DEFINITIVE FIX: The query now explicitly filters for documents where `legacyId` is defined.
     // This prevents `order()` from failing and ensures `[0]` doesn't access an empty set incorrectly.
@@ -35,7 +35,7 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
         const creatorTypeMap: Record<string, string> = { 'review': 'reviewer', 'article': 'author', 'news': 'reporter' };
         const sanityDocType = creatorTypeMap[contentType];
         const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true, image: true } });
-        if (!user || !user.name) throw new Error("User not found or name is missing.");
+        if (!user || !user.name) throw new Error("المستخدمُ مفقودٌ أو الاسمُ غائب.");
         
         const existingCreator = await sanityWriteClient.fetch(`*[_type == "${sanityDocType}" && prismaUserId == $userId][0]`, { userId: session.user.id });
         if (existingCreator) {
@@ -70,7 +70,7 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
 
 export async function updateDocumentAction(docId: string, patchData: Record<string, any>): Promise<{ success: boolean; message?: string; updatedDocument?: any }> {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return { success: false, message: 'غير مصرح لك.' };
+    if (!session?.user?.id) return { success: false, message: 'غير مُخَوَّل.' };
 
     const publicId = docId.replace('drafts.', '');
     const draftId = `drafts.${publicId}`;
@@ -86,7 +86,7 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
             if (!originalDoc) {
                 const docTypeQuery = groq`*[_id == $id][0]._type`;
                 const docType = await sanityWriteClient.fetch(docTypeQuery, { id: publicId });
-                if (!docType) throw new Error("Document type not found for creation.");
+                if (!docType) throw new Error("لم يُعثر على نوع الوثيقة لإنشائها.");
                 const newDoc = { _id: draftId, _type: docType, ...patchData };
                 tx.create(newDoc);
             } else {
@@ -102,7 +102,7 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
         if (!finalDoc) {
              const publicDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
-             if (!publicDoc) throw new Error("Document not found after update.");
+             if (!publicDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
              const docWithTiptap = { ...publicDoc, tiptapContent: portableTextToTiptap(publicDoc.content ?? []) };
              return { success: true, updatedDocument: docWithTiptap };
         }
@@ -112,27 +112,27 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
 
     } catch (error: any) {
         console.error("Error during document update:", error);
-        return { success: false, message: error.message || "An unexpected error occurred during the save operation." };
+        return { success: false, message: error.message || "أصابنا خطبٌ أثناء الحفظ." };
     }
 }
 
 
 export async function deleteDocumentAction(docId: string): Promise<{ success: boolean; message?: string }> {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles) return { success: false, message: 'غير مصرح لك.' };
-    const docToDelete = await sanityWriteClient.fetch(groq`*[_id == $docId][0]{_type}`, { docId });
-    if (!docToDelete) return { success: false, message: 'Document not found.' };
+    if (!session?.user?.id || !session.user.roles) return { success: false, message: 'غير مُخَوَّل.' };
+    const docToحذف = await sanityWriteClient.fetch(groq`*[_id == $docId][0]{_type}`, { docId });
+    if (!docToحذف) return { success: false, message: 'الوثيقةُ مفقودة.' };
     const userRoles = session.user.roles;
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
-    const docType = docToDelete._type;
-    const canDelete = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
-    if (!canDelete) return { success: false, message: 'Insufficient permissions.' };
+    const docType = docToحذف._type;
+    const canحذف = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
+    if (!canحذف) return { success: false, message: 'أذوناتٌ قاصرة.' };
     const result = await sanityWriteClient.delete(docId);
     if (result.results.length > 0) {
         revalidatePath('/studio');
         return { success: true };
     }
-    return { success: false, message: 'Could not be deleted.' };
+    return { success: false, message: 'تأبى الحذف.' };
 }
 
 export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER'): Promise<{ _id: string; name: string }[]> {
@@ -150,12 +150,12 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
     const userRoles = session?.user?.roles || [];
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     const doc = await sanityWriteClient.fetch(groq`*[_id == $docId || _id == 'drafts.' + $docId] | order(_updatedAt desc)[0]{_id, _type, "slug": slug.current}`, { docId });
-    if (!doc) return { success: false, message: 'Document not found.' };
+    if (!doc) return { success: false, message: 'الوثيقةُ مفقودة.' };
     
     const docType = doc._type;
     
     const canPublish = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER')) || (docType === 'gameRelease' && isAdminOrDirector);
-    if (!canPublish) return { success: false, message: 'صلاحيات غير كافية.' };
+    if (!canPublish) return { success: false, message: 'صلاحياتٌ قاصرة.' };
 
     try {
         const publicId = docId.replace('drafts.', '');
@@ -174,7 +174,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
 
             const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
             const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-            return { success: true, updatedDocument: docWithTiptap, message: 'تم إلغاء نشر المستند بنجاح.' };
+            return { success: true, updatedDocument: docWithTiptap, message: 'أُلغيَ نشرُ الوثيقة.' };
         }
 
         const draft = await sanityWriteClient.getDocument(draftId);
@@ -214,12 +214,12 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
 
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-        const message = docType === 'gameRelease' ? 'تم نشر الإصدار بنجاح.' : (publishTime ? 'تم جدولة المستند بنجاح.' : 'تم نشر المستند بنجاح.');
+        const message = docType === 'gameRelease' ? 'نُشِرَ الإصدار.' : (publishTime ? 'جُدولت الوثيقة.' : 'نُشِرت الوثيقة.');
         return { success: true, updatedDocument: docWithTiptap, message: message };
 
     } catch (error) {
         console.error('Failed to publish/unpublish document:', error);
-        return { success: false, message: 'Failed to commit publication status.' };
+        return { success: false, message: 'أخفق تنفيذ حالة النشر.' };
     }
 }
 
@@ -231,7 +231,7 @@ export async function searchGamesAction(query: string): Promise<{_id: string, ti
             { searchTerm: query }
         ) as {_id: string, title: string}[];
         return results;
-    } catch (error) { console.error("Game search failed:", error); return []; }
+    } catch (error) { console.error("أخفق البحث عن اللعبة:", error); return []; }
 }
 
 export async function createGameAction(title: string): Promise<{_id: string, title: string} | null> {
@@ -240,7 +240,7 @@ export async function createGameAction(title: string): Promise<{_id: string, tit
     try {
         const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } });
         return { _id: newGame._id, title: newGame.title };
-    } catch (error) { console.error("Failed to create game:", error); return null; }
+    } catch (error) { console.error("أخفق إنشاء اللعبة:", error); return null; }
 }
 
 export async function searchTagsAction(query: string): Promise<{_id: string, title: string}[]> {
@@ -251,7 +251,7 @@ export async function searchTagsAction(query: string): Promise<{_id: string, tit
             { searchTerm: query }
         ) as {_id: string, title: string}[];
         return results;
-    } catch (error) { console.error("Tag search failed:", error); return []; }
+    } catch (error) { console.error("أخفق البحث عن الوسم:", error); return []; }
 }
 
 export async function createTagAction(title: string, category: 'Game' | 'Article' | 'News'): Promise<{_id: string, title: string} | null> {
@@ -260,27 +260,27 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
     try {
         const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } });
         return { _id: newTag._id, title: newTag.title };
-    } catch (error) { console.error("Failed to create tag:", error); return null; }
+    } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
 
 export async function getRecentTagsAction(): Promise<{_id: string, title: string}[]> {
     try {
         const results = await sanityWriteClient.fetch(groq`*[_type == "tag"] | order(_createdAt desc)[0...50]{_id, title}`);
         return results;
-    } catch (error) { console.error("Recent tags fetch failed:", error); return []; }
+    } catch (error) { console.error("أخفق جلب آخر الوسوم:", error); return []; }
 }
 
 export async function validateSlugAction(slug: string, docId: string): Promise<{ isValid: boolean; message: string }> {
     if (!docId) {
-        return { isValid: false, message: 'Waiting for document ID...' };
+        return { isValid: false, message: 'بانتظار مُعرِّف الوثيقة...' };
     }
     
     if (!slug || slug.trim() === '') {
-        return { isValid: false, message: 'المُعرِّف لا يمكن أن يكون فارغًا.' };
+        return { isValid: false, message: 'لا يكُن المُعرِّفُ خاويًا.' };
     }
     const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
     if (!slugRegex.test(slug)) {
-        return { isValid: false, message: 'يمكن أن يحتوي المُعرِّف على أحرف وأرقام وشرطات فقط.' };
+        return { isValid: false, message: 'المُعرِّف: حروفٌ وأرقامٌ وشَرْطاتٌ لا غير.' };
     }
     
     const query = groq`!defined(*[
@@ -296,13 +296,13 @@ export async function validateSlugAction(slug: string, docId: string): Promise<{
         const isUnique = await sanityWriteClient.fetch(query, { slug, draftId, publicId });
         
         if (isUnique) {
-            return { isValid: true, message: 'المُعرِّف صالح.' };
+            return { isValid: true, message: 'المُعرِّفُ صالح.' };
         }
-        return { isValid: false, message: 'هذا المُعرِّف مستخدم بالفعل.' };
+        return { isValid: false, message: 'مُعرِّفٌ مُستعمل.' };
 
     } catch (error) {
         console.error('Sanity slug validation failed:', error);
-        return { isValid: false, message: 'فشل التحقق بسبب خطأ في الخادم.' };
+        return { isValid: false, message: 'أخفق التحقق لخطبٍ في الخادم.' };
     }
 }
 
@@ -314,12 +314,12 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
     );
 
     if (!session?.user?.id || !isCreatorOrAdmin) {
-        return { success: false, error: 'Unauthorized' };
+        return { success: false, error: 'غير مُصرَّح به' };
     }
     
     const file = formData.get('file') as File | null;
     if (!file) {
-        return { success: false, error: 'No file provided' };
+        return { success: false, error: 'لم يُقدَّم ملف.' };
     }
 
     try {
@@ -330,6 +330,6 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
         return { success: true, asset: { _id: asset._id, url: asset.url } };
     } catch (error: any) {
         console.error("Sanity asset upload failed:", error);
-        return { success: false, error: 'Failed to upload asset to Sanity.' };
+        return { success: false, error: 'أخفق رفع الملف.' };
     }
 }

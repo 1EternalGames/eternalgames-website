@@ -85,7 +85,7 @@ async function backfillLegacyIds() {
     console.log('Backfill complete. Your data is now consistent.');
   } catch (error) {
     console.error('An error occurred while committing the transaction:', error);
-    console.error('No documents were updated. Please try again or check your Sanity token permissions.');
+    console.error('No documents were حُدِّثت. Please try again or check your Sanity token permissions.');
   }
 }
 

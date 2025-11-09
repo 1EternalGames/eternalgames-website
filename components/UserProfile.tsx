@@ -90,7 +90,7 @@ const UserProfile = () => {
                             <div className={styles.userDropdownDivider} />
                             <button onClick={() => signOut()} className={`${styles.userDropdownItem} ${styles.signout}`}>
                                 <Logout03Icon className={styles.dropdownItemIcon} />
-                                <span>خروج</span>
+                                <span>تسجيل الخروج</span>
                             </button>
                         </motion.div>
                     )}
@@ -105,7 +105,7 @@ const UserProfile = () => {
                 onClick={() => setSignInModalOpen(true)}
                 className={styles.signInButton}
             >
-                ولوج
+                تسجيل الدخول
             </button>
             <SignInModal />
         </>

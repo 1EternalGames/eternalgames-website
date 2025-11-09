@@ -54,7 +54,7 @@ export const useUserStore = create<UserState & UserActions>()(
                         if (!result.success) throw new Error(result.error);
                     } catch (error) {
                         // THE FIX: Call the raw store's action directly
-                        useToastStore.getState().addToast('فشل حفظ العلامة المرجعية.', 'error');
+                        useToastStore.getState().addToast('فشل الحفظ.', 'error');
                         set({ bookmarks: originalBookmarks });
                     }
                 }, 500);
@@ -78,7 +78,7 @@ export const useUserStore = create<UserState & UserActions>()(
                         if (!result.success) throw new Error(result.error);
                     } catch (error) {
                         // THE FIX: Call the raw store's action directly
-                        useToastStore.getState().addToast('فشل تسجيل الإعجاب.', 'error');
+                        useToastStore.getState().addToast('أخفق تسجيل الإعجاب.', 'error');
                         set({ likes: originalLikes });
                     }
                 }, 500);

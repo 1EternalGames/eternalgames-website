@@ -7,7 +7,7 @@ import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
-import { SanityAuthor } from '@/types/sanity';
+import { SanityAuthor, SanityReview } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
@@ -101,7 +101,7 @@ export default async function HomePage() {
 
     // Reorder the reviews to place the highest-rated one first
     if (reviews.length > 0) {
-        const topRatedIndex = reviews.reduce((topIndex, currentReview, currentIndex) => {
+        const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
             const topScore = reviews[topIndex].score ?? 0;
             const currentScore = currentReview.score ?? 0;
             // In case of a tie, the more recent one (already earlier in the array) wins

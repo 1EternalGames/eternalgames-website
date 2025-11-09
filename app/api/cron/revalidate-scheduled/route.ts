@@ -9,7 +9,7 @@ import { groq } from 'next-sanity';
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response('غير مصرح لك.', { status: 401 });
+    return new Response('غير مُخَوَّل.', { status: 401 });
   }
 
   // Find all documents that were scheduled to be published in the last minute
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (docsToRevalidate.length === 0) {
-      return NextResponse.json({ success: true, message: 'No documents to revalidate.' });
+      return NextResponse.json({ success: true, message: 'لا وثائقَ لإعادة المصادقة.' });
     }
 
     // Use a Set to avoid revalidating the same path multiple times

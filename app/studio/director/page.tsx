@@ -35,7 +35,7 @@ export default async function DirectorPage() {
         <div className="container page-container">
             <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
                 <h1 className="page-title">الإدارة</h1>
-                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto' }}>تعيين وإدارة الأدوار لجميع المستخدمين. تسري التغييرات في الجلسة التالية للمستخدم.</p>
+                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto' }}>عيّن وأدِر الأدوار. تسري التغييرات بعد إعادة تسجيل الدخول.</p>
             </header>
             <UserManagementClient initialUsers={users} allRoles={allRoles} />
         </div>

@@ -45,7 +45,7 @@ export async function updateUserProfile(formData: FormData) {
             if (!validation.success) throw new Error(validation.message);
             const existingUser = await prisma.user.findUnique({ where: { username } });
             if (existingUser && existingUser.id !== session.user.id) {
-                throw new Error('اسم المستخدم محجوز.');
+                throw new Error('اسمٌ محجوز.');
             }
         }
         
@@ -61,15 +61,15 @@ export async function updateUserProfile(formData: FormData) {
             },
         });
         
-        revalidateTag('enriched-creators', '');
-        revalidateTag('enriched-creator-details', '');
+        revalidateTag('enriched-creators', 'page');
+        revalidateTag('enriched-creator-details', 'page');
         revalidatePath('/profile');
         revalidatePath(`/profile/${session.user.id}`);
         if (username) revalidatePath(`/creators/${username}`);
 
-        return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
+        return { success: true, message: 'تَجَدَّدَ مَلَفُكَ الشخصي.' };
     } catch (error: any) {
-        return { success: false, message: error.message || 'Failed to update profile.' };
+        return { success: false, message: error.message || 'أخفق تحديث الملف.' };
     }
 }
 
@@ -114,15 +114,15 @@ export async function completeOnboardingAction(formData: FormData) {
             },
         });
 
-        revalidateTag('enriched-creators', '');
-        revalidateTag('enriched-creator-details', '');
+        revalidateTag('enriched-creators', 'page');
+        revalidateTag('enriched-creator-details', 'page');
         revalidatePath('/profile');
         if (username) revalidatePath(`/profile/${username}`);
         
         return { success: true };
 
     } catch (error: any) {
-        return { success: false, message: error.message || 'An unexpected error occurred during onboarding.' };
+        return { success: false, message: error.message || 'طرأ خطبٌ عند التهيئة.' };
     }
 }
 export async function changePasswordAction(formData: FormData) {
@@ -131,7 +131,7 @@ export async function changePasswordAction(formData: FormData) {
         const user = await prisma.user.findUnique({ where: { id: session.user.id } });
 
         if (!user?.password) {
-            return { success: false, message: 'لا يمكن تغيير كلمة السر للحسابات المرتبطة.' };
+            return { success: false, message: 'لا يمكن تغيير كلمة السر للحسابات المربوطة بمزود خارجي.' };
         }
 
         const currentPassword = formData.get('currentPassword') as string;
@@ -139,20 +139,20 @@ export async function changePasswordAction(formData: FormData) {
         const confirmPassword = formData.get('confirmPassword') as string;
 
         if (!currentPassword || !newPassword || !confirmPassword) {
-            return { success: false, message: 'كافة الحقول إلزامية.' };
+            return { success: false, message: 'الحقولُ كلُّها لازمة.' };
         }
 
         const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
         if (!isPasswordValid) {
-            return { success: false, message: 'كلمة السر الحالية غير صحيحة.' };
+            return { success: false, message: 'كلمة السر الحالية خاطئة.' };
         }
 
         if (newPassword.length < 8) {
-            return { success: false, message: 'كلمة السر الجديدة يجب ألا تقل عن ٨ أحرف.' };
+            return { success: false, message: 'كلمة السر الجديدة لا تقل عن ثمانيةِ حروف.' };
         }
 
         if (newPassword !== confirmPassword) {
-            return { success: false, message: 'كلمتا السر الجديدتان غير متطابقتين.' };
+            return { success: false, message: 'الكلمتان الجديدتان لا تتطابقان.' };
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -162,10 +162,10 @@ export async function changePasswordAction(formData: FormData) {
             data: { password: hashedPassword },
         });
 
-        return { success: true, message: 'تم تغيير كلمة السر بنجاح.' };
+        return { success: true, message: 'تغيَّرت كلمة السر.' };
 
     } catch (error: any) {
-        return { success: false, message: error.message || 'طرأ خطأ غير متوقع.' };
+        return { success: false, message: error.message || 'طرأ خطبٌ ما.' };
     }
 }
 const validateUsername = (username: string) => {
@@ -184,9 +184,9 @@ export async function checkUsernameAvailability(username: string): Promise<{ ava
     }
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) {
-        return { available: false, message: 'اسم المستخدم محجوز.' };
+        return { available: false, message: 'اسمٌ محجوز.' };
     }
-    return { available: true, message: 'اسم المستخدم متاح.' };
+    return { available: true, message: 'الاسمُ متاح.' };
 }
 export async function signUp(formData: FormData) {
     const name = formData.get('name') as string;
@@ -194,13 +194,13 @@ export async function signUp(formData: FormData) {
     const password = formData.get('password') as string;
     const username = (formData.get('username') as string)?.toLowerCase();
     if (!name || !email || !password || !username) {
-        return { success: false, message: 'كافة الحقول إلزامية.' };
+        return { success: false, message: 'الحقولُ كلُّها لازمة.' };
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
         return { success: false, message: 'البريد الإلكتروني غير صالح.' };
     }
     if (password.length < 8) {
-        return { success: false, message: 'يجب ألا تقل كلمة السر عن ثمانية أحرف.' };
+        return { success: false, message: 'كلمة السر لا تقل عن ثمانيةِ حروف.' };
     }
     const usernameValidation = await checkUsernameAvailability(username);
     if (!usernameValidation.available) {
@@ -208,15 +208,15 @@ export async function signUp(formData: FormData) {
     }
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) {
-        return { success: false, message: 'هذا البريد مسجل بالفعل.' };
+        return { success: false, message: 'بريدٌ مسجل.' };
     }
-    return { success: true, message: 'Validation successful.' };
+    return { success: true, message: 'تمَّت المصادقة.' };
 }
 export async function setUsernameAction(username: string) {
     try {
         const session = await getAuthenticatedSession();
         const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-        if (user?.username) return { success: false, message: 'Username has already been set.' };
+        if (user?.username) return { success: false, message: 'الاسمُ قد عُيِّن.' };
 
         const cleanUsername = username.toLowerCase();
         const validation = await checkUsernameAvailability(cleanUsername);
@@ -229,23 +229,23 @@ export async function setUsernameAction(username: string) {
         revalidatePath('/profile');
         return { success: true };
     } catch (error: any) {
-        return { success: false, message: error.message || 'Failed to update username.' };
+        return { success: false, message: error.message || 'أخفق تحديث الاسم.' };
     }
 }
 export async function updateUserAvatar(formData: FormData) {
     try {
         const session = await getAuthenticatedSession();
         const avatarFile = formData.get('avatar') as File | null;
-        if (!avatarFile || avatarFile.size === 0) return { success: true, message: 'لا يوجد ملف صورة جديد.' };
+        if (!avatarFile || avatarFile.size === 0) return { success: true, message: 'لا صورة جديدة.' };
 
         const sanitizedFilename = `${session.user.id}-${Date.now()}-${avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
         const blob = await put(sanitizedFilename, avatarFile, { access: 'public', contentType: avatarFile.type });
         await prisma.user.update({ where: { id: session.user.id }, data: { image: blob.url } });
         
         revalidatePath('/profile');
-        return { success: true, message: 'تم تحديث الصورة الرمزية.' };
+        return { success: true, message: 'تجدَّدت الصورة الرمزية.' };
     } catch (error: any) {
-        return { success: false, message: error.message || 'فشل الرفع.' };
+        return { success: false, message: error.message || 'أخفق الرفع.' };
     }
 }
 export async function getCommentedContentIds() {

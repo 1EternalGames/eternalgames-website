@@ -74,12 +74,12 @@ export default function Constellation() {
 
     const PRESETS: Record<Preset, ConstellationSettings> = useMemo(() => ({
         'أداء': { activePreset: 'أداء', starCountMultiplier: 0.2, bloomIntensity: 0, alwaysShowOrbits: false, flawlessPathThickness: 1.5 },
-        'متوازن': { activePreset: 'متوازن', starCountMultiplier: 1.0, bloomIntensity: 0.9, alwaysShowOrbits: false, flawlessPathThickness: 2 },
+        'مُتَّزِن': { activePreset: 'مُتَّزِن', starCountMultiplier: 1.0, bloomIntensity: 0.9, alwaysShowOrbits: false, flawlessPathThickness: 2 },
         'فائق': { activePreset: 'فائق', starCountMultiplier: 1.5, bloomIntensity: 1.5, alwaysShowOrbits: false, flawlessPathThickness: 2.5 },
     }), []);
 
-    const [settings, setSettings] = useState<ConstellationSettings>(PRESETS['متوازن']);
-    const userIntentBloom = useRef(PRESETS['متوازن'].bloomIntensity);
+    const [settings, setSettings] = useState<ConstellationSettings>(PRESETS['مُتَّزِن']);
+    const userIntentBloom = useRef(PRESETS['مُتَّزِن'].bloomIntensity);
 
     useEffect(() => {
         if (resolvedTheme === 'light') {

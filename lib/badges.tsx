@@ -24,13 +24,13 @@ const TopContributorIcon = ({ className = '' }) => <svg className={className} xm
 export const BADGES: Record<BadgeId, Badge> = {
     DIRECTOR: { id: 'DIRECTOR', name: 'مدير', description: 'يشرف على مشروع EternalGames.', Icon: DirectorIcon },
     REVIEWER: { id: 'REVIEWER', name: 'مُراجع', description: 'صوت موثوق لمراجعات الألعاب.', Icon: ReviewerIcon },
-    AUTHOR: { id: 'AUTHOR', name: 'كاتب', description: 'يكتب المقالات والمواضيع المميزة.', Icon: AuthorIcon },
-    REPORTER: { id: 'REPORTER', name: 'مراسل', description: 'يغطي آخر أخبار الصناعة.', Icon: ReporterIcon },
-    DESIGNER: { id: 'DESIGNER', name: 'مصمم', description: 'يساهم في التصميم البصري للمحتوى.', Icon: DesignerIcon },
-    FOUNDER: { id: 'FOUNDER', name: 'مؤسس', description: 'انضم إلى EternalGames في الشهر الأول من إطلاقه.', Icon: FounderIcon },
-    FIRST_COMMENT: { id: 'FIRST_COMMENT', name: 'مبادر', description: 'نشر أول تعليق له.', Icon: FirstCommentIcon },
-    ENGAGED_COMMENTER: { id: 'ENGAGED_COMMENTER', name: 'مساهم', description: 'نشر أكثر من 10 تعليقات.', Icon: EngagedCommenterIcon },
-    TOP_CONTRIBUTOR: { id: 'TOP_CONTRIBUTOR', name: 'عمود المجتمع', description: 'نشر أكثر من 50 تعليقًا.', Icon: TopContributorIcon },
+    AUTHOR: { id: 'AUTHOR', name: 'كاتب', description: 'يخطُّ المقالات والمواضيع.', Icon: AuthorIcon },
+    REPORTER: { id: 'REPORTER', name: 'مراسل', description: 'يقتفي أثر أخبار الصناعة.', Icon: ReporterIcon },
+    DESIGNER: { id: 'DESIGNER', name: 'مصمم', description: 'يضفي رونقًا على المحتوى.', Icon: DesignerIcon },
+    FOUNDER: { id: 'FOUNDER', name: 'مؤسس', description: 'التحق بركب EternalGames في شهره الأول.', Icon: FounderIcon },
+    FIRST_COMMENT: { id: 'FIRST_COMMENT', name: 'مبادر', description: 'خطَّ أول تعليقٍ له.', Icon: FirstCommentIcon },
+    ENGAGED_COMMENTER: { id: 'ENGAGED_COMMENTER', name: 'مساهم', description: 'جاوزت تعليقاته العشرة.', Icon: EngagedCommenterIcon },
+    TOP_CONTRIBUTOR: { id: 'TOP_CONTRIBUTOR', name: 'عمود المجتمع', description: 'جاوز الخمسين تعليقًا.', Icon: TopContributorIcon },
 };
 
 export function getBadgesForUser(user: { createdAt: Date; _count: { comments: number }, roles: string[] }): Badge[] {

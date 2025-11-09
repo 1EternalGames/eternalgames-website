@@ -17,7 +17,7 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
     'PC': PCIcon,
-    'PS5': PS5Icon,
+    'PlayStation 5': PS5Icon,
     'Xbox': XboxIcon,
     'Switch': SwitchIcon,
 };

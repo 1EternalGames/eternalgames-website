@@ -25,7 +25,7 @@ export default async function ProfilePage() {
     return (
         <div className="container page-container">
             <h1 className="page-title">إعدادات الحساب</h1>
-            <ContentBlock title="تحرير بياناتك">
+            <ContentBlock title="تحرير البيانات">
                 <ProfileEditForm user={user} />
             </ContentBlock>
             

@@ -45,7 +45,7 @@ export default function StudioBar() {
                     {editPath && (
                         <Link href={editPath} className={styles.studioBarButton}>
                             <EditIcon />
-                            <span>Edit Page</span>
+                            <span>تعديل الصفحة</span>
                         </Link>
                     )}
                 </div>

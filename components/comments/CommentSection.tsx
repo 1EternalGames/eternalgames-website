@@ -28,7 +28,6 @@ export default function CommentSection({ slug, initialComments }: {
     initialComments: any[];
 }) {
     const { data: session } = useSession();
-    // THE DEFINITIVE FIX: Cast the session object via `unknown` to the augmented type.
     const typedSession = session as unknown as Session | null;
 
     const [comments, setComments] = useState(initialComments);
@@ -44,7 +43,6 @@ export default function CommentSection({ slug, initialComments }: {
     );
 
     const handlePostComment = async (content: string, parentId?: string) => {
-        // Use the correctly typed session object
         if (!typedSession?.user?.id) return;
 
         const optimisticComment = {
@@ -53,7 +51,7 @@ export default function CommentSection({ slug, initialComments }: {
             parentId,
             createdAt: new Date().toISOString(),
             author: typedSession.user,
-            authorId: typedSession.user.id, // This is now type-safe
+            authorId: typedSession.user.id,
             votes: [],
             replies: [],
             _count: { replies: 0 },
@@ -147,5 +145,3 @@ export default function CommentSection({ slug, initialComments }: {
         </div>
     );
 }
-
-

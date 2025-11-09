@@ -24,7 +24,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!session || !isCreatorOrAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'غير مُصرَّح به' },
         { status: 401 }
       );
     }

@@ -21,7 +21,7 @@ export default async function ReviewsPage() {
     return (
       <div className="container page-container">
         <h1 className="page-title">المراجعات</h1>
-        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>لا توجد حاليًا أي مراجعات في الأرشيف. عد قريبًا.</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>الأرشيفُ خالٍ من المراجعاتِ حاليًا. عُد قريبًا.</p>
       </div>
     );
   }

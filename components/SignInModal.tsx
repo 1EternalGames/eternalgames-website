@@ -20,134 +20,108 @@ const XIcon = dynamic(() => import('@/components/icons/XIcon'));
 const EternalGamesIcon = dynamic(() => import('@/components/icons/EternalGamesIcon'));
 
 const formContentVariants = {
-    hidden: { opacity: 0, transition: { duration: 0.1 } },
-    visible: { opacity: 1, transition: { delay: 0.2, duration: 0.3 } },
-    exit: { opacity: 0, transition: { duration: 0.1 } }
+    hidden: { opacity: 0, transition: { duration: 0.15, ease: 'easeOut' as const } },
+    visible: { opacity: 1, transition: { delay: 0.25, duration: 0.3, ease: 'easeIn' as const } },
+    exit: { opacity: 0, transition: { duration: 0.15, ease: 'easeOut' as const } }
 };
 
 const satelliteVariants = {
     hidden: (direction: number) => ({
-        y: 80,
-        x: direction * 20,
-        scale: 0,
-        opacity: 0,
-        rotate: 360,
+        y: 80, x: direction * 20, scale: 0, opacity: 0, rotate: 360,
         transition: { duration: 0.4, ease: 'easeIn' as const }
     }),
     visible: {
-        y: 0,
-        x: 0,
-        scale: 1,
-        opacity: 1,
-        rotate: 0,
+        y: 0, x: 0, scale: 1, opacity: 1, rotate: 0,
         transition: { type: 'spring' as const, stiffness: 300, damping: 20, delay: 0.3 }
     }
 };
 
-const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl }: { onBack: () => void, onAuthSuccess: () => void, onForgotPassword: () => void, callbackUrl: string }) => {
-    const [view, setView] = useState<'signin' | 'signup'>('signin');
+// --- START: Refactored Form Components ---
+
+const SignInForm = ({ onSwitchToSignUp, onForgotPassword, onAuthSuccess, onBack, callbackUrl }: { onSwitchToSignUp: () => void, onForgotPassword: () => void, onAuthSuccess: () => void, onBack: () => void, callbackUrl: string }) => {
     const [isPending, startTransition] = useTransition();
     const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
     const router = useRouter();
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    
+
     const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setMessage(null);
         const formData = new FormData(event.currentTarget);
         
         startTransition(async () => {
-            const result = await signIn('credentials', {
-                redirect: false,
-                ...Object.fromEntries(formData),
-            });
-
-            if (result?.error) {
-                setMessage({ type: 'error', text: result.error });
-            } else if (result?.url) {
-                router.push(result.url);
-                onAuthSuccess();
-            } else {
-                 setMessage({ type: 'error', text: 'طرأ خطأ غير متوقع.' });
-            }
-        });
-    };
-    
-    const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setMessage(null);
-        
-        const formData = new FormData(event.currentTarget);
-
-        startTransition(async () => {
-            const result = await signIn('signup', {
-                redirect: false,
-                ...Object.fromEntries(formData),
-            });
-
-            if (result?.error) {
-                setMessage({ type: 'error', text: result.error });
-            } else if (result?.url) {
-                router.push(result.url);
-                onAuthSuccess();
-            } else {
-                setMessage({ type: 'error', text: 'An unexpected error occurred during sign up.' });
-            }
+            const result = await signIn('credentials', { redirect: false, ...Object.fromEntries(formData) });
+            if (result?.error) setMessage({ type: 'error', text: result.error });
+            else if (result?.url) { router.push(result.url); onAuthSuccess(); } 
+            else setMessage({ type: 'error', text: 'طرأ خطبٌ ما.' });
         });
     };
 
     return (
         <motion.div className={styles.authCredentialsContent} variants={formContentVariants} initial="hidden" animate="visible" exit="hidden">
-            <button onClick={onBack} className={styles.authBackButton}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg>
-            </button>
-            <div className={styles.formHeader}><h2 className={styles.formTitle}>{view === 'signup' ? 'إنشاء حساب' : 'Sign In with Email'}</h2></div>
-            
-            {view === 'signin' ? (
-                <form onSubmit={handleSignIn} className={styles.credentialsForm}>
-                    <input type="hidden" name="returnTo" value={callbackUrl} />
-                    {/* THE DEFINITIVE FIX: Reverted to floating label structure */}
-                    <div className={styles.authFormGroup}>
-                        <input id="signin-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={e => setEmail(e.target.value)} placeholder=" " />
-                        <label htmlFor="signin-email" className={styles.authFormLabel}>البريد الإلكتروني</label>
-                    </div>
-                    <div className={styles.authFormGroup}>
-                        <input id="signin-password" type="password" name="password" required className={styles.authInput} value={password} onChange={e => setPassword(e.target.value)} placeholder=" " />
-                        <label htmlFor="signin-password" className={styles.authFormLabel}>كلمة السر</label>
-                    </div>
-                    <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
-                        <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>ولوج</motion.span>}</AnimatePresence>
-                    </motion.button>
-                </form>
-            ) : (
-                <form onSubmit={handleSignUp} className={styles.credentialsForm}>
-                    <input type="hidden" name="returnTo" value={callbackUrl} />
-                     {/* THE DEFINITIVE FIX: Reverted to floating label structure */}
-                    <div className={styles.authFormGroup}>
-                        <input id="signup-email" type="email" name="email" required value={email} onChange={e => setEmail(e.target.value)} className={styles.authInput} placeholder=" " />
-                        <label htmlFor="signup-email" className={styles.authFormLabel}>البريد الإلكتروني</label>
-                    </div>
-                    <div className={styles.authFormGroup}>
-                        <input id="signup-password" type="password" name="password" required value={password} onChange={e => setPassword(e.target.value)} className={styles.authInput} placeholder=" " />
-                        <label htmlFor="signup-password" className={styles.authFormLabel}>كلمة السر (8 أحرف على الأقل)</label>
-                    </div>
-                    <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
-                        <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>أنشئ حسابًا</motion.span>}</AnimatePresence>
-                    </motion.button>
-                </form>
-            )}
+            <button onClick={onBack} className={styles.authBackButton}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg></button>
+            <div className={styles.formHeader}><h2 className={styles.formTitle}>الدخول بالبريد الإلكتروني</h2></div>
+            <form onSubmit={handleSignIn} className={styles.credentialsForm}>
+                <input type="hidden" name="returnTo" value={callbackUrl} />
+                <div className={styles.authFormGroup}>
+                    <input id="signin-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={e => setEmail(e.target.value)} placeholder=" " />
+                    <label htmlFor="signin-email" className={styles.authFormLabel}>البريد</label>
+                </div>
+                <div className={styles.authFormGroup}>
+                    <input id="signin-password" type="password" name="password" required className={styles.authInput} value={password} onChange={e => setPassword(e.target.value)} placeholder=" " />
+                    <label htmlFor="signin-password" className={styles.authFormLabel}>كلمة السر</label>
+                </div>
+                <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                    <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>تسجيل الدخول</motion.span>}</AnimatePresence>
+                </motion.button>
+            </form>
+            {message && <p className={`${styles.authMessage} ${styles.error}`}>{message.text}</p>}
+            <p className={styles.authViewSwitcher}>جديدٌ في رحابنا؟ <button type="button" onClick={() => {onSwitchToSignUp(); setMessage(null);}} className={styles.linkButton}>أنشئ حسابًا</button></p>
+            <button type="button" onClick={onForgotPassword} className={styles.linkButton} style={{textAlign: 'center', fontSize: '1.4rem', color: 'var(--text-secondary)', display: 'block', margin: '1rem auto 0'}}>أنسيت كلمة السر؟</button>
+        </motion.div>
+    );
+};
 
-            {message && <p className={`${styles.authMessage} ${message.type === 'error' ? styles.error : styles.success}`}>{message.text}</p>}
-            <p className={styles.authViewSwitcher}>
-                {view === 'signup' ? (
-                    <>لديك حساب بالفعل؟ <button type="button" onClick={() => {setView('signin'); setMessage(null);}} className={styles.linkButton}>ولوج</button></>
-                ) : (
-                    <>جديدٌ في EternalGames؟ <button type="button" onClick={() => {setView('signup'); setMessage(null);}} className={styles.linkButton}>أنشئ حسابًا</button></>
-                )}
-            </p>
-            {view === 'signin' && <button type="button" onClick={onForgotPassword} className={styles.linkButton} style={{textAlign: 'center', fontSize: '1.4rem', color: 'var(--text-secondary)', display: 'block', margin: '1rem auto 0'}}>هل نسيت كلمة السر؟</button>}
+const SignUpForm = ({ onSwitchToSignIn, onAuthSuccess, onBack, callbackUrl }: { onSwitchToSignIn: () => void, onAuthSuccess: () => void, onBack: () => void, callbackUrl: string }) => {
+    const [isPending, startTransition] = useTransition();
+    const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+    const router = useRouter();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setMessage(null);
+        const formData = new FormData(event.currentTarget);
+        startTransition(async () => {
+            const result = await signIn('signup', { redirect: false, ...Object.fromEntries(formData) });
+            if (result?.error) setMessage({ type: 'error', text: result.error });
+            else if (result?.url) { router.push(result.url); onAuthSuccess(); } 
+            else setMessage({ type: 'error', text: 'طرأ خطبٌ ما.' });
+        });
+    };
+    
+    return (
+        <motion.div className={styles.authCredentialsContent} variants={formContentVariants} initial="hidden" animate="visible" exit="hidden">
+            <button onClick={onBack} className={styles.authBackButton}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg></button>
+            <div className={styles.formHeader}><h2 className={styles.formTitle}>إنشاء حساب</h2></div>
+             <form onSubmit={handleSignUp} className={styles.credentialsForm}>
+                <input type="hidden" name="returnTo" value={callbackUrl} />
+                <div className={styles.authFormGroup}>
+                    <input id="signup-email" type="email" name="email" required value={email} onChange={e => setEmail(e.target.value)} className={styles.authInput} placeholder=" " />
+                    <label htmlFor="signup-email" className={styles.authFormLabel}>البريد</label>
+                </div>
+                <div className={styles.authFormGroup}>
+                    <input id="signup-password" type="password" name="password" required value={password} onChange={e => setPassword(e.target.value)} className={styles.authInput} placeholder=" " />
+                    <label htmlFor="signup-password" className={styles.authFormLabel}>كلمة السر (8 حروف على الأقل)</label>
+                </div>
+                <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                    <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>أنشئ حسابًا</motion.span>}</AnimatePresence>
+                </motion.button>
+            </form>
+            {message && <p className={`${styles.authMessage} ${styles.error}`}>{message.text}</p>}
+            <p className={styles.authViewSwitcher}>لديك حساب؟ <button type="button" onClick={() => {onSwitchToSignIn(); setMessage(null);}} className={styles.linkButton}>تسجيل الدخول</button></p>
         </motion.div>
     );
 };
@@ -162,25 +136,20 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
         setMessage(null);
         startTransition(async () => {
             const result = await requestPasswordReset(email);
-            if(result.success) {
-                setMessage({type: 'success', text: result.message});
-            } else {
-                setMessage({type: 'error', text: result.message});
-            }
+            setMessage({type: result.success ? 'success' : 'error', text: result.message});
         });
     };
 
     return (
         <motion.div className={styles.authCredentialsContent} variants={formContentVariants} initial="hidden" animate="visible" exit="hidden">
             <button onClick={onBack} className={styles.authBackButton}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg></button>
-            <div className={styles.formHeader}><h2 className={styles.formTitle}>إعادة تعيين كلمة السر</h2><p style={{color: 'var(--text-secondary)', fontSize: '1.5rem'}}>أدخل بريدك لتلقي رابط إعادة التعيين.</p></div>
+            <div className={styles.formHeader}><h2 className={styles.formTitle}>إعادة تعيين كلمة السر</h2><p style={{color: 'var(--text-secondary)', fontSize: '1.5rem'}}>أدخل بريدك ليصلك رابط التعيين.</p></div>
             <form onSubmit={handleSubmit} className={styles.credentialsForm}>
-                 {/* THE DEFINITIVE FIX: Reverted to floating label structure */}
                 <div className={styles.authFormGroup}>
                     <input id="reset-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder=" " />
-                    <label htmlFor="reset-email" className={styles.authFormLabel}>البريد الإلكتروني</label>
+                    <label htmlFor="reset-email" className={styles.authFormLabel}>البريد</label>
                 </div>
-                <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', height: '48px', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} animate={{ width: isPending ? '48px' : '100%', height: '48px', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                     <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>إرسال الرابط</motion.span>}</AnimatePresence>
                 </motion.button>
             </form>
@@ -188,6 +157,8 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
         </motion.div>
     );
 };
+
+// --- END: Refactored Form Components ---
 
 const authProviders = [
     { id: 'github', Icon: GitHubIcon, label: 'GitHub' },
@@ -197,7 +168,7 @@ const authProviders = [
 
 export default function SignInModal() {
     const { isSignInModalOpen, setSignInModalOpen } = useUserStore();
-    const [view, setView] = useState<'orbs' | 'credentials' | 'forgotPassword'>('orbs');
+    const [view, setView] = useState<'orbs' | 'signin' | 'signup' | 'forgotPassword'>('orbs');
     const [isMounted, setIsMounted] = useState(false);
     const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
     const pathname = usePathname();
@@ -224,23 +195,10 @@ export default function SignInModal() {
                             <div className={styles.authOrbRowTop}>
                                 <AnimatePresence>
                                     {view === 'orbs' && authProviders.map((provider, i) => {
-                                        const direction = i - 1; // -1 (left), 0 (center), 1 (right)
+                                        const direction = i - 1;
                                         return (
-                                            <motion.div
-                                                key={provider.id}
-                                                custom={direction}
-                                                variants={satelliteVariants}
-                                                initial="hidden"
-                                                animate="visible"
-                                                exit="hidden"
-                                            >
-                                                <AuthOrb 
-                                                    Icon={provider.Icon} 
-                                                    onClick={() => handleProviderSignIn(provider.id)} 
-                                                    ariaLabel={`الولوج عبر ${provider.label}`} 
-                                                    isLoading={loadingProvider === provider.id} 
-                                                    isDisabled={!!loadingProvider} 
-                                                />
+                                            <motion.div key={provider.id} custom={direction} variants={satelliteVariants} initial="hidden" animate="visible" exit="hidden">
+                                                <AuthOrb Icon={provider.Icon} onClick={() => handleProviderSignIn(provider.id)} ariaLabel={`الدخول عبر ${provider.label}`} isLoading={loadingProvider === provider.id} isDisabled={!!loadingProvider} />
                                             </motion.div>
                                         );
                                     })}
@@ -248,12 +206,7 @@ export default function SignInModal() {
                             </div>
                             <AnimatePresence>
                                 {view === 'orbs' && (
-                                    <motion.p 
-                                        className={styles.authFooterText}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1, transition: { delay: 0.2 } }}
-                                        exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                                    >
+                                    <motion.p className={styles.authFooterText} initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.2 } }} exit={{ opacity: 0, transition: { duration: 0.2 } }}>
                                         انضم إلى EternalGames عبر مزود خدمة أو تابع بالبريد.
                                     </motion.p>
                                 )}
@@ -262,17 +215,24 @@ export default function SignInModal() {
                         
                         <div className={styles.authMorphWrapper} style={{ zIndex: 10 }}>
                             <AnimatePresence mode="popLayout" initial={false}>
-                                {view === 'orbs' ? (
+                                {view === 'orbs' && (
                                     <motion.div key="orbs" layoutId="auth-panel" style={{ zIndex: loadingProvider ? 0 : 'auto' }}>
-                                        <AuthOrb Icon={EternalGamesIcon} onClick={() => setView('credentials')} ariaLabel="الولوج بالبريد" isLarge isDisabled={!!loadingProvider} />
+                                        <AuthOrb Icon={EternalGamesIcon} onClick={() => setView('signin')} ariaLabel="الدخول بالبريد" isLarge isDisabled={!!loadingProvider} />
                                     </motion.div>
-                                ) : view === 'credentials' ? (
-                                    <motion.div key="credentials" layoutId="auth-panel" className={styles.authCredentialsPanel}>
-                                        <CredentialsForm onBack={() => setView('orbs')} onAuthSuccess={handleClose} onForgotPassword={() => setView('forgotPassword')} callbackUrl={pathname} />
+                                )}
+                                {view === 'signin' && (
+                                    <motion.div key="signin" layoutId="auth-panel" className={styles.authCredentialsPanel}>
+                                        <SignInForm onSwitchToSignUp={() => setView('signup')} onForgotPassword={() => setView('forgotPassword')} onAuthSuccess={handleClose} onBack={() => setView('orbs')} callbackUrl={pathname} />
                                     </motion.div>
-                                ) : (
+                                )}
+                                {view === 'signup' && (
+                                    <motion.div key="signup" layoutId="auth-panel" className={styles.authCredentialsPanel}>
+                                        <SignUpForm onSwitchToSignIn={() => setView('signin')} onAuthSuccess={handleClose} onBack={() => setView('orbs')} callbackUrl={pathname} />
+                                    </motion.div>
+                                )}
+                                {view === 'forgotPassword' && (
                                     <motion.div key="forgot-password" layoutId="auth-panel" className={styles.authCredentialsPanel}>
-                                        <ForgotPasswordForm onBack={() => setView('credentials')} />
+                                        <ForgotPasswordForm onBack={() => setView('signin')} />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -283,6 +243,6 @@ export default function SignInModal() {
         </AnimatePresence>
     );
 
-    if (!isMounted) { return null; }
+    if (!isMounted) return null;
     return createPortal(modalContent, document.body);
 }

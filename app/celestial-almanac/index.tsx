@@ -37,12 +37,12 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
 
   const PRESETS: Record<Preset, ConstellationSettings> = useMemo(() => ({
     'أداء': { activePreset: 'أداء', starCountMultiplier: 0.2, bloomIntensity: 0, alwaysShowOrbits: false, flawlessPathThickness: 1 },
-    'متوازن': { activePreset: 'متوازن', starCountMultiplier: 1.0, bloomIntensity: 1.1, alwaysShowOrbits: false, flawlessPathThickness: 1.5 },
+    'مُتَّزِن': { activePreset: 'مُتَّزِن', starCountMultiplier: 1.0, bloomIntensity: 1.1, alwaysShowOrbits: false, flawlessPathThickness: 1.5 },
     'فائق': { activePreset: 'فائق', starCountMultiplier: 1.5, bloomIntensity: 1.8, alwaysShowOrbits: false, flawlessPathThickness: 2.0 },
   }), []);
 
-  const [settings, setSettings] = useState<ConstellationSettings>(PRESETS['متوازن']);
-  const userIntentBloom = useRef(PRESETS['متوازن'].bloomIntensity);
+  const [settings, setSettings] = useState<ConstellationSettings>(PRESETS['مُتَّزِن']);
+  const userIntentBloom = useRef(PRESETS['مُتَّزِن'].bloomIntensity);
 
   useEffect(() => {
     if (resolvedTheme === 'light') {
@@ -126,7 +126,7 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
         {isPanelOpen && <ConstellationControlPanel settings={settings} setSettings={setSettings} onClose={() => setIsPanelOpen(false)} onPresetChange={handlePresetChange} isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />}
       </AnimatePresence>
       <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - var(--nav-height-scrolled))' }}>
-        <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات التقويم" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
+        <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الفلك" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
           <CelestialGearIcon />
         </motion.button>
         <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
@@ -135,10 +135,10 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
         {orbitalData.length === 0 && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', pointerEvents: 'none', padding: '2rem' }}>
             <motion.h1 className="page-title" style={{ fontSize: '6rem' }} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}>
-              التقويم يرسم...
+              الفلكُ يُرسَم...
             </motion.h1>
             <motion.p style={{ maxWidth: '600px', fontSize: '2rem', color: 'var(--text-secondary)' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}>
-              يتم جمع بيانات الإصدار. ستظهر الخريطة السماوية قريبًا.
+              تُجمعُ بياناتُ الإصدار، وستبزغُ الخريطةُ عما قريب.
             </motion.p>
           </div>
         )}

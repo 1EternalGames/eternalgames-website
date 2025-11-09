@@ -18,7 +18,7 @@ variable: '--font-main',
 weight: ['400', '500', '700', '800'],
 });
 
-export const metadata = { title: 'EternalGames | الألعاب أبدية', description: 'الألعاب أبدية.', };
+export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا فناء للألعاب.', };
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
 return (

@@ -55,7 +55,7 @@ async function findOrCreateSanityCreator(userId: string, sanityType: string) {
 export async function updateUserRolesAction(userId: string, roleIds: number[]) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.roles.includes('DIRECTOR')) {
-        return { success: false, message: "غير مصرح لك." };
+        return { success: false, message: "غير مُخَوَّل." };
     }
 
     try {
@@ -93,6 +93,6 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
         return { success: true, updatedRoles: updatedUser.roles as Role[] };
     } catch (error) {
         console.error("Failed to update user roles:", error);
-        return { success: false, message: "A database error occurred." };
+        return { success: false, message: "خطبٌ في قاعدة البيانات." };
     }
 }

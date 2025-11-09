@@ -62,7 +62,7 @@ export default async function PublicProfilePage({ params }: { params: { username
                     <Image src={avatarSrc} alt={user.name || 'صورة المستخدم'} width={150} height={150} className={styles.profileAvatar} priority />
                     <h1 className={styles.profileName}>{user.name}</h1>
                     {user.username && <p className={styles.profileMeta} style={{color: 'var(--accent)'}}>@{user.username}</p>}
-                    <p className={styles.profileMeta}>عضو منذ {formattedJoinDate}</p>
+                    <p className={styles.profileMeta}>عضوٌ منذ {formattedJoinDate}</p>
                     
                     {user.username && hasCreatorRole(userRoles) && (
                          <Link href={`/creators/${user.username}`} className="primary-button" style={{marginTop: '2rem', display: 'block', textAlign: 'center'}}>
@@ -72,14 +72,14 @@ export default async function PublicProfilePage({ params }: { params: { username
                 </aside>
 
                 <main className={styles.profileMain}>
-                    {user.bio && ( <section className={styles.profileSection}> <h2 className={styles.profileSectionTitle}>حول</h2> <p style={{ fontSize: '1.8rem', lineHeight: 1.7 }}>{user.bio}</p> </section> )}
+                    {user.bio && ( <section className={styles.profileSection}> <h2 className={styles.profileSectionTitle}>عن</h2> <p style={{ fontSize: '1.8rem', lineHeight: 1.7 }}>{user.bio}</p> </section> )}
                     {earnedBadges.length > 0 && ( <section className={styles.profileSection}> <h2 className={styles.profileSectionTitle}>الأوسمة</h2> <div className={styles.badgeGrid}> {earnedBadges.map(badge => ( <div key={badge.id} title={badge.description} className={styles.badgeItem}> <badge.Icon className={`${styles.badgeIcon} ${styles[`badgeIcon${badge.id}`]}`} /> <span>{badge.name}</span> </div> ))} </div> </section> )}
                     <section className={styles.profileSection}>
-                        <h2 className={styles.profileSectionTitle}>النشاط الأخير</h2>
+                        <h2 className={styles.profileSectionTitle}>آخرُ نشاط</h2>
                         {user.comments.length > 0 ? (
                             <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '2rem'}}>
                                 {user.comments.map(comment => {
-                                    const contentTitle = titleMap.get(comment.contentSlug) || 'محتوى لم يعد متاحًا';
+                                    const contentTitle = titleMap.get(comment.contentSlug) || 'تعليقٌ لم يعد متاحًا';
                                     const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'news';
                                     const linkHref = `/${path}/${comment.contentSlug}`;
 
@@ -95,7 +95,7 @@ export default async function PublicProfilePage({ params }: { params: { username
                                     );
                                 })}
                             </ul>
-                        ) : ( <p>{user.name} لم ينشر أي تعليقات بعد.</p> )}
+                        ) : ( <p>{user.name} لم يخطَّ تعليقًا بعد.</p> )}
                     </section>
                 </main>
             </div>

@@ -21,7 +21,7 @@ export async function requestPasswordReset(email: string) {
         if (!user || !user.password) {
             // Don't reveal if a user exists or not for security reasons.
             // Also, don't allow password resets for OAuth users.
-            return { success: true, message: 'إن كان البريد مسجلاً، فقد أُرسِلَ إليه رابط.' };
+            return { success: true, message: 'إن صَحَّ بريدُك، أتاك الرابط.' };
         }
 
         // Invalidate any existing tokens for this user
@@ -40,17 +40,17 @@ export async function requestPasswordReset(email: string) {
 
         await sendPasswordResetEmail(email, token);
 
-        return { success: true, message: 'إن كان البريد مسجلاً، فقد أُرسِلَ إليه رابط.' };
+        return { success: true, message: 'إن صَحَّ بريدُك، أتاك الرابط.' };
     } catch (error) {
         console.error('Password reset request failed:', error);
-        return { success: false, message: 'طرأ خطأ غير متوقع.' };
+        return { success: false, message: 'طرأ خطبٌ ما.' };
     }
 }
 
 export async function resetPassword(token: string, newPassword: string) {
     try {
         if (!token || !newPassword) {
-            return { success: false, message: 'Invalid request.' };
+            return { success: false, message: 'طلبٌ غير صالح.' };
         }
 
         const resetToken = await prisma.passwordResetToken.findUnique({
@@ -65,7 +65,7 @@ export async function resetPassword(token: string, newPassword: string) {
         }
 
         if (newPassword.length < 8) {
-            return { success: false, message: 'يجب ألا تقل كلمة السر عن ثمانية أحرف.' };
+            return { success: false, message: 'كلمة السر لا تقل عن ثمانيةِ حروف.' };
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -79,10 +79,10 @@ export async function resetPassword(token: string, newPassword: string) {
             where: { id: resetToken.id },
         });
 
-        return { success: true, message: 'تم استعادة كلمة السر بنجاح.' };
+        return { success: true, message: 'استُعيدت كلمة السّر.' };
     } catch (error) {
         console.error('Password reset failed:', error);
-        return { success: false, message: 'طرأ خطأ غير متوقع.' };
+        return { success: false, message: 'طرأ خطبٌ ما.' };
     }
 }
 

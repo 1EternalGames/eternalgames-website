@@ -125,7 +125,7 @@ const EditorPreviewButton = () => {
             href={liveUrl}
             target="_blank"
             className={`${editorStyles.iconButton} no-underline`}
-            title="Preview Live Page"
+            title="معاينة الصفحة الحية"
             initial="rest"
             whileHover="hover"
             whileTap="hover"
@@ -139,7 +139,7 @@ const EditorPreviewButton = () => {
         <motion.button
             className={editorStyles.iconButton}
             disabled
-            title="Document is not published"
+            title="المستند غير منشور"
         >
             <PreviewIcon />
         </motion.button>
@@ -192,7 +192,7 @@ const Navbar = () => {
 
                     <div className={styles.mobileView}>
                         <div className={styles.mobileNavGroupLeft}>
-                            <button className={styles.hamburgerButton} onClick={toggleMobileMenu} aria-label="Toggle menu">
+                            <button className={styles.hamburgerButton} onClick={toggleMobileMenu} aria-label="تبديل القائمة">
                                 <HamburgerIcon isOpen={isMobileMenuOpen} />
                             </button>
                             {isEditorActive && (

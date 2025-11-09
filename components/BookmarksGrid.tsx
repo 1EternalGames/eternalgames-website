@@ -30,7 +30,7 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
     }, [bookmarksFromStore, bookmarkedItems]);
 
     if (initialItems.length === 0 && bookmarkedItems.length === 0) {
-        return <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>لم تحفظ أي محتوى بعد.</p>;
+        return <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>لم تحفظ شيئًا بعد.</p>;
     }
 
     return (

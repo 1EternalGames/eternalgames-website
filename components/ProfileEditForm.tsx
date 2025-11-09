@@ -107,10 +107,10 @@ export default function ProfileEditForm({ user }: { user: User}) {
                     if (!profileResult.success) throw new Error(profileResult.message);
                 }
                 await updateSession();
-                toast.success('تم تحديث الملف الشخصي بنجاح!');
+                toast.success('حُدِّثَ الملف بنجاح!');
                 setAvatarFile(null);
             } catch (error: any) {
-                toast.error(error.message || 'Failed to update profile.');
+                toast.error(error.message || 'أخفق تحديث الملف.');
             }
         });
     }
@@ -128,7 +128,7 @@ export default function ProfileEditForm({ user }: { user: User}) {
                             <div className={avatarStyles.avatarUploadPrompt}><UploadIcon /><span>تغيير</span></div>
                             <Image src={avatarPreview} alt="Avatar preview" width={80} height={80} className={avatarStyles.profileAvatarPreview} />
                         </button>
-                        <p className={avatarStyles.formDescription}>انقر لرفع صورة جديدة (الحد الأقصى 4.5 ميجابايت).</p>
+                        <p className={avatarStyles.formDescription}>انقر لرفع صورة جديدة (أقصاه 4.5 ميجابايت).</p>
                         <input ref={inputFileRef} type="file" name="avatar_source" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" style={{ display: 'none' }} disabled={isSaving} />
                     </div>
                 </div>
@@ -154,29 +154,57 @@ export default function ProfileEditForm({ user }: { user: User}) {
                     </div>
                     <div className={`profile-form-group ${hasContent(instagramHandle)}`}>
                         <input id="instagramHandle" name="instagramHandle" value={instagramHandle} onChange={(e) => setInstagramHandle(e.target.value)} className="profile-input" placeholder=" "/>
-                        <label htmlFor="instagramHandle" className="profile-form-label">حساب انستغرام</label>
+                        <label htmlFor="instagramHandle" className="profile-form-label">حساب إنستغرام</label>
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--bg-primary)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <label htmlFor="agePublic" style={{fontFamily: 'var(--font-ui)', fontWeight: 500}}>إظهار العمر للعامة</label>
+                        <label htmlFor="agePublic" style={{fontFamily: 'var(--font-ui)', fontWeight: 500}}>إظهار العمر علنًا</label>
                         <ToggleSwitch name="agePublic" checked={agePublic} onChange={setAgePublic} />
                     </div>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <label htmlFor="countryPublic" style={{fontFamily: 'var(--font-ui)', fontWeight: 500}}>إظهار البلد للعامة</label>
+                        <label htmlFor="countryPublic" style={{fontFamily: 'var(--font-ui)', fontWeight: 500}}>إظهار البلد علنًا</label>
                         <ToggleSwitch name="countryPublic" checked={countryPublic} onChange={setCountryPublic} />
                     </div>
                 </div>
 
-                <motion.button type="submit" className="primary-button" disabled={isSaveDisabled} animate={{ width: isSaving ? '48px' : '100%', height: '48px', borderRadius: isSaving ? '50%' : '5px', }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                <motion.button
+                    type="submit"
+                    className="primary-button"
+                    disabled={isSaveDisabled}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden'
+                    }}
+                    animate={{
+                        width: isSaving ? '48px' : '100%',
+                        height: '48px',
+                        borderRadius: isSaving ? '50%' : '5px',
+                        paddingLeft: isSaving ? '0rem' : '2.4rem',
+                        paddingRight: isSaving ? '0rem' : '2.4rem',
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
                     <AnimatePresence mode="wait">
-                        {isSaving ? ( <ButtonLoader key="loader" /> ) : ( <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>حفظ التغييرات</motion.span> )}
+                        {isSaving ? (
+                            <ButtonLoader key="loader" />
+                        ) : (
+                            <motion.span
+                                key="text"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                style={{ whiteSpace: 'nowrap' }}
+                            >
+                                حفظ التغييرات
+                            </motion.span>
+                        )}
                     </AnimatePresence>
                 </motion.button>
             </form>
         </>
     );
 }
-
-

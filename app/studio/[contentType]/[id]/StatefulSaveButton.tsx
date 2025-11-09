@@ -22,11 +22,11 @@ export function StatefulSaveButton({ onSave, hasChanges }: { onSave: () => Promi
         const success = await onSave();
         if (success) {
             setSaveStatus('success');
-            toast.success('حُفظت التغييرات بنجاح!', 'left'); // Position toast on the left for studio
+            toast.success('حُفظت التغييرات!', 'left'); // Position toast on the left for studio
             setTimeout(() => setSaveStatus('idle'), 2000);
         } else {
             setSaveStatus('error');
-            toast.error('فشل حفظ التغييرات.', 'left');
+            toast.error('أخفق حفظ التغييرات.', 'left');
             setTimeout(() => setSaveStatus('idle'), 3000);
         }
     };

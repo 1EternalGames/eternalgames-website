@@ -63,7 +63,7 @@ export default function ResetPasswordClientPage() {
                     </div>
                     <div className="profile-form-group">
                         <input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="profile-input" placeholder=" " />
-                        <label htmlFor="confirmPassword" className="profile-form-label">تأكيد كلمة السر الجديدة</label>
+                        <label htmlFor="confirmPassword" className="profile-form-label">تأكيد الجديدة</label>
                     </div>
                     
                     <AnimatePresence>

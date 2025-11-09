@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import styles from '../Editor.module.css';
 import filterStyles from '@/components/filters/Filters.module.css';
 
-const PLATFORMS = ['PC', 'PS5', 'Xbox', 'Switch'];
+const PLATFORMS = ['PC', 'PlayStation 5', 'Xbox', 'Switch'];
 
 interface PlatformInputProps {
     selectedPlatforms: string[];

@@ -65,15 +65,20 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         return items;
     }, [allFetchedReviews, searchTerm, activeSort, selectedScoreRange, selectedGame, selectedTags]);
     
+    const hasActiveFilters = useMemo(() => {
+        return !!searchTerm || selectedScoreRange !== 'All' || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
+    }, [searchTerm, selectedScoreRange, selectedGame, selectedTags, activeSort]);
+
     const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !searchTerm && selectedScoreRange === 'All' && !selectedGame && selectedTags.length === 0;
-    }, [nextOffset, searchTerm, selectedScoreRange, selectedGame, selectedTags]);
+        return nextOffset !== null && !hasActiveFilters;
+    }, [nextOffset, hasActiveFilters]);
 
     useEffect(() => {
         if (isInView && canLoadMore && !isLoading) {
             const loadMore = async () => {
                 setIsLoading(true);
                 const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: activeSort });
+                if(selectedScoreRange !== 'All') params.set('score', selectedScoreRange);
                 try {
                     const result = await fetchReviews(params);
                     setAllFetchedReviews(prev => [...prev, ...result.data]);
@@ -86,7 +91,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
             };
             loadMore();
         }
-    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort]);
+    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort, selectedScoreRange]);
 
     const handleTagToggle = (tag: SanityTag) => { setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAll = () => { setSearchTerm(''); setSelectedScoreRange('All'); setSelectedGame(null); setSelectedTags([]); setActiveSort('latest'); };
@@ -124,7 +129,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 <ReviewFilters activeSort={activeSort} onSortChange={setActiveSort} selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
                 
                 <div style={{marginBottom: '6rem'}}>
-                    <h2 className="section-title" style={{textAlign: 'right', marginBottom: '3rem', fontSize: 'clamp(2.8rem, 4vw, 3.6rem)'}}>جميع المراجعات</h2>
+                    <h2 className="section-title" style={{textAlign: 'right', marginBottom: '3rem', fontSize: 'clamp(2.8rem, 4vw, 3.6rem)'}}>كلُّ المراجعات</h2>
                     <motion.div layout className="content-grid">
                         {gridReviews.map((review, index) => (
                             <ArticleCard
@@ -147,16 +152,16 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                     </AnimatePresence>
 
                     <AnimatePresence>
-                        {(!canLoadMore && !isLoading && gridReviews.length > 0) && (
+                        {(!isLoading && gridReviews.length > 0 && (nextOffset === null || hasActiveFilters)) && (
                              <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                {canLoadMore ? 'وصلت إلى نهاية الأرشيف.' : 'امسح المرشحات لتحميل المزيد.'}
+                                {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
                              </motion.p>
                         )}
                     </AnimatePresence>
 
                     {gridReviews.length === 0 && !isLoading && (
                         <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            لا توجد مراجعات تطابق ما اخترت.
+                            لا مراجعات توافقُ ما اخترت.
                         </motion.p>
                     )}
                 </div>

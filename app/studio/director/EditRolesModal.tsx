@@ -40,18 +40,18 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
             const result = await updateUserRolesAction(user.id, Array.from(finalRoleIds));
             if (result.success && result.updatedRoles) {
                 onUpdate(user.id, result.updatedRoles);
-                toast.success(`Roles for ${user.name} updated.`);
+                toast.success(`أدوار ${user.name} حُدِّثت.`);
                 onClose();
             } else {
-                toast.error(result.message || 'فشل تحديث الأدوار.');
+                toast.error(result.message || 'أخفق تحديث الأدوار.');
             }
         });
     };
 
     return (
         <Modal isOpen={!!user} onClose={onClose}>
-            <h3 style={{ marginTop: 0 }}>Edit Roles for {user.name}</h3>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '-1rem' }}>حدد الأدوار التي يجب أن يمتلكها هذا المستخدم.</p>
+            <h3 style={{ marginTop: 0 }}>تعديل أدوار {user.name}</h3>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '-1rem' }}>اختر الأدوار التي سيتقلَّدها هذا المستخدم.</p>
             <div className="roles-checklist" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: '1fr 1fr', 

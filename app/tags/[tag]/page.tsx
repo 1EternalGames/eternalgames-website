@@ -25,7 +25,7 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
         return (
             <div className="container page-container">
                 <h1 className="page-title">وسم: &quot;{translateTag(tagMeta.title)}&quot;</h1>
-                <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يتم نشر أي محتوى بهذا الوسم بعد.</p>
+                <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُنشر عملٌ بهذا الوسم بعد.</p>
             </div>
         );
     }

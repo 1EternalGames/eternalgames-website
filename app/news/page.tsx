@@ -21,7 +21,7 @@ export default async function NewsPage() {
     return (
         <div className="container page-container">
             <h1 className="page-title">موجز الأنباء</h1>
-            <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لا توجد أخبار حاليًا. سنعود بالجديد.</p>
+            <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لا أنباءَ تُذكَر. سنوافيكم بالجديد.</p>
         </div>
     );
   }

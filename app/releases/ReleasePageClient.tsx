@@ -8,9 +8,9 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import styles from './ReleasesPage.module.css';
 import filterStyles from '@/components/filters/Filters.module.css';
 
-type Platform = 'الكل' | 'PC' | 'PS5' | 'Xbox' | 'Switch';
-const PLATFORMS: Platform[] = ['الكل', 'PC', 'PS5', 'Xbox', 'Switch'];
-const PLATFORM_LABELS: Record<Platform, string> = { 'الكل': 'الكل', 'PC': 'PC', 'PS5': 'PS5', 'Xbox': 'Xbox', 'Switch': 'Switch' };
+type Platform = 'الكل' | 'PC' | 'PlayStation 5' | 'Xbox' | 'Switch';
+const PLATFORMS: Platform[] = ['الكل', 'PC', 'PlayStation 5', 'Xbox', 'Switch'];
+const PLATFORM_LABELS: Record<Platform, string> = { 'الكل': 'الكل', 'PC': 'PC', 'PlayStation 5': 'PlayStation 5', 'Xbox': 'Xbox', 'Switch': 'Switch' };
 
 const PlatformFilters = ({ activeFilter, onFilterChange }: { activeFilter: Platform, onFilterChange: (platform: Platform) => void }) => {
   const ref = useRef(null);
@@ -83,7 +83,7 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
   return (
     <div className={styles.chronoStreamLayoutWrapper}>
       <div className={styles.chronoContentWrapper}>
-          <h1 className="page-title">الإصدارات القادمة لسنة 2025</h1>
+          <h1 className="page-title">إصدارات 2025 المُرتقبة</h1>
           <PlatformFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
       </div>
       <div ref={mainRef} className={styles.chronoTimelineSections} style={{ position: 'relative' }}>

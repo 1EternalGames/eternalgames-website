@@ -39,7 +39,7 @@ export async function setBookmarkAction(contentId: number, contentType: string, 
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setBookmarkAction failed:", error);
-        return { success: false, error: error.message || 'طرأ خطأ غير متوقع.' };
+        return { success: false, error: error.message || 'طرأ خطبٌ ما.' };
     }
 }
 
@@ -54,7 +54,7 @@ export async function setLikeAction(contentId: number, contentType: string, cont
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setLikeAction failed:", error);
-        return { success: false, error: error.message || 'طرأ خطأ غير متوقع.' };
+        return { success: false, error: error.message || 'طرأ خطبٌ ما.' };
     }
 }
 

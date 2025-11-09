@@ -78,7 +78,7 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick, isTouchDevice }:
                         style={{ objectFit: 'cover' }}
                         loader={sanityLoader}
                     />
-                ) : (<span style={{color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600}}>NO IMAGE</span>)}
+                ) : (<span style={{color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600}}>بلا صورة</span>)}
             </motion.div>
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, padding: '1.25rem', color: 'white', pointerEvents: 'none' }}>
@@ -158,12 +158,12 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     return (
         <>
             <header className={styles.studioHeader}>
-                <h1 className={`${styles.studioTitle} page-title`}>ديوان القيادة</h1>
+                <h1 className={`${styles.studioTitle} page-title`}>ديوان الصنعة</h1>
                 <p className={styles.studioSubtitle}>قُد دفّة محتواك في رحاب EternalGames.</p>
             </header>
 
             <div className={styles.searchWrapper}>
-                <input type="search" placeholder="ابحث في العناوين..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`${styles.searchInput} profile-input`} />
+                <input type="search" placeholder="استنطق المحفوظات..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`${styles.searchInput} profile-input`} />
             </div>
 
             {shouldShowTabs && (
@@ -185,7 +185,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                     ))}
                 </AnimatePresence>
             </motion.div>
-            {filteredContent.length === 0 && <p style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}>لا يوجد محتوى.</p>}
+            {filteredContent.length === 0 && <p style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}>لا محتوى.</p>}
 
             <GenesisOrb />
         </>

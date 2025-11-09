@@ -75,11 +75,11 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
             {isOpen && (
                 <motion.div className={styles.searchOverlay} onClick={onClose} variants={overlayVariants} initial="hidden" animate="visible" exit="hidden" style={{ zIndex: 2000 }} >
                     <motion.div className={styles.searchContainer} onClick={(e) => e.stopPropagation()} variants={containerVariants} initial="hidden" animate="visible" exit="hidden" >
-                        <button className={styles.searchCloseButton} onClick={onClose} aria-label="Close search"><CrossIcon /></button>
+                        <button className={styles.searchCloseButton} onClick={onClose} aria-label="إغلاق البحث"><CrossIcon /></button>
                         <input ref={inputRef} type="search" className={styles.searchInput} placeholder="استنطاق الأرشيف" value={query} onChange={(e) => setQuery(e.target.value)} />
                         <div className={styles.searchResultsList}>
                             <AnimatePresence mode="wait">
-                                {isInitialPrompt && (<motion.p key="prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={styles.searchInitialPrompt}>خُطَّ حروفك لاستنطاق السجلات.</motion.p> )}
+                                {isInitialPrompt && (<motion.p key="prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={styles.searchInitialPrompt}>خُطَّ ما في نفسِكَ تُجِبْكَ السجلات.</motion.p> )}
                                 {isSearching && (<motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><div className="spinner" style={{ width: '50px', height: '50px', borderTopColor: 'var(--accent)' }} /></motion.div> )}
                                 {hasContent && (
                                     <motion.ul key="results" variants={listVariants} initial="hidden" animate="visible" exit="hidden" >
@@ -102,7 +102,7 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
                                         ))}
                                     </motion.ul>
                                 )}
-                                {!isSearching && query.length >= 3 && results.length === 0 && (<motion.div key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ color: 'var(--text-secondary)', marginTop: '3rem', textAlign: 'center', fontSize: '2.4rem' }}><p>لا أثر في السجلات لـ &quot;{query}&quot;.</p></motion.div>)}
+                                {!isSearching && query.length >= 3 && results.length === 0 && (<motion.div key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ color: 'var(--text-secondary)', marginTop: '3rem', textAlign: 'center', fontSize: '2.4rem' }}><p>لا أثرَ في السجلاتِ لـ &quot;{query}&quot;.</p></motion.div>)}
                             </AnimatePresence>
                         </div>
                     </motion.div>

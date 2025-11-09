@@ -18,7 +18,7 @@ const UserRow = ({ user, allRoles, onEdit }: { user: UserWithRoles, allRoles: Ro
     const rolesToDisplay = currentRoleNames.filter(name => name !== 'USER').sort();
     
     // Fallback if no roles other than USER are assigned
-    const displayString = rolesToDisplay.length > 0 ? rolesToDisplay.join(', ') : 'User (Default)';
+    const displayString = rolesToDisplay.length > 0 ? rolesToDisplay.join(', ') : 'مستخدم (افتراضي)';
     
     return (
         <motion.div
@@ -120,7 +120,7 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
             <div className="user-management-container">
                 <input
                     type="search"
-                    placeholder="ابحث بالاسم أو البريد الإلكتروني..."
+                    placeholder="ابحث بالاسم أو البريد..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="profile-input search-input"

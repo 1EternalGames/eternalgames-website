@@ -35,7 +35,7 @@ const formatFileSize = (bytes: number): string => {
 
 export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<typeof useToast>, quality: UploadQuality) => {
     try {
-        toast.info('جار تحسين الصورة للرفع...', 'left');
+        toast.info('جارٍ تهيئة الصورة للرفع...', 'left');
         const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, quality);
         
         const reader = new FileReader();
@@ -46,7 +46,7 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
             const transaction = tr.replaceSelectionWith(node);
             editor.view.dispatch(transaction);
             
-            toast.info(`جار رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
+            toast.info(`جارٍ رفع الصورة (${formatFileSize(optimizedFile.size)} @ ${Math.round(finalQuality * 100)}%)...`, 'left');
             
             const formData = new FormData();
             formData.append('file', optimizedFile);
@@ -69,14 +69,14 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
                         assetId: result.asset._id,
                     });
                     editor.view.dispatch(finalTransaction);
-                    toast.success('تم رفع الصورة بنجاح.', 'left');
+                    toast.success('رُفِعت الصورة.', 'left');
                 } else {
-                    throw new Error(result.error || 'فشل رفع أصل الصورة إلى Sanity.');
+                    throw new Error(result.error || 'أخفق رفع أصل الصورة.');
                 }
             }
         };
     } catch (error: any) {
-        toast.error(error.message || 'فشل رفع الصورة.', 'left');
+        toast.error(error.message || 'أخفق رفع الصورة.', 'left');
         let imagePos: number | null = null;
         editor.state.doc.descendants((node, pos) => {
             if (node.type.name === 'image' && node.attrs.src.startsWith('data:')) {
@@ -124,7 +124,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 },
             }),
             Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'editor-link' }, }),
-            Placeholder.configure({ placeholder: 'اكتب محتواك هنا...' }),
+            Placeholder.configure({ placeholder: 'خُطَّ ما في نفسِكَ هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
         ],
         editorProps: {

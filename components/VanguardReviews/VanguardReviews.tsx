@@ -52,7 +52,7 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     );
 };
 
-const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean, isHovered: boolean }) => {
+const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered, isInteractive }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean, isHovered: boolean, isInteractive: boolean }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
@@ -81,6 +81,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
         : review.imageUrl;
 
     const showCredits = isCenter || isHovered;
+    
+    // Conditionally apply hover handlers only when interactive
+    const livingCardHandlers = isInteractive ? {
+        onMouseMove: livingCardAnimation.onMouseMove,
+        onMouseEnter: livingCardAnimation.onHoverStart,
+        onMouseLeave: livingCardAnimation.onHoverEnd,
+    } : {};
 
     return (
         <div className={styles.cardWrapper}>
@@ -92,9 +99,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
             >
                 <motion.div
                     ref={livingCardRef}
-                    onMouseMove={livingCardAnimation.onMouseMove}
-                    onMouseEnter={livingCardAnimation.onHoverStart}
-                    onMouseLeave={livingCardAnimation.onHoverEnd}
+                    {...livingCardHandlers}
                     style={{ ...livingCardAnimation.style, transformStyle: 'preserve-3d', height: '100%' }}
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
@@ -233,8 +238,8 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                         <motion.div 
                             key={review.id} 
                             className={styles.cardSlot} 
-                            onMouseEnter={() => setHoveredId(review.id)} 
-                            onMouseLeave={() => setHoveredId(null)}
+                            onMouseEnter={() => initialAnimHasRun && setHoveredId(review.id)} 
+                            onMouseLeave={() => initialAnimHasRun && setHoveredId(null)}
                             initial={!initialAnimHasRun ? initialAnimationConfig : false}
                             animate={style}
                             transition={{
@@ -250,6 +255,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                                 isPriority={isCenter}
                                 isMobile={isMobile}
                                 isHovered={isHovered}
+                                isInteractive={initialAnimHasRun}
                             />
                         </motion.div>
                     );

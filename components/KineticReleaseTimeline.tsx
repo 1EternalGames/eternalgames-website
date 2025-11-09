@@ -113,7 +113,7 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                 {releasesForThisMonth.length > 0 ? (
                     releasesForThisMonth.map((release, index) => ( <TimelineItem key={release._id} release={release} index={index} /> ))
                 ) : (
-                    <motion.div style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}>لا توجد إصدارات مجدولة لهذا الشهر.</motion.div>
+                    <motion.div style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}>لا إصدارات مجدولة لهذا الشهر.</motion.div>
                 )}
             </div>
 
