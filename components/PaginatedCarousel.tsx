@@ -1,4 +1,4 @@
-// components/homepage/PaginatedLatestArticles.tsx
+// components/PaginatedCarousel.tsx
 'use client';
 
 import React, { useState, useEffect, useRef, memo } from 'react';
@@ -7,8 +7,8 @@ import Image from 'next/image';
 import { CardProps } from '@/types';
 import CreatorCredit from '@/components/CreatorCredit';
 import { Calendar03Icon } from '@/components/icons/index';
-import styles from './PaginatedLatestArticles.module.css';
-import feedStyles from './feed/Feed.module.css';
+import styles from './PaginatedCarousel.module.css';
+import feedStyles from './homepage/feed/Feed.module.css';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 
@@ -61,12 +61,12 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
 });
 LatestArticleListItem.displayName = "LatestArticleListItem";
 
-type PaginatedLatestArticlesProps = {
+type PaginatedCarouselProps = {
     items: CardProps[];
     itemsPerPage?: number;
 };
 
-export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: PaginatedLatestArticlesProps) {
+export default function PaginatedCarousel({ items, itemsPerPage = 3 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);

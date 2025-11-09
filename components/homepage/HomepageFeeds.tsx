@@ -13,7 +13,7 @@ import { useLivingCard } from "@/hooks/useLivingCard";
 import { CardProps } from "@/types";
 import { ContentBlock } from "../ContentBlock";
 import { ArticleIcon, NewsIcon } from "@/components/icons/index";
-import PaginatedLatestArticles from "./PaginatedLatestArticles";
+import PaginatedLatestArticles from "../PaginatedCarousel";
 import KineticSpotlightNews from "./kinetic-news/KineticSpotlightNews";
 import NewsfeedStream from "./kinetic-news/NewsfeedStream";
 import gridStyles from './HomepageFeeds.module.css';
@@ -45,11 +45,14 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
                 onClick={handleClick}
                 className={`${feedStyles.topArticleCard} no-underline`}
             >
+                {/* Glyphs are now siblings to the clipping container */}
+                <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+                
+                {/* New inner container for clipping */}
                 <motion.div 
                     layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
-                    style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}
+                    className={feedStyles.topArticleCardInner}
                 >
-                    <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.topArticleImage}>
                         <Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} />
                     </motion.div>
