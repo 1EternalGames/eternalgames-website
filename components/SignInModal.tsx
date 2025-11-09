@@ -25,22 +25,22 @@ const formContentVariants = {
     exit: { opacity: 0, transition: { duration: 0.1 } }
 };
 
+// THE DEFINITIVE FIX: A specific 'exit' variant is defined to ensure a clean retreat.
 const satelliteVariants = {
-    hidden: (direction: number) => ({
-        y: 80,
-        x: direction * 20,
-        scale: 0,
-        opacity: 0,
-        rotate: 360,
-        transition: { duration: 0.4, ease: 'easeIn' as const }
-    }),
-    visible: {
+    initial: { y: -50, opacity: 0, scale: 0.5 },
+    animate: {
         y: 0,
-        x: 0,
-        scale: 1,
         opacity: 1,
-        rotate: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 20, delay: 0.3 }
+        scale: 1,
+        transition: { type: 'spring' as const, stiffness: 300, damping: 20 }
+    },
+    exit: {
+        y: 150, // Move down to tuck under the expanding panel
+        x: 0,   // Converge towards the center
+        scale: 0, // Shrink to nothing
+        opacity: 0, // Fade out completely
+        rotate: 360, // Add a final spin
+        transition: { duration: 0.4, ease: 'easeIn' as const }
     }
 };
 
@@ -205,27 +205,23 @@ export default function SignInModal() {
                         <div className={styles.authSatelliteContainer}>
                             <div className={styles.authOrbRowTop}>
                                 <AnimatePresence>
-                                    {view === 'orbs' && authProviders.map((provider, i) => {
-                                        const direction = i - 1; // -1 (left), 0 (center), 1 (right)
-                                        return (
-                                            <motion.div
-                                                key={provider.id}
-                                                custom={direction}
-                                                variants={satelliteVariants}
-                                                initial="hidden"
-                                                animate="visible"
-                                                exit="hidden"
-                                            >
-                                                <AuthOrb 
-                                                    Icon={provider.Icon} 
-                                                    onClick={() => handleProviderSignIn(provider.id)} 
-                                                    ariaLabel={`الولوج عبر ${provider.label}`} 
-                                                    isLoading={loadingProvider === provider.id} 
-                                                    isDisabled={!!loadingProvider} 
-                                                />
-                                            </motion.div>
-                                        );
-                                    })}
+                                    {view === 'orbs' && authProviders.map((provider) => (
+                                        <motion.div
+                                            key={provider.id}
+                                            variants={satelliteVariants}
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                        >
+                                            <AuthOrb 
+                                                Icon={provider.Icon} 
+                                                onClick={() => handleProviderSignIn(provider.id)} 
+                                                ariaLabel={`الولوج عبر ${provider.label}`} 
+                                                isLoading={loadingProvider === provider.id} 
+                                                isDisabled={!!loadingProvider} 
+                                            />
+                                        </motion.div>
+                                    ))}
                                 </AnimatePresence>
                             </div>
                             <AnimatePresence>
