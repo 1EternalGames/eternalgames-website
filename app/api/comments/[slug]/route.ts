@@ -4,9 +4,11 @@ import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensures this route is always server-rendered
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+// MODIFIED: The context for params is now correctly typed as a Promise.
+export async function GET(req: NextRequest, { params: paramsPromise }: { params: Promise<{ slug: string }> }) {
     try {
-        const { slug } = params;
+        // MODIFIED: We must await the promise to get the slug.
+        const { slug } = await paramsPromise;
 
         if (!slug) {
             return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
