@@ -55,14 +55,15 @@
     overflow: visible;
     height: 100%;
     border: 1px solid var(--border-color);
-    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+    box-shadow: 0 15px 30px -10px rgba(0,0,0,0.3);
     color: #fff;
     position: relative;
-    transition: border-color 0.3s ease-out;
+    transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
 }
 
 .cardSlot:hover .vanguardCard {
     border-color: var(--accent);
+    box-shadow: 0 0 30px -8px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .cardImageContainer {

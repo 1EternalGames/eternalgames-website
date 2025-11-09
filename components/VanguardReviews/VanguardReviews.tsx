@@ -99,7 +99,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
                 >
-                    {/* START FIX: Move CreatorBubbleContainer inside the transforming motion.div */}
                     <AnimatePresence>
                         {showCredits && (
                             <motion.div
@@ -108,14 +107,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                 initial="hidden"
                                 animate="visible"
                                 exit="hidden"
-                                style={{ pointerEvents: 'auto', transform: 'translateZ(50px)' }} /* Added explicit translateZ to ensure 3D positioning */
+                                style={{ pointerEvents: 'auto', transform: 'translateZ(50px)' }}
                             >
                                 {review.authors.map(author => <CreatorBubble key={author._id} label="بقلم" creator={author} />)}
                                 {review.designers?.map(designer => <CreatorBubble key={designer._id} label="تصميم" creator={designer} />)}
                             </motion.div>
                         )}
                     </AnimatePresence>
-                    {/* END FIX */}
 
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
@@ -136,7 +134,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     </motion.div>
                 </motion.div>
             </a>
-            {/* The old location of AnimatePresence is now empty */}
         </div>
     );
 });
@@ -175,6 +172,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const containerRef = useRef(null);
     const hasAnimatedIn = useInView(containerRef, { once: true, amount: 0.1 });
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
+    const [initialAnimHasRun, setInitialAnimHasRun] = useState(false);
 
     const {
         currentIndex,
@@ -184,6 +182,13 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         getCardState,
         isMobile
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
+
+    useEffect(() => {
+        if (hasAnimatedIn && !initialAnimHasRun) {
+            const timer = setTimeout(() => setInitialAnimHasRun(true), 800); // Animation is 0.7s, add a buffer
+            return () => clearTimeout(timer);
+        }
+    }, [hasAnimatedIn, initialAnimHasRun]);
 
     const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const swipeThreshold = 50;
@@ -195,6 +200,15 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     };
 
     if (reviews.length === 0) return null;
+
+    const centerCardState = getCardState(currentIndex, reviews[currentIndex].id);
+    const centerStyle = centerCardState.style;
+    const initialAnimationConfig = {
+        ...centerStyle,
+        opacity: 0,
+        transform: centerStyle.transform ? centerStyle.transform.replace(/scale\([0-9.]+\)/, 'scale(0.8)') : 'scale(0.8)',
+    };
+
 
     return (
         <div 
@@ -212,7 +226,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 onDragEnd={handleDragEnd}
             >
                 {reviews.map((review, reviewIndex) => {
-                    const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
+                    const { style, isCenter } = getCardState(reviewIndex, review.id);
                     const isHovered = hoveredId === review.id;
                     
                     return (
@@ -221,8 +235,13 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                             className={styles.cardSlot} 
                             onMouseEnter={() => setHoveredId(review.id)} 
                             onMouseLeave={() => setHoveredId(null)}
+                            initial={!initialAnimHasRun ? initialAnimationConfig : false}
                             animate={style}
-                            transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.5 }}
+                            transition={{
+                                ease: [0.4, 0, 0.2, 1],
+                                duration: 0.7,
+                                delay: !initialAnimHasRun ? (isCenter ? 0 : 0.2) : 0,
+                            }}
                         >
                             <VanguardCard 
                                 review={review} 

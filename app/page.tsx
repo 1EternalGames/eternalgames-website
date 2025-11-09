@@ -99,6 +99,22 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
+    // Reorder the reviews to place the highest-rated one first
+    if (reviews.length > 0) {
+        const topRatedIndex = reviews.reduce((topIndex, currentReview, currentIndex) => {
+            const topScore = reviews[topIndex].score ?? 0;
+            const currentScore = currentReview.score ?? 0;
+            // In case of a tie, the more recent one (already earlier in the array) wins
+            return currentScore > topScore ? currentIndex : topIndex;
+        }, 0);
+        
+        // Move the top-rated review to the front if it's not already there
+        if (topRatedIndex > 0) {
+            const [topRatedReview] = reviews.splice(topRatedIndex, 1);
+            reviews.unshift(topRatedReview);
+        }
+    }
+
     const scoresMap = new Map(scoresArray);
     
     const enrichedReviews = await Promise.all(
