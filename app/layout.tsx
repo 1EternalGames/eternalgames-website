@@ -10,54 +10,50 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // <-- IMPORT
 
 const cairo = Cairo({
-subsets: ['arabic', 'latin'],
-display: 'swap',
-variable: '--font-main',
-weight: ['400', '500', '700', '800'],
+    subsets: ['arabic', 'latin'],
+    display: 'swap',
+    variable: '--font-main',
+    weight: ['400', '500', '700', '800'],
 });
 
 export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا فناء للألعاب.', };
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
-return (
-<html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
-<head>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossOrigin="anonymous"
-/>
-<link
-    rel="preconnect"
-    href="https://cdn.sanity.io"
-    crossOrigin="anonymous"
-/>
-</head>
-<body>
-<NextAuthProvider>
-<UserStoreHydration />
-<ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-<div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
-    <ToastProvider />
-    <Lightbox /> 
-    <Navbar />
-    {/* MODIFIED: Wrap main content with the new transition wrapper */}
-    <main>
-        <PageTransitionWrapper>
-            {children}
-        </PageTransitionWrapper>
-    </main>
-    <Footer />
-    <StudioBar />
-    <ScrollToTopButton />
-</div>
-</ThemeProvider>
-</NextAuthProvider>
-</body>
-</html>
-);
+    return (
+        <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+            <head>
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link
+                    rel="preconnect"
+                    href="https://fonts.gstatic.com"
+                    crossOrigin="anonymous"
+                />
+                <link
+                    rel="preconnect"
+                    href="https://cdn.sanity.io"
+                    crossOrigin="anonymous"
+                />
+            </head>
+            <body>
+                <NextAuthProvider>
+                    <UserStoreHydration />
+                    <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
+                        <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
+                            <ToastProvider />
+                            <Lightbox />
+                            <Navbar />
+                            <main>
+                                {children}
+                            </main>
+                            <Footer />
+                            <StudioBar />
+                            <ScrollToTopButton />
+                        </div>
+                    </ThemeProvider>
+                </NextAuthProvider>
+            </body>
+        </html>
+    );
 }

@@ -11,7 +11,6 @@ import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
-import { cache } from 'react'; // Import React's cache
 
 const contentConfig = {
     reviews: {
@@ -37,15 +36,14 @@ const contentConfig = {
     },
 };
 
-// NEW: Caching function for all server-side Sanity fetches
 const getCachedSanityData = unstable_cache(
     async (query: string, params: Record<string, any> = {}) => {
         return client.fetch(query, params);
     },
     ['sanity-content-detail'],
     {
-        revalidate: 3600, // Revalidate data every hour
-        tags: ['sanity-content'] // Tag for on-demand revalidation via webhook
+        revalidate: 3600,
+        tags: ['sanity-content']
     }
 );
 
@@ -89,32 +87,39 @@ export async function generateStaticParams() {
     }
 }
 
-const getCachedComments = cache(async (slug: string) => {
-    try {
-        const comments = await prisma.comment.findMany({
-            where: { contentSlug: slug, parentId: null },
-            include: { 
-                author: { select: { id: true, name: true, image: true, username: true } }, 
-                votes: true, 
-                _count: { select: { replies: true } }, 
-                replies: { 
-                    take: 2, 
-                    include: { 
-                        author: { select: { id: true, name: true, image: true, username: true } }, 
-                        votes: true, 
-                        _count: { select: { replies: true } } 
-                    }, 
-                    orderBy: { createdAt: 'asc' } 
-                } 
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-        return comments;
-    } catch (error) {
-        console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
-        return [];
+const getCachedComments = unstable_cache(
+    async (slug: string) => {
+        try {
+            const comments = await prisma.comment.findMany({
+                where: { contentSlug: slug, parentId: null },
+                include: { 
+                    author: { select: { id: true, name: true, image: true, username: true } }, 
+                    votes: true, 
+                    _count: { select: { replies: true } }, 
+                    replies: { 
+                        take: 2, 
+                        include: { 
+                            author: { select: { id: true, name: true, image: true, username: true } }, 
+                            votes: true, 
+                            _count: { select: { replies: true } } 
+                        }, 
+                        orderBy: { createdAt: 'asc' } 
+                    } 
+                },
+                orderBy: { createdAt: 'desc' },
+            });
+            return comments;
+        } catch (error) {
+            console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
+            return [];
+        }
+    },
+    ['comments-by-slug'], // Unique cache key
+    {
+        revalidate: 60, // Revalidate comments every 60 seconds
+        tags: ['comments'], // Tag for on-demand revalidation
     }
-});
+);
 
 async function Comments({ slug }: { slug: string }) {
     const comments = await getCachedComments(slug);
@@ -129,12 +134,10 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     const config = (contentConfig as any)[type];
     if (!config) notFound();
 
-    // MODIFIED: Using the cached Sanity fetch function
     let item: any = await getCachedSanityData(config.query, { slug });
     if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
-        // MODIFIED: Using the cached Sanity fetch function for fallback
         const fallbackContent = await getCachedSanityData(config.fallbackQuery, { currentId: item._id });
         item[config.relatedProp] = fallbackContent;
     }
