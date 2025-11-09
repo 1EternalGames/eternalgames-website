@@ -87,9 +87,37 @@ export async function generateStaticParams() {
     }
 }
 
-// REMOVED: The server-side getCachedComments function is no longer needed here.
+const getCachedComments = cache(async (slug: string) => {
+    try {
+        const comments = await prisma.comment.findMany({
+            where: { contentSlug: slug, parentId: null },
+            include: { 
+                author: { select: { id: true, name: true, image: true, username: true } }, 
+                votes: true, 
+                _count: { select: { replies: true } }, 
+                replies: { 
+                    take: 2, 
+                    include: { 
+                        author: { select: { id: true, name: true, image: true, username: true } }, 
+                        votes: true, 
+                        _count: { select: { replies: true } } 
+                    }, 
+                    orderBy: { createdAt: 'asc' } 
+                } 
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        return comments;
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
+        return [];
+    }
+});
 
-// REMOVED: The async Comments component is no longer needed here.
+async function Comments({ slug }: { slug: string }) {
+    const comments = await getCachedComments(slug);
+    return <CommentSection slug={slug} initialComments={comments} />;
+}
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
     const { slug: slugArray } = await params;
@@ -115,10 +143,8 @@ export default async function ContentPage({ params }: { params: { slug: string[]
 
     return (
         <ContentPageClient item={item} type={type as any}>
-            {/* MODIFIED: We now pass the client-side CommentSection directly. */}
-            {/* The Suspense boundary will show a fallback while it fetches data. */}
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
-                <CommentSection slug={slug} />
+                <Comments slug={slug} />
             </Suspense>
         </ContentPageClient>
     );

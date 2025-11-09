@@ -1,7 +1,7 @@
 // components/comments/CommentSection.tsx
 'use client';
 
-import { useState, useOptimistic, useEffect } from 'react';
+import { useState, useOptimistic } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { postReplyOrComment } from '@/app/actions/commentActions';
@@ -23,34 +23,14 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-export default function CommentSection({ slug }: { slug: string; }) {
+export default function CommentSection({ slug, initialComments }: {
+    slug: string;
+    initialComments: any[];
+}) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    // MODIFIED: State now manages comments, loading, and errors.
-    const [comments, setComments] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // MODIFIED: Fetch comments on the client side.
-    useEffect(() => {
-        const fetchComments = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const response = await fetch(`/api/comments/${slug}`);
-                if (!response.ok) throw new Error('Failed to fetch comments');
-                const data = await response.json();
-                setComments(data);
-            } catch (err) {
-                setError('Could not load comments.');
-                console.error(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchComments();
-    }, [slug]);
+    const [comments, setComments] = useState(initialComments);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
@@ -151,20 +131,16 @@ export default function CommentSection({ slug }: { slug: string; }) {
                 <SignInPrompt />
             )}
             
-            <div>
-                {isLoading && <div className="spinner" style={{ margin: '4rem auto' }} />}
-                {error && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{error}</p>}
-                {!isLoading && !error && (
-                    <CommentList
-                        comments={optimisticComments}
-                        session={typedSession}
-                        slug={slug}
-                        onVoteUpdate={handleVoteUpdate}
-                        onPostReply={handlePostComment}
-                        onDeleteSuccess={handleDeleteSuccess}
-                        onUpdateSuccess={handleUpdateSuccess}
-                    />
-                )}
+            <div> 
+                <CommentList
+                    comments={optimisticComments}
+                    session={typedSession}
+                    slug={slug}
+                    onVoteUpdate={handleVoteUpdate}
+                    onPostReply={handlePostComment}
+                    onDeleteSuccess={handleDeleteSuccess}
+                    onUpdateSuccess={handleUpdateSuccess}
+                />
             </div>
         </div>
     );
