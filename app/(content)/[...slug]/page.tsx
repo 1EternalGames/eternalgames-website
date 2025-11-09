@@ -11,7 +11,6 @@ import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
-import { cache } from 'react'; // Import React's cache
 
 const contentConfig = {
     reviews: {
@@ -88,7 +87,6 @@ export async function generateStaticParams() {
     }
 }
 
-// THE DEFINITIVE FIX: Swapped React.cache for unstable_cache with tags.
 const getCachedComments = unstable_cache(
     async (slug: string) => {
         try {
@@ -116,16 +114,15 @@ const getCachedComments = unstable_cache(
             return [];
         }
     },
-    ['comments-for-slug'], // Base cache key
+    ['comments-for-slug'],
     {
-        revalidate: 3600, // Revalidate every hour as a fallback
-        tags: ['comments'] // Tag for on-demand revalidation
+        revalidate: 3600,
+        tags: ['comments']
     }
 );
 
-async function Comments({ slug }: { slug: string }) {
-    const comments = await getCachedComments(slug);
-    return <CommentSection slug={slug} initialComments={comments} />;
+async function Comments({ slug, initialComments }: { slug: string, initialComments: any[] }) {
+    return <CommentSection slug={slug} initialComments={initialComments} />;
 }
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
@@ -136,7 +133,13 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     const config = (contentConfig as any)[type];
     if (!config) notFound();
 
-    let item: any = await getCachedSanityData(config.query, { slug });
+    // --- THE DEFINITIVE FIX: PARALLEL DATA FETCHING ---
+    const [item, initialComments] = await Promise.all([
+        getCachedSanityData(config.query, { slug }),
+        getCachedComments(slug)
+    ]);
+    // --- END FIX ---
+
     if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
@@ -152,8 +155,9 @@ export default async function ContentPage({ params }: { params: { slug: string[]
 
     return (
         <ContentPageClient item={item} type={type as any}>
+            {/* Pass the pre-fetched comments directly to the Suspense boundary */}
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
-                <Comments slug={slug} />
+                <Comments slug={slug} initialComments={initialComments} />
             </Suspense>
         </ContentPageClient>
     );
