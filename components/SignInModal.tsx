@@ -25,22 +25,22 @@ const formContentVariants = {
     exit: { opacity: 0, transition: { duration: 0.1 } }
 };
 
-// THE DEFINITIVE FIX: A specific 'exit' variant is defined to ensure a clean retreat.
 const satelliteVariants = {
-    initial: { y: -50, opacity: 0, scale: 0.5 },
-    animate: {
-        y: 0,
-        opacity: 1,
-        scale: 1,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 20 }
-    },
-    exit: {
-        y: 150, // Move down to tuck under the expanding panel
-        x: 0,   // Converge towards the center
-        scale: 0, // Shrink to nothing
-        opacity: 0, // Fade out completely
-        rotate: 360, // Add a final spin
+    hidden: (direction: number) => ({
+        y: 80,
+        x: direction * 20,
+        scale: 0,
+        opacity: 0,
+        rotate: 360,
         transition: { duration: 0.4, ease: 'easeIn' as const }
+    }),
+    visible: {
+        y: 0,
+        x: 0,
+        scale: 1,
+        opacity: 1,
+        rotate: 0,
+        transition: { type: 'spring' as const, stiffness: 300, damping: 20, delay: 0.3 }
     }
 };
 
@@ -108,8 +108,15 @@ const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl 
             {view === 'signin' ? (
                 <form onSubmit={handleSignIn} className={styles.credentialsForm}>
                     <input type="hidden" name="returnTo" value={callbackUrl} />
-                    <input type="email" name="email" placeholder="البريد الإلكتروني" required className={styles.authInput} autoFocus value={email} onChange={e => setEmail(e.target.value)} />
-                    <input type="password" name="password" placeholder="كلمة السر" required className={styles.authInput} value={password} onChange={e => setPassword(e.target.value)} />
+                    {/* THE DEFINITIVE FIX: Reverted to floating label structure */}
+                    <div className={styles.authFormGroup}>
+                        <input id="signin-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={e => setEmail(e.target.value)} placeholder=" " />
+                        <label htmlFor="signin-email" className={styles.authFormLabel}>البريد الإلكتروني</label>
+                    </div>
+                    <div className={styles.authFormGroup}>
+                        <input id="signin-password" type="password" name="password" required className={styles.authInput} value={password} onChange={e => setPassword(e.target.value)} placeholder=" " />
+                        <label htmlFor="signin-password" className={styles.authFormLabel}>كلمة السر</label>
+                    </div>
                     <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                         <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>ولوج</motion.span>}</AnimatePresence>
                     </motion.button>
@@ -117,8 +124,15 @@ const CredentialsForm = ({ onBack, onAuthSuccess, onForgotPassword, callbackUrl 
             ) : (
                 <form onSubmit={handleSignUp} className={styles.credentialsForm}>
                     <input type="hidden" name="returnTo" value={callbackUrl} />
-                    <input type="email" name="email" placeholder="البريد الإلكتروني" required value={email} onChange={e => setEmail(e.target.value)} className={styles.authInput} />
-                    <input type="password" name="password" placeholder="كلمة السر (8 أحرف على الأقل)" required value={password} onChange={e => setPassword(e.target.value)} className={styles.authInput} />
+                     {/* THE DEFINITIVE FIX: Reverted to floating label structure */}
+                    <div className={styles.authFormGroup}>
+                        <input id="signup-email" type="email" name="email" required value={email} onChange={e => setEmail(e.target.value)} className={styles.authInput} placeholder=" " />
+                        <label htmlFor="signup-email" className={styles.authFormLabel}>البريد الإلكتروني</label>
+                    </div>
+                    <div className={styles.authFormGroup}>
+                        <input id="signup-password" type="password" name="password" required value={password} onChange={e => setPassword(e.target.value)} className={styles.authInput} placeholder=" " />
+                        <label htmlFor="signup-password" className={styles.authFormLabel}>كلمة السر (8 أحرف على الأقل)</label>
+                    </div>
                     <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                         <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>أنشئ حسابًا</motion.span>}</AnimatePresence>
                     </motion.button>
@@ -161,7 +175,11 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <button onClick={onBack} className={styles.authBackButton}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{transform: 'scaleX(-1)'}}><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg></button>
             <div className={styles.formHeader}><h2 className={styles.formTitle}>إعادة تعيين كلمة السر</h2><p style={{color: 'var(--text-secondary)', fontSize: '1.5rem'}}>أدخل بريدك لتلقي رابط إعادة التعيين.</p></div>
             <form onSubmit={handleSubmit} className={styles.credentialsForm}>
-                <input type="email" name="email" placeholder="البريد الإلكتروني" required className={styles.authInput} autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
+                 {/* THE DEFINITIVE FIX: Reverted to floating label structure */}
+                <div className={styles.authFormGroup}>
+                    <input id="reset-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder=" " />
+                    <label htmlFor="reset-email" className={styles.authFormLabel}>البريد الإلكتروني</label>
+                </div>
                 <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} animate={{ width: isPending ? '48px' : '100%', height: '48px', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
                     <AnimatePresence mode="wait">{isPending ? <ButtonLoader key="loader" /> : <motion.span key="text" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>إرسال الرابط</motion.span>}</AnimatePresence>
                 </motion.button>
@@ -205,23 +223,27 @@ export default function SignInModal() {
                         <div className={styles.authSatelliteContainer}>
                             <div className={styles.authOrbRowTop}>
                                 <AnimatePresence>
-                                    {view === 'orbs' && authProviders.map((provider) => (
-                                        <motion.div
-                                            key={provider.id}
-                                            variants={satelliteVariants}
-                                            initial="initial"
-                                            animate="animate"
-                                            exit="exit"
-                                        >
-                                            <AuthOrb 
-                                                Icon={provider.Icon} 
-                                                onClick={() => handleProviderSignIn(provider.id)} 
-                                                ariaLabel={`الولوج عبر ${provider.label}`} 
-                                                isLoading={loadingProvider === provider.id} 
-                                                isDisabled={!!loadingProvider} 
-                                            />
-                                        </motion.div>
-                                    ))}
+                                    {view === 'orbs' && authProviders.map((provider, i) => {
+                                        const direction = i - 1; // -1 (left), 0 (center), 1 (right)
+                                        return (
+                                            <motion.div
+                                                key={provider.id}
+                                                custom={direction}
+                                                variants={satelliteVariants}
+                                                initial="hidden"
+                                                animate="visible"
+                                                exit="hidden"
+                                            >
+                                                <AuthOrb 
+                                                    Icon={provider.Icon} 
+                                                    onClick={() => handleProviderSignIn(provider.id)} 
+                                                    ariaLabel={`الولوج عبر ${provider.label}`} 
+                                                    isLoading={loadingProvider === provider.id} 
+                                                    isDisabled={!!loadingProvider} 
+                                                />
+                                            </motion.div>
+                                        );
+                                    })}
                                 </AnimatePresence>
                             </div>
                             <AnimatePresence>
