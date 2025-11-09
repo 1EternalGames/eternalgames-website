@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push(`${type}s`); // e.g., 'reviews'
       tagsToRevalidate.push('paginated'); // Common tag for paginated content
       tagsToRevalidate.push('engagement-scores'); // Homepage scores depend on this
+      tagsToRevalidate.push('sanity-content'); // MODIFIED: Added tag for detail pages
     }
     if (['author', 'reviewer', 'reporter', 'designer'].includes(type)) {
       tagsToRevalidate.push('enriched-creators');

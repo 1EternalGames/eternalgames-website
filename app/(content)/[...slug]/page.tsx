@@ -37,6 +37,18 @@ const contentConfig = {
     },
 };
 
+// NEW: Caching function for all server-side Sanity fetches
+const getCachedSanityData = unstable_cache(
+    async (query: string, params: Record<string, any> = {}) => {
+        return client.fetch(query, params);
+    },
+    ['sanity-content-detail'],
+    {
+        revalidate: 3600, // Revalidate data every hour
+        tags: ['sanity-content'] // Tag for on-demand revalidation via webhook
+    }
+);
+
 const getCachedCreatorDetails = unstable_cache(
     async (prismaUserId: string) => {
         try {
@@ -77,7 +89,6 @@ export async function generateStaticParams() {
     }
 }
 
-// NEW CACHED FUNCTION: This wraps the Prisma query for comments.
 const getCachedComments = cache(async (slug: string) => {
     try {
         const comments = await prisma.comment.findMany({
@@ -106,7 +117,6 @@ const getCachedComments = cache(async (slug: string) => {
 });
 
 async function Comments({ slug }: { slug: string }) {
-    // USE THE CACHED FUNCTION instead of a direct Prisma call.
     const comments = await getCachedComments(slug);
     return <CommentSection slug={slug} initialComments={comments} />;
 }
@@ -119,11 +129,13 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     const config = (contentConfig as any)[type];
     if (!config) notFound();
 
-    let item: any = await client.fetch(config.query, { slug });
+    // MODIFIED: Using the cached Sanity fetch function
+    let item: any = await getCachedSanityData(config.query, { slug });
     if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
-        const fallbackContent = await client.fetch(config.fallbackQuery, { currentId: item._id });
+        // MODIFIED: Using the cached Sanity fetch function for fallback
+        const fallbackContent = await getCachedSanityData(config.fallbackQuery, { currentId: item._id });
         item[config.relatedProp] = fallbackContent;
     }
 
