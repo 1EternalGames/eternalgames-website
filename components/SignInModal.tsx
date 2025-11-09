@@ -26,21 +26,21 @@ const formContentVariants = {
 };
 
 const satelliteVariants = {
-    initial: { y: -50, opacity: 0, scale: 0.5 },
-    animate: {
-        y: 0,
-        opacity: 1,
-        scale: 1,
-        // THE FIX: Added 'as const' to satisfy TypeScript's literal type requirement for 'type'.
-        transition: { type: 'spring' as const, stiffness: 300, damping: 20 }
-    },
-    exit: {
-        y: 280, // Move down below the panel
+    hidden: (direction: number) => ({
+        y: 80,
+        x: direction * 20,
         scale: 0,
         opacity: 0,
-        rotate: 720, // Spin on the way out
-        // THE FIX: Added 'as const' to satisfy TypeScript's literal type requirement for 'ease'.
-        transition: { duration: 0.5, ease: 'easeIn' as const }
+        rotate: 360,
+        transition: { duration: 0.4, ease: 'easeIn' as const }
+    }),
+    visible: {
+        y: 0,
+        x: 0,
+        scale: 1,
+        opacity: 1,
+        rotate: 0,
+        transition: { type: 'spring' as const, stiffness: 300, damping: 20, delay: 0.3 }
     }
 };
 
@@ -205,23 +205,27 @@ export default function SignInModal() {
                         <div className={styles.authSatelliteContainer}>
                             <div className={styles.authOrbRowTop}>
                                 <AnimatePresence>
-                                    {view === 'orbs' && authProviders.map((provider) => (
-                                        <motion.div
-                                            key={provider.id}
-                                            variants={satelliteVariants}
-                                            initial="initial"
-                                            animate="animate"
-                                            exit="exit"
-                                        >
-                                            <AuthOrb 
-                                                Icon={provider.Icon} 
-                                                onClick={() => handleProviderSignIn(provider.id)} 
-                                                ariaLabel={`الولوج عبر ${provider.label}`} 
-                                                isLoading={loadingProvider === provider.id} 
-                                                isDisabled={!!loadingProvider} 
-                                            />
-                                        </motion.div>
-                                    ))}
+                                    {view === 'orbs' && authProviders.map((provider, i) => {
+                                        const direction = i - 1; // -1 (left), 0 (center), 1 (right)
+                                        return (
+                                            <motion.div
+                                                key={provider.id}
+                                                custom={direction}
+                                                variants={satelliteVariants}
+                                                initial="hidden"
+                                                animate="visible"
+                                                exit="hidden"
+                                            >
+                                                <AuthOrb 
+                                                    Icon={provider.Icon} 
+                                                    onClick={() => handleProviderSignIn(provider.id)} 
+                                                    ariaLabel={`الولوج عبر ${provider.label}`} 
+                                                    isLoading={loadingProvider === provider.id} 
+                                                    isDisabled={!!loadingProvider} 
+                                                />
+                                            </motion.div>
+                                        );
+                                    })}
                                 </AnimatePresence>
                             </div>
                             <AnimatePresence>
@@ -229,7 +233,7 @@ export default function SignInModal() {
                                     <motion.p 
                                         className={styles.authFooterText}
                                         initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
+                                        animate={{ opacity: 1, transition: { delay: 0.2 } }}
                                         exit={{ opacity: 0, transition: { duration: 0.2 } }}
                                     >
                                         انضم إلى EternalGames عبر مزود خدمة أو تابع بالبريد.
@@ -238,7 +242,7 @@ export default function SignInModal() {
                             </AnimatePresence>
                         </div>
                         
-                        <div className={styles.authMorphWrapper}>
+                        <div className={styles.authMorphWrapper} style={{ zIndex: 10 }}>
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {view === 'orbs' ? (
                                     <motion.div key="orbs" layoutId="auth-panel" style={{ zIndex: loadingProvider ? 0 : 'auto' }}>
