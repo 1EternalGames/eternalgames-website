@@ -36,34 +36,33 @@ export default function ContentPageClient({ item, type, children }: {
     type: ContentType;
     children: React.ReactNode;
 }) {
-    const defaultPrefix = type === 'reviews' ? 'reviews' : `${type}-grid`;
-    const layoutIdPrefix = useLayoutIdStore((state) => state.prefix) || defaultPrefix;
+    // THE DEFINITIVE FIX (PART 1):
+    // The component now exclusively uses the prefix from the store.
+    // There is no fallback or default prefix, ensuring animations only trigger
+    // when explicitly initiated by a source component click.
+    const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
+
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     
-    // Ref for the content area containing h2s/scorebox (to measure offset)
     const articleBodyRef = useRef<HTMLDivElement>(null); 
-    // Ref for the entire content column (to serve as the top anchor, though window scroll is still primary)
     const scrollTrackerRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
     const isReview = type === 'reviews';
     const isNews = type === 'news';
     
-    // --- UTILITY FUNCTIONS ---
     const measureHeadings = useCallback(() => {
         const contentElement = articleBodyRef.current;
         const trackerElement = scrollTrackerRef.current;
         if (!contentElement || !trackerElement) return;
 
-        const navbarOffset = 90; // Approximate height of the fixed navbar
+        const navbarOffset = 90;
         const documentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-        const trackerOffsetTop = trackerElement.getBoundingClientRect().top + documentScrollTop; // Absolute top of tracker
         const seenIds = new Set<string>();
         
         let newHeadings: Heading[] = [];
 
-        // 1. Collect H2 headings
         const headingElements = Array.from(contentElement.querySelectorAll('h2'));
         headingElements.forEach((h, index) => {
             let id = h.id;
@@ -73,16 +72,12 @@ export default function ContentPageClient({ item, type, children }: {
             seenIds.add(id);
             h.id = id;
             
-            // CORRECTED: Define topPosition
             const topPosition = h.getBoundingClientRect().top + documentScrollTop;
-            
-            // The value to scroll to is the absolute position minus the navbar offset.
             const scrollToPosition = topPosition - navbarOffset;
             
             newHeadings.push({ id: id, title: h.textContent || '', top: Math.max(0, scrollToPosition) });
         });
 
-        // 2. Add the final marker (Score Box) for Reviews
         if (isReview) {
              const scoreBoxElement = contentElement.querySelector('.score-box-container');
              if (scoreBoxElement) {
@@ -102,8 +97,16 @@ export default function ContentPageClient({ item, type, children }: {
         }
 
     }, [isReview]);
-    // --- END UTILITY FUNCTIONS ---
 
+    useEffect(() => {
+        // THE DEFINITIVE FIX (PART 2):
+        // This effect runs when the component unmounts. It resets the prefix in the
+        // global store to 'default', ensuring no stale prefix is carried over to
+        // subsequent, unrelated navigations.
+        return () => {
+            setPrefix('default');
+        };
+    }, [setPrefix]);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
@@ -116,16 +119,13 @@ export default function ContentPageClient({ item, type, children }: {
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]);
 
-    // 1. Scroll to top on first mount
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    // 2. Layout Stabilization Effect
     useEffect(() => {
         const timeout = setTimeout(() => setIsLayoutStable(true), 1500); 
         return () => clearTimeout(timeout);
     }, [item]);
 
-    // 3. Heading Measurement Effect - GUARANTEED RUN
     useEffect(() => {
         if (isLayoutStable) {
             requestAnimationFrame(() => {

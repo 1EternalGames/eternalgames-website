@@ -7,18 +7,17 @@ import { usePathname } from 'next/navigation';
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
-    // AnimatePresence with mode="popLayout" is essential for shared layout animations.
-    // The direct child motion.div must NOT have an `exit` prop. A conflicting
-    // exit animation on the parent wrapper causes the source element to fade out before
-    // Framer Motion can calculate the transform, breaking the animation's origin point.
+    // AnimatePresence is still required to orchestrate the exit of old components
+    // and the entry of new ones, which is critical for layoutId.
     <AnimatePresence mode="popLayout">
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        // EXIT PROP REMOVED TO FIX THE LAYOUTID CONFLICT
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-      >
+      {/* 
+        THE DEFINITIVE FIX:
+        The page-level fade-in props (initial, animate, transition) have been REMOVED.
+        These were conflicting with the more specific layoutId animations, causing rendering bugs.
+        Now, this motion.div serves only as a keyed container for AnimatePresence,
+        allowing the actual components with layoutId to handle their own transitions seamlessly.
+      */}
+      <motion.div key={pathname}>
         {children}
       </motion.div>
     </AnimatePresence>
