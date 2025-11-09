@@ -66,8 +66,16 @@ const orbitalContainerVariants: Variants = {
 const itemTransition: Transition = { type: 'spring', stiffness: 400, damping: 20 };
 
 const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: typeof navItems[0], angle: number, radius: string, isActive: boolean, onClick: () => void }) => {
-    const x = `calc(${radius} * ${Math.cos(angle)})`;
-    const y = `calc(${radius} * ${Math.sin(angle)})`;
+    // THE DEFINITIVE FIX:
+    // Round the results of Math.cos and Math.sin to a high precision. This converts
+    // very small floating-point numbers (like 6.12e-17 for cos(PI/2)) into a clean 0.
+    // This prevents potential issues in Framer Motion's animation engine when an
+    // initial value is 0 and the target is a string expression that also evaluates to 0.
+    const cosAngle = Math.round(Math.cos(angle) * 1e10) / 1e10;
+    const sinAngle = Math.round(Math.sin(angle) * 1e10) / 1e10;
+
+    const x = `calc(${radius} * ${cosAngle})`;
+    const y = `calc(${radius} * ${sinAngle})`;
 
     const itemVariants: Variants = {
         hidden: { scale: 0, x: 0, y: 0, opacity: 0 },
