@@ -2,7 +2,7 @@
 'use server';
 
 import prisma from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { VoteType } from '@prisma/client';
 import { getAuthenticatedSession } from '@/lib/auth'; // <-- IMPORT HELPER
 
@@ -19,6 +19,9 @@ export async function postReplyOrComment(contentSlug: string, content: string, p
                 _count: { select: { replies: true } }
             }
         });
+
+        revalidateTag('comments', 'page');
+
         return { success: true, comment: newComment };
     } catch (error: any) {
         return { success: false, error: error.message || "تعذر نشر التعليق." };
@@ -39,9 +42,11 @@ export async function deleteComment(commentId: string) {
                 where: { id: commentId },
                 data: { content: '[طُمِسَ التعليق]', isDeleted: true }
             });
+            revalidateTag('comments', 'page');
             return { success: true, wasDeleted: false, updatedComment };
         } else {
             await prisma.comment.delete({ where: { id: commentId } });
+            revalidateTag('comments', 'page');
             return { success: true, wasDeleted: true, deletedId: commentId };
         }
     } catch (error: any) {
@@ -67,9 +72,12 @@ export async function updateComment(commentId: string, content: string) {
             }
         });
 
+        revalidateTag('comments', 'page');
+        
         revalidatePath(`/reviews/${comment.contentSlug}`);
         revalidatePath(`/articles/${comment.contentSlug}`);
         revalidatePath(`/news/${comment.contentSlug}`);
+        
         return { success: true, updatedComment };
     } catch (error: any) {
         return { success: false, error: error.message || "أخفق التحديث." };

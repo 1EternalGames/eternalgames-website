@@ -43,6 +43,7 @@ const getCachedSanityData = unstable_cache(
     },
     ['sanity-content-detail'],
     {
+        revalidate: 3600,
         tags: ['sanity-content']
     }
 );
@@ -87,32 +88,40 @@ export async function generateStaticParams() {
     }
 }
 
-const getCachedComments = cache(async (slug: string) => {
-    try {
-        const comments = await prisma.comment.findMany({
-            where: { contentSlug: slug, parentId: null },
-            include: { 
-                author: { select: { id: true, name: true, image: true, username: true } }, 
-                votes: true, 
-                _count: { select: { replies: true } }, 
-                replies: { 
-                    take: 2, 
-                    include: { 
-                        author: { select: { id: true, name: true, image: true, username: true } }, 
-                        votes: true, 
-                        _count: { select: { replies: true } } 
-                    }, 
-                    orderBy: { createdAt: 'asc' } 
-                } 
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-        return comments;
-    } catch (error) {
-        console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
-        return [];
+// THE DEFINITIVE FIX: Swapped React.cache for unstable_cache with tags.
+const getCachedComments = unstable_cache(
+    async (slug: string) => {
+        try {
+            const comments = await prisma.comment.findMany({
+                where: { contentSlug: slug, parentId: null },
+                include: { 
+                    author: { select: { id: true, name: true, image: true, username: true } }, 
+                    votes: true, 
+                    _count: { select: { replies: true } }, 
+                    replies: { 
+                        take: 2, 
+                        include: { 
+                            author: { select: { id: true, name: true, image: true, username: true } }, 
+                            votes: true, 
+                            _count: { select: { replies: true } } 
+                        }, 
+                        orderBy: { createdAt: 'asc' } 
+                    } 
+                },
+                orderBy: { createdAt: 'desc' },
+            });
+            return comments;
+        } catch (error) {
+            console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
+            return [];
+        }
+    },
+    ['comments-for-slug'], // Base cache key
+    {
+        revalidate: 3600, // Revalidate every hour as a fallback
+        tags: ['comments'] // Tag for on-demand revalidation
     }
-});
+);
 
 async function Comments({ slug }: { slug: string }) {
     const comments = await getCachedComments(slug);
