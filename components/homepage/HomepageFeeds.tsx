@@ -39,7 +39,14 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
     };
 
     return (
-        <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} >
+        <motion.div 
+            layout /* THE FIX: Added layout prop for height equalization */
+            ref={livingCardRef} 
+            style={{...livingCardAnimation.style, height: '100%'}} 
+            onMouseMove={livingCardAnimation.onMouseMove} 
+            onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} 
+            onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} 
+        >
             <a
                 href={linkPath}
                 onClick={handleClick}

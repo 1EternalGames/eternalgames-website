@@ -17,9 +17,10 @@ type Tag = { _id: string; title: string; category: 'Game' | 'Article' | 'News' }
 
 const sidebarVariants = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 40 } }, exit: { opacity: 0, x: 50, transition: { duration: 0.2, ease: 'easeInOut' as const } } };
 const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
-const AlertIcon = () => <svg width="18" height="18" viewBox="0 0 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
-const CheckIcon = () => <svg width="18" height="18" viewBox="0 0 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-const ClockIcon = () => <svg width="18" height="18" viewBox="0 0 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+// THE FIX: The size of these icons has been permanently reduced to 16x16
+const AlertIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+const ClockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 const ToggleSwitch = ({ checked, onChange, name }: { checked: boolean, onChange: (checked: boolean) => void, name?: string }) => ( <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`toggle ${checked ? 'active' : ''}`}> <motion.div className="toggle-handle" layout transition={{ type: 'spring' as const, stiffness: 700, damping: 30 }} /> {name && <input type="checkbox" name={name} checked={checked} readOnly style={{ display: 'none' }} />} </button> );
 
 export function EditorSidebar({ 
@@ -108,12 +109,17 @@ export function EditorSidebar({
                         </motion.div>
                         
                         <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                            <label className={styles.sidebarLabel}>المُعرِّف {!isSlugValid && <AlertIcon />}</label>
+                            <label className={styles.sidebarLabel}>
+                                المُعرِّف {!isSlugValid && <AlertIcon />}
+                            </label>
+                            {/* THE FIX: Removed the redundant, conflicting status icon motion.div */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <motion.div key={slugValidationStatus} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>{getSlugIcon()}</motion.div>
                                 <input type="text" value={slug} onChange={(e) => dispatch({ type: 'UPDATE_SLUG', payload: { slug: e.target.value, isManual: true } })} className={styles.sidebarInput} style={{ flexGrow: 1, borderColor: isSlugValid && !isSlugPending ? '#16A34A' : isSlugPending ? 'var(--border-color)' : '#DC2626' }} />
                             </div>
-                            <AnimatePresence> {!isSlugValid && !isSlugPending && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} </AnimatePresence>
+                            <AnimatePresence> 
+                                {/* This message text is crucial for feedback, so we keep it. */}
+                                {(!isSlugValid || isSlugPending) && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: isSlugPending ? 'var(--text-secondary)' : '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} 
+                            </AnimatePresence>
                         </motion.div>
                         
                         {isRelease ? ( <> 

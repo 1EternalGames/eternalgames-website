@@ -74,9 +74,15 @@
 
 .viewAllLink {
     display: flex;
+    /* THE FIX: Set direction to RTL to ensure text is on the right */
+    direction: rtl; 
+    /* THE FIX: Reverse the display order of icon/text so the icon is on the left */
+    flex-direction: row-reverse;
+    /* THE FIX: Adjust gap for better spacing */
+    gap: 0.5rem; 
+    
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
     text-align: center;
     padding: 1.25rem;
     margin-top: auto;
@@ -87,6 +93,23 @@
     transition: background-color 0.2s ease, color 0.2s ease;
     position: relative;
     z-index: 2;
+    
+    /* THE FIX: Apply text style to the span */
+}
+
+.viewAllLink span {
+    font-size: 1.8rem; /* Set a specific size for the text to be prominent */
+}
+
+.viewAllLink svg {
+    /* Set icon size */
+    width: 2.2rem;
+    height: 2.2rem;
+    color: var(--accent); /* Ensure color from the start */
+    
+    /* The main arrow is now the correct way. We apply the transform only on hover/specific state */
+    transform: scaleX(-1); /* To make it point to the left/outside */
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .viewAllLink:hover {
@@ -94,11 +117,25 @@
     color: var(--accent);
 }
 
+.viewAllLink:hover svg {
+    /* On hover, move the arrow */
+    transform: translateX(4px) scaleX(-1); 
+    color: var(--accent);
+}
+
+.topItemsContainer {
+    display: block;
+    width: 100%;
+    order: 2; 
+    margin-top: 1.5rem;
+}
+
 /* --- Article Feed Specifics --- */
 .topArticlesGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2.5rem;
+    grid-auto-rows: 1fr; /* THE FIX: Ensure equal height */
 }
 
 .topArticleCard {
@@ -113,6 +150,7 @@
     will-change: transform;
     cursor: pointer;
     transform: translateZ(0px);
+    height: 100%; /* THE FIX: Ensure card fills its row's height */
 }
 
 .topArticleImage {
@@ -154,6 +192,14 @@
     color: var(--text-secondary);
 }
 
+/* New inner container for clipping to have height 100% for the effect */
+.topArticleCardInner {
+    height: 100%; /* THE FIX: Ensure inner motion.div fills all space */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- List Item Fix: Ensure list item is a block element for proper layout */
 .latestArticleItem {
     display: grid;
     grid-template-columns: 120px 1fr;
@@ -163,7 +209,10 @@
     padding: 1.5rem 0;
     border-radius: 8px; /* Added for hover effect */
     cursor: pointer;
+    /* NEW: Use flex-grow for vertical space distribution */
+    flex-grow: 1; 
 }
+
 
 .latestArticleThumbnail {
     width: 120px;

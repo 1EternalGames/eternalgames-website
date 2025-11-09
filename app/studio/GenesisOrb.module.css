@@ -4,8 +4,8 @@
   position: fixed;
   /* --- CUSTOMIZATION POINT (Desktop) --- */
   /* Adjust these values to change the orb's position on larger screens */
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: 2rem;
+  right: 2rem;
   /* --- END CUSTOMIZATION --- */
   left: auto;
   z-index: 10;
@@ -34,6 +34,12 @@
   align-items: center; /* Vertical alignment */
   justify-content: center; /* Horizontal alignment */
   /* --- END CUSTOMIZATION --- */
+}
+/* THE FIX: Added a rule to style the PlusIcon inside */
+.genesisOrb svg {
+    width: 32px;
+    height: 32px;
+    stroke-width: 3; /* Increased stroke width for better visibility */
 }
 [data-theme="dark"] .genesisOrb {
   color: var(--bg-primary);
@@ -126,11 +132,17 @@
     .genesisContainer {
         /* --- CUSTOMIZATION POINT (Mobile) --- */
         /* Adjust these values for smaller screens */
-        bottom: 1rem;
-        right: 1rem;
+        bottom: 2rem;
+        right: 2rem;
         /* --- END CUSTOMIZATION --- */
         width: 64px;
         height: 64px;
+    }
+    /* THE FIX: Adjusted the SVG size for mobile */
+    .genesisOrb svg {
+        width: 24px;
+        height: 24px;
+        stroke-width: 3;
     }
     .satelliteWrapper {
         margin-left: -24px;

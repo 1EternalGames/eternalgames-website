@@ -7,7 +7,8 @@ import { CardProps } from '@/types';
 import KineticGlyphs from '@/components/effects/KineticGlyphs';
 import styles from './Feed.module.css';
 
-const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}><polyline points="15 18 9 12 15 6"></polyline></svg>;
+// THE FIX: Simplified ArrowIcon - it now points right (in LTR terms)
+const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
 
 interface FeedProps {
     topSectionLabel: string;
@@ -62,17 +63,21 @@ export default function Feed({
                 >
                     <AnimatePresence>{isTopSectionHovered && enableTopSectionHoverEffect && <KineticGlyphs />}</AnimatePresence>
                     <span className={styles.sectionLabel}>{topSectionLabel}</span>
-                    <div className={`${styles.topItemsContainer} ${topItemsContainerClassName}`} style={{ perspective: '800px' }}>
+                    <motion.div 
+                        layout /* THE FIX: Added layout prop here */
+                        className={`${styles.topItemsContainer} ${topItemsContainerClassName}`} 
+                        style={{ perspective: '800px' }}
+                    >
                         {topSectionContent ? (
                             <motion.div variants={kineticCardVariant}>{topSectionContent}</motion.div>
                         ) : (
                             topItems.map((item, index) => (
-                                <motion.div key={item.id} variants={kineticCardVariant}>
+                                <motion.div key={item.id} variants={kineticCardVariant} style={{ height: '100%' }}>
                                     {renderTopItem(item, index)}
                                 </motion.div>
                             ))
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             )}
 
@@ -99,8 +104,9 @@ export default function Feed({
             
             <motion.div variants={kineticCardVariant}>
                 <Link href={viewAllLink} className={`${styles.viewAllLink} no-underline`}>
-                    <span>{viewAllText}</span>
+                    {/* THE FIX: Reordered the elements to put the icon first in LTR order (which translates to the left in RTL) */}
                     <ArrowIcon />
+                    <span>{viewAllText}</span>
                 </Link>
             </motion.div>
         </div>

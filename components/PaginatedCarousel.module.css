@@ -1,4 +1,4 @@
-/* components/homepage/PaginatedLatestArticles.module.css */
+/* components/PaginatedCarousel.module.css */
 
 .paginatedContainer {
     display: flex;
@@ -7,7 +7,7 @@
 }
 
 .paginatedContent {
-    flex-grow: 1;
+    /* flex-grow: 1; <-- This property was pushing the controls to the bottom, it has been removed. */
     position: relative;
     min-height: 380px; /* Adjust based on item height to prevent layout shift */
 }
@@ -22,7 +22,8 @@
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    padding-top: 1.5rem;
+    padding-top: 1rem; /* Reduced top padding to bring controls closer to content */
+    padding-bottom: 1.5rem; /* Added bottom padding for spacing from elements below */
 }
 
 .paginationDot {
@@ -33,16 +34,15 @@
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: all 0.2s ease-out;
+    transition: all 0.3s ease;
 }
 
 .paginationDot:hover {
     background-color: var(--text-secondary);
-    transform: scale(1.4);
 }
 
 .paginationDot.active {
     background-color: var(--accent);
-    transform: scale(1.3);
+    transform: scale(1.2);
     box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
 }
