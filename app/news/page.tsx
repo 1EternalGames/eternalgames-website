@@ -7,15 +7,29 @@ import NewsPageClient from './NewsPageClient';
 import { Suspense } from 'react';
 
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
-const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current}`;
+const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}`;
+
+// Helper function to remove duplicates based on title
+const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
+    if (!tags) return [];
+    const uniqueMap = new Map<string, SanityTag>();
+    tags.forEach(tag => {
+        if (tag && tag.title && !uniqueMap.has(tag.title)) {
+            uniqueMap.set(tag.title, tag);
+        }
+    });
+    return Array.from(uniqueMap.values());
+};
 
 export default async function NewsPage() {
-  const [heroNewsRaw, initialGridNewsRaw, allGames, allTags]: [SanityNews[], SanityNews[], SanityGame[], SanityTag[]] = await Promise.all([
+  const [heroNewsRaw, initialGridNewsRaw, allGames, allTagsRaw]: [SanityNews[], SanityNews[], SanityGame[], SanityTag[]] = await Promise.all([
     client.fetch(newsHeroQuery),
     client.fetch(newsGridInitialQuery),
     client.fetch(allGamesQuery),
     client.fetch(allNewsTagsQuery),
   ]);
+
+  const allTags = deduplicateTags(allTagsRaw);
 
   if (!heroNewsRaw || heroNewsRaw.length === 0) {
     return (

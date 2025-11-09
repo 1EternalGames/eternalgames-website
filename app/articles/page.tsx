@@ -7,17 +7,32 @@ import ArticlesPageClient from './ArticlesPageClient';
 import { Suspense } from 'react';
 
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
-const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}`;
-const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current}`;
+const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category}`;
+const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}`;
+
+// Helper function to remove duplicates based on title
+const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
+    if (!tags) return [];
+    const uniqueMap = new Map<string, SanityTag>();
+    tags.forEach(tag => {
+        if (tag && tag.title && !uniqueMap.has(tag.title)) {
+            uniqueMap.set(tag.title, tag);
+        }
+    });
+    return Array.from(uniqueMap.values());
+};
 
 export default async function ArticlesPage() {
-  const [featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags]: [SanityArticle[], SanityArticle[], SanityGame[], SanityTag[], SanityTag[]] = await Promise.all([
+  const [featuredArticles, initialGridArticles, allGames, allGameTagsRaw, allArticleTypeTagsRaw]: [SanityArticle[], SanityArticle[], SanityGame[], SanityTag[], SanityTag[]] = await Promise.all([
     client.fetch(featuredShowcaseArticlesQuery),
     client.fetch(allArticlesListQuery),
     client.fetch(allGamesQuery),
     client.fetch(allGameTagsQuery),
     client.fetch(allArticleTypeTagsQuery),
   ]);
+
+  const allGameTags = deduplicateTags(allGameTagsRaw);
+  const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
 
   if (!featuredArticles || featuredArticles.length === 0) {
     return (
