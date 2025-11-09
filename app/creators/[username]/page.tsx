@@ -5,18 +5,16 @@ import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
+import { cache } from 'react'; // Import React's cache
 
-export async function generateStaticParams() {
+export const generateStaticParams = cache(async () => {
     try {
         const usersWithUsernames = await prisma.user.findMany({
             where: {
-                username: {
-                    not: null,
-                },
+                username: { not: null },
+                roles: { some: { name: { in: ['REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'] } } }
             },
-            select: {
-                username: true,
-            },
+            select: { username: true },
         });
 
         return usersWithUsernames.map((user) => ({
@@ -26,28 +24,37 @@ export async function generateStaticParams() {
         console.error(`[BUILD ERROR] CRITICAL: Failed to fetch usernames for creator pages. Build cannot continue.`, error);
         throw error;
     }
-}
+});
+
+// NEW CACHED FUNCTION: This wraps the Prisma query for the user.
+const getCachedUserByUsername = cache(async (username: string) => {
+    try {
+        return await prisma.user.findUnique({
+            where: { username: username },
+            select: { id: true, name: true, username: true },
+        });
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Database connection failed for creator page: "${username}".`, error);
+        return null;
+    }
+});
 
 export default async function CreatorHubPage({ params }: { params: { username: string } }) {
     const { username: encodedUsername } = await params;
     const username = decodeURIComponent(encodedUsername);
 
-    const user = await prisma.user.findUnique({
-        where: { username: username },
-        select: { id: true, name: true, username: true },
-    });
+    // USE THE CACHED FUNCTION instead of a direct Prisma call.
+    const user = await getCachedUserByUsername(username);
 
     if (!user) {
         notFound();
     }
 
-    // Find all Sanity creator documents linked to this Prisma user ID
     const creatorDocs = await client.fetch< { _id: string }[] >(
         `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id}`,
         { prismaUserId: user.id }
     );
 
-    // If the user has no corresponding creator documents in Sanity, they have no content.
     if (!creatorDocs || creatorDocs.length === 0) {
         return (
              <div className="container page-container">
@@ -60,13 +67,8 @@ export default async function CreatorHubPage({ params }: { params: { username: s
         );
     }
     
-    // Extract the _id's into an array
     const creatorIds = creatorDocs.map(doc => doc._id);
-    
-    // Fetch all content that references any of these creator IDs
-    const allItems = await client.fetch(allContentByCreatorListQuery, { 
-        creatorIds: creatorIds
-    });
+    const allItems = await client.fetch(allContentByCreatorListQuery, { creatorIds });
 
     return (
         <HubPageClient

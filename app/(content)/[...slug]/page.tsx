@@ -11,6 +11,7 @@ import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
+import { cache } from 'react'; // Import React's cache
 
 const contentConfig = {
     reviews: {
@@ -36,7 +37,6 @@ const contentConfig = {
     },
 };
 
-// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
 const getCachedCreatorDetails = unstable_cache(
     async (prismaUserId: string) => {
         try {
@@ -58,19 +58,11 @@ const getCachedCreatorDetails = unstable_cache(
     { revalidate: 3600 }
 );
 
-
-// MODIFIED: This function now uses the cached helper.
 async function enrichCreator(creator: any) {
     if (!creator || !creator.prismaUserId) return creator;
-    
     const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
-
-    return {
-        ...creator,
-        ...userDetails,
-    };
+    return { ...creator, ...userDetails };
 }
-
 
 export async function generateStaticParams() {
     try {
@@ -81,43 +73,54 @@ export async function generateStaticParams() {
         });
     } catch (error) {
         console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for generateStaticParams. The build process cannot continue without a connection to the CMS.`, error);
-        // THE DEFINITIVE FIX: Throwing the error will cause the build to fail,
-        // preventing a silent deployment of a non-static site.
         throw error;
     }
 }
 
-async function Comments({ slug }: { slug: string }) {
+// NEW CACHED FUNCTION: This wraps the Prisma query for comments.
+const getCachedComments = cache(async (slug: string) => {
     try {
         const comments = await prisma.comment.findMany({
             where: { contentSlug: slug, parentId: null },
-            include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
+            include: { 
+                author: { select: { id: true, name: true, image: true, username: true } }, 
+                votes: true, 
+                _count: { select: { replies: true } }, 
+                replies: { 
+                    take: 2, 
+                    include: { 
+                        author: { select: { id: true, name: true, image: true, username: true } }, 
+                        votes: true, 
+                        _count: { select: { replies: true } } 
+                    }, 
+                    orderBy: { createdAt: 'asc' } 
+                } 
+            },
             orderBy: { createdAt: 'desc' },
         });
-        return <CommentSection slug={slug} initialComments={comments} />;
+        return comments;
     } catch (error) {
         console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
-        return <CommentSection slug={slug} initialComments={[]} />;
+        return [];
     }
+});
+
+async function Comments({ slug }: { slug: string }) {
+    // USE THE CACHED FUNCTION instead of a direct Prisma call.
+    const comments = await getCachedComments(slug);
+    return <CommentSection slug={slug} initialComments={comments} />;
 }
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
     const { slug: slugArray } = await params;
+    if (!slugArray || slugArray.length !== 2) notFound();
     
-    if (!slugArray || slugArray.length !== 2) {
-        notFound();
-    }
     const [type, slug] = slugArray;
     const config = (contentConfig as any)[type];
-
-    if (!config) {
-        notFound();
-    }
+    if (!config) notFound();
 
     let item: any = await client.fetch(config.query, { slug });
-    if (!item) {
-        notFound();
-    }
+    if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
         const fallbackContent = await client.fetch(config.fallbackQuery, { currentId: item._id });
