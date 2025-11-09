@@ -10,6 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
+import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // <-- IMPORT
 
 const cairo = Cairo({
 subsets: ['arabic', 'latin'],
@@ -44,7 +45,12 @@ return (
     <ToastProvider />
     <Lightbox /> 
     <Navbar />
-    <main>{children}</main>
+    {/* MODIFIED: Wrap main content with the new transition wrapper */}
+    <main>
+        <PageTransitionWrapper>
+            {children}
+        </PageTransitionWrapper>
+    </main>
     <Footer />
     <StudioBar />
     <ScrollToTopButton />
