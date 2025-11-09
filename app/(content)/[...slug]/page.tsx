@@ -37,15 +37,12 @@ const contentConfig = {
     },
 };
 
-// MODIFIED: Caching function for all server-side Sanity fetches
 const getCachedSanityData = unstable_cache(
     async (query: string, params: Record<string, any> = {}) => {
         return client.fetch(query, params);
     },
     ['sanity-content-detail'],
     {
-        // The time-based 'revalidate: 3600' has been removed to restore pure SSG.
-        // Revalidation will now be handled on-demand by the Sanity webhook.
         tags: ['sanity-content']
     }
 );
@@ -90,37 +87,9 @@ export async function generateStaticParams() {
     }
 }
 
-const getCachedComments = cache(async (slug: string) => {
-    try {
-        const comments = await prisma.comment.findMany({
-            where: { contentSlug: slug, parentId: null },
-            include: { 
-                author: { select: { id: true, name: true, image: true, username: true } }, 
-                votes: true, 
-                _count: { select: { replies: true } }, 
-                replies: { 
-                    take: 2, 
-                    include: { 
-                        author: { select: { id: true, name: true, image: true, username: true } }, 
-                        votes: true, 
-                        _count: { select: { replies: true } } 
-                    }, 
-                    orderBy: { createdAt: 'asc' } 
-                } 
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-        return comments;
-    } catch (error) {
-        console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
-        return [];
-    }
-});
+// REMOVED: The server-side getCachedComments function is no longer needed here.
 
-async function Comments({ slug }: { slug: string }) {
-    const comments = await getCachedComments(slug);
-    return <CommentSection slug={slug} initialComments={comments} />;
-}
+// REMOVED: The async Comments component is no longer needed here.
 
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
     const { slug: slugArray } = await params;
@@ -130,12 +99,10 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     const config = (contentConfig as any)[type];
     if (!config) notFound();
 
-    // MODIFIED: Using the cached Sanity fetch function
     let item: any = await getCachedSanityData(config.query, { slug });
     if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
-        // MODIFIED: Using the cached Sanity fetch function for fallback
         const fallbackContent = await getCachedSanityData(config.fallbackQuery, { currentId: item._id });
         item[config.relatedProp] = fallbackContent;
     }
@@ -148,8 +115,10 @@ export default async function ContentPage({ params }: { params: { slug: string[]
 
     return (
         <ContentPageClient item={item} type={type as any}>
+            {/* MODIFIED: We now pass the client-side CommentSection directly. */}
+            {/* The Suspense boundary will show a fallback while it fetches data. */}
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
-                <Comments slug={slug} />
+                <CommentSection slug={slug} />
             </Suspense>
         </ContentPageClient>
     );
