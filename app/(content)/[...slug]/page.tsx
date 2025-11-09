@@ -37,15 +37,16 @@ const contentConfig = {
     },
 };
 
-// NEW: Caching function for all server-side Sanity fetches
+// MODIFIED: Caching function for all server-side Sanity fetches
 const getCachedSanityData = unstable_cache(
     async (query: string, params: Record<string, any> = {}) => {
         return client.fetch(query, params);
     },
     ['sanity-content-detail'],
     {
-        revalidate: 3600, // Revalidate data every hour
-        tags: ['sanity-content'] // Tag for on-demand revalidation via webhook
+        // The time-based 'revalidate: 3600' has been removed to restore pure SSG.
+        // Revalidation will now be handled on-demand by the Sanity webhook.
+        tags: ['sanity-content']
     }
 );
 
