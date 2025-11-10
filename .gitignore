@@ -36,3 +36,6 @@
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Stop tracking log files and database dumps
+EternalGamesWebsite_Full*.txt
