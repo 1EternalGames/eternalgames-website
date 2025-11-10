@@ -218,7 +218,6 @@ const HoverContext = ({ hoveredStar, alwaysShowOrbits }: { hoveredStar: StarData
     );
 };
 
-// MODIFIED: Added isMobile prop
 function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, settings, isMobile }: any) {
     const [hoveredStar, setHoveredStar] = useState<StarData | null>(null);
     const { bloomIntensity, alwaysShowOrbits, flawlessPathThickness } = settings;
@@ -261,7 +260,7 @@ function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, sett
                 autoRotate={true}
                 autoRotateSpeed={0.15}
                 minDistance={2.5}
-                maxDistance={isMobile ? 15 : 10} // MODIFIED: Set dynamic maxDistance
+                maxDistance={isMobile ? 20 : 15} // MODIFIED: Increased maxDistance for both views
                 zoomSpeed={0.5}
             />
         </>
@@ -273,7 +272,7 @@ interface SceneProps {
     themeColors: typeof THEME_CONFIG.dark;
     setActiveStar: (star: StarData, position: ScreenPosition) => void;
     settings: ConstellationSettings;
-    isMobile: boolean; // MODIFIED: Added isMobile prop
+    isMobile: boolean;
 }
 
 export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings, isMobile }: SceneProps) => {
@@ -287,7 +286,7 @@ export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings
                 themeColors={themeColors}
                 setActiveStar={setActiveStar}
                 settings={settings}
-                isMobile={isMobile} // MODIFIED: Pass isMobile down
+                isMobile={isMobile}
             />
         </Suspense>
     );

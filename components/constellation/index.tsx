@@ -27,12 +27,11 @@ export default function Constellation() {
     useEffect(() => { setIsHydrated(true); }, []);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false); // MODIFIED: Added mobile detection state
+    const [isMobile, setIsMobile] = useState(false);
 
     useBodyClass('constellation-active'); 
     useBodyClass('fullscreen-active', isFullscreen); 
     
-    // MODIFIED: Added effect to detect mobile viewport
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 768);
         checkMobile();
@@ -182,8 +181,8 @@ export default function Constellation() {
                 <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الكوكبة" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
                     <CelestialGearIcon />
                 </motion.button>
-                {/* MODIFIED: Dynamically set initial camera position and pass isMobile prop */}
-                <Canvas camera={{ position: [0, 0, isMobile ? 8 : 5], fov: 60 }}>
+                {/* MODIFIED: Increased initial camera Z-position for both mobile and desktop */}
+                <Canvas camera={{ position: [0, 0, isMobile ? 10 : 7], fov: 60 }}>
                     <Scene 
                         settings={settings} 
                         chronologicalStars={chronologicalStars} 
