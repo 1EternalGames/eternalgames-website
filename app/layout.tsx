@@ -10,7 +10,6 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // MODIFIED: Import the new wrapper
 
 const cairo = Cairo({
 subsets: ['arabic', 'latin'],
@@ -19,7 +18,7 @@ variable: '--font-main',
 weight: ['400', '500', '700', '800'],
 });
 
-export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا فناء للألعاب.', };
+export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا fناء للألعاب.', };
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
 return (
@@ -36,11 +35,6 @@ return (
     href="https://cdn.sanity.io"
     crossOrigin="anonymous"
 />
-<link
-    rel="preload"
-    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800&display=swap"
-    as="style"
-/>
 </head>
 <body>
 <NextAuthProvider>
@@ -50,11 +44,10 @@ return (
     <ToastProvider />
     <Lightbox /> 
     <Navbar />
-    {/* MODIFIED: Wrap main content with the new controlled transition wrapper */}
+    {/* MODIFIED: The redundant PageTransitionWrapper has been removed. */}
+    {/* app/template.tsx is now the single source of truth for page transitions. */}
     <main>
-        <PageTransitionWrapper>
-            {children}
-        </PageTransitionWrapper>
+        {children}
     </main>
     <Footer />
     <StudioBar />
