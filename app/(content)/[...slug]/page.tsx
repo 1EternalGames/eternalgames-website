@@ -2,42 +2,46 @@
 
 import { notFound } from 'next/navigation';
 import { client } from '@/lib/sanity.client';
-import { articleBySlugQuery, newsBySlugQuery, reviewBySlugQuery, relatedArticlesFallbackQuery, relatedNewsFallbackQuery, relatedReviewsFallbackQuery } from '@/lib/sanity.queries';
-import { unstable_cache } from 'next/cache';
+// FIX: Corrected import names to match your sanity.queries.ts file
+import { 
+    articleBySlugQuery, 
+    newsBySlugQuery, 
+    reviewBySlugQuery, 
+    latestArticlesFallbackQuery, 
+    latestNewsFallbackQuery, 
+    latestReviewsFallbackQuery 
+} from '@/lib/sanity.queries';
+import { unstable_cache, unstable_noStore as noStore } from 'next/cache';
 import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
-import { Suspense, cache } from 'react'; // <-- Import cache
+import { Suspense, cache } from 'react';
+import { SanityAuthor } from '@/types/sanity';
 
-// ... (contentConfig remains the same)
+// FIX: Moved contentConfig to the top-level scope where it belongs.
+const contentConfig = {
+    reviews: { query: reviewBySlugQuery, relatedProp: 'relatedReviews', fallbackQuery: latestReviewsFallbackQuery },
+    articles: { query: articleBySlugQuery, relatedProp: 'relatedArticles', fallbackQuery: latestArticlesFallbackQuery },
+    news: { query: newsBySlugQuery, relatedProp: 'relatedNews', fallbackQuery: latestNewsFallbackQuery },
+};
 
-// This cache is perfect. It will cache "forever" until revalidated by your webhook.
+// Caching for Sanity data (revalidated by webhook)
 const getCachedSanityData = unstable_cache(
     async (query: string, params: Record<string, any> = {}) => {
         return client.fetch(query, params);
     },
     ['sanity-content-detail'],
-    {
-        tags: ['sanity-content']
-    }
+    { tags: ['sanity-content'] }
 );
 
-// =============================================================================
-// FIX #1: OPTIMIZE DATABASE QUERIES TO A SINGLE BATCHED CALL
-// =============================================================================
-// This function takes an array of user IDs and fetches them all in one go.
-// We use React's `cache` to ensure this function only runs once per request,
-// even if called multiple times with the same IDs.
+// Batched & cached database query for creator details
 const getCreatorsByIds = cache(async (prismaUserIds: string[]) => {
-    if (prismaUserIds.length === 0) {
-        return new Map();
-    }
+    if (prismaUserIds.length === 0) return new Map();
     try {
         const users = await prisma.user.findMany({
             where: { id: { in: prismaUserIds } },
             select: { id: true, name: true, image: true, username: true },
         });
-        // Return a Map for easy O(1) lookups.
         return new Map(users.map(user => [user.id, user]));
     } catch (error) {
         console.warn(`[CACHE WARNING] Database lookup failed for users.`, error);
@@ -45,9 +49,8 @@ const getCreatorsByIds = cache(async (prismaUserIds: string[]) => {
     }
 });
 
-
+// generateStaticParams is correct and should not be changed.
 export async function generateStaticParams() {
-    // This function is correct and essential. No changes needed.
     try {
         const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]]{ "slug": slug.current, _type }`);
         return allContent.map(c => {
@@ -60,22 +63,34 @@ export async function generateStaticParams() {
     }
 }
 
-// Your async Comments component from my previous suggestion is still the best
-// practice for avoiding client-side waterfalls, but we'll focus on the main server issue first.
+// Async Server Component for comments to avoid client-side waterfall
 async function Comments({ slug }: { slug: string }) {
-    // ... (This component remains a good idea for perceived performance)
-    let initialComments = [];
+    // FIX: Explicitly type initialComments to avoid implicit any
+    let initialComments: any[] = [];
     try {
-        initialComments = await prisma.comment.findMany({ /* ... your query ... */ });
+        initialComments = await prisma.comment.findMany({
+            where: { contentSlug: slug, parentId: null },
+            include: { 
+                author: { select: { id: true, name: true, image: true, username: true } }, 
+                votes: true, 
+                _count: { select: { replies: true } }, 
+                replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } 
+            },
+            orderBy: { createdAt: 'desc' },
+        });
     } catch (error) {
-        console.warn(`[DATA WARNING] DB failed for comments on slug "${slug}".`);
+        console.warn(`[DATA WARNING] Database failed for comments on slug "${slug}".`);
     }
     return <CommentSection slug={slug} initialComments={initialComments} />;
 }
 
+
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
+    noStore(); // Opts into dynamic rendering for preview mode, but will still be static for builds.
+    
     const { slug: slugArray } = params;
-    if (!slugArray || !slugArray.length !== 2) notFound();
+    // FIX: Corrected the logical typo in the length check.
+    if (!slugArray || slugArray.length !== 2) notFound();
     
     const [type, slug] = slugArray;
     const config = (contentConfig as any)[type];
@@ -84,29 +99,23 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     let item: any = await getCachedSanityData(config.query, { slug });
     if (!item) notFound();
 
-    // Data enrichment logic
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
         const fallbackContent = await getCachedSanityData(config.fallbackQuery, { currentId: item._id });
         item[config.relatedProp] = fallbackContent;
     }
 
-    // =============================================================================
-    // FIX #2: USE THE BATCHED DATABASE QUERY
-    // =============================================================================
-    const primaryCreators = (item.authors || item.reporters || []).filter(Boolean);
-    const designers = (item.designers || []).filter(Boolean);
+    // FIX: Added explicit types to prevent implicit 'any' errors during map.
+    const primaryCreators: SanityAuthor[] = (item.authors || item.reporters || []).filter(Boolean);
+    const designers: SanityAuthor[] = (item.designers || []).filter(Boolean);
     
-    // 1. Collect all unique user IDs from the Sanity document.
     const allCreatorIds = [...new Set([
-        ...primaryCreators.map(c => c.prismaUserId),
-        ...designers.map(c => c.prismaUserId)
+        ...primaryCreators.map((c) => c.prismaUserId),
+        ...designers.map((c) => c.prismaUserId)
     ])].filter(Boolean);
 
-    // 2. Fetch all of them in a single database call.
     const creatorDetailsMap = await getCreatorsByIds(allCreatorIds);
 
-    // 3. Enrich the original Sanity objects with data from the Map.
-    const enrich = (creator: any) => ({ ...creator, ...creatorDetailsMap.get(creator.prismaUserId) });
+    const enrich = (creator: SanityAuthor) => ({ ...creator, ...creatorDetailsMap.get(creator.prismaUserId) });
     const enrichedPrimaryCreators = primaryCreators.map(enrich);
     const enrichedDesigners = designers.map(enrich);
 

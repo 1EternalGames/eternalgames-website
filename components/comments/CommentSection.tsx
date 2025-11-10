@@ -4,17 +4,21 @@
 import { useState, useOptimistic, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
-import { postReplyOrComment } from '@/app/actions/commentActions';
+import { postReplyOrComment, deleteComment, updateComment, voteOnComment } from '@/app/actions/commentActions';
 import CommentForm from './CommentForm';
-import SignInPrompt from './SignInPrompt';
 import CommentList from './CommentList';
-import styles from './Comments.module.css';
+import SignInPrompt from './SignInPrompt';
 
+// FIX #1: Removed the non-existent import and using `any` for the type, 
+// as the exact Prisma type isn't needed for the logic to function correctly.
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
     return comments.map(comment => {
         if (comment.id === parentId) {
-            const updatedReplies = comment.replies ? [...comment.replies, reply] : [reply];
-            return { ...comment, replies: updatedReplies, _count: { replies: (comment._count?.replies || 0) + 1 } };
+            return {
+                ...comment,
+                replies: [reply, ...(comment.replies || [])],
+                _count: { ...comment._count, replies: (comment._count?.replies || 0) + 1 }
+            };
         }
         if (comment.replies && comment.replies.length > 0) {
             return { ...comment, replies: addReplyToState(comment.replies, parentId, reply) };
@@ -23,42 +27,29 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-export default function CommentSection({ slug }: { slug: string; }) {
+export default function CommentSection({ slug, initialComments }: {
+    slug: string;
+    initialComments: any[]; 
+}) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
+    const [comments, setComments] = useState(initialComments);
 
-    // MODIFIED: State now manages comments, loading, and errors.
-    const [comments, setComments] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // MODIFIED: Fetch comments on the client side.
     useEffect(() => {
-        const fetchComments = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const response = await fetch(`/api/comments/${slug}`);
-                if (!response.ok) throw new Error('Failed to fetch comments');
-                const data = await response.json();
-                setComments(data);
-            } catch (err) {
-                setError('Could not load comments.');
-                console.error(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchComments();
-    }, [slug]);
+        setComments(initialComments);
+    }, [initialComments]);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
-        (state, { newComment, parentId }) => {
-            if (parentId) {
-                return addReplyToState(state, parentId, newComment);
+        (currentState, { action, payload }: { action: 'add', payload: any }) => {
+            if (action === 'add') {
+                if (payload.parentId) {
+                    return addReplyToState(currentState, payload.parentId, payload);
+                } else {
+                    return [payload, ...currentState];
+                }
             }
-            return [newComment, ...state];
+            return currentState;
         }
     );
 
@@ -66,8 +57,9 @@ export default function CommentSection({ slug }: { slug: string; }) {
         if (!typedSession?.user?.id) return;
 
         const optimisticComment = {
-            id: crypto.randomUUID(),
+            id: `optimistic-${Date.now()}`,
             content,
+            contentSlug: slug,
             parentId,
             createdAt: new Date().toISOString(),
             author: typedSession.user,
@@ -78,93 +70,76 @@ export default function CommentSection({ slug }: { slug: string; }) {
             isOptimistic: true,
         };
 
-        addOptimisticComment({ newComment: optimisticComment, parentId });
+        addOptimisticComment({ action: 'add', payload: optimisticComment });
 
-        const result = await postReplyOrComment(slug, content, parentId);
+        const result = await postReplyOrComment(content, slug, parentId);
 
+        // FIX #2: Correctly use `result.comment` instead of `result.newComment`.
         if (result.success && result.comment) {
-            setComments(currentComments => {
-                const updateWithNewComment = (commentsList: any[]): any[] => {
-                    return commentsList.map(c => {
-                        if (c.id === optimisticComment.id) return result.comment;
-                        if (c.replies) return { ...c, replies: updateWithNewComment(c.replies) };
-                        return c;
-                    });
-                };
-
-                if (parentId) {
-                     return addReplyToState(currentComments, parentId, result.comment)
-                        .filter(c => c.id !== optimisticComment.id);
-                }
-                
-                return [result.comment, ...currentComments.filter(c => c.id !== optimisticComment.id)];
-            });
+            if (parentId) {
+                setComments(currentComments => addReplyToState(currentComments, parentId, result.comment!));
+            } else {
+                setComments(currentComments => [result.comment!, ...currentComments]);
+            }
+        } else {
+            setComments(comments);
         }
     };
     
-    const handleVoteUpdate = (commentId: string, newVotes: any[]) => {
-        const updateVotesRecursive = (commentsList: any[]): any[] => {
-            return commentsList.map(comment => {
-                if (comment.id === commentId) return { ...comment, votes: newVotes };
-                if (comment.replies) return { ...comment, replies: updateVotesRecursive(comment.replies) };
-                return comment;
-            });
-        };
-        setComments(prevComments => updateVotesRecursive(prevComments));
+    // The rest of the handlers are correct.
+    const handleVoteUpdate = (commentId: string, updatedVotes: any[]) => {
+        const updateVotes = (list: any[]): any[] => list.map(c => {
+            if (c.id === commentId) return { ...c, votes: updatedVotes };
+            if (c.replies) return { ...c, replies: updateVotes(c.replies) };
+            return c;
+        });
+        setComments(current => updateVotes(current));
     };
 
-    const handleDeleteSuccess = (deletedId: string, wasDeleted: boolean, updatedComment?: any) => {
-        const removeOrUpdateRecursive = (commentsList: any[]): any[] => {
-            if (wasDeleted) {
-                return commentsList.filter(c => {
-                    if (c.replies) c.replies = removeOrUpdateRecursive(c.replies);
-                    return c.id !== deletedId;
-                });
-            } else {
-                return commentsList.map(c => {
-                    if (c.id === deletedId) return updatedComment;
-                    if (c.replies) return { ...c, replies: removeOrUpdateRecursive(c.replies) };
-                    return c;
-                });
-            }
-        };
-        setComments(prevComments => removeOrUpdateRecursive(prevComments));
-    };
-
-    const handleUpdateSuccess = (updatedComment: any) => {
-        const updateRecursive = (commentsList: any[]): any[] => {
-            return commentsList.map(c => {
-                if (c.id === updatedComment.id) return updatedComment;
-                if (c.replies) return { ...c, replies: updateRecursive(c.replies) };
+    const handleDeleteSuccess = (commentId: string, wasDeleted: boolean, updatedComment: any) => {
+        const updateComments = (list: any[]): any[] => {
+            if (wasDeleted) return list.filter(c => c.id !== commentId);
+            return list.map(c => {
+                if (c.id === commentId) return updatedComment;
+                if (c.replies) return { ...c, replies: updateComments(c.replies) };
                 return c;
             });
         };
-        setComments(prevComments => updateRecursive(prevComments));
+        setComments(current => updateComments(current));
+    };
+    
+    const handleUpdateSuccess = (updatedComment: any) => {
+        const updateComments = (list: any[]): any[] => list.map(c => {
+            if (c.id === updatedComment.id) return { ...c, ...updatedComment };
+            if (c.replies) return { ...c, replies: updateComments(c.replies) };
+            return c;
+        });
+        setComments(current => updateComments(current));
     };
 
 
     return (
-        <div className={styles.commentsSection}>
-            {typedSession?.user ? (
-                <CommentForm slug={slug} session={typedSession} onPostComment={handlePostComment} />
+        <div style={{ paddingTop: '4rem' }}>
+            {typedSession ? (
+                <CommentForm
+                    slug={slug}
+                    session={typedSession}
+                    onPostComment={handlePostComment}
+                />
             ) : (
                 <SignInPrompt />
             )}
             
-            <div>
-                {isLoading && <div className="spinner" style={{ margin: '4rem auto' }} />}
-                {error && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{error}</p>}
-                {!isLoading && !error && (
-                    <CommentList
-                        comments={optimisticComments}
-                        session={typedSession}
-                        slug={slug}
-                        onVoteUpdate={handleVoteUpdate}
-                        onPostReply={handlePostComment}
-                        onDeleteSuccess={handleDeleteSuccess}
-                        onUpdateSuccess={handleUpdateSuccess}
-                    />
-                )}
+            <div> 
+                <CommentList
+                    comments={optimisticComments}
+                    session={typedSession}
+                    slug={slug}
+                    onVoteUpdate={handleVoteUpdate}
+                    onPostReply={handlePostComment}
+                    onDeleteSuccess={handleDeleteSuccess}
+                    onUpdateSuccess={handleUpdateSuccess}
+                />
             </div>
         </div>
     );
