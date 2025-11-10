@@ -4,7 +4,7 @@ import { groq } from 'next-sanity'
 
 // --- Base Fields & Projections (Optimized) ---
 const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
-const creatorFields = groq`_id, name, prismaUserId, image, bio`
+const creatorFields = groq`_id, name, prismaUserId, image, bio, "username": *[_type=="user" && id==^.prismaUserId][0].username`
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`
 const publishedFilter = groq`defined(publishedAt) && publishedAt < now()`
@@ -146,7 +146,7 @@ export const allContentByTagListQuery = groq`*[_type in ["review", "article", "n
 
 // --- Detail Page Queries ---
 const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} } }`
-const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
+const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId, "username": *[_type=="user" && id==^.prismaUserId][0].username}, "reporters": reporters[]->{name, prismaUserId, "username": *[_type=="user" && id==^.prismaUserId][0].username}, "publishedAt": publishedAt }`
 
 export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
@@ -171,7 +171,7 @@ export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug &
 export const latestReviewsFallbackQuery = groq`*[_type == "review" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
 export const latestArticlesFallbackQuery = groq`*[_type == "article" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
 export const latestNewsFallbackQuery = groq`*[_type == "news" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
-export const latestNewsQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...15] { _id, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, "reporters": reporters[]->{name, prismaUserId}, publishedAt, "tags": tags[]->{${tagFields}} }`
+export const latestNewsQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...15] { _id, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, "reporters": reporters[]->{name, prismaUserId, "username": *[_type=="user" && id==^.prismaUserId][0].username}, publishedAt, "tags": tags[]->{${tagFields}} }`
 export const heroContentQuery = groq`{
   "featuredReview": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} },
   "latestNews": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0] { ${cardProjection} },

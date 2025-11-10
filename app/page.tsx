@@ -7,45 +7,11 @@ import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
-import { SanityAuthor } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
 export const revalidate = 60;
-
-const getCachedEnrichedCreators = unstable_cache(
-    async (creatorIds: string[]): Promise<[string, string | null][]> => {
-        if (creatorIds.length === 0) return [];
-        try {
-            const users = await prisma.user.findMany({
-                where: { id: { in: creatorIds } },
-                select: { id: true, username: true },
-            });
-            return users.map(u => [u.id, u.username || null]);
-        } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment. Skipping. Error:`, error);
-            return [];
-        }
-    },
-    ['enriched-creators'],
-    { revalidate: 3600, tags: ['enriched-creators'] }
-);
-
-async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
-    if (!creators || creators.length === 0) return [];
-    
-    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
-    if (userIds.length === 0) return creators;
-
-    const usernameArray = await getCachedEnrichedCreators(userIds);
-    const usernameMap = new Map(usernameArray);
-
-    return creators.map(creator => ({
-        ...creator,
-        username: usernameMap.get(creator.prismaUserId) || creator.username || null,
-    }));
-}
 
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
@@ -79,7 +45,6 @@ const getCachedEngagementScoresMap = unstable_cache(
     { revalidate: 60, tags: ['engagement-scores'] }
 );
 
-
 async function ReleasesSection() {
     const releases = await client.fetch(allReleasesQuery);
     const sanitizedReleases = (releases || []).filter((item: any) => 
@@ -102,14 +67,6 @@ export default async function HomePage() {
     ]);
 
     const scoresMap = new Map(scoresArray);
-    
-    const enrichedReviews = await Promise.all(
-        reviews.map(async (review: any) => ({
-            ...review,
-            authors: await enrichCreators(review.authors),
-            designers: await enrichCreators(review.designers),
-        }))
-    );
     
     const sortItemsByScore = (items: any[]) => {
         return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
@@ -150,7 +107,7 @@ export default async function HomePage() {
 
     return (
         <DigitalAtriumHomePage 
-            reviews={enrichedReviews}
+            reviews={reviews}
             feedsContent={feedsContent}
             releasesSection={releasesSection}
         />

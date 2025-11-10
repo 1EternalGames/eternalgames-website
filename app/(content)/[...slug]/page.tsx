@@ -1,5 +1,4 @@
 // app/(content)/[...slug]/page.tsx
-import { unstable_cache } from 'next/cache';
 import { client } from '@/lib/sanity.client';
 import {
     reviewBySlugQuery, latestReviewsFallbackQuery,
@@ -19,60 +18,21 @@ const contentConfig = {
         query: reviewBySlugQuery,
         fallbackQuery: latestReviewsFallbackQuery,
         relatedProp: 'relatedReviews',
-        creatorProps: ['authors', 'designers'],
         sanityType: 'review',
     },
     articles: {
         query: articleBySlugQuery,
         fallbackQuery: latestArticlesFallbackQuery,
         relatedProp: 'relatedArticles',
-        creatorProps: ['authors', 'designers'],
         sanityType: 'article',
     },
     news: {
         query: newsBySlugQuery,
         fallbackQuery: latestNewsFallbackQuery,
         relatedProp: 'relatedNews',
-        creatorProps: ['reporters', 'designers'],
         sanityType: 'news',
     },
 };
-
-// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
-const getCachedCreatorDetails = unstable_cache(
-    async (prismaUserId: string) => {
-        try {
-            const user = await prisma.user.findUnique({
-                where: { id: prismaUserId },
-                select: { username: true, image: true, bio: true }
-            });
-            return {
-                username: user?.username || null,
-                image: user?.image || null,
-                bio: user?.bio || null,
-            };
-        } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed for creator enrichment (ID: ${prismaUserId}). Skipping. Error:`, error);
-            return { username: null, image: null, bio: null };
-        }
-    },
-    ['enriched-creator-details'],
-    { revalidate: 3600 }
-);
-
-
-// MODIFIED: This function now uses the cached helper.
-async function enrichCreator(creator: any) {
-    if (!creator || !creator.prismaUserId) return creator;
-    
-    const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
-
-    return {
-        ...creator,
-        ...userDetails,
-    };
-}
-
 
 export async function generateStaticParams() {
     try {
@@ -124,12 +84,6 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         item[config.relatedProp] = fallbackContent;
     }
 
-    for (const prop of config.creatorProps) {
-        if (item[prop]) {
-            item[prop] = await Promise.all(item[prop].map(enrichCreator));
-        }
-    }
-
     return (
         <ContentPageClient item={item} type={type as any}>
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
@@ -138,5 +92,3 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         </ContentPageClient>
     );
 }
-
-
