@@ -30,7 +30,7 @@ const contentConfig = {
         sanityType: 'article',
     },
     news: {
-        query: newsBySlugQuery,
+        query: newsBySlugQuery, 
         fallbackQuery: latestNewsFallbackQuery,
         relatedProp: 'relatedNews',
         creatorProps: ['reporters', 'designers'],
