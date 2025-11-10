@@ -15,7 +15,7 @@ import { Suspense } from 'react';
 export const revalidate = 60;
 
 const contentConfig = {
-    reviews: { 
+    reviews: {
         query: reviewBySlugQuery,
         fallbackQuery: latestReviewsFallbackQuery,
         relatedProp: 'relatedReviews',
