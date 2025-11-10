@@ -2,27 +2,18 @@
 import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
-    let databaseUrl: string | undefined;
-
-    // 1. Prioritize BUILD_DATABASE_URL if the IS_BUILDING flag is set.
-    if (process.env.IS_BUILDING === 'true') {
-        databaseUrl = process.env.BUILD_DATABASE_URL;
-        console.log("... [BUILD] Using direct database connection.");
-    } 
-    // 2. For development, also use the direct connection URL (BUILD_DATABASE_URL).
-    else if (process.env.NODE_ENV === 'development') {
-        databaseUrl = process.env.BUILD_DATABASE_URL;
-        console.log("... [DEV] Using direct database connection for development.");
-    } 
-    // 3. Fallback to the default pooled URL for production runtime.
-    else {
-        databaseUrl = process.env.DATABASE_URL;
-        console.log("... [PROD RUNTIME] Using pooled database connection.");
-    }
+    // THE DEFINITIVE FIX:
+    // This logic is simplified to ALWAYS use the pooled DATABASE_URL.
+    // The BUILD_DATABASE_URL is prone to timeouts on Vercel builds due to
+    // Neon's auto-sleep feature on the direct connection endpoint. The pooled URL is always-on.
+    const databaseUrl = process.env.DATABASE_URL;
 
     if (!databaseUrl) {
-        throw new Error('DATABASE_URL and/or BUILD_DATABASE_URL are not set correctly in your environment variables');
+        throw new Error('DATABASE_URL is not set in your environment variables');
     }
+
+    // This log remains helpful for debugging which URL is being used.
+    console.log("... [Prisma] Using database connection URL.");
 
     return new PrismaClient({
         datasources: {
@@ -42,5 +33,3 @@ const prisma = globalThis.prisma ?? prismaClientSingleton()
 export default prisma
 
 if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma
-
-
