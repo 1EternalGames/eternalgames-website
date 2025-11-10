@@ -38,9 +38,6 @@ const contentConfig = {
     },
 };
 
-// --- PERFORMANCE FIX ---
-// This function fetches details for MULTIPLE creators in a single database query.
-// It is cached for 1 hour to reduce database load on subsequent requests for the same set of creators.
 const getCachedBatchCreatorDetails = unstable_cache(
     async (prismaUserIds: string[]) => {
         if (prismaUserIds.length === 0) return [];
@@ -99,30 +96,39 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         notFound();
     }
 
+    // --- STEP 1: Initial fetch for the main content document ---
     let item: any = await client.fetch(config.query, { slug });
     if (!item) {
         notFound();
     }
 
-    // --- PERFORMANCE FIX: BATCHED DATA ENRICHMENT ---
-
-    // 1. Collect all unique Prisma User IDs from all creator fields (authors, designers, etc.)
-    const allCreatorIds = new Set<string>();
+    // --- STEP 2: Prepare concurrent data fetching promises ---
+    const creatorIds = new Set<string>();
     for (const prop of config.creatorProps) {
         if (item[prop]) {
             item[prop].forEach((creator: any) => {
-                if (creator?.prismaUserId) {
-                    allCreatorIds.add(creator.prismaUserId);
-                }
+                if (creator?.prismaUserId) creatorIds.add(creator.prismaUserId);
             });
         }
     }
+    const creatorDetailsPromise = getCachedBatchCreatorDetails(Array.from(creatorIds));
 
-    // 2. Make a single, batched database call to get all user details at once.
-    const userDetailsArray = await getCachedBatchCreatorDetails(Array.from(allCreatorIds));
+    const relatedContentPromise = (async () => {
+        if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
+            return client.fetch(config.fallbackQuery, { currentId: item._id });
+        }
+        return null;
+    })();
+
+    // --- STEP 3: Execute fetches in parallel ---
+    const [userDetailsArray, fallbackContent] = await Promise.all([
+        creatorDetailsPromise,
+        relatedContentPromise,
+    ]);
+
+    // --- STEP 4: Stitch the data together (fast, in-memory operations) ---
     const userDetailsMap = new Map(userDetailsArray.map(u => [u.id, u]));
 
-    // 3. Enrich the original creator data using the map (fast, in-memory operation).
     for (const prop of config.creatorProps) {
         if (item[prop]) {
             item[prop] = item[prop].map((creator: any) => {
@@ -133,10 +139,8 @@ export default async function ContentPage({ params }: { params: { slug: string[]
             });
         }
     }
-    // --- END OF FIX ---
 
-    if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
-        const fallbackContent = await client.fetch(config.fallbackQuery, { currentId: item._id });
+    if (fallbackContent) {
         item[config.relatedProp] = fallbackContent;
     }
 
