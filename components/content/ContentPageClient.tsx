@@ -36,10 +36,6 @@ export default function ContentPageClient({ item, type, children }: {
     type: ContentType;
     children: React.ReactNode;
 }) {
-    // THE DEFINITIVE FIX (PART 1):
-    // The component now exclusively uses the prefix from the store.
-    // There is no fallback or default prefix, ensuring animations only trigger
-    // when explicitly initiated by a source component click.
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
 
     const [headings, setHeadings] = useState<Heading[]>([]);
@@ -99,10 +95,6 @@ export default function ContentPageClient({ item, type, children }: {
     }, [isReview]);
 
     useEffect(() => {
-        // THE DEFINITIVE FIX (PART 2):
-        // This effect runs when the component unmounts. It resets the prefix in the
-        // global store to 'default', ensuring no stale prefix is carried over to
-        // subsequent, unrelated navigations.
         return () => {
             setPrefix('default');
         };
@@ -180,7 +172,7 @@ export default function ContentPageClient({ item, type, children }: {
                         fill 
                         sizes="100vw"
                         style={{ objectFit: 'cover' }} 
-                        priority 
+                        priority // MODIFIED: Added priority prop
                         placeholder="blur" 
                         blurDataURL={(item.mainImage as any).blurDataURL} 
                     />

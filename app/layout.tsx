@@ -35,6 +35,11 @@ return (
     href="https://cdn.sanity.io"
     crossOrigin="anonymous"
 />
+<link
+    rel="preload"
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800&display=swap"
+    as="style"
+/>
 </head>
 <body>
 <NextAuthProvider>
@@ -44,7 +49,6 @@ return (
     <ToastProvider />
     <Lightbox /> 
     <Navbar />
-    {/* MODIFIED: Removed the redundant PageTransitionWrapper. app/template.tsx now correctly handles this. */}
     <main>
         {children}
     </main>
