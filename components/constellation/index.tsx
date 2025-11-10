@@ -6,7 +6,7 @@ import { Canvas } from '@react-three/fiber';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserStore } from '@/lib/store';
-import { useBodyClass } from '@/hooks/useBodyClass'; // <-- IMPORT HOOK
+import { useBodyClass } from '@/hooks/useBodyClass';
 import * as THREE from 'three';
 import { THEME_CONFIG, StarData, SanityContentObject, ScreenPosition } from './config';
 import { StarPreviewCard } from './StarPreviewCard';
@@ -27,9 +27,18 @@ export default function Constellation() {
     useEffect(() => { setIsHydrated(true); }, []);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false); // MODIFIED: Added mobile detection state
 
     useBodyClass('constellation-active'); 
     useBodyClass('fullscreen-active', isFullscreen); 
+    
+    // MODIFIED: Added effect to detect mobile viewport
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
     
     const { resolvedTheme } = useTheme();
     const { bookmarks, likes, shares } = useUserStore();
@@ -173,8 +182,15 @@ export default function Constellation() {
                 <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الكوكبة" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
                     <CelestialGearIcon />
                 </motion.button>
-                <Canvas camera={{ position: [0, 0, 5] }}>
-                    <Scene settings={settings} chronologicalStars={chronologicalStars} themeColors={themeColors} setActiveStar={handleSetActiveStar} />
+                {/* MODIFIED: Dynamically set initial camera position and pass isMobile prop */}
+                <Canvas camera={{ position: [0, 0, isMobile ? 8 : 5], fov: 60 }}>
+                    <Scene 
+                        settings={settings} 
+                        chronologicalStars={chronologicalStars} 
+                        themeColors={themeColors} 
+                        setActiveStar={handleSetActiveStar} 
+                        isMobile={isMobile}
+                    />
                 </Canvas>
                 {chronologicalStars.length === 0 && ( <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', pointerEvents: 'none', padding: '2rem' }}> <motion.h1 className="page-title" style={{ fontSize: '6rem' }} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}> كوكبتك في انتظارك </motion.h1> <motion.p style={{ maxWidth: '600px', fontSize: '2rem', color: 'var(--text-secondary)' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}> بينما تستكشف وتعجب وتشارك، ستبدأ خريطتك النجمية الشخصية في التكون هنا. </motion.p> </div> )}
             </div>

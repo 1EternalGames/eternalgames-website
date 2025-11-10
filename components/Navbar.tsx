@@ -11,9 +11,11 @@ import { useScrolled } from '@/hooks/useScrolled';
 import { useBodyClass } from '@/hooks/useBodyClass';
 import { useUIStore } from '@/lib/uiStore';
 import { ReviewIcon, NewsIcon, ArticleIcon, ReleaseIcon, StudioIcon, PreviewIcon } from '@/components/icons/index';
+// MODIFIED: Import the new icon
+import { EternalGamesIcon } from '@/components/icons/AuthIcons';
 import { useEditorStore } from '@/lib/editorStore';
 import { QualityToggle } from '@/app/studio/[contentType]/[id]/editor-components/QualityToggle';
-import Search from './Search'; // MODIFIED: Direct import, no more lazy loading.
+import Search from './Search';
 import styles from './Navbar.module.css';
 import editorStyles from '@/app/studio/[contentType]/[id]/Editor.module.css';
 
@@ -172,7 +174,9 @@ const Navbar = () => {
             <header className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
                 <div className={`container ${styles.navContainer}`}>
                     <div className={styles.desktopView}>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>
+                            <EternalGamesIcon style={{ width: '30px', height: '30px' }} />
+                        </Link>
                         <nav>
                             <ul className={styles.navLinks}>
                                 {navItems.map(item => (
@@ -206,7 +210,9 @@ const Navbar = () => {
                                 <SearchIcon />
                             </button>
                         </div>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>∞</Link>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>
+                            <EternalGamesIcon style={{ width: '28px', height: '28px' }} />
+                        </Link>
                         <div className={styles.mobileNavGroupRight}>
                             {isEditorActive && <EditorPreviewButton />}
                             <ThemeToggle />
@@ -233,7 +239,7 @@ const Navbar = () => {
                             exit="exit"
                         >
                             <Link href="/" onClick={closeAll} className={`${styles.orbitalCenter} no-underline ${pathname === '/' ? styles.active : ''}`}>
-                                ∞
+                                <EternalGamesIcon style={{ width: '48px', height: '48px' }} />
                             </Link>
                             {navItems.map((item, i) => {
                                 const angle = -Math.PI / 2 + (i / navItems.length) * (Math.PI * 2);
@@ -253,7 +259,6 @@ const Navbar = () => {
                 )}
             </AnimatePresence>
             
-            {/* MODIFIED: Removed conditional rendering and Suspense wrapper */}
             <Search isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </>
     );
