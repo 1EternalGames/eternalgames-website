@@ -8,7 +8,6 @@ import { Suspense } from 'react';
 import GridPageSkeleton from '@/components/skeletons/GridPageSkeleton';
 import { ScoreFilter } from '@/components/filters/ReviewFilters';
 
-export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
