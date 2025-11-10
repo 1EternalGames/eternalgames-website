@@ -1,7 +1,7 @@
 // components/Navbar.tsx
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
@@ -13,10 +13,9 @@ import { useUIStore } from '@/lib/uiStore';
 import { ReviewIcon, NewsIcon, ArticleIcon, ReleaseIcon, StudioIcon, PreviewIcon } from '@/components/icons/index';
 import { useEditorStore } from '@/lib/editorStore';
 import { QualityToggle } from '@/app/studio/[contentType]/[id]/editor-components/QualityToggle';
+import Search from './Search'; // MODIFIED: Direct import, no more lazy loading.
 import styles from './Navbar.module.css';
 import editorStyles from '@/app/studio/[contentType]/[id]/Editor.module.css';
-
-const Search = React.lazy(() => import('./Search'));
 
 const SearchIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -66,11 +65,6 @@ const orbitalContainerVariants: Variants = {
 const itemTransition: Transition = { type: 'spring', stiffness: 400, damping: 20 };
 
 const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: typeof navItems[0], angle: number, radius: string, isActive: boolean, onClick: () => void }) => {
-    // THE DEFINITIVE FIX:
-    // Round the results of Math.cos and Math.sin to a high precision. This converts
-    // very small floating-point numbers (like 6.12e-17 for cos(PI/2)) into a clean 0.
-    // This prevents potential issues in Framer Motion's animation engine when an
-    // initial value is 0 and the target is a string expression that also evaluates to 0.
     const cosAngle = Math.round(Math.cos(angle) * 1e10) / 1e10;
     const sinAngle = Math.round(Math.sin(angle) * 1e10) / 1e10;
 
@@ -159,13 +153,11 @@ const Navbar = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { isMobileMenuOpen, toggleMobileMenu, setMobileMenuOpen } = useUIStore();
     const { isEditorActive, blockUploadQuality, setBlockUploadQuality, liveUrl } = useEditorStore();
-    const [loadSearch, setLoadSearch] = useState(false);
     const pathname = usePathname();
 
     useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
     const openSearch = () => {
-        setLoadSearch(true);
         setIsSearchOpen(true);
         setMobileMenuOpen(false);
     };
@@ -260,12 +252,9 @@ const Navbar = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {loadSearch && (
-                <React.Suspense fallback={null}>
-                    <Search isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-                </React.Suspense>
-            )}
+            
+            {/* MODIFIED: Removed conditional rendering and Suspense wrapper */}
+            <Search isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </>
     );
 };

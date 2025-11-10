@@ -5,19 +5,15 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { useUserStore } from '@/lib/store';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthOrb } from './AuthOrb';
 import { requestPasswordReset } from '@/app/actions/authActions';
 import ButtonLoader from './ui/ButtonLoader';
+// MODIFIED: Replaced dynamic imports with a single static import
+import { GitHubIcon, GoogleIcon, XIcon, EternalGamesIcon } from '@/components/icons/AuthIcons';
 import styles from './SignInModal.module.css';
 import modalStyles from './modals/Modals.module.css';
-
-const GitHubIcon = dynamic(() => import('@/components/icons/GitHubIcon'));
-const GoogleIcon = dynamic(() => import('@/components/icons/GoogleIcon'));
-const XIcon = dynamic(() => import('@/components/icons/XIcon'));
-const EternalGamesIcon = dynamic(() => import('@/components/icons/EternalGamesIcon'));
 
 const formContentVariants = {
     hidden: { opacity: 0, transition: { duration: 0.15, ease: 'easeOut' as const } },
@@ -32,11 +28,12 @@ const satelliteVariants = {
     }),
     visible: {
         y: 0, x: 0, scale: 1, opacity: 1, rotate: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 20, delay: 0.3 }
+        // MODIFIED: Slightly adjusted spring for a snappier feel
+        transition: { type: 'spring' as const, stiffness: 350, damping: 25, delay: 0.1 }
     }
 };
 
-// --- START: Refactored Form Components ---
+// --- START: Refactored Form Components (No changes within these) ---
 
 const SignInForm = ({ onSwitchToSignUp, onForgotPassword, onAuthSuccess, onBack, callbackUrl }: { onSwitchToSignUp: () => void, onForgotPassword: () => void, onAuthSuccess: () => void, onBack: () => void, callbackUrl: string }) => {
     const [isPending, startTransition] = useTransition();
