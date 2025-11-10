@@ -38,41 +38,26 @@ const contentConfig = {
     },
 };
 
-// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
-const getCachedCreatorDetails = unstable_cache(
-    async (prismaUserId: string) => {
+// --- PERFORMANCE FIX ---
+// This function fetches details for MULTIPLE creators in a single database query.
+// It is cached for 1 hour to reduce database load on subsequent requests for the same set of creators.
+const getCachedBatchCreatorDetails = unstable_cache(
+    async (prismaUserIds: string[]) => {
+        if (prismaUserIds.length === 0) return [];
         try {
-            const user = await prisma.user.findUnique({
-                where: { id: prismaUserId },
-                select: { username: true, image: true, bio: true }
+            const users = await prisma.user.findMany({
+                where: { id: { in: prismaUserIds } },
+                select: { id: true, username: true, image: true, bio: true }
             });
-            return {
-                username: user?.username || null,
-                image: user?.image || null,
-                bio: user?.bio || null,
-            };
+            return users;
         } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed for creator enrichment (ID: ${prismaUserId}). Skipping. Error:`, error);
-            return { username: null, image: null, bio: null };
+            console.warn(`[CACHE WARNING] Database connection failed for batch creator enrichment. Skipping. Error:`, error);
+            return [];
         }
     },
-    ['enriched-creator-details'],
+    ['batch-enriched-creator-details'],
     { revalidate: 3600 }
 );
-
-
-// MODIFIED: This function now uses the cached helper.
-async function enrichCreator(creator: any) {
-    if (!creator || !creator.prismaUserId) return creator;
-    
-    const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
-
-    return {
-        ...creator,
-        ...userDetails,
-    };
-}
-
 
 export async function generateStaticParams() {
     try {
@@ -119,15 +104,40 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         notFound();
     }
 
+    // --- PERFORMANCE FIX: BATCHED DATA ENRICHMENT ---
+
+    // 1. Collect all unique Prisma User IDs from all creator fields (authors, designers, etc.)
+    const allCreatorIds = new Set<string>();
+    for (const prop of config.creatorProps) {
+        if (item[prop]) {
+            item[prop].forEach((creator: any) => {
+                if (creator?.prismaUserId) {
+                    allCreatorIds.add(creator.prismaUserId);
+                }
+            });
+        }
+    }
+
+    // 2. Make a single, batched database call to get all user details at once.
+    const userDetailsArray = await getCachedBatchCreatorDetails(Array.from(allCreatorIds));
+    const userDetailsMap = new Map(userDetailsArray.map(u => [u.id, u]));
+
+    // 3. Enrich the original creator data using the map (fast, in-memory operation).
+    for (const prop of config.creatorProps) {
+        if (item[prop]) {
+            item[prop] = item[prop].map((creator: any) => {
+                if (creator?.prismaUserId && userDetailsMap.has(creator.prismaUserId)) {
+                    return { ...creator, ...userDetailsMap.get(creator.prismaUserId) };
+                }
+                return creator;
+            });
+        }
+    }
+    // --- END OF FIX ---
+
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
         const fallbackContent = await client.fetch(config.fallbackQuery, { currentId: item._id });
         item[config.relatedProp] = fallbackContent;
-    }
-
-    for (const prop of config.creatorProps) {
-        if (item[prop]) {
-            item[prop] = await Promise.all(item[prop].map(enrichCreator));
-        }
     }
 
     return (
@@ -138,5 +148,3 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         </ContentPageClient>
     );
 }
-
-
