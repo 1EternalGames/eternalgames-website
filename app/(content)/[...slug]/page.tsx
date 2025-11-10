@@ -33,7 +33,7 @@ const contentConfig = {
         query: newsBySlugQuery,
         fallbackQuery: latestNewsFallbackQuery,
         relatedProp: 'relatedNews',
-        creatorProps: ['reporters', 'designers'],
+        creatorProps: ['reporters', 'designers'], 
         sanityType: 'news',
     },
 };
