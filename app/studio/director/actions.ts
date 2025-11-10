@@ -81,8 +81,8 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
         // --- END NEW LOGIC ---
         
         // --- ADDED TAG REVALIDATION ---
-        revalidateTag('enriched-creators', '');
-        revalidateTag('enriched-creator-details', '');
+        revalidateTag('enriched-creators');
+        revalidateTag('enriched-creator-details');
 
         revalidatePath('/studio/director');
         revalidatePath(`/profile/${userId}`);
