@@ -10,7 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // <-- IMPORT
+import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // <-- IMPORT REMAINS
 
 const cairo = Cairo({
 subsets: ['arabic', 'latin'],
@@ -45,7 +45,7 @@ return (
     <ToastProvider />
     <Lightbox /> 
     <Navbar />
-    {/* MODIFIED: Wrap main content with the new transition wrapper */}
+    {/* This is now the single, correct implementation */}
     <main>
         <PageTransitionWrapper>
             {children}
