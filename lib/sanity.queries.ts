@@ -4,7 +4,7 @@ import { groq } from 'next-sanity'
 
 // --- Base Fields & Projections (Optimized) ---
 const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
-const creatorFields = groq`_id, name, prismaUserId, image, bio`
+const creatorFields = groq`_id, name, prismaUserId, image, bio, "username": *[_type=="user" && id==^.prismaUserId][0].username`
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`
 const publishedFilter = groq`defined(publishedAt) && publishedAt < now()`
