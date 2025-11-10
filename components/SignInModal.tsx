@@ -65,7 +65,7 @@ const SignInForm = ({ onSwitchToSignUp, onForgotPassword, onAuthSuccess, onBack,
             <form onSubmit={handleSignIn} className={styles.credentialsForm}>
                 <input type="hidden" name="returnTo" value={callbackUrl} />
                 <div className={styles.authFormGroup}>
-                    <input id="signin-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={e => setEmail(e.target.value)} placeholder=" " />
+                    <input id="signin-email" type="email" name="email" required className={styles.authInput} value={email} onChange={e => setEmail(e.target.value)} placeholder=" " />
                     <label htmlFor="signin-email" className={styles.authFormLabel}>البريد</label>
                 </div>
                 <div className={styles.authFormGroup}>
@@ -146,7 +146,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <div className={styles.formHeader}><h2 className={styles.formTitle}>إعادة تعيين كلمة السر</h2><p style={{color: 'var(--text-secondary)', fontSize: '1.5rem'}}>أدخل بريدك ليصلك رابط التعيين.</p></div>
             <form onSubmit={handleSubmit} className={styles.credentialsForm}>
                 <div className={styles.authFormGroup}>
-                    <input id="reset-email" type="email" name="email" required className={styles.authInput} autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder=" " />
+                    <input id="reset-email" type="email" name="email" required className={styles.authInput} value={email} onChange={(e) => setEmail(e.target.value)} placeholder=" " />
                     <label htmlFor="reset-email" className={styles.authFormLabel}>البريد</label>
                 </div>
                 <motion.button type="submit" className={styles.authSubmitButton} disabled={isPending} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} animate={{ width: isPending ? '48px' : '100%', height: '48px', borderRadius: isPending ? '50%' : '8px' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
