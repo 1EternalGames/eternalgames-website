@@ -38,11 +38,11 @@ const contentConfig = {
     },
 };
 
-// PERFORMANCE FIX: This function fetches details for multiple creators in a single batch query.
+// BUG FIX: The return type is now a serializable array of [key, value] pairs, not a Map.
 const getCachedBatchedCreatorDetails = unstable_cache(
-    async (prismaUserIds: string[]) => {
+    async (prismaUserIds: string[]): Promise<[string, { username: string | null; image: string | null; bio: string | null }][]> => {
         if (prismaUserIds.length === 0) {
-            return new Map<string, { username: string | null; image: string | null; bio: string | null }>();
+            return [];
         }
         try {
             const users = await prisma.user.findMany({
@@ -58,10 +58,11 @@ const getCachedBatchedCreatorDetails = unstable_cache(
                     bio: user.bio || null,
                 });
             });
-            return userMap;
+            // BUG FIX: Return a serializable array instead of a Map instance.
+            return Array.from(userMap.entries());
         } catch (error) {
             console.warn(`[CACHE WARNING] Database connection failed during batched creator enrichment. Skipping. Error:`, error);
-            return new Map();
+            return [];
         }
     },
     ['batched-enriched-creator-details'],
@@ -118,8 +119,7 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         item[config.relatedProp] = fallbackContent;
     }
 
-    // --- PERFORMANCE FIX: BATCHED CREATOR ENRICHMENT ---
-    // 1. Collect all unique creator IDs from all relevant fields.
+    // --- PERFORMANCE FIX & BUG FIX ---
     const allCreatorIds = new Set<string>();
     for (const prop of config.creatorProps) {
         if (item[prop]) {
@@ -131,10 +131,11 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         }
     }
 
-    // 2. Fetch all creator details in a single batch query.
-    const creatorDetailsMap = await getCachedBatchedCreatorDetails(Array.from(allCreatorIds));
+    // BUG FIX: Fetch the serializable array from the cache.
+    const creatorDetailsArray = await getCachedBatchedCreatorDetails(Array.from(allCreatorIds));
+    // BUG FIX: Reconstruct the Map instance here to ensure methods like .has() and .get() exist.
+    const creatorDetailsMap = new Map(creatorDetailsArray);
 
-    // 3. Enrich the original creator arrays using the pre-fetched map.
     for (const prop of config.creatorProps) {
         if (item[prop]) {
             item[prop] = item[prop].map((creator: any) => {
@@ -148,7 +149,7 @@ export default async function ContentPage({ params }: { params: { slug: string[]
             });
         }
     }
-    // --- END OF PERFORMANCE FIX ---
+    // --- END OF FIX ---
 
     return (
         <ContentPageClient item={item} type={type as any}>
