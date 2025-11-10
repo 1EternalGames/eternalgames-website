@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Canvas } from '@react-three/fiber';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBodyClass } from '@/hooks/useBodyClass'; // <-- IMPORT HOOK
+import { useBodyClass } from '@/hooks/useBodyClass';
 import * as THREE from 'three';
 import { THEME_CONFIG, OrbitalBodyData, ScreenPosition } from './config';
 import { StarPreviewCard } from './StarPreviewCard';
@@ -14,6 +14,8 @@ import ConstellationControlPanel, { ConstellationSettings, Preset } from '@/comp
 import type { SanityGameRelease } from '@/types/sanity';
 import styles from '@/components/constellation/ConstellationControlPanel.module.css';
 
+const isFeatureLive = false;
+
 const CelestialGearIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="8"></circle>
@@ -21,14 +23,51 @@ const CelestialGearIcon = () => (
   </svg>
 );
 
+const ComingSoonOverlay = () => {
+    return (
+        <motion.div
+            style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 100,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'radial-gradient(ellipse at center, color-mix(in srgb, var(--bg-primary) 80%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 98%, transparent) 70%)',
+                backdropFilter: 'blur(4px)',
+                pointerEvents: 'none',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+        >
+            <motion.h1
+                style={{
+                    fontFamily: 'var(--font-main)',
+                    fontSize: 'clamp(4rem, 10vw, 8rem)',
+                    fontWeight: 800,
+                    color: 'var(--text-primary)',
+                    textShadow: '0 0 30px var(--border-color)',
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1, ease: 'easeOut' }}
+            >
+                قريبا
+            </motion.h1>
+        </motion.div>
+    );
+};
+
+
 export default function CelestialAlmanac({ releases }: { releases: SanityGameRelease[] }) {
   const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => { setIsHydrated(true); }, []);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  useBodyClass('constellation-active'); // <-- REFACTORED
-  useBodyClass('fullscreen-active', isFullscreen); // <-- REFACTORED
+  useBodyClass('constellation-active');
+  useBodyClass('fullscreen-active', isFullscreen);
 
   const { resolvedTheme } = useTheme();
   const [activeBody, setActiveBody] = useState<OrbitalBodyData | null>(null);
@@ -76,19 +115,30 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
   const themeColors = isDark ? THEME_CONFIG.dark : THEME_CONFIG.light;
   
   const orbitalData = useMemo(() => {
-    if (!isHydrated || releases.length === 0) return [];
+    if (!isHydrated) return [];
+    // MODIFIED: Added a placeholder for legacyId in the generated objects
+    const releasesToUse = releases.length > 0 ? releases : Array.from({ length: 30 }).map((_, i) => ({
+        _id: `placeholder-${i}`,
+        legacyId: 9000 + i, // Added placeholder legacyId
+        title: `Upcoming Game ${i + 1}`,
+        releaseDate: new Date(2025, Math.floor(i / 3), (i % 28) + 1).toISOString(),
+        slug: `upcoming-game-${i+1}`,
+        synopsis: 'Details to be revealed soon.',
+        platforms: [] as any,
+        mainImage: {} as any
+    }));
     
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    const releasesByMonth = releases.reduce((acc, release) => {
+    const releasesByMonth = releasesToUse.reduce((acc, release) => {
         const date = new Date(release.releaseDate);
         const year = date.getUTCFullYear();
         const monthIndex = date.getUTCMonth();
         const monthKey = `${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]} ${year}`;
         
         if (!acc[monthKey]) acc[monthKey] = [];
-        acc[monthKey].push(release);
+        acc[monthKey].push(release as SanityGameRelease);
         return acc;
     }, {} as Record<string, SanityGameRelease[]>);
     
@@ -117,31 +167,28 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
 
   return (
     <>
-      <AnimatePresence>
-        {activeBody && activeBodyPosition && (
-          <motion.div style={{ position: 'fixed', inset: 0, zIndex: 10000 }} onClick={handleClosePreview} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <StarPreviewCard orbitalBody={activeBody} position={activeBodyPosition} onClose={handleClosePreview} />
-          </motion.div>
-        )}
-        {isPanelOpen && <ConstellationControlPanel settings={settings} setSettings={setSettings} onClose={() => setIsPanelOpen(false)} onPresetChange={handlePresetChange} isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />}
-      </AnimatePresence>
+      {isFeatureLive && (
+          <AnimatePresence>
+            {activeBody && activeBodyPosition && (
+              <motion.div style={{ position: 'fixed', inset: 0, zIndex: 10000 }} onClick={handleClosePreview} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <StarPreviewCard orbitalBody={activeBody} position={activeBodyPosition} onClose={handleClosePreview} />
+              </motion.div>
+            )}
+            {isPanelOpen && <ConstellationControlPanel settings={settings} setSettings={setSettings} onClose={() => setIsPanelOpen(false)} onPresetChange={handlePresetChange} isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />}
+          </AnimatePresence>
+      )}
+
       <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - var(--nav-height-scrolled))' }}>
-        <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الفلك" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
-          <CelestialGearIcon />
-        </motion.button>
-        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
-          <Scene settings={settings} orbitalData={orbitalData} themeColors={themeColors} setActiveStar={handleSetActiveBody} />
-        </Canvas>
-        {orbitalData.length === 0 && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', pointerEvents: 'none', padding: '2rem' }}>
-            <motion.h1 className="page-title" style={{ fontSize: '6rem' }} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}>
-              الفلكُ يُرسَم...
-            </motion.h1>
-            <motion.p style={{ maxWidth: '600px', fontSize: '2rem', color: 'var(--text-secondary)' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}>
-              تُجمعُ بياناتُ الإصدار، وستبزغُ الخريطةُ عما قريب.
-            </motion.p>
-          </div>
+        {isFeatureLive && (
+            <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الفلك" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
+                <CelestialGearIcon />
+            </motion.button>
         )}
+        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
+          <Scene settings={settings} orbitalData={orbitalData} themeColors={themeColors} setActiveStar={handleSetActiveBody} isFeatureLive={isFeatureLive} />
+        </Canvas>
+
+        <ComingSoonOverlay />
       </div>
     </>
   );

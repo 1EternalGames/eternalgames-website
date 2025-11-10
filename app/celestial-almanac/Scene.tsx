@@ -160,15 +160,17 @@ function InteractiveLayer({ orbitalData, themeColors, setActiveStar, settings }:
   );
 }
 
-export const Scene = ({ orbitalData, themeColors, setActiveStar, settings }: any) => {
+// MODIFIED: Added isFeatureLive prop
+export const Scene = ({ orbitalData, themeColors, setActiveStar, settings, isFeatureLive }: any) => {
   return (
     <Suspense fallback={null}>
       <color attach="background" args={[themeColors.bgColor]} />
       <ambientLight intensity={0.8} />
       <BackgroundStarfield themeColors={themeColors} countMultiplier={settings.starCountMultiplier} />
-      <InteractiveLayer orbitalData={orbitalData} themeColors={themeColors} setActiveStar={setActiveStar} settings={settings} />
+      {/* MODIFIED: Conditionally render the InteractiveLayer */}
+      {isFeatureLive && (
+        <InteractiveLayer orbitalData={orbitalData} themeColors={themeColors} setActiveStar={setActiveStar} settings={settings} />
+      )}
     </Suspense>
   );
 };
-
-
