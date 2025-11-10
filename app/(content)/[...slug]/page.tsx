@@ -38,41 +38,35 @@ const contentConfig = {
     },
 };
 
-// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
-const getCachedCreatorDetails = unstable_cache(
-    async (prismaUserId: string) => {
+// PERFORMANCE FIX: This function fetches details for multiple creators in a single batch query.
+const getCachedBatchedCreatorDetails = unstable_cache(
+    async (prismaUserIds: string[]) => {
+        if (prismaUserIds.length === 0) {
+            return new Map<string, { username: string | null; image: string | null; bio: string | null }>();
+        }
         try {
-            const user = await prisma.user.findUnique({
-                where: { id: prismaUserId },
-                select: { username: true, image: true, bio: true }
+            const users = await prisma.user.findMany({
+                where: { id: { in: prismaUserIds } },
+                select: { id: true, username: true, image: true, bio: true }
             });
-            return {
-                username: user?.username || null,
-                image: user?.image || null,
-                bio: user?.bio || null,
-            };
+            
+            const userMap = new Map();
+            users.forEach(user => {
+                userMap.set(user.id, {
+                    username: user.username || null,
+                    image: user.image || null,
+                    bio: user.bio || null,
+                });
+            });
+            return userMap;
         } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed for creator enrichment (ID: ${prismaUserId}). Skipping. Error:`, error);
-            return { username: null, image: null, bio: null };
+            console.warn(`[CACHE WARNING] Database connection failed during batched creator enrichment. Skipping. Error:`, error);
+            return new Map();
         }
     },
-    ['enriched-creator-details'],
+    ['batched-enriched-creator-details'],
     { revalidate: 3600 }
 );
-
-
-// MODIFIED: This function now uses the cached helper.
-async function enrichCreator(creator: any) {
-    if (!creator || !creator.prismaUserId) return creator;
-    
-    const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
-
-    return {
-        ...creator,
-        ...userDetails,
-    };
-}
-
 
 export async function generateStaticParams() {
     try {
@@ -124,11 +118,37 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         item[config.relatedProp] = fallbackContent;
     }
 
+    // --- PERFORMANCE FIX: BATCHED CREATOR ENRICHMENT ---
+    // 1. Collect all unique creator IDs from all relevant fields.
+    const allCreatorIds = new Set<string>();
     for (const prop of config.creatorProps) {
         if (item[prop]) {
-            item[prop] = await Promise.all(item[prop].map(enrichCreator));
+            item[prop].forEach((creator: any) => {
+                if (creator && creator.prismaUserId) {
+                    allCreatorIds.add(creator.prismaUserId);
+                }
+            });
         }
     }
+
+    // 2. Fetch all creator details in a single batch query.
+    const creatorDetailsMap = await getCachedBatchedCreatorDetails(Array.from(allCreatorIds));
+
+    // 3. Enrich the original creator arrays using the pre-fetched map.
+    for (const prop of config.creatorProps) {
+        if (item[prop]) {
+            item[prop] = item[prop].map((creator: any) => {
+                if (creator && creator.prismaUserId && creatorDetailsMap.has(creator.prismaUserId)) {
+                    return {
+                        ...creator,
+                        ...creatorDetailsMap.get(creator.prismaUserId),
+                    };
+                }
+                return creator;
+            });
+        }
+    }
+    // --- END OF PERFORMANCE FIX ---
 
     return (
         <ContentPageClient item={item} type={type as any}>
@@ -138,5 +158,3 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         </ContentPageClient>
     );
 }
-
-
