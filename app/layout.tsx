@@ -10,6 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
+import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // MODIFIED: Re-importing the wrapper
 
 const cairo = Cairo({
 subsets: ['arabic', 'latin'],
@@ -18,7 +19,7 @@ variable: '--font-main',
 weight: ['400', '500', '700', '800'],
 });
 
-export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا fناء للألعاب.', };
+export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا فناء للألعاب.', };
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
 return (
@@ -44,10 +45,11 @@ return (
     <ToastProvider />
     <Lightbox /> 
     <Navbar />
-    {/* MODIFIED: The redundant PageTransitionWrapper has been removed. */}
-    {/* app/template.tsx is now the single source of truth for page transitions. */}
+    {/* MODIFIED: Re-introducing the PageTransitionWrapper to create the nested animation structure */}
     <main>
-        {children}
+        <PageTransitionWrapper>
+            {children}
+        </PageTransitionWrapper>
     </main>
     <Footer />
     <StudioBar />

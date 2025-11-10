@@ -16,7 +16,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
         key={pathname}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        // EXIT PROP IS INTENTIONALLY REMOVED TO PREVENT CONFLICTS WITH layoutId
+        // EXIT PROP REMOVED TO FIX THE LAYOUTID CONFLICT
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {children}
