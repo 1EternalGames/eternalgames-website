@@ -26,16 +26,6 @@ score,
 "designers": designers[]->{${creatorFields}},
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
 `
-// CORRECTED: This projection now includes all necessary fields for the ArticleCard component.
-const relatedContentProjection = groq`{
-  _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score,
-  "authors": authors[]->{${creatorFields}},
-  "reporters": reporters[]->{${creatorFields}},
-  "designers": designers[]->{${creatorFields}},
-  "publishedAt": publishedAt,
-  "game": game->{${gameFields}},
-  "tags": tags[]->{${tagFields}}
-}`
 
 // --- API Projections ---
 const apiListProjection = groq`
@@ -156,6 +146,7 @@ export const allContentByTagListQuery = groq`*[_type in ["review", "article", "n
 
 // --- Detail Page Queries ---
 const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} } }`
+const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
 
 export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
@@ -165,13 +156,13 @@ export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $sl
 }`
 export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
-  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{${tagFields}},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
   "relatedArticles": relatedArticles[${publishedFilter}]->${relatedContentProjection},
   ${contentProjection}
 }`
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
-  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{${tagFields}},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
   "relatedNews": relatedNews[${publishedFilter}]->${relatedContentProjection},
   ${contentProjection}
 }`

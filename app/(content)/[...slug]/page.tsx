@@ -18,18 +18,28 @@ const contentConfig = {
         query: reviewBySlugQuery,
         fallbackQuery: latestReviewsFallbackQuery,
         relatedProp: 'relatedReviews',
+        creatorProps: ['authors', 'designers'],
+        sanityType: 'review',
     },
     articles: {
         query: articleBySlugQuery,
         fallbackQuery: latestArticlesFallbackQuery,
         relatedProp: 'relatedArticles',
+        creatorProps: ['authors', 'designers'],
+        sanityType: 'article',
     },
     news: {
         query: newsBySlugQuery,
         fallbackQuery: latestNewsFallbackQuery,
         relatedProp: 'relatedNews',
+        creatorProps: ['reporters', 'designers'],
+        sanityType: 'news',
     },
 };
+
+// REMOVED: Inefficient server-side enrichment functions
+// const getCachedCreatorDetails = ...
+// async function enrichCreator(...)
 
 export async function generateStaticParams() {
     try {
@@ -80,6 +90,9 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         const fallbackContent = await client.fetch(config.fallbackQuery, { currentId: item._id });
         item[config.relatedProp] = fallbackContent;
     }
+
+    // REMOVED: Unnecessary enrichment loop. Data is complete from Sanity.
+    // for (const prop of config.creatorProps) { ... }
 
     return (
         <ContentPageClient item={item} type={type as any}>
