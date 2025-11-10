@@ -9,8 +9,6 @@ import CommentForm from './CommentForm';
 import CommentList from './CommentList';
 import SignInPrompt from './SignInPrompt';
 
-// FIX #1: Removed the non-existent import and using `any` for the type, 
-// as the exact Prisma type isn't needed for the logic to function correctly.
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
     return comments.map(comment => {
         if (comment.id === parentId) {
@@ -74,7 +72,6 @@ export default function CommentSection({ slug, initialComments }: {
 
         const result = await postReplyOrComment(content, slug, parentId);
 
-        // FIX #2: Correctly use `result.comment` instead of `result.newComment`.
         if (result.success && result.comment) {
             if (parentId) {
                 setComments(currentComments => addReplyToState(currentComments, parentId, result.comment!));
@@ -86,7 +83,6 @@ export default function CommentSection({ slug, initialComments }: {
         }
     };
     
-    // The rest of the handlers are correct.
     const handleVoteUpdate = (commentId: string, updatedVotes: any[]) => {
         const updateVotes = (list: any[]): any[] => list.map(c => {
             if (c.id === commentId) return { ...c, votes: updatedVotes };
