@@ -1,0 +1,971 @@
+--- START OF FILE app/page.tsx ---
+
+// app/page.tsx
+import { unstable_cache } from 'next/cache';
+import React from 'react';
+import { client } from '@/lib/sanity.client';
+import { allReleasesQuery, vanguardReviewsQuery, homepageArticlesQuery, homepageNewsQuery } from '@/lib/sanity.queries';
+import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
+import { Suspense } from 'react';
+import AnimatedReleases from '@/components/AnimatedReleases';
+import prisma from '@/lib/prisma';
+import { SanityAuthor } from '@/types/sanity';
+import HomepageFeeds from '@/components/homepage/HomepageFeeds';
+import { adaptToCardProps } from '@/lib/adapters';
+import { CardProps } from '@/types';
+
+export const revalidate = 60;
+
+const getCachedEnrichedCreators = unstable_cache(
+    async (creatorIds: string[]): Promise<[string, string | null][]> => {
+        if (creatorIds.length === 0) return [];
+        try {
+            const users = await prisma.user.findMany({
+                where: { id: { in: creatorIds } },
+                select: { id: true, username: true },
+            });
+            return users.map(u => [u.id, u.username || null]);
+        } catch (error) {
+            console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment. Skipping. Error:`, error);
+            return [];
+        }
+    },
+    ['enriched-creators'],
+    { revalidate: 3600 }
+);
+
+async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
+    if (!creators || creators.length === 0) return [];
+    
+    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
+    if (userIds.length === 0) return creators;
+
+    const usernameArray = await getCachedEnrichedCreators(userIds);
+    const usernameMap = new Map(usernameArray);
+
+    return creators.map(creator => ({
+        ...creator,
+        username: usernameMap.get(creator.prismaUserId) || creator.username || null,
+    }));
+}
+
+const getCachedEngagementScoresMap = unstable_cache(
+    async (): Promise<[number, number][]> => {
+        try {
+            const contentTypes = ['review', 'article', 'news'];
+            const contentIdsQuery = await prisma.engagement.findMany({
+                where: { contentType: { in: contentTypes }, type: 'LIKE' },
+                select: { contentId: true },
+                distinct: ['contentId']
+            });
+            const ids = contentIdsQuery.map(i => i.contentId);
+
+            const [likes, shares] = await Promise.all([
+                prisma.engagement.groupBy({ by: ['contentId'], where: { contentId: { in: ids }, type: 'LIKE' }, _count: { userId: true } }),
+                prisma.share.groupBy({ by: ['contentId'], where: { contentId: { in: ids } }, _count: { userId: true } })
+            ]);
+
+            const scoresMap = new Map<number, number>();
+            ids.forEach(id => {
+                const likeCount = likes.find(s => s.contentId === id)?._count.userId || 0;
+                const shareCount = shares.find(s => s.contentId === id)?._count.userId || 0;
+                scoresMap.set(id, (likeCount * 2) + (shareCount * 5));
+            });
+            return Array.from(scoresMap.entries());
+        } catch (error) {
+            console.warn('[CACHE WARNING] DB connection failed for engagement scores. Gracefully continuing. Error:', error);
+            return [];
+        }
+    },
+    ['homepage-engagement-scores'],
+    { revalidate: 60 }
+);
+
+
+async function ReleasesSection() {
+    const releases = await client.fetch(allReleasesQuery);
+    const sanitizedReleases = (releases || []).filter((item: any) => 
+        item?.mainImage?.url && item.releaseDate && item.title && item.slug
+    );
+    return <AnimatedReleases releases={sanitizedReleases} />;
+}
+
+export default async function HomePage() {
+    const [
+        reviews, 
+        homepageArticlesRaw, 
+        homepageNewsRaw, 
+        scoresArray
+    ] = await Promise.all([
+        client.fetch(vanguardReviewsQuery),
+        client.fetch(homepageArticlesQuery),
+        client.fetch(homepageNewsQuery),
+        getCachedEngagementScoresMap()
+    ]);
+
+    const scoresMap = new Map(scoresArray);
+    
+    const enrichedReviews = await Promise.all(
+        reviews.map(async (review: any) => ({
+            ...review,
+            authors: await enrichCreators(review.authors),
+            designers: await enrichCreators(review.designers),
+        }))
+    );
+    
+    const sortItemsByScore = (items: any[]) => {
+        return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
+    };
+
+    const sortedArticlesByScore = sortItemsByScore(homepageArticlesRaw);
+    const topArticlesRaw = sortedArticlesByScore.slice(0, 2);
+    const topArticleIds = new Set(topArticlesRaw.map((a: any) => a._id));
+    const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
+
+    const latestArticles = homepageArticlesRaw
+        .filter((a: any) => !topArticleIds.has(a._id))
+        .slice(0, 10)
+        .map(adaptToCardProps)
+        .filter(Boolean) as CardProps[];
+    
+    const sortedNewsByScore = sortItemsByScore(homepageNewsRaw);
+    const topNewsRaw = sortedNewsByScore.slice(0, 3);
+    const topNewsIds = new Set(topNewsRaw.map((n: any) => n._id));
+    const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
+
+    const newsList = homepageNewsRaw
+        .filter((n: any) => !topNewsIds.has(n._id))
+        .slice(0, 15)
+        .map(adaptToCardProps)
+        .filter(Boolean) as CardProps[];
+
+    const feedsContent = (
+        <HomepageFeeds 
+            topArticles={topArticles} 
+            latestArticles={latestArticles} 
+            pinnedNews={pinnedNews} 
+            newsList={newsList} 
+        />
+    );
+
+    const releasesSection = <ReleasesSection />;
+
+    return (
+        <DigitalAtriumHomePage 
+            reviews={enrichedReviews}
+            feedsContent={feedsContent}
+            releasesSection={releasesSection}
+        />
+    );
+}
+
+--- END OF FILE app/page.tsx ---
+
+================================================================================
+
+--- START OF FILE app/(content)/[...slug]/page.tsx ---
+
+// app/(content)/[...slug]/page.tsx
+import { unstable_cache } from 'next/cache';
+import { client } from '@/lib/sanity.client';
+import {
+    reviewBySlugQuery, latestReviewsFallbackQuery,
+    articleBySlugQuery, latestArticlesFallbackQuery,
+    newsBySlugQuery, latestNewsFallbackQuery
+} from '@/lib/sanity.queries';
+import { notFound } from 'next/navigation';
+import prisma from '@/lib/prisma';
+import CommentSection from '@/components/comments/CommentSection';
+import ContentPageClient from '@/components/content/ContentPageClient';
+import { Suspense } from 'react';
+
+export const revalidate = 60;
+
+const contentConfig = {
+    reviews: {
+        query: reviewBySlugQuery,
+        fallbackQuery: latestReviewsFallbackQuery,
+        relatedProp: 'relatedReviews',
+        creatorProps: ['authors', 'designers'],
+        sanityType: 'review',
+    },
+    articles: {
+        query: articleBySlugQuery,
+        fallbackQuery: latestArticlesFallbackQuery,
+        relatedProp: 'relatedArticles',
+        creatorProps: ['authors', 'designers'],
+        sanityType: 'article',
+    },
+    news: {
+        query: newsBySlugQuery,
+        fallbackQuery: latestNewsFallbackQuery,
+        relatedProp: 'relatedNews',
+        creatorProps: ['reporters', 'designers'],
+        sanityType: 'news',
+    },
+};
+
+// CACHED: This function memoizes the database call for a specific user ID for 1 hour.
+const getCachedCreatorDetails = unstable_cache(
+    async (prismaUserId: string) => {
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: prismaUserId },
+                select: { username: true, image: true, bio: true }
+            });
+            return {
+                username: user?.username || null,
+                image: user?.image || null,
+                bio: user?.bio || null,
+            };
+        } catch (error) {
+            console.warn(`[CACHE WARNING] Database connection failed for creator enrichment (ID: ${prismaUserId}). Skipping. Error:`, error);
+            return { username: null, image: null, bio: null };
+        }
+    },
+    ['enriched-creator-details'],
+    { revalidate: 3600 }
+);
+
+
+// MODIFIED: This function now uses the cached helper.
+async function enrichCreator(creator: any) {
+    if (!creator || !creator.prismaUserId) return creator;
+    
+    const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
+
+    return {
+        ...creator,
+        ...userDetails,
+    };
+}
+
+
+export async function generateStaticParams() {
+    try {
+        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]]{ "slug": slug.current, _type }`);
+        return allContent.filter(c => c.slug).map(c => {
+            const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
+            return { slug: [type, c.slug] };
+        });
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Failed to fetch slugs for generateStaticParams. This may be due to a network or API issue. Skipping static generation for content pages. Error:`, error);
+        return [];
+    }
+}
+
+async function Comments({ slug }: { slug: string }) {
+    try {
+        const comments = await prisma.comment.findMany({
+            where: { contentSlug: slug, parentId: null },
+            include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } }, replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } },
+            orderBy: { createdAt: 'desc' },
+        });
+        return <CommentSection slug={slug} initialComments={comments} />;
+    } catch (error) {
+        console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
+        return <CommentSection slug={slug} initialComments={[]} />;
+    }
+}
+
+export default async function ContentPage({ params }: { params: { slug: string[] } }) {
+    const { slug: slugArray } = await params;
+    
+    if (!slugArray || slugArray.length !== 2) {
+        notFound();
+    }
+    const [type, slug] = slugArray;
+    const config = (contentConfig as any)[type];
+
+    if (!config) {
+        notFound();
+    }
+
+    let item: any = await client.fetch(config.query, { slug });
+    if (!item) {
+        notFound();
+    }
+
+    if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
+        const fallbackContent = await client.fetch(config.fallbackQuery, { currentId: item._id });
+        item[config.relatedProp] = fallbackContent;
+    }
+
+    for (const prop of config.creatorProps) {
+        if (item[prop]) {
+            item[prop] = await Promise.all(item[prop].map(enrichCreator));
+        }
+    }
+
+    return (
+        <ContentPageClient item={item} type={type as any}>
+            <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
+                <Comments slug={slug} />
+            </Suspense>
+        </ContentPageClient>
+    );
+}
+
+
+
+
+--- END OF FILE app/(content)/[...slug]/page.tsx ---
+
+================================================================================
+
+--- START OF FILE lib/sanity.queries.ts ---
+
+// lib/sanity.queries.ts
+
+import { groq } from 'next-sanity'
+
+// --- Base Fields & Projections (Optimized) ---
+const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
+const creatorFields = groq`_id, name, prismaUserId, image, bio, "username": *[_type=="user" && id==^.prismaUserId][0].username`
+const gameFields = groq`_id, title, "slug": slug.current`
+const tagFields = groq`_id, title, "slug": slug.current`
+const publishedFilter = groq`defined(publishedAt) && publishedAt < now()`
+
+// --- Projections ---
+const cardProjection = groq`
+_id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score,
+"authors": authors[]->{${creatorFields}},
+"reporters": reporters[]->{${creatorFields}},
+"designers": designers[]->{${creatorFields}}, 
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
+`
+const cardListProjection = groq`
+_id, _type, legacyId, title, "slug": slug.current, 
+"mainImageRef": mainImage.asset, 
+score,
+"authors": authors[]->{${creatorFields}},
+"reporters": reporters[]->{${creatorFields}},
+"designers": designers[]->{${creatorFields}},
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
+`
+
+// --- API Projections ---
+const apiListProjection = groq`
+_id, _type, legacyId, title, "slug": slug.current, 
+"mainImageRef": mainImage.asset, 
+score,
+"authors": authors[]->{${creatorFields}},
+"reporters": reporters[]->{${creatorFields}},
+"designers": designers[]->{${creatorFields}},
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}
+`
+
+// --- News Hub Specific Queries ---
+
+export const newsHeroQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] {
+  ${cardProjection}, synopsis
+}`
+
+export const newsGridInitialQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[4...54] {
+  ${cardListProjection}
+}`
+
+export const paginatedNewsQuery = (
+  gameSlug?: string, 
+  tagSlugs?: string[], 
+  searchTerm?: string, 
+  offset: number = 0, 
+  limit: number = 20,
+  sort: 'latest' | 'viral' = 'latest'
+) => {
+  let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`;
+  
+  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
+  if (tagSlugs && tagSlugs.length > 0) {
+    const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' || ');
+    filter += ` && (${tagFilter})`;
+  }
+  if (searchTerm) filter += ` && title match "${searchTerm}*"`;
+
+  const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc'; 
+
+  return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
+    ${apiListProjection}
+  }`
+}
+
+// --- Reviews API/Page Queries ---
+export const paginatedReviewsQuery = (
+  gameSlug?: string, 
+  tagSlugs?: string[], 
+  searchTerm?: string, 
+  scoreRange?: string,
+  offset: number = 0, 
+  limit: number = 20,
+  sort: 'latest' | 'score' = 'latest'
+) => {
+  let filter = `_type == "review" && ${publishedFilter}`;
+
+  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
+
+  if (tagSlugs && tagSlugs.length > 0) {
+    const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' && ');
+    filter += ` && (${tagFilter})`;
+  }
+
+  if (searchTerm) filter += ` && title match "${searchTerm}*"`;
+  
+  if (scoreRange) {
+    if (scoreRange === '9-10') filter += ` && score >= 9 && score <= 10`;
+    else if (scoreRange === '8-8.9') filter += ` && score >= 8 && score < 9`;
+    else if (scoreRange === '7-7.9') filter += ` && score >= 7 && score < 8`;
+    else if (scoreRange === '<7') filter += ` && score < 7`;
+  }
+  
+  const orderBy = sort === 'score' ? 'score desc, publishedAt desc' : 'publishedAt desc';
+
+  return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
+    ${apiListProjection}
+  }`
+}
+
+// --- Articles API/Page Queries ---
+export const paginatedArticlesQuery = (
+  gameSlug?: string, 
+  tagSlugs?: string[], 
+  searchTerm?: string, 
+  offset: number = 0, 
+  limit: number = 20,
+  sort: 'latest' | 'viral' = 'latest'
+) => {
+  let filter = `_type == "article" && ${publishedFilter}`;
+
+  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
+
+  if (tagSlugs && tagSlugs.length > 0) {
+    const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' && ');
+    filter += ` && (${tagFilter})`;
+  }
+
+  if (searchTerm) filter += ` && title match "${searchTerm}*"`;
+  
+  const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc';
+
+  return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
+    ${apiListProjection}
+  }`
+}
+
+// --- List Page Queries ---
+export const vanguardReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0...10] { ${cardProjection} }`
+export const featuredHeroReviewQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} }`
+export const featuredShowcaseArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...7] { ${cardProjection} }`
+export const allReviewsListQuery = groq`*[_type == "review" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
+export const allArticlesListQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
+export const allContentByCreatorListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`
+export const allContentByGameListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`
+export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && $slug in tags[]->slug.current] | order(publishedAt desc) { ${cardListProjection} }`
+
+// --- Detail Page Queries ---
+const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} } }`
+const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
+
+export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $slug && ${publishedFilter}][0] {
+  ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{${tagFields}},
+  "relatedReviews": relatedReviews[${publishedFilter}]->${relatedContentProjection},
+  ${contentProjection}
+}`
+export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $slug && ${publishedFilter}][0] {
+  ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
+  "relatedArticles": relatedArticles[${publishedFilter}]->${relatedContentProjection},
+  ${contentProjection}
+}`
+export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] {
+  ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
+  "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title},
+  "relatedNews": relatedNews[${publishedFilter}]->${relatedContentProjection},
+  ${contentProjection}
+}`
+
+// --- Fallback & Miscellaneous Queries ---
+export const latestReviewsFallbackQuery = groq`*[_type == "review" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
+export const latestArticlesFallbackQuery = groq`*[_type == "article" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
+export const latestNewsFallbackQuery = groq`*[_type == "news" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
+export const latestNewsQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...15] { _id, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, "reporters": reporters[]->{name, prismaUserId}, publishedAt, "tags": tags[]->{${tagFields}} }`
+export const heroContentQuery = groq`{
+  "featuredReview": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} },
+  "latestNews": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0] { ${cardProjection} },
+  "featuredArticle": *[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0] { ${cardProjection} }
+}`
+export const featuredReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
+export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
+export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] {
+  _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt,
+  "authors": authors[]->{name}, "reporters": reporters[]->{name}, 
+  "gameTitle": game->title, "tags": tags[]->{title}
+}`
+export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
+export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(releaseDate)] | order(releaseDate asc) { _id, legacyId, title, "slug": slug.current, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, }`
+
+// --- Studio Editor Queries ---
+export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`;
+export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title}`;
+export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`;
+
+export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] | order(_updatedAt desc)[0]{
+  ...,
+  "authors": authors[]->{_id, name, prismaUserId},
+  "reporters": reporters[]->{_id, name, prismaUserId},
+  "designers": designers[]->{_id, name, prismaUserId},
+  "game": game->{_id, title},
+  "tags": tags[]->{_id, title},
+  "mainImage": mainImage.asset->{
+    "_ref": _id,
+    "url": url,
+    "metadata": metadata
+  },
+  content[]{
+    ...,
+    _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } },
+    _type == "imageCompare" => {
+      "image1": image1{..., asset->{_id, url, metadata}},
+      "image2": image2{..., asset->{_id, url, metadata}}
+    },
+    _type == "twoImageGrid" => {
+      "image1": image1{..., asset->{_id, url, metadata}},
+      "image2": image2{..., asset->{_id, url, metadata}}
+    },
+    _type == "fourImageGrid" => {
+      "image1": image1{..., asset->{_id, url, metadata}},
+      "image2": image2{..., asset->{_id, url, metadata}},
+      "image3": image3{..., asset->{_id, url, metadata}},
+      "image4": image4{..., asset->{_id, url, metadata}}
+    }
+  }
+}`;
+
+// --- Homepage Feed Queries ---
+export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`;
+export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`;
+
+--- END OF FILE lib/sanity.queries.ts ---
+
+================================================================================
+
+--- START OF FILE app/layout.tsx ---
+
+// app/layout.tsx
+import { Cairo } from 'next/font/google';
+import './globals.css';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import NextAuthProvider from '@/components/SessionProvider';
+import StudioBar from '@/components/StudioBar';
+import ToastProvider from '@/components/ToastProvider';
+import UserStoreHydration from '@/components/UserStoreHydration';
+import Lightbox from '@/components/Lightbox';
+import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
+
+const cairo = Cairo({
+subsets: ['arabic', 'latin'],
+display: 'swap',
+variable: '--font-main',
+weight: ['400', '500', '700', '800'],
+});
+
+export const metadata = { title: 'EternalGames | الألعاب أبدية', description: 'الألعاب أبدية.', };
+
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
+return (
+<html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossOrigin="anonymous"
+/>
+<link
+    rel="preconnect"
+    href="https://cdn.sanity.io"
+    crossOrigin="anonymous"
+/>
+</head>
+<body>
+<NextAuthProvider>
+<UserStoreHydration />
+<ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
+<div style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
+    <ToastProvider />
+    <Lightbox /> 
+    <Navbar />
+    <main>{children}</main>
+    <Footer />
+    <StudioBar />
+    <ScrollToTopButton />
+</div>
+</ThemeProvider>
+</NextAuthProvider>
+</body>
+</html>
+);
+}
+
+
+
+
+--- END OF FILE app/layout.tsx ---
+
+================================================================================
+
+--- START OF FILE next.config.ts ---
+
+// next.config.ts
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+    reactStrictMode: true,
+
+    env: {
+        NEXT_PUBLIC_SANITY_PROJECT_ID: '0zany1dm',
+        NEXT_PUBLIC_SANITY_DATASET: 'production',
+        NEXT_PUBLIC_SANITY_API_VERSION: '2025-09-30',
+    },
+    images: {
+        remotePatterns: [
+            // Sanity CMS
+            {
+                protocol: 'https',
+                hostname: 'cdn.sanity.io',
+            },
+            // Vercel Blob Storage (for user avatars) - WILDCARD ADDED
+            {
+                protocol: 'https',
+                hostname: '*.public.blob.vercel-storage.com',
+            },
+            // Google OAuth Avatars
+            {
+                protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+            },
+            // GitHub OAuth Avatars
+            {
+                protocol: 'https',
+                hostname: 'avatars.githubusercontent.com',
+            },
+        ],
+    },
+    experimental: {
+        serverActions: {
+            bodySizeLimit: '10mb',
+        },
+    },
+};
+
+export default nextConfig;
+
+
+
+
+--- END OF FILE next.config.ts ---
+
+================================================================================
+
+--- START OF FILE package.json ---
+
+{
+  "name": "eternalgames-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "cross-env IS_BUILDING=true next build",
+    "start": "next start",
+    "lint": "eslint",
+    "prisma:seed": "npx ts-node -r dotenv/config prisma/seed.ts",
+    "type-check": "tsc --noEmit",
+    "type-watch": "tsc --noEmit --watch"
+  },
+  "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@portabletext/react": "^4.0.3",
+    "@prisma/client": "^6.16.1",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.3.0",
+    "@react-three/postprocessing": "^3.0.4",
+    "@sanity/client": "^7.12.0",
+    "@sanity/icons": "^3.7.4",
+    "@sanity/image-url": "^1.2.0",
+    "@sanity/vision": "^4.10.1",
+    "@tiptap/extension-image": "^2.5.5",
+    "@tiptap/extension-link": "^2.5.5",
+    "@tiptap/extension-placeholder": "^2.5.5",
+    "@tiptap/react": "^2.5.5",
+    "@tiptap/starter-kit": "^2.5.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@vercel/blob": "^2.0.0",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.2",
+    "framer-motion": "^12.23.12",
+    "next": "16.0.1",
+    "next-auth": "^4.24.11",
+    "next-sanity": "^11.4.2",
+    "next-themes": "^0.4.6",
+    "react": "19.1.0",
+    "react-compare-slider": "^3.1.0",
+    "react-dom": "19.1.0",
+    "react-image-crop": "^11.0.10",
+    "sanity": "^4.10.1",
+    "styled-components": "^6.1.19",
+    "three": "^0.180.0",
+    "transliteration": "^2.3.5",
+    "uuid": "^9.0.1",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@fullhuman/postcss-purgecss": "^7.0.2",
+    "@sanity/types": "^4.10.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.180.0",
+    "@types/uuid": "^9.0.8",
+    "cross-env": "^10.1.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.1",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "prisma": "^6.16.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5"
+  }
+}
+
+
+
+
+--- END OF FILE package.json ---
+
+================================================================================
+
+--- START OF FILE lib/prisma.ts ---
+
+// lib/prisma.ts
+import { PrismaClient } from '@prisma/client'
+
+const prismaClientSingleton = () => {
+    let databaseUrl: string | undefined;
+
+    // 1. Prioritize BUILD_DATABASE_URL if the IS_BUILDING flag is set.
+    if (process.env.IS_BUILDING === 'true') {
+        databaseUrl = process.env.BUILD_DATABASE_URL;
+        console.log("... [BUILD] Using direct database connection.");
+    } 
+    // 2. For development, also use the direct connection URL (BUILD_DATABASE_URL).
+    else if (process.env.NODE_ENV === 'development') {
+        databaseUrl = process.env.BUILD_DATABASE_URL;
+        console.log("... [DEV] Using direct database connection for development.");
+    } 
+    // 3. Fallback to the default pooled URL for production runtime.
+    else {
+        databaseUrl = process.env.DATABASE_URL;
+        console.log("... [PROD RUNTIME] Using pooled database connection.");
+    }
+
+    if (!databaseUrl) {
+        throw new Error('DATABASE_URL and/or BUILD_DATABASE_URL are not set correctly in your environment variables');
+    }
+
+    return new PrismaClient({
+        datasources: {
+            db: {
+                url: databaseUrl,
+            },
+        },
+    });
+}
+
+declare global {
+    var prisma: undefined | ReturnType<typeof prismaClientSingleton>
+}
+
+const prisma = globalThis.prisma ?? prismaClientSingleton()
+
+export default prisma
+
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma
+
+
+
+
+--- END OF FILE lib/prisma.ts ---
+
+================================================================================
+
+--- START OF FILE lib/sanity.client.ts ---
+
+// lib/sanity.client.ts
+
+import { createClient } from '@sanity/client'
+
+export const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
+export const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
+export const apiVersion = process.env.NEXT_PUBLIC_SANITY_API_VERSION
+
+export const client = createClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: false,
+    token: process.env.SANITY_API_READ_TOKEN,
+})
+
+export const clientAssetUploader = createClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: false,
+    // THE FIX: Use the NEXT_PUBLIC_ prefixed variable
+    token: process.env.NEXT_PUBLIC_SANITY_API_WRITE_TOKEN,
+})
+
+
+
+
+
+
+
+--- END OF FILE lib/sanity.client.ts ---
+
+================================================================================
+
+--- START OF FILE app/lib/authOptions.ts ---
+
+// app/lib/authOptions.ts
+
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import GithubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+import TwitterProvider from "next-auth/providers/twitter";
+import CredentialsProvider from "next-auth/providers/credentials";
+
+export const authOptions = {
+    adapter: PrismaAdapter(prisma),
+    providers: [
+        CredentialsProvider({
+            id: 'credentials',
+            name: "Credentials",
+            credentials: {
+                email: { label: "البريد الإلكتروني", type: "email" },
+                password: { label: "كلمة السر", type: "password" },
+                returnTo: { label: "Return To", type: "text" },
+            },
+            async authorize(credentials) {
+                if (!credentials?.email || !credentials?.password) throw new Error("البيانات ناقصة.");
+                const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+                if (!user) throw new Error("لا حساب بهذا البريد. تفضل بالتسجيل.");
+                if (!user.password) throw new Error("هذا الحساب مرتبط بمزود خارجي.");
+                const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+                if (isPasswordValid) return user;
+                else throw new Error("كلمة السر غير صحيحة.");
+            }
+        }),
+        CredentialsProvider({
+            id: 'signup',
+            name: "SignUp",
+            credentials: {
+                email: { label: "البريد الإلكتروني", type: "email" },
+                password: { label: "كلمة السر", type: "password" },
+                returnTo: { label: "Return To", type: "text" },
+            },
+            async authorize(credentials) {
+                if (!credentials) throw new Error("Missing sign-up details.");
+                const { email, password } = credentials;
+                if (!email || !password) throw new Error("كافة الحقول إلزامية.");
+                if (!/\S+@\S+\.\S+/.test(email)) throw new Error('البريد الإلكتروني غير صالح.');
+                if (password.length < 8) throw new Error('يجب ألا تقل كلمة السر عن ثمانية أحرف.');
+                
+                const existingEmail = await prisma.user.findUnique({ where: { email } });
+                if (existingEmail) throw new Error('هذا البريد مسجل بالفعل.');
+
+                const hashedPassword = await bcrypt.hash(credentials.password, 10);
+                const newUser = await prisma.user.create({
+                    data: {
+                        email: credentials.email,
+                        password: hashedPassword,
+                    }
+                });
+                return newUser;
+            }
+        }),
+        GithubProvider({ 
+            clientId: process.env.AUTH_GITHUB_ID as string, 
+            clientSecret: process.env.AUTH_GITHUB_SECRET as string, 
+        }),
+        GoogleProvider({ 
+            clientId: process.env.GOOGLE_CLIENT_ID as string, 
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
+        }),
+        TwitterProvider({ 
+            clientId: process.env.TWITTER_CLIENT_ID as string, 
+            clientSecret: process.env.TWITTER_CLIENT_SECRET as string, 
+            version: "2.0", 
+        }),
+    ],
+    events: {
+        createUser: async ({ user }: any) => {
+            const userRole = await prisma.role.findUnique({ where: { name: 'USER' } });
+            if (userRole) {
+                await prisma.user.update({ 
+                    where: { id: user.id }, 
+                    data: { roles: { connect: { id: userRole.id } } } 
+                });
+            }
+        }
+    },
+    session: { strategy: "jwt" as const },
+    secret: process.env.NEXTAUTH_SECRET,
+    callbacks: {
+        async signIn({ user }: any) {
+            return true;
+        },
+        async jwt({ token, user, trigger }: any) {
+            if (user || trigger === "update") {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: (token.id as string) || user?.id },
+                    include: { roles: true }
+                });
+
+                if (dbUser) {
+                    token.id = dbUser.id;
+                    token.picture = dbUser.image;
+                    token.name = dbUser.name;
+                    token.roles = dbUser.roles.map(role => role.name);
+                    token.username = dbUser.username;
+                    token.needsOnboarding = !dbUser.name || !dbUser.username;
+                }
+            }
+            return token;
+        },
+        async session({ session, token }: any) {
+            if (token && session.user) {
+                session.user.id = token.id;
+                session.user.roles = token.roles;
+                session.user.name = token.name;
+                session.user.email = token.email;
+                session.user.image = token.picture;
+                session.user.username = token.username;
+                session.needsOnboarding = token.needsOnboarding;
+            }
+            return session;
+        },
+    },
+    pages: { signIn: '/', error: '/', },
+};
+
+
+
+
+--- END OF FILE app/lib/authOptions.ts ---

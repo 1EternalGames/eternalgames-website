@@ -1,0 +1,334 @@
+--- START OF FILE lib/adapters.ts ---
+
+// lib/adapters.ts
+import { urlFor } from '@/sanity/lib/image';
+import { CardProps } from '@/types';
+
+const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+export const adaptToCardProps = (item: any): CardProps | null => {
+    if (!item) return null;
+
+    const imageAsset = item.mainImage?.asset || item.mainImageRef;
+    let imageUrl = null;
+    let blurDataURL: string = '';
+
+    if (imageAsset) {
+        imageUrl = urlFor(imageAsset).width(1600).height(900).fit('crop').auto('format').url();
+        blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url();
+    }
+
+    if (!imageUrl) return null;
+
+    let formattedDate = '';
+    let publishedYear = null;
+
+    if (item.publishedAt) {
+        const date = new Date(item.publishedAt);
+        const day = date.getDate();
+        const monthIndex = date.getMonth();
+        const year = date.getFullYear();
+        formattedDate = `${day} ${arabicMonths[monthIndex]} ${year}`;
+        publishedYear = year;
+    }
+
+    let primaryCreators = [];
+    if (item._type === 'review' || item._type === 'article') {
+        primaryCreators = item.authors || [];
+    } else if (item._type === 'news') {
+        primaryCreators = item.reporters || [];
+    }
+    
+    if (primaryCreators.length === 0) {
+        primaryCreators = item.authors || item.reporters || [];
+    }
+
+    return {
+        type: item._type,
+        id: item._id, 
+        legacyId: item.legacyId,
+        slug: item.slug?.current ?? item.slug ?? '',
+        game: item.game?.title,
+        title: item.title,
+        authors: primaryCreators,
+        designers: item.designers || [],
+        date: formattedDate,
+        year: publishedYear,
+        imageUrl: imageUrl,
+        mainImageRef: imageAsset,
+        score: item.score,
+        tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
+        blurDataURL: blurDataURL,
+        verdict: item.verdict || '',
+        pros: item.pros || [],
+        cons: item.cons || [],
+        content: item.content || [],
+        relatedReviewIds: item.relatedReviewIds || [],
+        synopsis: item.synopsis,
+    };
+};
+
+--- END OF FILE lib/adapters.ts ---
+
+================================================================================
+
+--- START OF FILE components/DigitalAtriumHomePage.tsx ---
+
+// components/DigitalAtriumHomePage.tsx
+'use client';
+
+import { Suspense } from 'react';
+import { ContentBlock } from './ContentBlock';
+import VanguardReviews from './VanguardReviews/VanguardReviews';
+import { adaptToCardProps } from '@/lib/adapters';
+import AnimatedGridBackground from './AnimatedGridBackground';
+import { ReviewIcon, ReleaseIcon } from '@/components/icons/index';
+import styles from './DigitalAtriumHomePage.module.css';
+import { CardProps } from '@/types';
+import FeedSkeleton from '@/components/homepage/feed/FeedSkeleton';
+
+export default function DigitalAtriumHomePage({
+    reviews,
+    feedsContent,
+    releasesSection
+}: {
+    reviews: any[];
+    feedsContent: React.ReactNode;
+    releasesSection: React.ReactNode;
+}) {
+  const adaptedReviews = (reviews || []).map(adaptToCardProps).filter(Boolean) as CardProps[];
+  
+  return (
+    <div className={styles.atriumPageContainer}>
+      <AnimatedGridBackground />
+      <div className={styles.vanguardFullBleedContainer}>
+        <div className="container">
+            <ContentBlock title="ديوان الطليعة" Icon={ReviewIcon} />
+        </div>
+        <VanguardReviews reviews={adaptedReviews} />
+      </div>
+      
+      <div className={styles.atriumMainContent}>
+          <div className="container">
+              <Suspense fallback={<FeedSkeleton />}>
+                  {feedsContent}
+              </Suspense>
+          </div>
+          
+          <ContentBlock title="إصدارات هذا الشهر" Icon={ReleaseIcon} variant="fullbleed">
+              <div className="container">
+                  <p style={{textAlign: 'center', maxWidth: '600px', margin: '-2rem auto 4rem auto', color: 'var(--text-secondary)'}}>
+                      نظرة على الألعاب التي ترى النور هذا الشهر. ما صدر منها قد وُسِمَ بعلامة.
+                  </p>
+                  <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
+                      {releasesSection}
+                  </Suspense>
+              </div>
+          </ContentBlock>
+      </div>
+    </div>
+  );
+}
+
+--- END OF FILE components/DigitalAtriumHomePage.tsx ---
+
+================================================================================
+
+--- START OF FILE components/homepage/HomepageFeeds.tsx ---
+
+// components/homepage/HomepageFeeds.tsx
+'use client';
+
+import React, { useRef, useState, memo } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import Feed from "./feed/Feed";
+import CreatorCredit from "@/components/CreatorCredit";
+import KineticGlyphs from "@/components/effects/KineticGlyphs";
+import { useLivingCard } from "@/hooks/useLivingCard";
+import { CardProps } from "@/types";
+import { ContentBlock } from "../ContentBlock";
+import { ArticleIcon, NewsIcon } from "@/components/icons/index";
+import PaginatedLatestArticles from "./PaginatedLatestArticles";
+import KineticSpotlightNews from "./kinetic-news/KineticSpotlightNews";
+import NewsfeedStream from "./kinetic-news/NewsfeedStream";
+import gridStyles from './HomepageFeeds.module.css';
+import feedStyles from './feed/Feed.module.css';
+
+// --- Specific Card Renderers ---
+
+const TopArticleCard = memo(({ article }: { article: CardProps }) => {
+    const { livingCardRef, livingCardAnimation } = useLivingCard();
+    const [isHovered, setIsHovered] = useState(false);
+    const router = useRouter();
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        router.push(`/articles/${article.slug}`);
+    };
+    return (
+        <motion.div ref={livingCardRef} style={livingCardAnimation.style} onMouseMove={livingCardAnimation.onMouseMove} onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} onClick={handleClick} className={feedStyles.topArticleCard}>
+            <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
+            <div className={feedStyles.topArticleImage}><Image src={article.imageUrl} alt={article.title} fill sizes="(max-width: 768px) 45vw, 30vw" placeholder="blur" blurDataURL={article.blurDataURL} style={{ objectFit: 'cover' }} /></div>
+            <div className={feedStyles.topArticleContent}>
+                <h3 className={feedStyles.topArticleTitle}>{article.title}</h3>
+                <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
+            </div>
+        </motion.div>
+    );
+});
+TopArticleCard.displayName = "TopArticleCard";
+
+// --- Main Component ---
+
+interface HomepageFeedsProps {
+    topArticles: CardProps[]; latestArticles: CardProps[];
+    pinnedNews: CardProps[]; newsList: CardProps[];
+}
+
+export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews, newsList }: HomepageFeedsProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start end', 'end start'] });
+    const articlesY = useTransform(scrollYProgress, [0, 1], [0, -80]);
+    const newsY = useTransform(scrollYProgress, [0, 1], [0, -50]);
+
+    return (
+        <div className={gridStyles.feedsGrid} ref={containerRef}>
+            <motion.div style={{ y: articlesY }}>
+                <ContentBlock title="ديوان الفن" Icon={ArticleIcon}>
+                    <Feed
+                        topSectionLabel="الأكثر رواجًا"
+                        latestSectionLabel="الأحدث"
+                        topItems={topArticles}
+                        viewAllLink="/articles"
+                        viewAllText="عرض كل المقالات"
+                        topItemsContainerClassName={feedStyles.topArticlesGrid}
+                        renderTopItem={(item) => <TopArticleCard key={item.id} article={item} />}
+                        enableTopSectionHoverEffect={false}
+                        latestSectionContent={<PaginatedLatestArticles items={latestArticles} />}
+                    />
+                </ContentBlock>
+            </motion.div>
+            <motion.div style={{ y: newsY }}>
+                <ContentBlock title="موجز الأنباء" Icon={NewsIcon}>
+                    <Feed
+                        topSectionLabel="الأكثر رواجًا"
+                        latestSectionLabel="الأحدث"
+                        topItems={pinnedNews} // Pass empty array as items will be handled by topSectionContent
+                        viewAllLink="/news"
+                        viewAllText="عرض كل الأخبار"
+                        topItemsContainerClassName={feedStyles.pinnedNewsList}
+                        renderTopItem={() => null} // Render nothing here
+                        topSectionContent={<KineticSpotlightNews items={pinnedNews} />} // Pass the new component here
+                        latestSectionContent={<NewsfeedStream items={newsList} />} // Pass the new component here
+                        enableTopSectionHoverEffect={true}
+                    />
+                </ContentBlock>
+            </motion.div>
+        </div>
+    );
+}
+
+
+
+
+--- END OF FILE components/homepage/HomepageFeeds.tsx ---
+
+-----------------------
+
+Vercel's build log:
+
+20:05:39.533 Running build in Washington, D.C., USA (East) – iad1
+20:05:39.537 Build machine configuration: 2 cores, 8 GB
+20:05:39.901 Cloning github.com/1EternalGames/eternalgames-website (Branch: master, Commit: 27e26af)
+20:05:41.464 Cloning completed: 1.563s
+20:05:42.959 Restored build cache from previous deployment (ED8zgPADAGroVwa8VSqD2q5cTgYC)
+20:05:45.355 Running "vercel build"
+20:05:45.750 Vercel CLI 48.8.2
+20:05:46.145 Installing dependencies...
+20:05:49.011 
+20:05:49.012 up to date in 3s
+20:05:49.013 
+20:05:49.013 324 packages are looking for funding
+20:05:49.013   run `npm fund` for details
+20:05:49.045 Detected Next.js version: 16.0.1
+20:05:49.056 Running "npm run build"
+20:05:49.182 
+20:05:49.183 > eternalgames-next@0.1.0 build
+20:05:49.183 > cross-env IS_BUILDING=true next build
+20:05:49.183 
+20:05:50.240  ⚠ Found lockfile missing swc dependencies, run next locally to automatically patch
+20:05:50.313    ▲ Next.js 16.0.1 (Turbopack)
+20:05:50.313    - Environments: .env
+20:05:50.314    - Experiments (use with caution):
+20:05:50.314      · serverActions
+20:05:50.314 
+20:05:50.419    Creating an optimized production build ...
+20:05:51.080  ⚠ Found lockfile missing swc dependencies, run next locally to automatically patch
+20:06:16.986  ✓ Compiled successfully in 25.9s
+20:06:17.034    Running TypeScript ...
+20:06:32.808    Collecting page data ...
+20:06:33.140 ... [BUILD] Using direct database connection.
+20:06:33.370 ... [BUILD] Using direct database connection.
+20:06:33.761    Generating static pages (0/53) ...
+20:06:34.214 ... [BUILD] Using direct database connection.
+20:06:35.422    Generating static pages (13/53) 
+20:06:36.236    Generating static pages (26/53) 
+20:06:36.416 ... [BUILD] Using direct database connection.
+20:06:36.559    Generating static pages (39/53) 
+20:06:37.366  ✓ Generating static pages (53/53) in 3.6s
+20:06:37.386    Finalizing page optimization ...
+20:06:37.399 
+20:06:37.401 Route (app)                         Revalidate  Expire
+20:06:37.402 ┌ ○ /                                       1m      1y
+20:06:37.402 ├ ○ /_not-found
+20:06:37.402 ├ ● /[...slug]                              1m      1y
+20:06:37.402 │ ├ /reviews/review6                        1m      1y
+20:06:37.402 │ ├ /reviews/review7                        1m      1y
+20:06:37.402 │ ├ /news/news5                             1m      1y
+20:06:37.402 │ └ [+28 more paths]
+20:06:37.402 ├ ƒ /api/articles
+20:06:37.402 ├ ƒ /api/auth/[...nextauth]
+20:06:37.402 ├ ƒ /api/blob/upload
+20:06:37.403 ├ ƒ /api/content-by-ids
+20:06:37.403 ├ ƒ /api/cron/revalidate-scheduled
+20:06:37.403 ├ ○ /api/engagement-scores                  1m      1y
+20:06:37.403 ├ ƒ /api/news
+20:06:37.403 ├ ○ /api/news-engagement                    1m      1y
+20:06:37.403 ├ ƒ /api/revalidate
+20:06:37.403 ├ ƒ /api/reviews
+20:06:37.403 ├ ƒ /api/search
+20:06:37.403 ├ ○ /articles                               1m      1y
+20:06:37.403 ├ ○ /celestial-almanac
+20:06:37.403 ├ ○ /constellation
+20:06:37.403 ├ ƒ /creators/[username]
+20:06:37.403 ├ ƒ /games/[slug]
+20:06:37.404 ├ ○ /news                                   1m      1y
+20:06:37.404 ├ ƒ /profile
+20:06:37.404 ├ ƒ /profile/[username]
+20:06:37.404 ├ ƒ /profile/bookmarks
+20:06:37.404 ├ ○ /releases                               1m      1y
+20:06:37.404 ├ ○ /reset-password
+20:06:37.404 ├ ○ /reviews                                1m      1y
+20:06:37.404 ├ ƒ /studio
+20:06:37.404 ├ ƒ /studio/[contentType]/[id]
+20:06:37.404 ├ ƒ /studio/director
+20:06:37.404 ├ ƒ /tags/[tag]
+20:06:37.404 └ ○ /welcome
+20:06:37.404 
+20:06:37.405 
+20:06:37.405 ○  (Static)   prerendered as static content
+20:06:37.405 ●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+20:06:37.405 ƒ  (Dynamic)  server-rendered on demand
+20:06:37.405 
+20:06:37.795 Traced Next.js server files in: 35.536ms
+20:06:39.162 Created all serverless functions in: 1.366s
+20:06:39.179 Collected static files (public/, static/, .next/static): 4.784ms
+20:06:39.594 Build Completed in /vercel/output [53s]
+20:06:39.904 Deploying outputs...
+20:07:44.144 Deployment completed
+20:07:45.027 Creating build cache...
+20:08:18.503 Created build cache: 33.470s
+20:08:18.507 Uploading build cache [318.41 MB]
+20:08:22.029 Build cache uploaded: 3.530s
