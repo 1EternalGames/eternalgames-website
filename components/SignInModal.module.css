@@ -193,3 +193,31 @@
 .authMessage.success {
   color: #16A34A;
 }
+
+/* ADDED: Mobile responsiveness */
+@media (max-width: 480px) {
+  .authModalPanelContainer {
+    max-width: 90vw;
+    min-height: 400px;
+  }
+  .authCredentialsPanel {
+    width: 75vw;
+    padding: 2rem;
+  }
+  .formTitle {
+    font-size: 2rem;
+  }
+  .authInput {
+    height: 4.4rem;
+    font-size: 1.5rem;
+  }
+  .authFormLabel {
+    top: 1rem;
+  }
+  .authSubmitButton {
+    font-size: 1.5rem;
+  }
+  .authOrbRowTop {
+    gap: 1.5rem;
+  }
+}

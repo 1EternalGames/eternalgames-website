@@ -150,7 +150,9 @@
   background: var(--accent);
   color: #fff;
   border: none;
-  padding: 1rem 2.4rem;
+  /* MODIFIED: Reduced padding and font-size for desktop */
+  padding: 0.8rem 1.8rem;
+  font-size: 1.2rem;
   border-radius: 5px;
   font-family: var(--font-main), sans-serif;
   font-weight: 500;
@@ -165,4 +167,12 @@
 .signInButton:hover {
   opacity: 0.85;
   transform: scale(1.05);
+}
+
+/* ADDED: Media query for mobile-specific button size */
+@media (max-width: 768px) {
+  .signInButton {
+    padding: 0.6rem 0.9rem;
+    font-size: 1.3rem;
+  }
 }
