@@ -61,8 +61,8 @@ export async function updateUserProfile(formData: FormData) {
             },
         });
         
-        revalidateTag('enriched-creators');
-        revalidateTag('enriched-creator-details');
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
         revalidatePath(`/profile/${session.user.id}`);
         if (username) revalidatePath(`/creators/${username}`);
@@ -114,8 +114,8 @@ export async function completeOnboardingAction(formData: FormData) {
             },
         });
 
-        revalidateTag('enriched-creators');
-        revalidateTag('enriched-creator-details');
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
         if (username) revalidatePath(`/profile/${username}`);
         

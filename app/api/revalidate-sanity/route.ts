@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push('enriched-creator-details');
     }
     
-    // THE DEFINITIVE FIX: The invalid second argument has been removed.
-    tagsToRevalidate.forEach(tag => revalidateTag(tag));
+    // THE DEFINITIVE FIX: Explicitly provide the 'max' argument to revalidateTag.
+    tagsToRevalidate.forEach(tag => revalidateTag(tag, 'max'));
 
     // --- Revalidate Specific Page Paths ---
     const pathsToRevalidate: string[] = ['/'];
