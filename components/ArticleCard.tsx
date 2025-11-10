@@ -50,6 +50,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         router.push(linkPath, { scroll: false });
     };
 
+    // MODIFIED: Added prefetch on mouse enter for faster navigation
     const handleMouseEnter = () => {
         router.prefetch(linkPath);
     };
@@ -66,10 +67,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         onMouseLeave: livingCardAnimation.onHoverEnd,
     };
     
-    // THE DEFINITIVE FIX:
-    // The style object is now defined conditionally. If the effect is disabled, only the cursor
-    // style is applied. If it's enabled, the animation styles are spread correctly.
-    // This resolves the TypeScript error where `.style` was accessed on an empty object.
     const motionStyle = disableLivingEffect 
         ? { cursor: 'pointer' } 
         : { ...livingCardAnimation.style, cursor: 'pointer' };
@@ -115,7 +112,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         )}
                     </div>
                     <div className={styles.tagContainer}>
-                        {/* THE DEFINITIVE FIX: Slice the tags array to a maximum of 5. */}
                         <TagLinks tags={article.tags.slice(0, 5).map(tag => tag.title)} small={true} />
                     </div>
                 </motion.div>

@@ -11,6 +11,7 @@ import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
+import { cache } from 'react';
 
 const contentConfig = {
     reviews: {
@@ -42,7 +43,6 @@ const getCachedSanityData = unstable_cache(
     },
     ['sanity-content-detail'],
     {
-        revalidate: 3600,
         tags: ['sanity-content']
     }
 );
@@ -87,45 +87,6 @@ export async function generateStaticParams() {
     }
 }
 
-const getCachedComments = unstable_cache(
-    async (slug: string) => {
-        try {
-            const comments = await prisma.comment.findMany({
-                where: { contentSlug: slug, parentId: null },
-                include: { 
-                    author: { select: { id: true, name: true, image: true, username: true } }, 
-                    votes: true, 
-                    _count: { select: { replies: true } }, 
-                    replies: { 
-                        take: 2, 
-                        include: { 
-                            author: { select: { id: true, name: true, image: true, username: true } }, 
-                            votes: true, 
-                            _count: { select: { replies: true } } 
-                        }, 
-                        orderBy: { createdAt: 'asc' } 
-                    } 
-                },
-                orderBy: { createdAt: 'desc' },
-            });
-            return comments;
-        } catch (error) {
-            console.warn(`[BUILD WARNING] Database connection failed while pre-rendering comments for slug "${slug}". Skipping.`, (error as any)?.digest || error);
-            return [];
-        }
-    },
-    ['comments-by-slug'], // Unique cache key
-    {
-        revalidate: 60, // Revalidate comments every 60 seconds
-        tags: ['comments'], // Tag for on-demand revalidation
-    }
-);
-
-async function Comments({ slug }: { slug: string }) {
-    const comments = await getCachedComments(slug);
-    return <CommentSection slug={slug} initialComments={comments} />;
-}
-
 export default async function ContentPage({ params }: { params: { slug: string[] } }) {
     const { slug: slugArray } = await params;
     if (!slugArray || slugArray.length !== 2) notFound();
@@ -151,7 +112,7 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     return (
         <ContentPageClient item={item} type={type as any}>
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
-                <Comments slug={slug} />
+                <CommentSection slug={slug} />
             </Suspense>
         </ContentPageClient>
     );

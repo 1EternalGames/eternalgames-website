@@ -98,6 +98,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
 
     const handleHeroClick = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         setPrefix('reviews-hero');
         router.push(`/reviews/${heroReview.slug}`, { scroll: false });
     };
@@ -107,8 +108,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
             <motion.div
                 layoutId={`reviews-hero-card-container-${heroReview.legacyId}`}
                 className={styles.reviewHero}
-                onClick={handleHeroClick}
-                style={{ cursor: 'pointer' }}
             >
                 <motion.div layoutId={`reviews-hero-card-image-${heroReview.legacyId}`} className={styles.heroBg}>
                     <Image src={heroReview.mainImage.url} alt={`Background for ${heroReview.title}`} fill style={{ objectFit: 'cover' }} priority placeholder='blur' blurDataURL={heroReview.mainImage.blurDataURL} />
@@ -121,7 +120,9 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                         <span className={styles.heroScore}>{heroReview.score?.toFixed(1)}</span>
                     </div>
                     {heroReview.game?.title && (<span className={styles.heroGame}>{heroReview.game.title}</span>)}
-                    <div className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem', pointerEvents: 'none'}}>اقرأ المراجعة</div>
+                    <button onClick={handleHeroClick} className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>
+                        اقرأ المراجعة
+                    </button>
                 </motion.div>
             </motion.div>
             

@@ -60,7 +60,7 @@ return (
 <p className={styles.footerCopyright}>&copy; {new Date().getFullYear()} EternalGames</p>
 <span className={styles.infoSeparator}>•</span>
 <a href="https://x.com/MoVisionX" target="_blank" rel="noopener noreferrer" className={`${styles.designerCredit} no-underline`}>
-<span>صاغه محمد السعد - @MoVisionX</span>
+<span>تطوير محمد السعد - @MoVisionX</span>
 <XIcon className={styles.designerIcon} />
 </a>
 </div>

@@ -13,7 +13,7 @@ import { useLivingCard } from "@/hooks/useLivingCard";
 import { CardProps } from "@/types";
 import { ContentBlock } from "../ContentBlock";
 import { ArticleIcon, NewsIcon } from "@/components/icons/index";
-import PaginatedLatestArticles from "../PaginatedCarousel";
+import PaginatedCarousel from "../PaginatedCarousel";
 import KineticSpotlightNews from "./kinetic-news/KineticSpotlightNews";
 import NewsfeedStream from "./kinetic-news/NewsfeedStream";
 import gridStyles from './HomepageFeeds.module.css';
@@ -30,8 +30,7 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
     const layoutIdPrefix = "homepage-top-articles";
     const linkPath = `/articles/${article.slug}`;
 
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        if (e.ctrlKey || e.metaKey) return; // Allow new tab
+    const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
@@ -40,24 +39,21 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
 
     return (
         <motion.div 
-            layout /* THE FIX: Added layout prop for height equalization */
+            layout
+            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
             ref={livingCardRef} 
-            style={{...livingCardAnimation.style, height: '100%'}} 
+            style={{...livingCardAnimation.style, height: '100%', cursor: 'pointer'}} 
             onMouseMove={livingCardAnimation.onMouseMove} 
             onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} 
-            onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }} 
+            onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }}
+            onClick={handleClick}
         >
-            <a
-                href={linkPath}
-                onClick={handleClick}
+            <div
                 className={`${feedStyles.topArticleCard} no-underline`}
             >
-                {/* Glyphs are now siblings to the clipping container */}
                 <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
                 
-                {/* New inner container for clipping */}
-                <motion.div 
-                    layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
+                <div
                     className={feedStyles.topArticleCardInner}
                 >
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.topArticleImage}>
@@ -67,8 +63,8 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
                         <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.topArticleTitle}>{article.title}</motion.h3>
                         <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
                     </div>
-                </motion.div>
-            </a>
+                </div>
+            </div>
         </motion.div>
     );
 });
@@ -100,7 +96,7 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topItemsContainerClassName={feedStyles.topArticlesGrid}
                         renderTopItem={(item) => <TopArticleCard key={item.id} article={item} />}
                         enableTopSectionHoverEffect={false}
-                        latestSectionContent={<PaginatedLatestArticles items={latestArticles} />}
+                        latestSectionContent={<PaginatedCarousel items={latestArticles} />}
                     />
                 </ContentBlock>
             </motion.div>
