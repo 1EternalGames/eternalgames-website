@@ -152,7 +152,7 @@ export default async function ContentPage({ params }: { params: { slug: string[]
 
     return (
         <ContentPageClient item={item} type={type as any}>
-            <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}> 
+            <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
                 <Comments slug={slug} />
             </Suspense>
         </ContentPageClient>
