@@ -1,8 +1,8 @@
 // components/ActionButton.tsx
 'use client';
 
-import { motion, HTMLMotionProps } from 'framer-motion';
-import React from 'react';
+import { motion } from 'framer-motion';
+import React, { useState } from 'react';
 import styles from './ActionButton.module.css';
 
 // THE DEFINITIVE FIX: Create a more precise props type that omits conflicting properties.
@@ -13,10 +13,16 @@ interface ActionButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const ActionButton = ({ children, ...props }: ActionButtonProps) => {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
         <motion.button
             className={styles.actionButton}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            animate={{ scale: isHovered ? 1.15 : 1 }}
             whileTap={{ scale: 0.9, y: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
             {...props}
         >
             {children}
@@ -24,4 +30,4 @@ const ActionButton = ({ children, ...props }: ActionButtonProps) => {
     );
 };
 
-export default ActionButton; 
+export default ActionButton;
