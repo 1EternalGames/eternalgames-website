@@ -97,7 +97,7 @@ export interface SanityGameRelease {
     title: string;
     slug: string;
     releaseDate: string;
-    platforms: ('PC' | 'PlayStation 5' | 'Xbox' | 'Switch')[];
+    platforms: ('PC' | 'PlayStation' | 'Xbox' | 'Switch')[];
     synopsis: string;
     mainImage: SanityImage; // THE FIX
 }
@@ -113,5 +113,3 @@ export interface SanitySearchResult {
     gameTitle?: string;
     category?: string;
 }
-
-
