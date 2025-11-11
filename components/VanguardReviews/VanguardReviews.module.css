@@ -41,11 +41,12 @@
     position: relative;
 }
 
-.vanguardContainer[data-hovered="true"] .cardWrapper {
+/* THE DEFINITIVE FIX: Scoping the dimming effect to manual hover */
+.vanguardContainer.manual-hover .cardWrapper {
     filter: brightness(0.6) saturate(0.8);
 }
 
-.vanguardContainer[data-hovered="true"] .cardSlot:hover .cardWrapper {
+.vanguardContainer.manual-hover .cardSlot:hover .cardWrapper {
     filter: brightness(1) saturate(1);
 }
 

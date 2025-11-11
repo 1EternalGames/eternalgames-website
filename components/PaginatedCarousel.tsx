@@ -69,8 +69,16 @@ type PaginatedCarouselProps = {
 export default function PaginatedCarousel({ items, itemsPerPage = 3 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const resetTimeout = () => { if (timeoutRef.current) { clearTimeout(timeoutRef.current); } };
 
@@ -88,12 +96,16 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
     const startIndex = currentPage * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentItems = items.slice(startIndex, endIndex);
+    
+    const hoverHandlers = isMobile ? {} : {
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+    };
 
     return (
         <div 
             className={styles.paginatedContainer}
-            onMouseEnter={() => setIsHovered(true)} 
-            onMouseLeave={() => setIsHovered(false)}
+            {...hoverHandlers}
         >
             <div className={styles.paginatedContent}>
                 <AnimatePresence mode="wait">

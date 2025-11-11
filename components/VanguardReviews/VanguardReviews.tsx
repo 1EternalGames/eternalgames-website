@@ -82,11 +82,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     const showCredits = isCenter || isHovered;
     
-    // Conditionally apply hover handlers only when interactive
     const livingCardHandlers = isInteractive ? {
         onMouseMove: livingCardAnimation.onMouseMove,
-        onMouseEnter: livingCardAnimation.onHoverStart,
-        onMouseLeave: livingCardAnimation.onHoverEnd,
+        onMouseEnter: livingCardAnimation.onMouseEnter,
+        onMouseLeave: livingCardAnimation.onMouseLeave,
+        onTouchStart: livingCardAnimation.onTouchStart,
+        onTouchEnd: livingCardAnimation.onTouchEnd,
+        onTouchCancel: livingCardAnimation.onTouchCancel,
     } : {};
 
     return (
@@ -178,6 +180,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const hasAnimatedIn = useInView(containerRef, { once: true, amount: 0.1 });
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
     const [initialAnimHasRun, setInitialAnimHasRun] = useState(false);
+    const [isManualHover, setIsManualHover] = useState(false); // THE DEFINITIVE FIX: State for manual hover
 
     const {
         currentIndex,
@@ -218,8 +221,9 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     return (
         <div 
             ref={containerRef} 
-            className={styles.vanguardContainer} 
-            data-hovered={!!hoveredId}
+            className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''}`}
+            onMouseEnter={() => setIsManualHover(true)}
+            onMouseLeave={() => setIsManualHover(false)}
         >
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
@@ -229,6 +233,8 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.1}
                 onDragEnd={handleDragEnd}
+                onTouchEnd={() => initialAnimHasRun && setHoveredId(null)}
+                onTouchCancel={() => initialAnimHasRun && setHoveredId(null)}
             >
                 {reviews.map((review, reviewIndex) => {
                     const { style, isCenter } = getCardState(reviewIndex, review.id);
@@ -240,6 +246,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                             className={styles.cardSlot} 
                             onMouseEnter={() => initialAnimHasRun && setHoveredId(review.id)} 
                             onMouseLeave={() => initialAnimHasRun && setHoveredId(null)}
+                            onTouchStart={() => initialAnimHasRun && setHoveredId(review.id)}
                             initial={!initialAnimHasRun ? initialAnimationConfig : false}
                             animate={style}
                             transition={{

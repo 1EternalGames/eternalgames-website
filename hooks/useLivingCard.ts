@@ -47,18 +47,22 @@ export function useLivingCard({ isLead = false } = {}) {
         }
     );
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handlePointerMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
         if (!ref.current) return;
         const { left, top, width, height } = ref.current.getBoundingClientRect();
-        mouseX.set((e.clientX - left) / width);
-        mouseY.set((e.clientY - top) / height);
-    };
+        
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-    const onHoverStart = () => {
+        mouseX.set((clientX - left) / width);
+        mouseY.set((clientY - top) / height);
+    };
+    
+    const onPointerEnter = () => {
         setIsHovered(true);
     };
 
-    const onHoverEnd = () => {
+    const onPointerLeave = () => {
         setIsHovered(false);
         mouseX.set(0.5);
         mouseY.set(0.5);
@@ -71,11 +75,15 @@ export function useLivingCard({ isLead = false } = {}) {
                 transform,
                 boxShadow,
             },
-            onMouseMove: handleMouseMove,
-            onHoverStart: onHoverStart,
-            onHoverEnd: onHoverEnd,
+            onMouseMove: handlePointerMove,
+            onMouseEnter: onPointerEnter,
+            onMouseLeave: onPointerLeave,
+            onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
+                onPointerEnter();
+                handlePointerMove(e);
+            },
+            onTouchEnd: onPointerLeave,
+            onTouchCancel: onPointerLeave,
         },
     };
 }
-
-
