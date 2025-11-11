@@ -132,11 +132,25 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const [currentLinkUrl, setCurrentLinkUrl] = useState<string | undefined>(undefined);
     const [isMobile, setIsMobile] = useState(false);
+    const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
+
+        // --- THE DEFINITIVE FIX ---
+        // Detect the operating system on component mount.
+        const ua = navigator.userAgent;
+        if (/iPad|iPhone|iPod/.test(ua)) {
+            setPlatform('ios');
+        } else if (/Android/.test(ua)) {
+            setPlatform('android');
+        } else {
+            setPlatform('desktop');
+        }
+        // --- END FIX ---
+        
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
@@ -196,7 +210,9 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 editor={editor} 
                 tippyOptions={{ 
                     duration: 100, 
-                    placement: isMobile ? 'bottom-start' : 'top-end',
+                    // --- THE DEFINITIVE FIX ---
+                    // Conditionally set the placement based on the detected platform.
+                    placement: platform === 'android' ? 'bottom-start' : 'top-end',
                     offset: [0, 8] 
                 }} 
                 shouldShow={({ editor, state }) => { 
