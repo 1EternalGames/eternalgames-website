@@ -8,9 +8,9 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import styles from './ReleasesPage.module.css';
 import filterStyles from '@/components/filters/Filters.module.css';
 
-type Platform = 'الكل' | 'PC' | 'PlayStation 5' | 'Xbox' | 'Switch';
-const PLATFORMS: Platform[] = ['الكل', 'PC', 'PlayStation 5', 'Xbox', 'Switch'];
-const PLATFORM_LABELS: Record<Platform, string> = { 'الكل': 'الكل', 'PC': 'PC', 'PlayStation 5': 'PlayStation 5', 'Xbox': 'Xbox', 'Switch': 'Switch' };
+type Platform = 'الكل' | 'PC' | 'PlayStation' | 'Xbox' | 'Switch';
+const PLATFORMS: Platform[] = ['الكل', 'PC', 'PlayStation', 'Xbox', 'Switch'];
+const PLATFORM_LABELS: Record<Platform, string> = { 'الكل': 'الكل', 'PC': 'PC', 'PlayStation': 'PlayStation', 'Xbox': 'Xbox', 'Switch': 'Switch' };
 
 const PlatformFilters = ({ activeFilter, onFilterChange }: { activeFilter: Platform, onFilterChange: (platform: Platform) => void }) => {
   const ref = useRef(null);
@@ -19,26 +19,43 @@ const PlatformFilters = ({ activeFilter, onFilterChange }: { activeFilter: Platf
     hidden: { opacity: 0, y: 50 }, 
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } } 
   };
+  
+  const allButton = PLATFORMS[0];
+  const otherPlatforms = PLATFORMS.slice(1);
 
   return (
     <motion.div ref={ref} variants={animationVariants} initial="hidden" animate={isInView ? 'visible' : 'hidden'} className={styles.platformFilters}>
       <span>تصفية حسب المنصة:</span>
-      <div className={filterStyles.filterButtonsGroup}>
-        {PLATFORMS.map(platform => {
-          const isActive = activeFilter === platform;
-          return (
+      <div className={styles.filterLayout}>
+        <div className={`${filterStyles.filterButtonsGroup} ${styles.allButtonContainer}`}>
             <motion.button 
-                key={platform} 
-                onClick={() => onFilterChange(platform)} 
-                className={`${filterStyles.filterButton} ${isActive ? filterStyles.active : ''}`} 
+                key={allButton} 
+                onClick={() => onFilterChange(allButton)} 
+                className={`${filterStyles.filterButton} ${activeFilter === allButton ? filterStyles.active : ''}`} 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }}
             >
-              {PLATFORM_LABELS[platform]}
-              {isActive && ( <motion.div layoutId="release-filter-highlight" className={filterStyles.filterHighlight} transition={{ type: 'spring', stiffness: 300, damping: 25 }}/> )}
+              {PLATFORM_LABELS[allButton]}
+              {activeFilter === allButton && ( <motion.div layoutId="release-filter-highlight" className={filterStyles.filterHighlight} transition={{ type: 'spring', stiffness: 300, damping: 25 }}/> )}
             </motion.button>
-          );
-        })}
+        </div>
+        <div className={filterStyles.filterButtonsGroup}>
+            {otherPlatforms.map(platform => {
+              const isActive = activeFilter === platform;
+              return (
+                <motion.button 
+                    key={platform} 
+                    onClick={() => onFilterChange(platform)} 
+                    className={`${filterStyles.filterButton} ${isActive ? filterStyles.active : ''}`} 
+                    whileHover={{ scale: 1.05 }} 
+                    whileTap={{ scale: 0.95 }}
+                >
+                  {PLATFORM_LABELS[platform as Platform]}
+                  {isActive && ( <motion.div layoutId="release-filter-highlight" className={filterStyles.filterHighlight} transition={{ type: 'spring', stiffness: 300, damping: 25 }}/> )}
+                </motion.button>
+              );
+            })}
+        </div>
       </div>
     </motion.div>
   );
@@ -116,5 +133,3 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
     </div>
   );
 }
-
-

@@ -13,7 +13,7 @@ export default async function ReleasesPage() {
   );
 
   return (
-    <div className="container page-container">
+    <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
       <ReleasePageClient releases={sanitizedReleases} />
     </div>
   );
