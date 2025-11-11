@@ -49,6 +49,11 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
 
 const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableLink?: boolean }) => {
     const [isHovered, setIsHovered] = useState(false);
+    
+    // THE DEFINITIVE FIX: Stop event propagation on touch to prioritize link navigation over card tilt.
+    const handleTouch = (e: React.TouchEvent) => {
+        e.stopPropagation();
+    };
 
     return (
         <div 
@@ -65,6 +70,7 @@ const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableL
                     href={`/creators/${creator.username}`} 
                     className="creator-credit-link no-underline"
                     onClick={(e) => e.stopPropagation()}
+                    onTouchStart={handleTouch}
                 >
                     {creator.name}
                 </Link>

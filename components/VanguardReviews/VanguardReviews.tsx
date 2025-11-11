@@ -81,7 +81,10 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const linkPath = `/reviews/${review.slug}`;
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (e.ctrlKey || e.metaKey) return; // Allow opening in new tab
-        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) {
+            e.stopPropagation();
+            return;
+        }
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });

@@ -65,6 +65,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         onMouseEnter: () => { livingCardAnimation.onMouseEnter(); handleMouseEnter(); },
         onMouseLeave: livingCardAnimation.onMouseLeave,
         onTouchStart: livingCardAnimation.onTouchStart,
+        onTouchMove: livingCardAnimation.onTouchMove,
         onTouchEnd: livingCardAnimation.onTouchEnd,
         onTouchCancel: livingCardAnimation.onTouchCancel,
     };

@@ -10,9 +10,9 @@ export default function TagLinks({ tags, small = false }: { tags: string[], smal
 
   if (!tags || tags.length === 0) return null;
 
-  const handleTagClick = (e: React.MouseEvent, tag: string) => {
+  const handleTagClick = (e: React.MouseEvent | React.TouchEvent, tag: string) => {
     e.preventDefault();
-    e.stopPropagation(); // Stop the click from bubbling up to the card's main link
+    e.stopPropagation(); // Stop the event from bubbling up to the card's main link/handlers
     const slug = tag.toLowerCase().replace(/ /g, '-');
     router.push(`/tags/${slug}`);
   };
@@ -24,6 +24,7 @@ export default function TagLinks({ tags, small = false }: { tags: string[], smal
           key={tag} 
           className={styles.tagLink}
           onClick={(e) => handleTagClick(e, tag)}
+          onTouchStart={(e) => handleTagClick(e, tag)} // ADDED: Handle touch for immediate response
         >
           {translateTag(tag)}
         </span>
@@ -31,8 +32,3 @@ export default function TagLinks({ tags, small = false }: { tags: string[], smal
     </div>
   );
 }
-
-
-
-
-
