@@ -6,6 +6,84 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { put } from '@vercel/blob';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedSession } from '@/lib/auth';
+import { sanityWriteClient } from '@/lib/sanity.server';
+import { groq } from 'next-sanity';
+
+// MODIFIED: Created a reusable function to sync Prisma user data to Sanity creator documents.
+async function syncUserToSanity(userId: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, name: true, image: true, bio: true, roles: { select: { name: true } } },
+        });
+
+        if (!user || !user.name) {
+            console.warn(`[Sanity Sync] User ${userId} not found or has no name. Skipping sync.`);
+            return;
+        }
+
+        const userRoles = user.roles.map(r => r.name);
+        const creatorTypes = userRoles
+            .map(role => ({
+                'REVIEWER': 'reviewer',
+                'AUTHOR': 'author',
+                'REPORTER': 'reporter',
+                'DESIGNER': 'designer',
+            }[role]))
+            .filter(Boolean) as string[];
+
+        if (creatorTypes.length === 0) {
+            return; // Not a creator, no need to sync.
+        }
+
+        const sanityDocs = await sanityWriteClient.fetch(
+            groq`*[_type in $creatorTypes && prismaUserId == $userId]`,
+            { creatorTypes, userId: user.id }
+        );
+
+        let imageAssetRef: string | undefined = undefined;
+        if (user.image && user.image.startsWith('https://')) {
+            try {
+                // Check if this image URL already exists as an asset to avoid re-uploading
+                const existingAsset = await sanityWriteClient.fetch(groq`*[_type == "sanity.imageAsset" && url == $imageUrl][0]._id`, { imageUrl: user.image });
+                if (existingAsset) {
+                    imageAssetRef = existingAsset;
+                } else {
+                    const response = await fetch(user.image);
+                    const imageBlob = await response.blob();
+                    const imageAsset = await sanityWriteClient.assets.upload('image', imageBlob, {
+                        contentType: imageBlob.type,
+                        filename: `${user.id}-avatar.jpg`
+                    });
+                    imageAssetRef = imageAsset._id;
+                }
+            } catch (e) {
+                console.warn(`[Sanity Sync] Image upload failed for user ${userId}. Skipping image update.`, e);
+            }
+        }
+
+        const transaction = sanityWriteClient.transaction();
+        for (const doc of sanityDocs) {
+            const patchData: { name: string; bio: string | null; image?: any } = {
+                name: user.name,
+                bio: user.bio,
+            };
+            if (imageAssetRef) {
+                patchData.image = {
+                    _type: 'image',
+                    asset: { _type: 'reference', _ref: imageAssetRef }
+                };
+            }
+            transaction.patch(doc._id, { set: patchData });
+        }
+        await transaction.commit();
+        console.log(`[Sanity Sync] Synced profile for user ${userId} to ${sanityDocs.length} creator document(s).`);
+
+    } catch (error) {
+        console.error(`[CRITICAL] Failed to sync user ${userId} to Sanity:`, error);
+        // We don't throw here to avoid failing the main user action.
+    }
+}
 
 export async function getUserState() {
     try {
@@ -28,11 +106,11 @@ export async function getUserState() {
     }
 }
 
-// ... (rest of userActions.ts)
 export async function updateUserProfile(formData: FormData) {
     try {
         const session = await getAuthenticatedSession();
         
+        const name = formData.get('name') as string;
         const username = (formData.get('username') as string)?.toLowerCase();
         const bio = formData.get('bio') as string;
         const twitterHandle = formData.get('twitterHandle') as string;
@@ -52,6 +130,7 @@ export async function updateUserProfile(formData: FormData) {
         await prisma.user.update({
             where: { id: session.user.id },
             data: {
+                name: name || undefined,
                 username: username || undefined,
                 bio: bio.slice(0, 500),
                 twitterHandle,
@@ -61,6 +140,9 @@ export async function updateUserProfile(formData: FormData) {
             },
         });
         
+        // MODIFIED: Trigger the Sanity sync after a successful profile update.
+        await syncUserToSanity(session.user.id);
+
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
@@ -78,16 +160,11 @@ export async function completeOnboardingAction(formData: FormData) {
         const session = await getAuthenticatedSession();
         const user = await prisma.user.findUnique({ where: { id: session.user.id } });
 
-        // THE DEFINITIVE FIX: The guard clause that checked if onboarding was complete
-        // was incorrectly blocking credential-based signups. It has been removed.
-        // The act of submitting this form is the user's intent to complete onboarding.
-
         const fullName = formData.get('fullName') as string;
         const username = (formData.get('username') as string)?.toLowerCase();
         const ageStr = formData.get('age') as string;
         const country = formData.get('country') as string;
 
-        // This validation is more explicit and provides clearer user feedback.
         if (!fullName || fullName.trim() === '') {
             return { success: false, message: 'الاسم الكامل مطلوب.' };
         }
@@ -95,8 +172,6 @@ export async function completeOnboardingAction(formData: FormData) {
             return { success: false, message: 'اسم المستخدم مطلوب.' };
         }
 
-        // If the user is trying to set a username that is different from their current one
-        // (which only happens in the OAuth flow), we must validate it.
         if (username !== user?.username) {
             const usernameValidation = await checkUsernameAvailability(username);
             if (!usernameValidation.available) {
@@ -125,6 +200,7 @@ export async function completeOnboardingAction(formData: FormData) {
         return { success: false, message: error.message || 'طرأ خطبٌ عند التهيئة.' };
     }
 }
+
 export async function changePasswordAction(formData: FormData) {
     try {
         const session = await getAuthenticatedSession();
@@ -242,7 +318,12 @@ export async function updateUserAvatar(formData: FormData) {
         const blob = await put(sanitizedFilename, avatarFile, { access: 'public', contentType: avatarFile.type });
         await prisma.user.update({ where: { id: session.user.id }, data: { image: blob.url } });
         
+        // MODIFIED: Trigger Sanity sync after avatar update.
+        await syncUserToSanity(session.user.id);
+        
         revalidatePath('/profile');
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('enriched-creator-details', 'max');
         return { success: true, message: 'تجدَّدت الصورة الرمزية.' };
     } catch (error: any) {
         return { success: false, message: error.message || 'أخفق الرفع.' };
