@@ -1,4 +1,4 @@
-// app/news/NewsPageClient.tsx
+// components/news/NewsPageClient.tsx
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -11,6 +11,7 @@ import { ContentBlock } from '@/components/ContentBlock';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from './NewsPage.module.css';
+import { NewsIcon } from '@/components/icons';
 
 const fetchNews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/news?${params.toString()}`);
@@ -97,7 +98,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
             <div className="container">
-                <ContentBlock title="أرشيف الأنباء">
+                <ContentBlock title="كل الأخبار" Icon={NewsIcon}>
                     <NewsFilters 
                         activeSort={activeSort}
                         onSortChange={setActiveSort}

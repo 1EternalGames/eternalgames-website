@@ -15,6 +15,8 @@ import { CardProps } from '@/types';
 import styles from '@/components/HorizontalShowcase.module.css';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { ContentBlock } from '@/components/ContentBlock';
+import { ArticleIcon } from '@/components/icons';
 
 const fetchArticles = async (params: URLSearchParams) => {
     const res = await fetch(`/api/articles?${params.toString()}`);
@@ -143,8 +145,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                     <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>أحدث المقالات</h1>
                     <div className={styles.showcaseSection}>{isMobile ? (<MobileShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />) : (<HorizontalShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />)}</div>
                     <div className={styles.gridSection}> 
-                        <div style={{marginBottom: '6rem'}}>
-                            <h2 className="section-title" style={{textAlign: 'right', marginBottom: '3rem', fontSize: 'clamp(2.8rem, 4vw, 3.6rem)'}}>جميع المقالات</h2>
+                        <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
                             <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
                             
                             <motion.div layout className="content-grid">
@@ -168,7 +169,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                             </AnimatePresence>
 
                             {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالاتٍ توافقُ مُرادك. </motion.p> )}
-                        </div>
+                        </ContentBlock>
                     </div>
                 </div>
             </div>

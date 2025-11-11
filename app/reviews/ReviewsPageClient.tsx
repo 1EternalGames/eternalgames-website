@@ -13,6 +13,8 @@ import { CardProps } from '@/types';
 import styles from './ReviewsPage.module.css';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useRouter } from 'next/navigation';
+import { ContentBlock } from '@/components/ContentBlock';
+import { ReviewIcon } from '@/components/icons';
 
 const fetchReviews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/reviews?${params.toString()}`);
@@ -129,8 +131,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
             <div className="container" style={{paddingTop: '4rem'}}>
                 <ReviewFilters activeSort={activeSort} onSortChange={setActiveSort} selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
                 
-                <div style={{marginBottom: '6rem'}}>
-                    <h2 className="section-title" style={{textAlign: 'right', marginBottom: '3rem', fontSize: 'clamp(2.8rem, 4vw, 3.6rem)'}}>كلُّ المراجعات</h2>
+                <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
                     <motion.div layout className="content-grid">
                         {gridReviews.map((review, index) => (
                             <ArticleCard
@@ -165,7 +166,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                             لا مراجعات توافقُ ما اخترت.
                         </motion.p>
                     )}
-                </div>
+                </ContentBlock>
             </div>
         </>
     );
