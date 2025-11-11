@@ -7,8 +7,8 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCreatorUsernames } from '@/app/actions/creatorActions';
 import type { SanityAuthor } from '@/types/sanity';
-import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons';
-import { urlFor } from '@/sanity/lib/image'; // Import urlFor
+import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
+import { urlFor } from '@/sanity/lib/image';
 import styles from './CreatorCredit.module.css';
 
 const hoverCardVariants = {
@@ -18,13 +18,12 @@ const hoverCardVariants = {
 };
 
 const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
-    // THE DEFINITIVE FIX: Handle both Sanity image objects and direct URL strings.
     let imageUrl = '/default-avatar.svg';
     if (creator.image) {
         if (typeof creator.image === 'string') {
-            imageUrl = creator.image; // It's a URL string from Prisma
+            imageUrl = creator.image;
         } else if (typeof creator.image === 'object' && (creator.image as any).asset) {
-            imageUrl = urlFor(creator.image as any).width(96).height(96).fit('crop').url(); // It's a Sanity image object
+            imageUrl = urlFor(creator.image as any).width(96).height(96).fit('crop').url();
         }
     }
 
@@ -121,9 +120,11 @@ export default function CreatorCredit({ label, creators, small = false, disableL
 
     return (
         <div className={`${styles.creatorCredit} ${small ? styles.small : ''}`}>
-            <IconComponent className={styles.metadataIcon} />
-            <span className={styles.label}>{label}: </span>
-            <span>{formattedNames}</span>
+             <IconComponent className={styles.metadataIcon} />
+            <div>
+                <span className={styles.label}>{label}: </span>
+                <span>{formattedNames}</span>
+            </div>
         </div>
     );
 }

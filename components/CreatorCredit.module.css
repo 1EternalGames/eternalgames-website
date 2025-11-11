@@ -3,7 +3,7 @@
 .creatorCreditContainer {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 0.25rem;
 }
 
@@ -20,6 +20,7 @@
     height: 16px;
     color: var(--accent);
     flex-shrink: 0;
+    order: -1; /* THE DEFINITIVE FIX: Forces icon to the left */
 }
 
 .label {
@@ -38,7 +39,7 @@
     display: inline-block;
 }
 
-/* --- THE DEFINITIVE FIX: Small Variant Styles --- */
+/* --- Small Variant Styles --- */
 .creatorCredit.small {
     gap: 0.5rem;
 }
@@ -50,7 +51,6 @@
 .creatorCredit.small span {
     font-size: 1.2rem;
 }
-/* --- END FIX --- */
 
 .hoverCard {
     position: absolute;
@@ -103,5 +103,3 @@
     -webkit-box-orient: vertical;  
     overflow: hidden;
 }
-
-

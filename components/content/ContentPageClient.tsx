@@ -19,7 +19,7 @@ import ContentActionBar from '@/components/ContentActionBar';
 import TagLinks from '@/components/TagLinks';
 import ReadingHud from '@/components/ReadingHud';
 import { ContentBlock } from '@/components/ContentBlock';
-import { SparklesIcon } from '@/components/icons/index';
+import { SparklesIcon, Calendar03Icon } from '@/components/icons/index';
 import CreatorCredit from '@/components/CreatorCredit';
 import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
@@ -103,7 +103,7 @@ export default function ContentPageClient({ item, type, children }: {
     }, [setPrefix]);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
         checkMobile();
         const handleResize = () => {
             checkMobile();
@@ -111,7 +111,7 @@ export default function ContentPageClient({ item, type, children }: {
         }
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [isLayoutStable, measureHeadings]);
+    }, [isLayoutStable, measureHeadings]); 
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -148,10 +148,6 @@ export default function ContentPageClient({ item, type, children }: {
     const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
-    const GAME_TITLE_THRESHOLD = 25;
-    const isLongGameTitle = (item as any).game?.title?.length > GAME_TITLE_THRESHOLD;
-    const shouldShiftLayout = isMobile && isLongGameTitle;
-
     const springTransition = { type: 'spring' as const, stiffness: 200, damping: 35 };
 
     return (
@@ -180,7 +176,7 @@ export default function ContentPageClient({ item, type, children }: {
                         fill 
                         sizes="100vw"
                         style={{ objectFit: 'cover' }} 
-                        priority // MODIFIED: Added priority prop
+                        priority
                         placeholder="blur" 
                         blurDataURL={(item.mainImage as any).blurDataURL} 
                     />
@@ -190,21 +186,24 @@ export default function ContentPageClient({ item, type, children }: {
                     <motion.div initial="hidden" animate="visible" variants={contentVariants} >
                         <div className={styles.contentLayout}>
                             <main ref={scrollTrackerRef}>
-                                <div className={`${styles.headerContainer} ${shouldShiftLayout ? styles.shiftedLayout : ''}`}>
-                                    {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
-                                    <div className={styles.titleWrapper}>
-                                        {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0' }}>{translateTag((item as any).category?.title)}</p>}
-                                        <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: isNews ? '0.5rem 0 0 0' : 0 }} transition={springTransition}>{item.title}</motion.h1>
-                                    </div>
+                                <div className={styles.titleWrapper}>
+                                    {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0 0 1rem 0' }}>{translateTag((item as any).category?.title)}</p>}
+                                    <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: 0 }} transition={springTransition}>{item.title}</motion.h1>
                                 </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', fontSize: '1.5rem' }}>
+                                
+                                <div className={styles.metaContainer}>
+                                    <div className={styles.metaBlockLeft}>
+                                        {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
+                                        <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={item.slug} />
+                                    </div>
+                                    <div className={styles.metaBlockRight}>
                                         <CreatorCredit label="بقلم" creators={primaryCreators} />
                                         <CreatorCredit label="تصميم" creators={item.designers} />
-                                        <p style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-secondary)' }}>نُشر في {formattedDate}</p>
+                                        <div className={styles.dateContainer}>
+                                            <Calendar03Icon className={styles.metadataIcon} />
+                                            <p className={styles.dateText}>نُشر في {formattedDate}</p>
+                                        </div>
                                     </div>
-                                    <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={item.slug} />
                                 </div>
 
                                 <div ref={articleBodyRef} className="article-body">
