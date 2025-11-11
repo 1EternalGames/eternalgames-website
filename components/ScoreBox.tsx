@@ -12,7 +12,10 @@ const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 
 
 const ScoreBoxComponent = ({ review, className }: { review: any, className?: string }) => {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.5 });
+    // THE DEFINITIVE FIX: Changed `amount` from `0.5` to `'some'`.
+    // This makes the trigger more sensitive and reliable on fast-scrolling mobile devices,
+    // ensuring the animation fires as soon as any part of the component enters the viewport.
+    const isInView = useInView(ref, { once: true, amount: 'some' });
 
     return (
         <motion.div ref={ref} className={`${styles.scoreBox} ${className || ''}`} initial="hidden" animate={isInView ? "visible" : "hidden"} variants={containerVariants}>

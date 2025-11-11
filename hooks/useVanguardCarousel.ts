@@ -7,7 +7,7 @@ const VANGUARD_SLOTS = 5;
 // THE DEFINITIVE FIX: The cooldown is now synchronized with the component's 0.7s animation duration.
 // This prevents new navigation actions from being dispatched while an animation is still in progress.
 export const ANIMATION_COOLDOWN = 700;
-const AUTO_NAVIGATE_INTERVAL = 2000;
+const AUTO_NAVIGATE_INTERVAL = 2500;
 const MOBILE_BREAKPOINT = 1024;
 const CENTER_SLOT_INDEX = 2;
 
