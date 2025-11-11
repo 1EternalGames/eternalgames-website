@@ -142,7 +142,7 @@
 /* --- Mobile Vertical Showcase --- */
 .mobileShowcaseContainer {
     position: relative;
-    width: 80%;
+    width: 70%; /* MODIFIED: Reduced from 80% */
     max-width: 400px;
     margin: 0 auto;
     display: flex;
@@ -174,16 +174,14 @@
   }
 
   .showcaseArrow.left {
-    left: -1rem;
+    left: -5rem; /* MODIFIED: Increased distance further */
   }
 
   .showcaseArrow.right {
-    right: -1rem;
+    right: -5rem; /* MODIFIED: Increased distance further */
   }
 
   .showcaseCardTitle {
     font-size: 2.2rem;
   }
 }
-
-
