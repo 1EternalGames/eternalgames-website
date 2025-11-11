@@ -62,10 +62,18 @@ LatestNewsListItem.displayName = "LatestNewsListItem";
 export default function NewsfeedStream({ items }: { items: CardProps[] }) {
     const [listItems, setListItems] = useState(items);
     const [isHovered, setIsHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        if (!isHovered && items.length > 5) {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        if (!isHovered && items.length > 5 && !isMobile) {
             intervalRef.current = setInterval(() => {
                 setListItems(prevItems => {
                     const newItems = [...prevItems];
@@ -83,13 +91,15 @@ export default function NewsfeedStream({ items }: { items: CardProps[] }) {
                 clearInterval(intervalRef.current);
             }
         };
-    }, [isHovered, items.length]);
+    }, [isHovered, items.length, isMobile]);
+
+    const hoverHandlers = isMobile ? {} : {
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+    };
 
     return (
-        <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
+        <div {...hoverHandlers}>
             <AnimatePresence initial={false}>
                 {listItems.slice(0, 5).map((item, index) => (
                     <motion.div

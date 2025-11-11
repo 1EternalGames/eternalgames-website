@@ -69,6 +69,14 @@ PinnedNewsCard.displayName = 'PinnedNewsCard';
 export default function KineticSpotlightNews({ items }: { items: CardProps[] }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         if (isHovered || items.length <= 1) return;
@@ -80,11 +88,15 @@ export default function KineticSpotlightNews({ items }: { items: CardProps[] }) 
         return () => clearInterval(interval);
     }, [isHovered, items.length]);
 
+    const hoverHandlers = isMobile ? {} : {
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+    };
+
     return (
         <div 
             className={styles.spotlightContainer}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            {...hoverHandlers}
         >
             {items.map((item, index) => (
                 <React.Fragment key={item.id}>
