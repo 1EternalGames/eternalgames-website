@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getCreatorUsernames } from '@/app/actions/creatorActions';
 import type { SanityAuthor } from '@/types/sanity';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons';
+import { urlFor } from '@/sanity/lib/image'; // Import urlFor
 import styles from './CreatorCredit.module.css';
 
 const hoverCardVariants = {
@@ -16,24 +17,36 @@ const hoverCardVariants = {
     exit: { opacity: 0, y: 10, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' as const } }
 };
 
-const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => (
-    <motion.div className={styles.hoverCard} variants={hoverCardVariants} initial="hidden" animate="visible" exit="exit">
-        <div className={styles.cardHeader}>
-            <Image 
-                src={creator.image || '/default-avatar.svg'} 
-                alt={creator.name}
-                width={48}
-                height={48}
-                className={styles.cardAvatar}
-            />
-            <div>
-                <p className={styles.cardName}>{creator.name}</p>
-                {creator.username && <p className={styles.cardUsername}>@{creator.username}</p>}
+const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
+    // THE DEFINITIVE FIX: Handle both Sanity image objects and direct URL strings.
+    let imageUrl = '/default-avatar.svg';
+    if (creator.image) {
+        if (typeof creator.image === 'string') {
+            imageUrl = creator.image; // It's a URL string from Prisma
+        } else if (typeof creator.image === 'object' && (creator.image as any).asset) {
+            imageUrl = urlFor(creator.image as any).width(96).height(96).fit('crop').url(); // It's a Sanity image object
+        }
+    }
+
+    return (
+        <motion.div className={styles.hoverCard} variants={hoverCardVariants} initial="hidden" animate="visible" exit="exit">
+            <div className={styles.cardHeader}>
+                <Image 
+                    src={imageUrl} 
+                    alt={creator.name}
+                    width={48}
+                    height={48}
+                    className={styles.cardAvatar}
+                />
+                <div>
+                    <p className={styles.cardName}>{creator.name}</p>
+                    {creator.username && <p className={styles.cardUsername}>@{creator.username}</p>}
+                </div>
             </div>
-        </div>
-        {creator.bio && <p className={styles.cardBio}>{creator.bio}</p>}
-    </motion.div>
-);
+            {creator.bio && <p className={styles.cardBio}>{creator.bio}</p>}
+        </motion.div>
+    );
+};
 
 const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableLink?: boolean }) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -114,5 +127,3 @@ export default function CreatorCredit({ label, creators, small = false, disableL
         </div>
     );
 }
-
-

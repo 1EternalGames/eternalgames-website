@@ -98,20 +98,20 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
             <div className="container">
+                <NewsFilters 
+                    activeSort={activeSort}
+                    onSortChange={setActiveSort}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    allGames={allGames}
+                    selectedGame={selectedGame}
+                    onGameSelect={setSelectedGame}
+                    allTags={allTags}
+                    selectedTags={selectedTags}
+                    onTagToggle={handleTagToggle}
+                    onClearAll={handleClearAll}
+                />
                 <ContentBlock title="كل الأخبار" Icon={NewsIcon}>
-                    <NewsFilters 
-                        activeSort={activeSort}
-                        onSortChange={setActiveSort}
-                        searchTerm={searchTerm}
-                        onSearchChange={setSearchTerm}
-                        allGames={allGames}
-                        selectedGame={selectedGame}
-                        onGameSelect={setSelectedGame}
-                        allTags={allTags}
-                        selectedTags={selectedTags}
-                        onTagToggle={handleTagToggle}
-                        onClearAll={handleClearAll}
-                    />
                     <NewsGrid news={newsItems} />
 
                     <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
