@@ -134,15 +134,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     return (
         <div className={styles.sanctumContainer}>
             <div className={styles.sanctumMain}>
-                <EditorCanvas 
-                    document={sourceOfTruth} 
-                    title={title} 
-                    onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} 
-                    onEditorCreated={setEditorInstance} 
-                    editor={editorInstance} 
-                />
                 <motion.div
-                    // This wrapper ensures the sidebar is correctly positioned for animation
                     style={{
                         position: isMobile ? 'absolute' : 'relative',
                         top: 0,
@@ -170,6 +162,26 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         allGames={allGames} 
                         allTags={allTags} 
                         allCreators={allCreators} 
+                    />
+                </motion.div>
+                <motion.div
+                    style={{
+                        position: isMobile ? 'absolute' : 'relative',
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        width: '100%',
+                        pointerEvents: isMobile && isSidebarOpen ? 'none' : 'auto',
+                    }}
+                    animate={{ x: isMobile ? (isSidebarOpen ? '-100%' : '0%') : '0%' }}
+                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                >
+                    <EditorCanvas 
+                        document={sourceOfTruth} 
+                        title={title} 
+                        onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} 
+                        onEditorCreated={setEditorInstance} 
+                        editor={editorInstance} 
                     />
                 </motion.div>
             </div>
