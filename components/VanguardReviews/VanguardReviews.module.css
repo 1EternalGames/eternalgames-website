@@ -15,6 +15,10 @@
     overflow-x: clip; /* THE DEFINITIVE FIX */
 }
 
+.vanguardContainer.manual-hover {
+    /* This class is now handled by the parent component for hover state */
+}
+
 .spotlightGlow {
     position: absolute;
     width: 800px;
@@ -41,7 +45,6 @@
     position: relative;
 }
 
-/* THE DEFINITIVE FIX: Scoping the dimming effect to manual hover */
 .vanguardContainer.manual-hover .cardWrapper {
     filter: brightness(0.6) saturate(0.8);
 }
@@ -105,8 +108,8 @@
     position: absolute;
     top: 1.5rem;
     right: 1.5rem;
-    width: 60px;
-    height: 60px;
+    width: 75px;
+    height: 75px;
     border-radius: 50%;
     background-color: var(--accent);
     color: var(--bg-primary);
@@ -153,17 +156,31 @@
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.creatorBubble:hover {
+.creatorBubble:hover, .creatorBubble.pressed {
     background-color: var(--accent);
     box-shadow: 0 0 15px -0.5px var(--accent);
 }
 
 .creatorLabel { color: var(--text-secondary); font-size: 1rem; font-weight: 500; transition: color 0.3s ease; }
-.creatorBubble:hover .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+.creatorBubble:hover .creatorLabel, .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
 .creatorName { font-size: 1.2rem; font-weight: 600; transition: color 0.3s ease; }
-.creatorBubble:hover .creatorName { color: var(--bg-primary); }
-.creatorArrow { position: absolute; left: -18px; top: 50%; transform: translateY(-50%); color: var(--accent); transition: opacity 0.3s ease, transform 0.3s ease; opacity: 0; }
-.creatorBubble:hover .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-5px); }
+.creatorBubble:hover .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
+
+/* THE DEFINITIVE FIX */
+.creatorArrow { 
+    position: absolute; 
+    left: -22px; /* Increased initial distance */
+    top: 50%; 
+    transform: translateY(-50%); 
+    color: var(--accent); 
+    transition: opacity 0.3s ease, transform 0.3s ease; 
+    opacity: 0; 
+}
+.creatorBubble:hover .creatorArrow, .creatorBubble.pressed .creatorArrow { 
+    opacity: 1; 
+    transform: translateY(-50%) translateX(-8px); /* Increased travel distance */
+}
+/* END FIX */
 
 .kineticNavigator {
     position: absolute;
@@ -246,14 +263,14 @@
         --center-width: 65vw;
         --side-width: 45vw;
         min-height: 420px;
-        padding-top: 5.5rem; /* Increased from 2rem to prevent overlap with title */
+        padding-top: 5.5rem;
         padding-bottom: 8rem;
     }
     .cardContent h3 { font-size: 1.8rem; }
     .vanguardScoreBadge {
-        width: 48px;
-        height: 48px;
-        font-size: 1.8rem;
+        width: 55px;
+        height: 55px;
+        font-size: 2rem;
         top: 1rem;
         right: 1rem;
     }
@@ -265,8 +282,6 @@
         padding: 0.2rem 1rem;
     }
     .creatorName { font-size: 1.1rem; }
-    .creatorBubble:hover .creatorArrow { display: none; }
-    .kineticNavigator { bottom: -1.5rem; }
 }
 
 @media (max-width: 480px) {

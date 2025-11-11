@@ -76,6 +76,7 @@ export function useLivingCard({ isLead = false } = {}) {
                 boxShadow,
             },
             onMouseMove: handlePointerMove,
+            onTouchMove: handlePointerMove, // ADDED: Handler for touch movement
             onMouseEnter: onPointerEnter,
             onMouseLeave: onPointerLeave,
             onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {

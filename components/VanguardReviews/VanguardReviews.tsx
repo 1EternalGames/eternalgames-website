@@ -22,15 +22,26 @@ const creatorBubbleItemVariants = {
     hidden: { opacity: 0, x: 20 },
     visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } }
 };
-const ArrowIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline></svg>;
+const ArrowIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" role="img" color="currentColor">
+        <path d="M12.293 5.29273C12.6591 4.92662 13.2381 4.90402 13.6309 5.22437L13.707 5.29273L19.707 11.2927L19.7754 11.3689C20.0957 11.7617 20.0731 12.3407 19.707 12.7068L13.707 18.7068C13.3165 19.0973 12.6835 19.0973 12.293 18.7068C11.9025 18.3163 11.9025 17.6833 12.293 17.2927L16.5859 12.9998H5C4.44772 12.9998 4 12.552 4 11.9998C4 11.4475 4.44772 10.9998 5 10.9998H16.5859L12.293 6.7068L12.2246 6.63063C11.9043 6.23785 11.9269 5.65885 12.293 5.29273Z" fill="currentColor"></path>
+    </svg>
+);
 
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
+    const [isPressed, setIsPressed] = useState(false);
     const handleBubbleClick = (e: React.MouseEvent) => { e.stopPropagation(); };
     const profileSlug = creator.username || (creator.slug as any)?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
     const hasPublicProfile = !!profileSlug;
     
     const bubbleContent = (
-        <motion.div className={styles.creatorBubble} whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}>
+        <motion.div 
+            className={`${styles.creatorBubble} ${isPressed ? styles.pressed : ''}`}
+            whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
+            onTouchStart={() => setIsPressed(true)}
+            onTouchEnd={() => setIsPressed(false)}
+            onTouchCancel={() => setIsPressed(false)}
+        >
             <span className={styles.creatorLabel}>{label}</span>
             <span className={styles.creatorName}>{creator.name}</span>
             <div className={styles.creatorArrow}><ArrowIcon /></div>
@@ -84,6 +95,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     
     const livingCardHandlers = isInteractive ? {
         onMouseMove: livingCardAnimation.onMouseMove,
+        onTouchMove: livingCardAnimation.onTouchMove, // ADDED: Touch move handler
         onMouseEnter: livingCardAnimation.onMouseEnter,
         onMouseLeave: livingCardAnimation.onMouseLeave,
         onTouchStart: livingCardAnimation.onTouchStart,
@@ -180,7 +192,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const hasAnimatedIn = useInView(containerRef, { once: true, amount: 0.1 });
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
     const [initialAnimHasRun, setInitialAnimHasRun] = useState(false);
-    const [isManualHover, setIsManualHover] = useState(false); // THE DEFINITIVE FIX: State for manual hover
+    const [isManualHover, setIsManualHover] = useState(false);
 
     const {
         currentIndex,
@@ -193,7 +205,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
 
     useEffect(() => {
         if (hasAnimatedIn && !initialAnimHasRun) {
-            const timer = setTimeout(() => setInitialAnimHasRun(true), 800); // Animation is 0.7s, add a buffer
+            const timer = setTimeout(() => setInitialAnimHasRun(true), 800);
             return () => clearTimeout(timer);
         }
     }, [hasAnimatedIn, initialAnimHasRun]);
