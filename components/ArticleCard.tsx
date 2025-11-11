@@ -50,7 +50,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         router.push(linkPath, { scroll: false });
     };
 
-    // MODIFIED: Added prefetch on mouse enter for faster navigation
     const handleMouseEnter = () => {
         router.prefetch(linkPath);
     };
@@ -63,8 +62,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const wrapperProps = disableLivingEffect ? {} : {
         ref: livingCardRef,
         onMouseMove: livingCardAnimation.onMouseMove,
-        onMouseEnter: () => { livingCardAnimation.onHoverStart(); handleMouseEnter(); },
-        onMouseLeave: livingCardAnimation.onHoverEnd,
+        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); handleMouseEnter(); },
+        onMouseLeave: livingCardAnimation.onMouseLeave,
+        onTouchStart: livingCardAnimation.onTouchStart,
+        onTouchEnd: livingCardAnimation.onTouchEnd,
+        onTouchCancel: livingCardAnimation.onTouchCancel,
     };
     
     const motionStyle = disableLivingEffect 

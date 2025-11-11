@@ -42,7 +42,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     };
 
     const handleMouseLeave = () => {
-        livingCardAnimation.onHoverEnd();
+        livingCardAnimation.onMouseLeave();
         mouseX.set(0.5);
         mouseY.set(0.5);
     };
@@ -54,14 +54,13 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     const monthIndex = date.getUTCMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}`;
 
-    // THE DEFINITIVE FIX: Use the game slug if available, otherwise default to a non-existent path.
     const linkPath = release.game?.slug ? `/games/${release.game.slug}` : '/';
 
     return (
         <motion.div 
             ref={livingCardRef} 
             onMouseMove={handleMouseMove} 
-            onMouseEnter={livingCardAnimation.onHoverStart} 
+            onMouseEnter={livingCardAnimation.onMouseEnter} 
             onMouseLeave={handleMouseLeave}
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}

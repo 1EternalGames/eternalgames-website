@@ -44,8 +44,11 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
             ref={livingCardRef} 
             style={{...livingCardAnimation.style, height: '100%', cursor: 'pointer'}} 
             onMouseMove={livingCardAnimation.onMouseMove} 
-            onMouseEnter={() => { livingCardAnimation.onHoverStart(); setIsHovered(true); }} 
-            onMouseLeave={() => { livingCardAnimation.onHoverEnd(); setIsHovered(false); }}
+            onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }} 
+            onMouseLeave={() => { livingCardAnimation.onMouseLeave(); setIsHovered(false); }}
+            onTouchStart={livingCardAnimation.onTouchStart}
+            onTouchEnd={livingCardAnimation.onTouchEnd}
+            onTouchCancel={livingCardAnimation.onTouchCancel}
             onClick={handleClick}
         >
             <div

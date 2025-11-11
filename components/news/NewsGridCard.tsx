@@ -47,8 +47,11 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         <motion.div
             ref={livingCardRef}
             onMouseMove={livingCardAnimation.onMouseMove}
-            onMouseEnter={() => { livingCardAnimation.onHoverStart(); handleMouseEnter(); }}
-            onMouseLeave={livingCardAnimation.onHoverEnd}
+            onMouseEnter={() => { livingCardAnimation.onMouseEnter(); handleMouseEnter(); }}
+            onMouseLeave={livingCardAnimation.onMouseLeave}
+            onTouchStart={livingCardAnimation.onTouchStart}
+            onTouchEnd={livingCardAnimation.onTouchEnd}
+            onTouchCancel={livingCardAnimation.onTouchCancel}
             onClick={handleClick}
             className={styles.cardContainer}
             style={livingCardAnimation.style}

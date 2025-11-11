@@ -47,7 +47,7 @@ const ReleaseCardComponent = ({ release, variant = 'timeline' }: ReleaseCardProp
     };
 
     const handleMouseLeave = () => {
-        livingCardAnimation.onHoverEnd();
+        livingCardAnimation.onMouseLeave();
         if (variant === 'kinetic') {
             mouseX.set(0.5);
             mouseY.set(0.5);
@@ -66,7 +66,7 @@ const ReleaseCardComponent = ({ release, variant = 'timeline' }: ReleaseCardProp
         <motion.div 
             ref={livingCardRef} 
             onMouseMove={handleMouseMove} 
-            onMouseEnter={livingCardAnimation.onHoverStart} 
+            onMouseEnter={livingCardAnimation.onMouseEnter} 
             onMouseLeave={handleMouseLeave}
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}
