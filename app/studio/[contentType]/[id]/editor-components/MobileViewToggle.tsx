@@ -1,4 +1,4 @@
-// app/studio/[contentType]/[id]/editor-components/MobileViewToggle.tsx
+// components/studio/[contentType]/[id]/editor-components/MobileViewToggle.tsx
 'use client';
 
 import { motion } from 'framer-motion';
@@ -21,14 +21,14 @@ export function MobileViewToggle({ isSidebarOpen, setIsSidebarOpen }: MobileView
             exit={{ y: "100%" }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         >
-            <button className={`${styles.toggleButton} ${!isSidebarOpen ? styles.active : ''}`} onClick={() => setIsSidebarOpen(false)}>
-                <PenIcon />
-                <span>المحتوى</span>
-            </button>
-            <div className={styles.divider}></div>
             <button className={`${styles.toggleButton} ${isSidebarOpen ? styles.active : ''}`} onClick={() => setIsSidebarOpen(true)}>
                 <SettingsIcon />
                 <span>الإعدادات</span>
+            </button>
+            <div className={styles.divider}></div>
+            <button className={`${styles.toggleButton} ${!isSidebarOpen ? styles.active : ''}`} onClick={() => setIsSidebarOpen(false)}>
+                <PenIcon />
+                <span>المحتوى</span>
             </button>
         </motion.div>
     );

@@ -46,13 +46,9 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (normalize(currentState.verdict, '') !== normalize(sourceOfTruth.verdict, '')) patch.verdict = currentState.verdict;
     if (normalize(currentState.releaseDate, '') !== normalize(sourceOfTruth.releaseDate, '')) patch.releaseDate = currentState.releaseDate;
     if (normalize(currentState.synopsis, '') !== normalize(sourceOfTruth.synopsis, '')) patch.synopsis = currentState.synopsis;
-    // --- THE FIX ---
-    // Compare category by its reference _id to correctly detect changes.
-    // Set the patch value to a Sanity reference object or unset it.
     if (normalize(currentState.category?._id, null) !== normalize(sourceOfTruth.category?._id, null)) {
         patch.category = currentState.category ? { _type: 'reference', _ref: currentState.category._id } : undefined;
     }
-    // --- END FIX ---
     if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
     if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
     if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
@@ -138,19 +134,44 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     return (
         <div className={styles.sanctumContainer}>
             <div className={styles.sanctumMain}>
-                 {isMobile ? (
-                    <AnimatePresence initial={false} mode="wait">
-                        {isSidebarOpen 
-                            ? <EditorSidebar key="sidebar-mobile" document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} mainImageUploadQuality={mainImageUploadQuality} onMainImageUploadQualityChange={setMainImageUploadQuality} allGames={allGames} allTags={allTags} allCreators={allCreators} /> 
-                            : <EditorCanvas key="canvas-mobile" document={sourceOfTruth} title={title} onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} onEditorCreated={setEditorInstance} editor={editorInstance} />
-                        }
-                    </AnimatePresence>
-                ) : (
-                    <>
-                        <EditorSidebar key="sidebar-desktop" document={sourceOfTruth} isOpen={isSidebarOpen} documentState={state} dispatch={dispatch} onSave={saveWorkingCopy} hasChanges={hasChanges} onPublish={handlePublish} slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} isDocumentValid={isDocumentValid} mainImageUploadQuality={mainImageUploadQuality} onMainImageUploadQualityChange={setMainImageUploadQuality} allGames={allGames} allTags={allTags} allCreators={allCreators} />
-                        <EditorCanvas key="canvas-desktop" document={sourceOfTruth} title={title} onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} onEditorCreated={setEditorInstance} editor={editorInstance} />
-                    </>
-                )}
+                <EditorCanvas 
+                    document={sourceOfTruth} 
+                    title={title} 
+                    onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} 
+                    onEditorCreated={setEditorInstance} 
+                    editor={editorInstance} 
+                />
+                <motion.div
+                    // This wrapper ensures the sidebar is correctly positioned for animation
+                    style={{
+                        position: isMobile ? 'absolute' : 'relative',
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: isMobile ? '100%' : 'auto',
+                        pointerEvents: isMobile && !isSidebarOpen ? 'none' : 'auto',
+                    }}
+                    animate={{ x: isMobile ? (isSidebarOpen ? '0%' : '100%') : '0%' }}
+                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                >
+                    <EditorSidebar 
+                        document={sourceOfTruth} 
+                        isOpen={isSidebarOpen} 
+                        documentState={state} 
+                        dispatch={dispatch} 
+                        onSave={saveWorkingCopy} 
+                        hasChanges={hasChanges} 
+                        onPublish={handlePublish} 
+                        slugValidationStatus={slugValidationStatus} 
+                        slugValidationMessage={slugValidationMessage} 
+                        isDocumentValid={isDocumentValid} 
+                        mainImageUploadQuality={mainImageUploadQuality} 
+                        onMainImageUploadQualityChange={setMainImageUploadQuality} 
+                        allGames={allGames} 
+                        allTags={allTags} 
+                        allCreators={allCreators} 
+                    />
+                </motion.div>
             </div>
             
             <AnimatePresence>
