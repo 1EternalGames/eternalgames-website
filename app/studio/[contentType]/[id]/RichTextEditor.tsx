@@ -11,7 +11,8 @@ import ListItem from '@tiptap/extension-list-item';
 import Bold from '@tiptap/extension-bold';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { InputRule, Node, mergeAttributes } from '@tiptap/core';
+import { InputRule, Node, mergeAttributes, Extension } from '@tiptap/core';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { slugify } from 'transliteration';
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
@@ -92,8 +93,35 @@ export const uploadFile = async (file: File, editor: Editor, toast: ReturnType<t
     }
 };
 
+const TrailingNode = Extension.create({
+    name: 'trailingNode',
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                key: new PluginKey('trailingNode'),
+                appendTransaction: (transactions, oldState, newState) => {
+                    const { doc, tr } = newState;
+                    const shouldInsertNodeAtEnd = transactions.some(transaction => transaction.docChanged);
+                    if (!shouldInsertNodeAtEnd) return;
+
+                    const endPosition = doc.content.size;
+                    const lastNode = doc.lastChild;
+
+                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'heading', 'blockquote'];
+
+                    if (lastNode && nodeTypesThatNeedTrailingNode.includes(lastNode.type.name)) {
+                        const paragraph = newState.schema.nodes.paragraph.create();
+                        return tr.insert(endPosition, paragraph);
+                    }
+                    return;
+                },
+            }),
+        ];
+    },
+});
+
 const ImageCompareNode = Node.create({ name: 'imageCompare', group: 'block', atom: true, addAttributes() { return { src1: { default: null }, assetId1: { default: null }, src2: { default: null }, assetId2: { default: null }, 'data-size': { default: 'large' } }; }, parseHTML() { return [{ tag: 'div[data-type="image-compare"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'image-compare' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(ImageCompareComponent); }, });
-const CustomImage = Node.create({ name: 'image', group: 'block', atom: true, draggable: true, addAttributes() { return { src: { default: null }, alt: { default: null }, title: { default: null }, assetId: { default: null }, 'data-size': { default: 'large' }, }; }, parseHTML() { return [{ tag: 'img[src]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', { 'data-type': 'custom-image' }, ['img', HTMLAttributes]]; }, addNodeView() { return ReactNodeViewRenderer(ImageResizeComponent); }, });
+const CustomImage = Node.create({ name: 'image', group: 'block', atom: true, draggable: true, addAttributes() { return { src: { default: null }, alt: { default: null }, title: { default: null }, assetId: { default: null } }; }, parseHTML() { return [{ tag: 'img[src]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', { 'data-type': 'custom-image' }, ['img', HTMLAttributes]]; }, addNodeView() { return ReactNodeViewRenderer(ImageResizeComponent); }, });
 const TwoImageGridNode = Node.create({ name: 'twoImageGrid', group: 'block', atom: true, addAttributes() { return { src1: null, assetId1: null, src2: null, assetId2: null }; }, parseHTML() { return [{ tag: 'div[data-type="two-image-grid"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'two-image-grid' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(TwoImageGridComponent); }, });
 const FourImageGridNode = Node.create({ name: 'fourImageGrid', group: 'block', atom: true, addAttributes() { return { src1: null, assetId1: null, src2: null, assetId2: null, src3: null, assetId3: null, src4: null, assetId4: null }; }, parseHTML() { return [{ tag: 'div[data-type="four-image-grid"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'four-image-grid' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(FourImageGridComponent); }, });
 
@@ -138,6 +166,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'editor-link' }, }),
             Placeholder.configure({ placeholder: 'خُطَّ ما في نفسِكَ هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
+            TrailingNode,
         ],
         editorProps: {
             attributes: { class: styles.tiptap },

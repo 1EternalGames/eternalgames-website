@@ -11,7 +11,7 @@ import styles from '../Editor.module.css';
 import compareStyles from '@/components/ImageCompare.module.css';
 
 const UploadIcon = () => ( <svg className={compareStyles.uploadIcon} fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg> );
-const حذفIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -61,7 +61,7 @@ export const FourImageGridComponent = ({ node, updateAttributes, editor, getPos 
         } catch (error: any) { toast.error(error.message, 'left'); }
     }, [updateAttributes, toast, editor.storage.uploadQuality]);
     
-    const handleحذف = () => editor.chain().deleteRange({ from: getPos(), to: getPos() + 1 }).focus().run();
+    const handleDelete = () => editor.chain().deleteRange({ from: getPos(), to: getPos() + 1 }).focus().run();
 
     return (
         <NodeViewWrapper as="div" className={styles.imageGridContainer} data-drag-handle>
@@ -72,7 +72,7 @@ export const FourImageGridComponent = ({ node, updateAttributes, editor, getPos 
                 <Dropzone side={4} src={node.attrs.src4} onUpload={(file) => handleUpload(file, 4)} />
             </div>
             <div className={styles.imageNodeMenu} contentEditable={false}>
-                 <button onClick={handleحذف} className={`${styles.bubbleMenuButton} ${styles.deleteButton}`} title="حذف الشبكة"><حذفIcon /></button>
+                 <button onClick={handleDelete} className={`${styles.bubbleMenuButton} ${styles.deleteButton}`} title="حذف الشبكة"><DeleteIcon /></button>
             </div>
         </NodeViewWrapper>
     );

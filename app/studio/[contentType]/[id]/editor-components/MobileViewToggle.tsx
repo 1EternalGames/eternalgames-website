@@ -23,7 +23,7 @@ export function MobileViewToggle({ isSidebarOpen, setIsSidebarOpen }: MobileView
         >
             <button className={`${styles.toggleButton} ${isSidebarOpen ? styles.active : ''}`} onClick={() => setIsSidebarOpen(true)}>
                 <SettingsIcon />
-                <span>الإعدادات</span>
+                <span>الشريط الجانبي</span>
             </button>
             <div className={styles.divider}></div>
             <button className={`${styles.toggleButton} ${!isSidebarOpen ? styles.active : ''}`} onClick={() => setIsSidebarOpen(false)}>

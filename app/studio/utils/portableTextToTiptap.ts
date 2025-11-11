@@ -63,9 +63,8 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
         }
         if (block._type === 'image') {
             const imageBlock = block as unknown as SanityImage & { asset: { _id: string, url: string } };
-            const size = (block as any).size || 'large';
             if (imageBlock.asset?._id && imageBlock.asset?.url) {
-                content.push({ type: 'image', attrs: { src: imageBlock.asset.url, assetId: imageBlock.asset._id, 'data-size': size } });
+                content.push({ type: 'image', attrs: { src: imageBlock.asset.url, assetId: imageBlock.asset._id } });
             }
             return;
         }
@@ -111,5 +110,3 @@ function processBlockChildren(block: PortableTextBlock): TiptapNode[] {
         return { type: 'text', text: span.text, marks };
     });
 }
-
-
