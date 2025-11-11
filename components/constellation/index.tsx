@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUserStore } from '@/lib/store';
 import { useBodyClass } from '@/hooks/useBodyClass';
 import * as THREE from 'three';
-import { THEME_CONFIG, StarData, SanityContentObject, ScreenPosition } from './config';
+import { THEME_CONFIG, StarData, SanityContentObject, ScreenPosition, Placement } from './config';
 import { StarPreviewCard } from './StarPreviewCard';
 import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from './ConstellationControlPanel';
@@ -166,7 +166,15 @@ export default function Constellation() {
         return sortedStars;
     }, [isHydrated, userContent, bookmarks, likes, shares, commentedContentSlugs]);
 
-    const handleSetActiveStar = useCallback((star: StarData, position: ScreenPosition) => { setActiveStar(star); setActiveStarPosition(position); }, []);
+    const handleSetActiveStar = useCallback((star: StarData, position: ScreenPosition) => {
+        if (isMobile) {
+            setActiveStar(star);
+            setActiveStarPosition({ top: 110, left: window.innerWidth / 2, placement: 'below' });
+        } else {
+            setActiveStar(star);
+            setActiveStarPosition(position);
+        }
+    }, [isMobile]);
     const handleClosePreview = useCallback(() => { setActiveStar(null); setActiveStarPosition(null); }, []);
 
     if (!isHydrated) { return <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', width: '100%' }} />; }
@@ -181,7 +189,6 @@ export default function Constellation() {
                 <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الكوكبة" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
                     <CelestialGearIcon />
                 </motion.button>
-                {/* MODIFIED: Increased initial camera Z-position for both mobile and desktop */}
                 <Canvas camera={{ position: [0, 0, isMobile ? 10 : 7], fov: 60 }}>
                     <Scene 
                         settings={settings} 

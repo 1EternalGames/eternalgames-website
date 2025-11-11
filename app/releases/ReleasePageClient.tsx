@@ -74,7 +74,14 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
     
     const isFilteringActive = activeFilter !== 'الكل';
     const filteredReleases = isFilteringActive 
-        ? sortedReleases.filter(release => release.platforms && release.platforms.includes(activeFilter)) 
+        ? sortedReleases.filter(release => {
+            if (!release.platforms) return false;
+            // THE DEFINITIVE FIX: Check for both "PlayStation" and the legacy "PlayStation 5" value.
+            if (activeFilter === 'PlayStation') {
+                return release.platforms.includes('PlayStation') || release.platforms.includes('PlayStation 5');
+            }
+            return release.platforms.includes(activeFilter);
+        }) 
         : sortedReleases;
     
     let currentMonth = '';

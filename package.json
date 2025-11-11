@@ -22,9 +22,11 @@
     "@sanity/icons": "^3.7.4",
     "@sanity/image-url": "^1.2.0",
     "@sanity/vision": "^4.10.1",
+    "@tiptap/extension-color": "^2.27.1",
     "@tiptap/extension-image": "^2.5.5",
     "@tiptap/extension-link": "^2.5.5",
     "@tiptap/extension-placeholder": "^2.5.5",
+    "@tiptap/extension-text-style": "^2.27.1",
     "@tiptap/react": "^2.5.5",
     "@tiptap/starter-kit": "^2.5.5",
     "@types/bcryptjs": "^2.4.6",
@@ -67,5 +69,3 @@
     "typescript": "^5"
   }
 }
-
-

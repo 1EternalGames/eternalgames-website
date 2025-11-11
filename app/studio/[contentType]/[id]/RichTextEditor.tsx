@@ -9,6 +9,8 @@ import Heading from '@tiptap/extension-heading';
 import BulletList from '@tiptap/extension-bullet-list';
 import ListItem from '@tiptap/extension-list-item';
 import Bold from '@tiptap/extension-bold';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
 import { InputRule, Node, mergeAttributes } from '@tiptap/core';
 import { slugify } from 'transliteration';
 import { useState, useEffect, useCallback } from 'react';
@@ -101,10 +103,20 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
     const toast = useToast();
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const [currentLinkUrl, setCurrentLinkUrl] = useState<string | undefined>(undefined);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const editor = useEditor({
         extensions: [
             StarterKit.configure({ heading: false, bulletList: false, listItem: false, bold: false }),
+            TextStyle,
+            Color,
             Bold.extend({ addInputRules() { return [ new InputRule({ find: /(?:^|\s)(\*\*(?!\s+\*\*).+\*\*(?!\s+\*\*))$/, handler: ({ state, range, match }) => { const { tr } = state; const text = match[1]; const start = range.from; const end = range.to; tr.delete(start, end); tr.insertText(text.slice(2, -2), start); tr.addMark(start, start + text.length - 4, this.type.create()); }, }), ]; }, }),
             Heading.configure({ levels: [2] }).extend({
                 onCreate() {
@@ -155,7 +167,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 editor={editor} 
                 tippyOptions={{ 
                     duration: 100, 
-                    placement: 'top-end',
+                    placement: isMobile ? 'bottom-start' : 'top-end',
                     offset: [0, 8] 
                 }} 
                 shouldShow={({ editor, state }) => { 

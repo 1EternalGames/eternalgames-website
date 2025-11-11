@@ -8,6 +8,7 @@ import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { adaptToCardProps } from '@/lib/adapters';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
+import { useLightboxStore } from '@/lib/lightboxStore';
 
 import type { SanityReview, SanityArticle, SanityNews } from '@/types/sanity';
 import PortableTextComponent from '@/components/PortableTextComponent';
@@ -37,6 +38,7 @@ export default function ContentPageClient({ item, type, children }: {
     children: React.ReactNode;
 }) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
+    const openLightbox = useLightboxStore((state) => state.openLightbox);
 
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
@@ -144,6 +146,7 @@ export default function ContentPageClient({ item, type, children }: {
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
     const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
+    const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
     const GAME_TITLE_THRESHOLD = 25;
     const isLongGameTitle = (item as any).game?.title?.length > GAME_TITLE_THRESHOLD;
@@ -164,7 +167,12 @@ export default function ContentPageClient({ item, type, children }: {
                 transition={springTransition}
                 style={{ backgroundColor: 'var(--bg-primary)' }}
             >
-                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={styles.heroImage} transition={springTransition}>
+                <motion.div 
+                    layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} 
+                    className={`${styles.heroImage} image-lightbox-trigger`}
+                    transition={springTransition}
+                    onClick={() => openLightbox([fullResImageUrl], 0)}
+                >
                     <Image 
                         loader={sanityLoader} 
                         src={heroImageUrl} 

@@ -97,7 +97,8 @@ export interface SanityGameRelease {
     title: string;
     slug: string;
     releaseDate: string;
-    platforms: ('PC' | 'PlayStation' | 'Xbox' | 'Switch')[];
+    // THE DEFINITIVE FIX: Include the legacy 'PlayStation 5' value to make the type check pass.
+    platforms: ('PC' | 'PlayStation' | 'PlayStation 5' | 'Xbox' | 'Switch')[];
     synopsis: string;
     mainImage: SanityImage; // THE FIX
 }

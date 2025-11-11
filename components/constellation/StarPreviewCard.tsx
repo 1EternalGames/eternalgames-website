@@ -1,6 +1,6 @@
 // components/constellation/StarPreviewCard.tsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,14 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "constellation-preview";
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
     
     const { content } = starData;
     const getLinkPath = (item: SanityContentObject) => {
@@ -58,11 +66,11 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             style={{
                 position: 'fixed', top: position.top, left: position.left,
-                width: '300px',
+                width: isMobile ? '260px' : '300px',
                 background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.3)', overflow: 'hidden', zIndex: 10001,
                 transform: position.placement === 'below'
-                ? 'translate(-50%, 20px)'
+                ? 'translate(-50%, 0)'
                 : 'translate(-50%, calc(-100% - 20px))',
                 transformOrigin: position.placement === 'below' ? 'top center' : 'bottom center',
                 cursor: 'pointer',
@@ -80,7 +88,7 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </motion.button>
 
-            <motion.div layoutId={`${layoutIdPrefix}-card-image-${content.legacyId}`} style={{ position: 'relative', width: '100%', height: '150px' }}>
+            <motion.div layoutId={`${layoutIdPrefix}-card-image-${content.legacyId}`} style={{ position: 'relative', width: '100%', height: isMobile ? '130px' : '150px' }}>
                 {imageUrl ? ( 
                     <Image 
                         src={imageUrl} alt={content.title} fill sizes="300px"
@@ -91,13 +99,13 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
                 ) : ( <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--border-color)' }} /> )}
             </motion.div>
 
-            <div style={{ padding: '1.5rem', textAlign: 'right' }}>
+            <div style={{ padding: isMobile ? '1rem' : '1.5rem', textAlign: 'right' }}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem'}}>
-                    <p style={{ textTransform: 'capitalize', color: 'var(--accent)', fontFamily: 'var(--font-main)', fontSize: '1.3rem', margin: 0 }}>{contentType}</p>
-                    {formattedDate && <p style={{color: 'var(--text-secondary)', fontSize: '1.2rem', margin: 0}}>{formattedDate}</p>}
+                    <p style={{ textTransform: 'capitalize', color: 'var(--accent)', fontFamily: 'var(--font-main)', fontSize: isMobile ? '1.2rem' : '1.3rem', margin: 0 }}>{contentType}</p>
+                    {formattedDate && <p style={{color: 'var(--text-secondary)', fontSize: isMobile ? '1.1rem' : '1.2rem', margin: 0}}>{formattedDate}</p>}
                 </div>
-                <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${content.legacyId}`} style={{ margin: '0 0 1.5rem 0', fontSize: '1.7rem' }}>{content.title}</motion.h3>
-                <div className="primary-button no-underline" style={{ display: 'block', textAlign: 'center', pointerEvents: 'none' }}>
+                <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${content.legacyId}`} style={{ margin: '0 0 1.2rem 0', fontSize: isMobile ? '1.5rem' : '1.7rem' }}>{content.title}</motion.h3>
+                <div className="primary-button no-underline" style={{ display: 'block', textAlign: 'center', pointerEvents: 'none', fontSize: isMobile ? '1.3rem' : 'inherit', padding: isMobile ? '0.6rem 1rem' : '1rem 2.4rem' }}>
                     عرض كامل الـ{contentType}
                 </div>
             </div>

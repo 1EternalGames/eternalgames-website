@@ -17,7 +17,6 @@ type Tag = { _id: string; title: string; category: 'Game' | 'Article' | 'News' }
 
 const sidebarVariants = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 40 } }, exit: { opacity: 0, x: 50, transition: { duration: 0.2, ease: 'easeInOut' as const } } };
 const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
-// THE FIX: The size of these icons has been permanently reduced to 16x16
 const AlertIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 const ClockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
@@ -29,11 +28,14 @@ export function EditorSidebar({
     mainImageUploadQuality, onMainImageUploadQualityChange,
     allGames, allTags, allCreators
 }: any) {
-    const { title, slug, score, verdict, pros, cons, game, tags, publishedAt, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category } = documentState;
+    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
     const [isSaving, startSaveTransition] = useTransition();
     const [isPublishing, startPublishTransition] = useTransition();
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+
+    // Use the reliable publishedAt from the server-side document state
+    const publishedAt = document.publishedAt;
 
     const isReview = document._type === 'review';
     const isArticle = document._type === 'article';
@@ -47,11 +49,9 @@ export function EditorSidebar({
         return { label: 'المنشئون', sanityType: 'author', field: 'authors' };
     }, [isReview, isArticle, isNews]);
 
-    // --- De-duplication logic with CORRECTED TYPING ---
     const getUniqueTagsByCategory = useCallback((categoryToFilter: 'Game' | 'Article' | 'News'): Tag[] => {
         if (!allTags) return [];
         const filtered = allTags.filter((t: any) => t && t.category === categoryToFilter);
-        // Explicitly type the Map to ensure correct inference for .values()
         const uniqueMap = new Map<string, Tag>(filtered.map((item: any) => [item.title, item]));
         return Array.from(uniqueMap.values());
     }, [allTags]);
@@ -59,17 +59,25 @@ export function EditorSidebar({
     const uniqueNewsCategories = useMemo(() => getUniqueTagsByCategory('News'), [getUniqueTagsByCategory]);
     const uniqueArticleCategories = useMemo(() => getUniqueTagsByCategory('Article'), [getUniqueTagsByCategory]);
     const uniqueGameTags = useMemo(() => getUniqueTagsByCategory('Game'), [getUniqueTagsByCategory]);
-    // --- END FIX ---
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
     
-    const isPublished = !document._id.startsWith('drafts.');
-    const isScheduled = publishedAt && new Date(publishedAt) > new Date();
+    // THE DEFINITIVE FIX: Correctly determine the published status.
+    const isPublished = useMemo(() => publishedAt && new Date(publishedAt) <= new Date(), [publishedAt]);
+    const isScheduled = useMemo(() => publishedAt && new Date(publishedAt) > new Date(), [publishedAt]);
+
     const isSlugValid = slugValidationStatus === 'valid';
     const isSlugPending = slugValidationStatus === 'pending';
 
     const handlePublishClick = () => { startPublishTransition(async () => { const publishDate = isRelease ? '' : (scheduledDateTime || ''); if (hasChanges) { const saveSuccess = await onSave(); if (saveSuccess) { await onPublish(publishDate); } } else { await onPublish(publishDate); } }); };
-    const publishButtonText = useMemo(() => { if (isRelease) { return isPublished ? "تحديث الإصدار" : "نشر الإصدار"; } if (scheduledDateTime) return hasChanges ? "حفظ وجدولة" : "جدولة"; if (isPublished) return hasChanges ? "حفظ وتحديث" : "تحديث"; return hasChanges ? "حفظ ونشر" : "انشر الآن"; }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
+    
+    const publishButtonText = useMemo(() => {
+        if (isRelease) { return "تحديث الإصدار"; } // Game releases are always "published" or updated
+        if (scheduledDateTime) return hasChanges ? "حفظ وجدولة" : "جدولة";
+        if (isPublished) return hasChanges ? "حفظ وتحديث" : "تحديث";
+        return hasChanges ? "حفظ ونشر" : "نشر";
+    }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
+
     const isSaveDisabled = isSaving || !hasChanges || !isSlugValid || isSlugPending || isPublishing;
     const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending || isSaving;
     const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending || isSaving;
@@ -112,12 +120,10 @@ export function EditorSidebar({
                             <label className={styles.sidebarLabel}>
                                 المُعرِّف {!isSlugValid && <AlertIcon />}
                             </label>
-                            {/* THE FIX: Removed the redundant, conflicting status icon motion.div */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <input type="text" value={slug} onChange={(e) => dispatch({ type: 'UPDATE_SLUG', payload: { slug: e.target.value, isManual: true } })} className={styles.sidebarInput} style={{ flexGrow: 1, borderColor: isSlugValid && !isSlugPending ? '#16A34A' : isSlugPending ? 'var(--border-color)' : '#DC2626' }} />
                             </div>
                             <AnimatePresence> 
-                                {/* This message text is crucial for feedback, so we keep it. */}
                                 {(!isSlugValid || isSlugPending) && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: isSlugPending ? 'var(--text-secondary)' : '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} 
                             </AnimatePresence>
                         </motion.div>

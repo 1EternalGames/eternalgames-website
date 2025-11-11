@@ -4,7 +4,6 @@ import { groq } from 'next-sanity'
 
 // --- Base Fields & Projections (Optimized) ---
 const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
-// THE DEFINITIVE FIX: Reverted to the performant version without the inefficient sub-query.
 const creatorFields = groq`_id, name, prismaUserId, image, bio`
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`
@@ -44,7 +43,7 @@ export const newsHeroQuery = groq`*[_type == "news" && ${publishedFilter} && def
   ${cardProjection}, synopsis
 }`
 
-export const newsGridInitialQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[4...54] {
+export const newsGridInitialQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...50] {
   ${cardListProjection}
 }`
 

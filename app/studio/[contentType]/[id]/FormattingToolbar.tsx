@@ -5,6 +5,7 @@ import { Editor } from '@tiptap/react';
 import { motion } from 'framer-motion';
 import styles from './Editor.module.css';
 import { TwoImageIcon, FourImageIcon, CompareIcon } from '../../StudioIcons';
+import { ColorPicker } from './ColorPicker';
 
 const BoldIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>;
 const ItalicIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>;
@@ -23,11 +24,7 @@ export function FormattingToolbar({ editor, onLinkClick }: FormattingToolbarProp
             <motion.button onClick={() => editor.chain().focus().toggleItalic().run()} className={`${styles.bubbleMenuButton} ${editor.isActive('italic') ? styles.active : ''}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}><ItalicIcon /></motion.button>
             <motion.button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`${styles.bubbleMenuButton} ${editor.isActive('bulletList') ? styles.active : ''}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}><ListIcon /></motion.button>
             <motion.button onClick={onLinkClick} className={`${styles.bubbleMenuButton} ${editor.isActive('link') ? styles.active : ''}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}><LinkIcon /></motion.button>
+            <ColorPicker editor={editor} />
         </div>
     );
 }
-
-
-
-
-
