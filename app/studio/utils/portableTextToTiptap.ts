@@ -73,8 +73,14 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
         if (block._type === 'block' && block.style) {
             const children = processBlockChildren(block);
             switch (block.style) {
+                case 'h1':
+                    content.push({ type: 'heading', attrs: { level: 1 }, content: children });
+                    break;
                 case 'h2':
                     content.push({ type: 'heading', attrs: { level: 2 }, content: children });
+                    break;
+                case 'h3':
+                    content.push({ type: 'heading', attrs: { level: 3 }, content: children });
                     break;
                 case 'blockquote':
                     content.push({ type: 'blockquote', content: [{ type: 'paragraph', content: children }] });
@@ -103,10 +109,14 @@ function processBlockChildren(block: PortableTextBlock): TiptapNode[] {
             if (markDef?._type === 'link') {
                 return { type: 'link', attrs: { href: (markDef as any).href } };
             }
+            // MODIFIED: Handle 'color' annotations from Sanity.
+            if (markDef?._type === 'color') {
+                return { type: 'textStyle', attrs: { color: (markDef as any).hex } };
+            }
             if (mark === 'strong') return { type: 'bold' };
             if (mark === 'em') return { type: 'italic' };
             return null;
-        }).filter(Boolean) as { type: string }[] || [];
+        }).filter(Boolean) as { type: string, attrs?: any }[] || [];
         return { type: 'text', text: span.text, marks };
     });
 }

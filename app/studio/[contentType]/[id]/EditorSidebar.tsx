@@ -62,7 +62,6 @@ export function EditorSidebar({
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
     
-    // THE DEFINITIVE FIX: Correctly determine the published status.
     const isPublished = useMemo(() => publishedAt && new Date(publishedAt) <= new Date(), [publishedAt]);
     const isScheduled = useMemo(() => publishedAt && new Date(publishedAt) > new Date(), [publishedAt]);
 
@@ -116,17 +115,19 @@ export function EditorSidebar({
                             <MainImageInput currentAssetId={mainImage.assetId} currentAssetUrl={mainImage.assetUrl} onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} uploadQuality={mainImageUploadQuality} />
                         </motion.div>
                         
-                        <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                            <label className={styles.sidebarLabel}>
-                                المُعرِّف {!isSlugValid && <AlertIcon />}
-                            </label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <input type="text" value={slug} onChange={(e) => dispatch({ type: 'UPDATE_SLUG', payload: { slug: e.target.value, isManual: true } })} className={styles.sidebarInput} style={{ flexGrow: 1, borderColor: isSlugValid && !isSlugPending ? '#16A34A' : isSlugPending ? 'var(--border-color)' : '#DC2626' }} />
-                            </div>
-                            <AnimatePresence> 
-                                {(!isSlugValid || isSlugPending) && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: isSlugPending ? 'var(--text-secondary)' : '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} 
-                            </AnimatePresence>
-                        </motion.div>
+                        {!isRelease && (
+                            <motion.div className={styles.sidebarSection} variants={itemVariants}>
+                                <label className={styles.sidebarLabel}>
+                                    المُعرِّف {!isSlugValid && <AlertIcon />}
+                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input type="text" value={slug} onChange={(e) => dispatch({ type: 'UPDATE_SLUG', payload: { slug: e.target.value, isManual: true } })} className={styles.sidebarInput} style={{ flexGrow: 1, borderColor: isSlugValid && !isSlugPending ? '#16A34A' : isSlugPending ? 'var(--border-color)' : '#DC2626' }} />
+                                </div>
+                                <AnimatePresence> 
+                                    {(!isSlugValid || isSlugPending) && <motion.p initial={{height:0, opacity:0}} animate={{height:'auto', opacity:1}} exit={{height:0, opacity:0}} style={{ color: isSlugPending ? 'var(--text-secondary)' : '#DC2626', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'right' }}>{slugValidationMessage}</motion.p>} 
+                                </AnimatePresence>
+                            </motion.div>
+                        )}
                         
                         {isRelease ? ( <> 
                             <motion.div variants={itemVariants}><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></motion.div>

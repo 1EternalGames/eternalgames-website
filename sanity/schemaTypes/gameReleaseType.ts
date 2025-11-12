@@ -6,7 +6,6 @@ title: 'Game Release',
 type: 'document',
 fields: [
 defineField({name: 'title', title: 'Title', type: 'string', validation: (Rule) => Rule.required()}),
-defineField({name: 'slug', title: 'Slug', type: 'slug', options: {source: 'title', maxLength: 96}, validation: (Rule) => Rule.required()}),
 defineField({name: 'game', title: 'Game', type: 'reference', to: {type: 'game'}, validation: (Rule) => Rule.required()}),
 defineField({name: 'releaseDate', title: 'Release Date', type: 'date', validation: (Rule) => Rule.required()}),
 defineField({name: 'platforms', title: 'Platforms', type: 'array', of: [{type: 'string'}], options: {list: ['PC', 'PlayStation', 'Xbox', 'Switch']}}),
