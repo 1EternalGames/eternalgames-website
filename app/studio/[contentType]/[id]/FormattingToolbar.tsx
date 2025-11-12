@@ -38,13 +38,28 @@ export function FormattingToolbar({ editor, onLinkClick, platform }: FormattingT
     useClickOutside(headingMenuRef, () => setIsHeadingMenuOpen(false));
     useClickOutside(colorMenuRef, () => setIsColorMenuOpen(false));
     
-    // MODIFIED: Type for parentRef is now correct.
+    // MODIFIED: This function is now smarter and accounts for viewport boundaries.
     const calculatePopoverPosition = (parentRef: RefObject<HTMLDivElement | null>) => {
         if (parentRef.current) {
-            if (platform === 'android') {
-                setPopoverStyle({ top: '100%', bottom: 'auto', marginTop: '0.5rem' });
-            } else {
+            const rect = parentRef.current.getBoundingClientRect();
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const popoverHeight = 400; // Estimated height of the color picker popover
+
+            // Default to platform behavior
+            let openUp = platform !== 'android';
+            
+            // Override if there's not enough space in the default direction
+            if (openUp && spaceAbove < popoverHeight && spaceBelow > popoverHeight) {
+                openUp = false; // Not enough space above, but enough below -> open down
+            } else if (!openUp && spaceBelow < popoverHeight && spaceAbove > popoverHeight) {
+                openUp = true; // Not enough space below, but enough above -> open up
+            }
+
+            if (openUp) {
                 setPopoverStyle({ bottom: '100%', top: 'auto', marginBottom: '0.5rem' });
+            } else {
+                setPopoverStyle({ top: '100%', bottom: 'auto', marginTop: '0.5rem' });
             }
         }
     };
