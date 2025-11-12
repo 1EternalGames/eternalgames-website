@@ -1,0 +1,108 @@
+/* app/studio/[contentType]/[id]/ColorPicker.module.css */
+
+.colorPickerPopover {
+    position: absolute;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+    width: 300px; /* Adjusted width for the new layout */
+}
+
+.categoryGrid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr); /* 8 categories */
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.categoryButton {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px; /* Square tabs */
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s ease-out;
+}
+
+.categoryButton:hover {
+    transform: scale(1.1);
+}
+
+.activeCategoryHighlight {
+    position: absolute;
+    inset: -3px; /* Creates an outer border effect */
+    border: 2px solid var(--accent);
+    border-radius: 10px; /* Slightly more rounded than the button */
+    pointer-events: none;
+}
+
+.swatchGrid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0.5rem;
+}
+
+.swatchButton {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.activeIndicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--bg-secondary);
+    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.customColorSection {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sectionTitle {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.customColorButton {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.customColorInput {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    top: 50%;
+    left: 50%;
+}
