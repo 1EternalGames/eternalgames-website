@@ -39,6 +39,7 @@
 
 .formattingToolbar { 
     display: flex; 
+    align-items: center; /* MODIFIED: Center items vertically */
     background-color: var(--bg-secondary); 
     border: 1px solid var(--border-color); 
     border-radius: 8px; 
@@ -46,6 +47,21 @@
     padding: 0.4rem; 
     z-index: 10; 
 }
+
+/* NEW: Drag handle styles */
+.dragHandle {
+    cursor: grab;
+    color: var(--text-secondary);
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border-color);
+    margin-right: 0.4rem;
+}
+.dragHandle:active {
+    cursor: grabbing;
+}
+
 
 .bubbleMenuButton { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 6px; background-color: transparent; border: none; cursor: pointer; color: var(--text-secondary); transition: background-color 0.15s ease-out, color 0.15s ease-out; }
 .bubbleMenuButton:hover { background-color: var(--bg-primary); color: var(--accent); }

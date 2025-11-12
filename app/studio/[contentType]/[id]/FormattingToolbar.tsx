@@ -8,7 +8,14 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import styles from './Editor.module.css';
 import { ColorPicker } from './ColorPicker';
 
-// --- Icon Components ---
+// --- Icon Components (with new DragIcon) ---
+const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" {...props}>
+        <path d="M20.964 4H16.9719M20.964 4C20.964 4.56018 19.4727 5.60678 18.9679 6M20.964 4C20.964 3.43982 19.4727 2.39322 18.9679 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+        <path d="M2.99921 4H6.99136M2.99921 4C2.99921 3.43982 4.49058 2.39322 4.99529 2M2.99921 4C2.99921 4.56018 4.49058 5.60678 4.99529 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+        <path d="M9.81505 22.0006V21.0595C9.81505 20.4116 9.60526 19.781 9.21707 19.2622L5.39435 14.1534C5.07668 13.7288 4.83978 13.2141 4.98565 12.7043C5.34585 11.4454 6.76792 10.3261 8.35901 12.2974L9.95917 14.0049V3.59381C10.0573 1.76459 13.1325 1.18685 13.4504 3.59381V9.52698C14.933 9.33608 21.9162 10.378 20.9003 14.7917C20.8517 15.0026 20.8032 15.2167 20.7557 15.4279C20.5493 16.346 19.9407 17.98 19.2696 18.9355C18.5705 19.9309 18.897 21.5353 18.8172 22.0019" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+    </svg>
+);
 const BoldIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>;
 const ItalicIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>;
 const LinkIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>;
@@ -31,50 +38,77 @@ interface FormattingToolbarProps { editor: Editor; onLinkClick: () => void; plat
 export function FormattingToolbar({ editor, onLinkClick, platform }: FormattingToolbarProps) {
     const [isHeadingMenuOpen, setIsHeadingMenuOpen] = useState(false);
     const [isColorMenuOpen, setIsColorMenuOpen] = useState(false);
+    const toolbarRef = useRef<HTMLDivElement>(null); 
     const headingMenuRef = useRef<HTMLDivElement>(null);
     const colorMenuRef = useRef<HTMLDivElement>(null);
-    const [popoverStyle, setPopoverStyle] = useState({});
+    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
 
     useClickOutside(headingMenuRef, () => setIsHeadingMenuOpen(false));
     useClickOutside(colorMenuRef, () => setIsColorMenuOpen(false));
     
-    // MODIFIED: This function is now smarter and accounts for viewport boundaries.
-    const calculatePopoverPosition = (parentRef: RefObject<HTMLDivElement | null>) => {
-        if (parentRef.current) {
-            const rect = parentRef.current.getBoundingClientRect();
-            const spaceAbove = rect.top;
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const popoverHeight = 400; // Estimated height of the color picker popover
-
-            // Default to platform behavior
-            let openUp = platform !== 'android';
+    const calculatePopoverPosition = (parentRef: RefObject<HTMLDivElement | null>, popoverWidth: number, popoverHeight: number) => {
+        if (parentRef.current && toolbarRef.current) { 
+            const parentRect = parentRef.current.getBoundingClientRect();
+            const toolbarRect = toolbarRef.current.getBoundingClientRect(); 
+            const spaceAbove = parentRect.top;
+            const spaceBelow = window.innerHeight - parentRect.bottom;
             
-            // Override if there's not enough space in the default direction
+            let finalStyle: React.CSSProperties = {};
+
+            // --- Vertical Positioning ---
+            let openUp = platform !== 'android';
             if (openUp && spaceAbove < popoverHeight && spaceBelow > popoverHeight) {
-                openUp = false; // Not enough space above, but enough below -> open down
+                openUp = false;
             } else if (!openUp && spaceBelow < popoverHeight && spaceAbove > popoverHeight) {
-                openUp = true; // Not enough space below, but enough above -> open up
+                openUp = true;
             }
 
             if (openUp) {
-                setPopoverStyle({ bottom: '100%', top: 'auto', marginBottom: '0.5rem' });
+                finalStyle.bottom = '100%';
+                finalStyle.marginBottom = '0.5rem';
             } else {
-                setPopoverStyle({ top: '100%', bottom: 'auto', marginTop: '0.5rem' });
+                finalStyle.top = '100%';
+                finalStyle.marginTop = '0.5rem';
             }
+
+            // --- Horizontal Positioning ---
+            const triggerCenter = parentRect.left + parentRect.width / 2;
+            const spaceLeft = triggerCenter;
+            const spaceRight = window.innerWidth - triggerCenter;
+
+            if (spaceLeft > popoverWidth / 2 && spaceRight > popoverWidth / 2) {
+                finalStyle.left = '50%';
+                finalStyle.transform = 'translateX(-50%)';
+            } else if (spaceLeft < popoverWidth / 2) {
+                finalStyle.left = 0;
+            } else {
+                finalStyle.right = 0;
+            }
+
+            setPopoverStyle(finalStyle);
         }
     };
 
     useLayoutEffect(() => {
-        if (isHeadingMenuOpen) calculatePopoverPosition(headingMenuRef);
-        if (isColorMenuOpen) calculatePopoverPosition(colorMenuRef);
-    }, [isHeadingMenuOpen, isColorMenuOpen, platform]);
+        if (isHeadingMenuOpen) calculatePopoverPosition(headingMenuRef, 150, 60);
+        if (isColorMenuOpen) calculatePopoverPosition(colorMenuRef, 300, 260);
+    }, [isHeadingMenuOpen, isColorMenuOpen]);
 
 
     const isAnyHeadingActive = editor.isActive('heading', { level: 1 }) || editor.isActive('heading', { level: 2 }) || editor.isActive('heading', { level: 3 });
     const isAnyColorActive = !!editor.getAttributes('textStyle').color;
 
     return (
-        <div className={styles.formattingToolbar} onMouseDown={(e) => e.preventDefault()}>
+        <motion.div
+            drag
+            dragMomentum={false}
+            className={styles.formattingToolbar}
+            ref={toolbarRef}
+            onMouseDown={(e) => e.preventDefault()}
+        >
+            <div className={styles.dragHandle}>
+                <DragIcon />
+            </div>
             <div ref={headingMenuRef} style={{ position: 'relative' }}>
                 <motion.button onClick={() => setIsHeadingMenuOpen(prev => !prev)} className={`${styles.bubbleMenuButton} ${isAnyHeadingActive ? styles.active : ''}`} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     <HeadingIcon />
@@ -84,7 +118,6 @@ export function FormattingToolbar({ editor, onLinkClick, platform }: FormattingT
                         <motion.div
                             style={{ 
                                 position: 'absolute', 
-                                right: 0, 
                                 display: 'flex', 
                                 gap: '0.2rem', 
                                 background: 'var(--bg-secondary)', 
@@ -124,9 +157,9 @@ export function FormattingToolbar({ editor, onLinkClick, platform }: FormattingT
                     <ColorPickerIcon />
                 </motion.button>
                 <AnimatePresence>
-                    {isColorMenuOpen && <ColorPicker editor={editor} popoverStyle={{...popoverStyle, left: '50%', transform: 'translateX(-50%)'}} />}
+                    {isColorMenuOpen && <ColorPicker editor={editor} popoverStyle={popoverStyle} />}
                 </AnimatePresence>
             </div>
-        </div>
+        </motion.div>
     );
 }
