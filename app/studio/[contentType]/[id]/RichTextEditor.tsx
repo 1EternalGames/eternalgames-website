@@ -232,7 +232,8 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                     return isTextSelection && !isBlockNodeSelection; 
                 }}
             >
-                 <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} />
+                 {/* MODIFIED: Passed the platform prop */}
+                 <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} platform={platform} />
             </BubbleMenu>
 
             <LinkEditorModal isOpen={isLinkModalOpen} onClose={handleCloseLinkModal} onSubmit={handleSetLink} onRemove={handleRemoveLink} initialUrl={currentLinkUrl} />
