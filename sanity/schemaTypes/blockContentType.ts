@@ -17,6 +17,8 @@ export default defineType({
       // a top-level block from the menu.
       styles: [
         {title: 'Normal', value: 'normal'},
+        // MODIFIED: Add H1 and H3 to the list of available styles.
+        {title: 'H1', value: 'h1'},
         {title: 'H2', value: 'h2'},
         {title: 'H3', value: 'h3'},
         {title: 'H4', value: 'h4'},
@@ -45,6 +47,19 @@ export default defineType({
               }),
             ],
           },
+          // MODIFIED: Added a definition for a color annotation.
+          {
+            name: 'color',
+            title: 'Color',
+            type: 'object',
+            fields: [
+              {
+                name: 'hex',
+                title: 'Hex',
+                type: 'string',
+              },
+            ],
+          },
         ],
       },
     }),
@@ -66,5 +81,3 @@ export default defineType({
     }),
   ],
 })
-
-

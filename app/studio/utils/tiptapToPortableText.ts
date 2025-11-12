@@ -150,6 +150,12 @@ function processTextBlock(node: TiptapNode): any | null {
                 block.markDefs.push(markDef);
                 spanMarks.push(markDef._key);
             }
+            // MODIFIED: Handle textStyle marks for color.
+            if (mark.type === 'textStyle' && mark.attrs?.color) {
+                const markDef = { _key: uuidv4(), _type: 'color', hex: mark.attrs.color };
+                block.markDefs.push(markDef);
+                spanMarks.push(markDef._key);
+            }
         });
 
         block.children.push({
@@ -166,5 +172,3 @@ function processTextBlock(node: TiptapNode): any | null {
 
     return block;
 }
-
-

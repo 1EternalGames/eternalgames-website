@@ -4,15 +4,18 @@
 import { Editor } from '@tiptap/react';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
-import styles from './Editor.module.css';
+import styles from './ColorPicker.module.css';
 
-const COLOR_PALETTE = [
-    { name: 'Default', value: '#E1E1E6' },
-    { name: 'Accent', value: '#00E5FF' },
-    { name: 'Red', value: '#F43F5E' },
-    { name: 'Orange', value: '#F97316' },
-    { name: 'Green', value: '#22C55E' },
-    { name: 'Blue', value: '#3B82F6' },
+// MODIFIED: Expanded color palette with sections
+const EXPANDED_COLOR_PALETTE = [
+    { title: 'Grays', colors: ['#FFFFFF', '#E1E1E6', '#7D808C', '#6B7280', '#1F2937'] },
+    { title: 'Reds', colors: ['#FECACA', '#F87171', '#EF4444', '#DC2626', '#991B1B'] },
+    { title: 'Oranges', colors: ['#FED7AA', '#FB923C', '#F97316', '#EA580C', '#9A3412'] },
+    { title: 'Greens', colors: ['#BBF7D0', '#4ADE80', '#22C55E', '#16A34A', '#14532D'] },
+    { title: 'Teals', colors: ['#99F6E4', '#2DD4BF', '#0D9488', '#00E5FF', '#0891B2'] },
+    { title: 'Blues', colors: ['#BFDBFE', '#60A5FA', '#3B82F6', '#2563EB', '#1E3A8A'] },
+    { title: 'Purples', colors: ['#DDD6FE', '#A78BFA', '#8B5CF6', '#7C3AED', '#5B21B6'] },
+    { title: 'Pinks', colors: ['#FBCFE8', '#F472B6', '#EC4899', '#DB2777', '#9D174D'] },
 ];
 
 const PlusIcon = () => (
@@ -22,38 +25,27 @@ const PlusIcon = () => (
     </svg>
 );
 
-const ColorSwatch = ({ color, isActive, onClick }: { color: string, isActive: boolean, onClick: () => void }) => {
-    return (
-        <motion.button
-            type="button"
-            onClick={onClick}
-            style={{
-                width: 24,
-                height: 24,
-                borderRadius: '50%',
-                backgroundColor: color,
-                border: '2px solid var(--border-color)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}
-            animate={{ scale: isActive ? 1.2 : 1 }}
-            whileHover={{ scale: 1.3 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-        >
-            {isActive && <motion.div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--bg-secondary)' }} layoutId="color-picker-active" />}
-        </motion.button>
-    );
-};
+const Swatch = ({ color, isActive, onClick }: { color: string, isActive: boolean, onClick: () => void }) => (
+    <motion.button
+        type="button"
+        onClick={onClick}
+        className={styles.swatchButton}
+        style={{ backgroundColor: color }}
+        animate={{ scale: isActive ? 1.2 : 1 }}
+        whileHover={{ scale: 1.3 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+    >
+        {isActive && <motion.div className={styles.activeIndicator} layoutId="color-picker-active" />}
+    </motion.button>
+);
 
-export function ColorPicker({ editor }: { editor: Editor }) {
+export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverStyle: React.CSSProperties }) {
     const colorInputRef = useRef<HTMLInputElement>(null);
-    const currentColor = editor.getAttributes('textStyle').color || '#E1E1E6';
-    const isCustomColor = !COLOR_PALETTE.some(c => c.value === currentColor);
+    const currentColor = editor.getAttributes('textStyle').color || '#FFFFFF'; // Default to white
+    const isCustomColor = !EXPANDED_COLOR_PALETTE.flatMap(s => s.colors).some(c => c.toLowerCase() === currentColor.toLowerCase());
 
     const handleSetColor = (color: string) => {
-        if (color === '#E1E1E6') { // Default color
+        if (color === '#FFFFFF') {
             editor.chain().focus().unsetColor().run();
         } else {
             editor.chain().focus().setColor(color).run();
@@ -65,51 +57,50 @@ export function ColorPicker({ editor }: { editor: Editor }) {
     };
 
     return (
-        <>
-            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 0.2rem' }} />
-            {COLOR_PALETTE.map(({ name, value }) => (
-                <ColorSwatch 
-                    key={name}
-                    color={value}
-                    isActive={editor.isActive('textStyle', { color: value }) || (name === 'Default' && !editor.getAttributes('textStyle').color)}
-                    onClick={() => handleSetColor(value)}
-                />
+        <motion.div
+            className={styles.colorPickerPopover}
+            style={{ ...popoverStyle, left: '50%', transform: 'translateX(-50%)' }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+        >
+            {EXPANDED_COLOR_PALETTE.map(section => (
+                <div key={section.title} className={styles.colorSection}>
+                    <p className={styles.sectionTitle}>{section.title}</p>
+                    <div className={styles.swatchGrid}>
+                        {section.colors.map(color => (
+                            <Swatch
+                                key={color}
+                                color={color}
+                                isActive={!isCustomColor && currentColor.toLowerCase() === color.toLowerCase()}
+                                onClick={() => handleSetColor(color)}
+                            />
+                        ))}
+                    </div>
+                </div>
             ))}
-             <div style={{ position: 'relative' }}>
-                <motion.button
-                    type="button"
-                    onClick={() => colorInputRef.current?.click()}
-                    style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        border: '2px solid var(--border-color)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: isCustomColor ? currentColor : 'var(--bg-primary)',
-                        color: isCustomColor ? '#fff' : 'var(--text-secondary)',
-                    }}
-                    whileHover={{ scale: 1.3 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                >
-                    <PlusIcon />
-                </motion.button>
-                <input
-                    ref={colorInputRef}
-                    type="color"
-                    onInput={handleCustomColorChange}
-                    value={currentColor}
-                    style={{
-                        position: 'absolute',
-                        opacity: 0,
-                        pointerEvents: 'none',
-                        top: '50%',
-                        left: '50%',
-                    }}
-                />
+            <div className={styles.customColorSection}>
+                <p className={styles.sectionTitle}>Custom Color</p>
+                <div style={{ position: 'relative' }}>
+                    <motion.button
+                        type="button"
+                        onClick={() => colorInputRef.current?.click()}
+                        className={styles.customColorButton}
+                        style={{ background: isCustomColor ? currentColor : 'var(--bg-primary)', color: isCustomColor ? '#fff' : 'var(--text-secondary)' }}
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                    >
+                        <PlusIcon />
+                    </motion.button>
+                    <input
+                        ref={colorInputRef}
+                        type="color"
+                        onInput={handleCustomColorChange}
+                        value={currentColor}
+                        className={styles.customColorInput}
+                    />
+                </div>
             </div>
-        </>
+        </motion.div>
     );
 }

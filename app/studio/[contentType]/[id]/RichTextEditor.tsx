@@ -9,6 +9,7 @@ import Heading from '@tiptap/extension-heading';
 import BulletList from '@tiptap/extension-bullet-list';
 import ListItem from '@tiptap/extension-list-item';
 import Bold from '@tiptap/extension-bold';
+import Blockquote from '@tiptap/extension-blockquote';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { InputRule, Node, mergeAttributes, Extension } from '@tiptap/core';
@@ -139,8 +140,6 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
         checkMobile();
         window.addEventListener('resize', checkMobile);
 
-        // --- THE DEFINITIVE FIX ---
-        // Detect the operating system on component mount.
         const ua = navigator.userAgent;
         if (/iPad|iPhone|iPod/.test(ua)) {
             setPlatform('ios');
@@ -149,18 +148,17 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
         } else {
             setPlatform('desktop');
         }
-        // --- END FIX ---
         
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     const editor = useEditor({
         extensions: [
-            StarterKit.configure({ heading: false, bulletList: false, listItem: false, bold: false }),
+            StarterKit.configure({ heading: false, bulletList: false, listItem: false, bold: false, blockquote: false }),
             TextStyle,
             Color,
             Bold.extend({ addInputRules() { return [ new InputRule({ find: /(?:^|\s)(\*\*(?!\s+\*\*).+\*\*(?!\s+\*\*))$/, handler: ({ state, range, match }) => { const { tr } = state; const text = match[1]; const start = range.from; const end = range.to; tr.delete(start, end); tr.insertText(text.slice(2, -2), start); tr.addMark(start, start + text.length - 4, this.type.create()); }, }), ]; }, }),
-            Heading.configure({ levels: [2] }).extend({
+            Heading.configure({ levels: [1, 2, 3] }).extend({
                 onCreate() {
                     const editor = this.editor;
                     const transaction = editor.state.tr;
@@ -180,6 +178,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'editor-link' }, }),
             Placeholder.configure({ placeholder: 'خُطَّ ما في نفسِكَ هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
+            Blockquote,
             TrailingNode,
         ],
         editorProps: {
@@ -204,14 +203,25 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
 
     return (
         <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'A' && target.classList.contains('editor-link')) { e.preventDefault(); } }}>
-            <style jsx global>{`.tiptap a.editor-link { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent); cursor: default; }`}</style>
+            <style jsx global>{`
+                .tiptap a.editor-link { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent); cursor: default; }
+                .tiptap h1 { font-family: var(--font-main), sans-serif; font-size: 3.6rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+                .tiptap h2 { font-family: var(--font-main), sans-serif; font-size: 2.8rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+                .tiptap h3 { font-family: var(--font-main), sans-serif; font-size: 2.2rem; line-height: 1.2; margin: 3rem 0 1.5rem 0; }
+                {/* MODIFIED: Added styling for blockquote inside the Tiptap editor. */}
+                .tiptap blockquote {
+                    margin: 2rem 0;
+                    padding-right: 1.5rem;
+                    border-right: 3px solid var(--accent);
+                    font-style: italic;
+                    color: var(--text-secondary);
+                }
+            `}</style>
             
             <BubbleMenu 
                 editor={editor} 
                 tippyOptions={{ 
                     duration: 100, 
-                    // --- THE DEFINITIVE FIX ---
-                    // Conditionally set the placement based on the detected platform.
                     placement: platform === 'android' ? 'bottom-start' : 'top-end',
                     offset: [0, 8] 
                 }} 
@@ -222,7 +232,8 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                     return isTextSelection && !isBlockNodeSelection; 
                 }}
             >
-                 <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} />
+                 {/* MODIFIED: Passed the platform prop */}
+                 <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} platform={platform} />
             </BubbleMenu>
 
             <LinkEditorModal isOpen={isLinkModalOpen} onClose={handleCloseLinkModal} onSubmit={handleSetLink} onRemove={handleRemoveLink} initialUrl={currentLinkUrl} />

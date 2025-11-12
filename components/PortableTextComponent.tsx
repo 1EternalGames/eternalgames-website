@@ -67,10 +67,19 @@ const SanityImageComponent = ({ value }: { value: any }) => {
     );
 };
 
-const H2Component = ({ children }: { children?: React.ReactNode }) => {
+// MODIFIED: Create a generic heading component to handle all levels.
+const HeadingComponent = ({ level, children }: { level: number, children?: React.ReactNode }) => {
     const textContent = Array.isArray(children) ? children.join('') : (children as string) || '';
     const id = slugify(textContent);
-    return <h2 id={id} style={{ margin: '5rem 0 2rem 0', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>{children}</h2>
+    
+    const styles: Record<number, React.CSSProperties> = {
+        1: { fontSize: '3.6rem', margin: '5rem 0 2rem 0', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' },
+        2: { fontSize: '2.8rem', margin: '5rem 0 2rem 0', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' },
+        3: { fontSize: '2.2rem', margin: '4rem 0 1.5rem 0' }
+    };
+    
+    // MODIFIED: Use React.createElement to dynamically create the heading tag.
+    return React.createElement(`h${level}`, { id, style: styles[level] || styles[2] }, children);
 }
 
 const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock>) => {
@@ -84,7 +93,18 @@ const components: PortableTextComponents = {
         twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
         fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
     },
-    block: { h2: H2Component, blockquote: BlockquoteComponent },
+    // MODIFIED: Use the generic HeadingComponent for h1, h2, and h3.
+    block: { 
+        h1: ({children}) => <HeadingComponent level={1}>{children}</HeadingComponent>,
+        h2: ({children}) => <HeadingComponent level={2}>{children}</HeadingComponent>,
+        h3: ({children}) => <HeadingComponent level={3}>{children}</HeadingComponent>,
+        blockquote: BlockquoteComponent 
+    },
+    marks: {
+        color: ({ value, children }) => {
+            return <span style={{ color: value?.hex }}>{children}</span>;
+        },
+    },
 }
 
 export default function PortableTextComponent({ content }: { content: any[] }) {
@@ -95,5 +115,3 @@ export default function PortableTextComponent({ content }: { content: any[] }) {
         </div>
     )
 }
-
-
