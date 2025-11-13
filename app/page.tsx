@@ -27,7 +27,7 @@ const getCachedEnrichedCreators = unstable_cache(
         }
     },
     ['enriched-creators'],
-    { revalidate: 3600, tags: ['enriched-creators'] }
+    { tags: ['enriched-creators'] } // MODIFIED: Removed revalidate time
 );
 
 async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
@@ -74,7 +74,7 @@ const getCachedEngagementScoresMap = unstable_cache(
         }
     },
     ['homepage-engagement-scores'],
-    { revalidate: 60, tags: ['engagement-scores'] }
+    { tags: ['engagement-scores'] } // MODIFIED: Removed revalidate time
 );
 
 

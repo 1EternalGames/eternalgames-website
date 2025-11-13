@@ -21,7 +21,7 @@ const getCachedPaginatedNews = unstable_cache(
         return data;
     },
     ['paginated-news'],
-    { revalidate: 300, tags: ['news', 'paginated'] }
+    { tags: ['news', 'paginated'] } // MODIFIED: Removed revalidate time
 );
 
 export async function GET(req: NextRequest) {

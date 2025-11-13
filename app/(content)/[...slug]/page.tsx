@@ -43,7 +43,7 @@ const getCachedSanityData = unstable_cache(
     },
     ['sanity-content-detail'],
     {
-        tags: ['sanity-content']
+        tags: ['sanity-content-detail'] // ALIGNED TAG
     }
 );
 
@@ -65,7 +65,7 @@ const getCachedCreatorDetails = unstable_cache(
         }
     },
     ['enriched-creator-details'],
-    { revalidate: 3600 }
+    { tags: ['enriched-creator-details'] } // MODIFIED: Removed revalidate time
 );
 
 async function enrichCreator(creator: any) {
