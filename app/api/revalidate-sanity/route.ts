@@ -30,9 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Bad Request: Missing _type or _id in body' }, { status: 400 });
     }
 
-    // THE DEFINITIVE FIX: Ignore any webhooks related to draft documents.
-    // Draft documents have IDs that start with "drafts.". This prevents revalidation
-    // from being triggered by the deletion of a draft, which can cause a race condition.
+    // Ignore any webhooks related to draft documents.
     if (body._id.startsWith('drafts.')) {
       return NextResponse.json({
         status: 200,
@@ -57,7 +55,8 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push('enriched-creator-details');
     }
     
-    tagsToRevalidate.forEach(tag => revalidateTag(tag));
+    // THE DEFINITIVE FIX: Explicitly provide the 'max' argument to revalidateTag.
+    tagsToRevalidate.forEach(tag => revalidateTag(tag, 'max'));
 
     // --- Revalidate Specific Page Paths ---
     const pathsToRevalidate: string[] = ['/'];
