@@ -18,6 +18,7 @@ import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import { useEditorStore } from '@/lib/editorStore';
 import styles from './Editor.module.css';
+import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 
 type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
@@ -120,11 +121,57 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
+    
     useEffect(() => { 
-        // MODIFICATION: No longer check for slug on gameRelease
         const currentSlug = sourceOfTruth.slug?.current ?? '';
-        dispatch({ type: 'INITIALIZE_STATE', payload: { _id: sourceOfTruth._id, _type: sourceOfTruth._type, title: sourceOfTruth.title ?? '', slug: currentSlug, score: sourceOfTruth.score ?? 0, verdict: sourceOfTruth.verdict ?? '', pros: sourceOfTruth.pros ?? [], cons: sourceOfTruth.cons ?? [], game: sourceOfTruth.game || null, publishedAt: sourceOfTruth.publishedAt || null, mainImage: { assetId: sourceOfTruth.mainImage?._ref || null, assetUrl: sourceOfTruth.mainImage?.url || null }, authors: (sourceOfTruth.authors || []).filter(Boolean), reporters: (sourceOfTruth.reporters || []).filter(Boolean), designers: (sourceOfTruth.designers || []).filter(Boolean), tags: (sourceOfTruth.tags || []).filter(Boolean), releaseDate: sourceOfTruth.releaseDate || '', platforms: sourceOfTruth.platforms || [], synopsis: sourceOfTruth.synopsis || '', category: sourceOfTruth.category || null, } }); const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width; if (imageWidth && imageWidth >= 3840) { setMainImageUploadQuality('4k'); } else { setMainImageUploadQuality('1080p'); } if (editorInstance) { const editorJSON = JSON.stringify(editorInstance.getJSON()); const sourceJSON = JSON.stringify(sourceOfTruth.tiptapContent || {}); if (editorJSON !== sourceJSON) { editorInstance.commands.setContent(sourceOfTruth.tiptapContent, false); } } 
+        dispatch({ 
+            type: 'INITIALIZE_STATE', 
+            payload: { 
+                _id: sourceOfTruth._id, 
+                _type: sourceOfTruth._type, 
+                title: sourceOfTruth.title ?? '', 
+                slug: currentSlug, 
+                score: sourceOfTruth.score ?? 0, 
+                verdict: sourceOfTruth.verdict ?? '', 
+                pros: sourceOfTruth.pros ?? [], 
+                cons: sourceOfTruth.cons ?? [], 
+                game: sourceOfTruth.game || null, 
+                publishedAt: sourceOfTruth.publishedAt || null, 
+                mainImage: { 
+                    assetId: sourceOfTruth.mainImage?._ref || null, 
+                    assetUrl: sourceOfTruth.mainImage?.url || null 
+                }, 
+                authors: (sourceOfTruth.authors || []).filter(Boolean), 
+                reporters: (sourceOfTruth.reporters || []).filter(Boolean), 
+                designers: (sourceOfTruth.designers || []).filter(Boolean), 
+                tags: (sourceOfTruth.tags || []).filter(Boolean), 
+                releaseDate: sourceOfTruth.releaseDate || '', 
+                platforms: sourceOfTruth.platforms || [], 
+                synopsis: sourceOfTruth.synopsis || '', 
+                category: sourceOfTruth.category || null, 
+            } 
+        }); 
+        
+        const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width; 
+        if (imageWidth && imageWidth >= 3840) { 
+            setMainImageUploadQuality('4k'); 
+        } else { 
+            setMainImageUploadQuality('1080p'); 
+        } 
+        
+        if (editorInstance) { 
+            // CRITICAL FIX: Always reconvert from Portable Text to ensure clean data
+            const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
+            const editorJSON = JSON.stringify(editorInstance.getJSON()); 
+            const sourceJSON = JSON.stringify(freshTiptapContent); 
+            
+            if (editorJSON !== sourceJSON) { 
+                // Use the freshly converted content, not cached tiptapContent
+                editorInstance.commands.setContent(freshTiptapContent, false); 
+            } 
+        } 
     }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance, sourceOfTruth.slug]);
+
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
     useEffect(() => {

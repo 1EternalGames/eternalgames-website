@@ -118,7 +118,9 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
 
 // Helper function to process paragraphs, headings, blockquotes
 function processTextBlock(node: TiptapNode): any | null {
-    if (!node.content && node.type !== 'paragraph') return null;
+    // MODIFIED: This check was too restrictive. Empty paragraphs are valid.
+    // The logic is now handled by the content processing below.
+    // if (!node.content && node.type !== 'paragraph') return null;
 
     const block: any = {
         _type: 'block',
@@ -133,7 +135,13 @@ function processTextBlock(node: TiptapNode): any | null {
             break;
         case 'blockquote':
             block.style = 'blockquote';
-            break;
+            // Blockquotes in Sanity must contain at least one block-level child.
+            // We wrap the content in a paragraph.
+            const blockquoteContent = processTextBlock({ type: 'paragraph', content: node.content });
+            if (blockquoteContent) {
+                return blockquoteContent;
+            }
+            return null;
         default:
             block.style = 'normal';
     }
@@ -150,7 +158,6 @@ function processTextBlock(node: TiptapNode): any | null {
                 block.markDefs.push(markDef);
                 spanMarks.push(markDef._key);
             }
-            // MODIFIED: Handle textStyle marks for color.
             if (mark.type === 'textStyle' && mark.attrs?.color) {
                 const markDef = { _key: uuidv4(), _type: 'color', hex: mark.attrs.color };
                 block.markDefs.push(markDef);
@@ -166,6 +173,9 @@ function processTextBlock(node: TiptapNode): any | null {
         });
     });
 
+    // THE DEFINITIVE FIX:
+    // If a block (like a paragraph) has no content (i.e., it's a blank line),
+    // Sanity requires its `children` array to contain a single empty span.
     if (block.children.length === 0) {
         block.children.push({ _type: 'span', _key: uuidv4(), text: '', marks: [] });
     }
