@@ -237,8 +237,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         <div 
             ref={containerRef} 
             className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''}`}
-            onMouseEnter={() => setIsManualHover(true)}
-            onMouseLeave={() => setIsManualHover(false)}
         >
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
@@ -250,6 +248,8 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 onDragEnd={handleDragEnd}
                 onTouchEnd={() => initialAnimHasRun && setHoveredId(null)}
                 onTouchCancel={() => initialAnimHasRun && setHoveredId(null)}
+                onMouseEnter={() => setIsManualHover(true)}
+                onMouseLeave={() => setIsManualHover(false)}
             >
                 {reviews.map((review, reviewIndex) => {
                     const { style, isCenter } = getCardState(reviewIndex, review.id);
