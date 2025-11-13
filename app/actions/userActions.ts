@@ -268,7 +268,7 @@ export async function checkUsernameAvailability(username: string): Promise<{ ava
 }
 export async function signUp(formData: FormData) {
     const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
+    const email = (formData.get('email') as string)?.toLowerCase(); // MODIFIED
     const password = formData.get('password') as string;
     const username = (formData.get('username') as string)?.toLowerCase();
     if (!name || !email || !password || !username) {

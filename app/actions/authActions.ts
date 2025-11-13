@@ -17,7 +17,8 @@ async function sendPasswordResetEmail(email: string, token: string) {
 
 export async function requestPasswordReset(email: string) {
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const lowercasedEmail = email.toLowerCase(); // MODIFIED
+        const user = await prisma.user.findUnique({ where: { email: lowercasedEmail } }); // MODIFIED
         if (!user || !user.password) {
             // Don't reveal if a user exists or not for security reasons.
             // Also, don't allow password resets for OAuth users.
@@ -38,7 +39,7 @@ export async function requestPasswordReset(email: string) {
             },
         });
 
-        await sendPasswordResetEmail(email, token);
+        await sendPasswordResetEmail(lowercasedEmail, token); // MODIFIED
 
         return { success: true, message: 'إن صَحَّ بريدُك، أتاك الرابط.' };
     } catch (error) {
@@ -85,8 +86,3 @@ export async function resetPassword(token: string, newPassword: string) {
         return { success: false, message: 'طرأ خطبٌ ما.' };
     }
 }
-
-
-
-
-

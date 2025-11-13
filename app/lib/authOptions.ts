@@ -21,7 +21,8 @@ export const authOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) throw new Error("البياناتُ ناقصة.");
-                const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+                // MODIFIED: Normalize email to lowercase before database query
+                const user = await prisma.user.findUnique({ where: { email: credentials.email.toLowerCase() } });
                 if (!user) throw new Error("لا حساب بهذا البريد. تفضل بالتسجيل.");
                 if (!user.password) throw new Error("هذا الحساب مربوط بمزود خارجي.");
                 const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
@@ -39,18 +40,21 @@ export const authOptions = {
             },
             async authorize(credentials) {
                 if (!credentials) throw new Error("تفاصيل التسجيل ناقصة.");
+                // MODIFIED: Normalize email to lowercase
                 const { email, password } = credentials;
-                if (!email || !password) throw new Error("الحقولُ كلُّها لازمة.");
-                if (!/\S+@\S+\.\S+/.test(email)) throw new Error('البريد الإلكتروني غير صالح.');
+                const lowercasedEmail = email.toLowerCase();
+
+                if (!lowercasedEmail || !password) throw new Error("الحقولُ كلُّها لازمة.");
+                if (!/\S+@\S+\.\S+/.test(lowercasedEmail)) throw new Error('البريد الإلكتروني غير صالح.');
                 if (password.length < 8) throw new Error('كلمة السر لا تقل عن ثمانيةِ حروف.');
                 
-                const existingEmail = await prisma.user.findUnique({ where: { email } });
+                const existingEmail = await prisma.user.findUnique({ where: { email: lowercasedEmail } });
                 if (existingEmail) throw new Error('بريدٌ مسجل.');
 
                 const hashedPassword = await bcrypt.hash(credentials.password, 10);
                 const newUser = await prisma.user.create({
                     data: {
-                        email: credentials.email,
+                        email: lowercasedEmail, // MODIFIED: Store lowercase email
                         password: hashedPassword,
                     }
                 });
@@ -77,7 +81,11 @@ export const authOptions = {
             if (userRole) {
                 await prisma.user.update({ 
                     where: { id: user.id }, 
-                    data: { roles: { connect: { id: userRole.id } } } 
+                    data: { 
+                        roles: { connect: { id: userRole.id } },
+                        // MODIFIED: Ensure email is lowercase on creation from any provider
+                        email: user.email ? user.email.toLowerCase() : null
+                    } 
                 });
             }
         }
@@ -121,5 +129,3 @@ export const authOptions = {
     },
     pages: { signIn: '/', error: '/', },
 };
-
-
