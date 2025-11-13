@@ -48,14 +48,14 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push(`${type}s`); // e.g., 'reviews'
       tagsToRevalidate.push('paginated'); // Common tag for paginated content
       tagsToRevalidate.push('engagement-scores'); // Homepage scores depend on this
-      tagsToRevalidate.push('sanity-content');
+      tagsToRevalidate.push('sanity-content-detail'); // CRITICAL: Aligned with detail page cache tag
     }
     if (['author', 'reviewer', 'reporter', 'designer'].includes(type)) {
       tagsToRevalidate.push('enriched-creators');
       tagsToRevalidate.push('enriched-creator-details');
     }
     
-    // THE DEFINITIVE FIX: Explicitly provide the 'max' argument to revalidateTag.
+    // THE DEFINITIVE FIX: Explicitly provide the 'max' argument to every revalidateTag call.
     tagsToRevalidate.forEach(tag => revalidateTag(tag, 'max'));
 
     // --- Revalidate Specific Page Paths ---

@@ -143,6 +143,7 @@ export async function updateUserProfile(formData: FormData) {
         // MODIFIED: Trigger the Sanity sync after a successful profile update.
         await syncUserToSanity(session.user.id);
 
+        // THE DEFINITIVE FIX: Added 'max' argument to revalidateTag.
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
@@ -189,6 +190,7 @@ export async function completeOnboardingAction(formData: FormData) {
             },
         });
 
+        // THE DEFINITIVE FIX: Added 'max' argument to revalidateTag.
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
@@ -322,6 +324,7 @@ export async function updateUserAvatar(formData: FormData) {
         await syncUserToSanity(session.user.id);
         
         revalidatePath('/profile');
+        // THE DEFINITIVE FIX: Added 'max' argument to revalidateTag.
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
         return { success: true, message: 'تجدَّدت الصورة الرمزية.' };
