@@ -13,6 +13,56 @@ import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery } from '@/lib/sanity.queries';
 import type { QueryParams, IdentifiedSanityDocumentStub } from '@sanity/client';
 
+export async function translateTitleToAction(title: string): Promise<string> {
+    const session = await getServerSession(authOptions);
+    const userRoles = (session?.user as any)?.roles || [];
+    const isAuthorized = userRoles.some((role: string) =>
+      ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
+    );
+
+    if (!session || !isAuthorized) {
+        throw new Error('غير مُصرَّح به.');
+    }
+    
+    // THE DEFINITIVE FIX: Reverting to the free, keyless, and official MyMemory API.
+    const apiUrl = process.env.TRANSLATION_API_URL;
+    if (!apiUrl) {
+        console.error("TRANSLATION_API_URL is not set. Falling back to basic slugify.");
+        return slugify(title);
+    }
+    
+    try {
+        const url = `${apiUrl}?q=${encodeURIComponent(title)}&langpair=ar|en`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Translation API responded with status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        const translatedText = data?.responseData?.translatedText;
+        if (!translatedText || typeof translatedText !== 'string') {
+            throw new Error("Invalid response structure from translation API.");
+        }
+
+        // Slugify the properly translated English title.
+        return slugify(translatedText, {
+            lowercase: true,
+            separator: '-',
+            allowedChars: 'a-zA-Z0-9-', // Ensure only URL-safe characters remain
+        });
+
+    } catch (error) {
+        console.error("Translation failed, falling back to basic transliteration:", error);
+        // Fallback to basic transliteration if the API call fails
+        return slugify(title, {
+            lowercase: true,
+            separator: '-',
+            allowedChars: 'a-zA-Z0-9-',
+        });
+    }
+}
+
 
 export async function createDraftAction(contentType: 'review' | 'article' | 'news' | 'gameRelease') {
     const session = await getServerSession(authOptions);
@@ -22,8 +72,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
     if (!canCreate) throw new Error('صلاحياتٌ قاصرة.');
 
-    // THE DEFINITIVE FIX: The query now explicitly filters for documents where `legacyId` is defined.
-    // This prevents `order()` from failing and ensures `[0]` doesn't access an empty set incorrectly.
     const highestIdQuery = groq`*[_type in ["review", "article", "news", "gameRelease"] && defined(legacyId)] | order(legacyId desc)[0].legacyId`;
     const lastId = await sanityWriteClient.fetch<number>(highestIdQuery, {}, { perspective: 'previewDrafts' });
     const newLegacyId = (lastId || 0) + 1;
