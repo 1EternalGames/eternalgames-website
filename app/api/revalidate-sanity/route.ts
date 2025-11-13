@@ -4,6 +4,7 @@ import { parseBody } from 'next-sanity/webhook';
 
 // Define a type for the expected webhook body for better type-safety
 interface WebhookBody {
+  _id: string; // Added _id to check for drafts
   _type: string;
   slug?: {
     current?: string;
@@ -25,8 +26,20 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ message, isValidSignature, body }), { status: 401 });
     }
 
-    if (!body?._type) {
-      return NextResponse.json({ message: 'Bad Request: Missing _type in body' }, { status: 400 });
+    if (!body?._type || !body?._id) {
+      return NextResponse.json({ message: 'Bad Request: Missing _type or _id in body' }, { status: 400 });
+    }
+
+    // THE DEFINITIVE FIX: Ignore any webhooks related to draft documents.
+    // Draft documents have IDs that start with "drafts.". This prevents revalidation
+    // from being triggered by the deletion of a draft, which can cause a race condition.
+    if (body._id.startsWith('drafts.')) {
+      return NextResponse.json({
+        status: 200,
+        revalidated: false,
+        now: Date.now(),
+        message: 'No revalidation required for draft document',
+      });
     }
 
     const { _type: type, slug } = body;
@@ -37,15 +50,14 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push(`${type}s`); // e.g., 'reviews'
       tagsToRevalidate.push('paginated'); // Common tag for paginated content
       tagsToRevalidate.push('engagement-scores'); // Homepage scores depend on this
-      tagsToRevalidate.push('sanity-content'); // MODIFIED: Added tag for detail pages
+      tagsToRevalidate.push('sanity-content');
     }
     if (['author', 'reviewer', 'reporter', 'designer'].includes(type)) {
       tagsToRevalidate.push('enriched-creators');
       tagsToRevalidate.push('enriched-creator-details');
     }
     
-    // THE DEFINITIVE FIX: Explicitly provide the 'max' argument to revalidateTag.
-    tagsToRevalidate.forEach(tag => revalidateTag(tag, 'max'));
+    tagsToRevalidate.forEach(tag => revalidateTag(tag));
 
     // --- Revalidate Specific Page Paths ---
     const pathsToRevalidate: string[] = ['/'];
