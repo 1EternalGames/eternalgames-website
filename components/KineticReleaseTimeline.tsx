@@ -40,7 +40,6 @@ const SynopsisDisplay = ({ synopsis, isLeft, isInView }: { synopsis: string; isL
     );
 };
 
-
 const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const itemRef = useRef(null);
     const cardIsInView = useInView(itemRef, { once: true, amount: 0.5 });
@@ -63,7 +62,17 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
 const TimelineDot = ({ position, scrollYProgress }: { position: number, scrollYProgress: MotionValue<number> }) => {
     const backgroundColor = useTransform( scrollYProgress, [position - 0.01, position], ['var(--border-color)', 'var(--accent)'] );
     const boxShadow = useTransform( scrollYProgress, [position - 0.01, position], ['0 0 0px 0 rgba(0,0,0,0)', '0 0 8px 0 var(--accent)'] );
-    return ( <motion.div className={styles.dot} style={{ top: `${position * 100}%`, backgroundColor: backgroundColor, boxShadow: boxShadow, }} /> );
+    
+    return ( 
+        <motion.div 
+            className={styles.dot} 
+            style={{ 
+                top: `${position * 100}%`, 
+                backgroundColor: backgroundColor, 
+                boxShadow: boxShadow,
+            }} 
+        /> 
+    );
 };
 
 export default function KineticReleaseTimeline({ releases: allReleases }: { releases: any[] }) {
@@ -90,10 +99,15 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
     useLayoutEffect(() => {
         if (timelineRef.current && releasesForThisMonth.length > 0) {
             const timeoutId = setTimeout(() => {
-                const containerEl = timelineRef.current; if (!containerEl) return;
+                const containerEl = timelineRef.current; 
+                if (!containerEl) return;
                 const containerHeight = containerEl.scrollHeight;
                 const itemElements = Array.from(containerEl.querySelectorAll(`.${styles.timelineItemWrapper}`));
-                const positions = itemElements.map(el => { const item = el as HTMLElement; const top = item.offsetTop + (item.offsetHeight / 2); return top / containerHeight; });
+                const positions = itemElements.map(el => { 
+                    const item = el as HTMLElement; 
+                    const top = item.offsetTop + (item.offsetHeight / 2); 
+                    return top / containerHeight; 
+                });
                 setDotPositions(positions);
             }, 100);
             return () => clearTimeout(timeoutId);
@@ -104,16 +118,30 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
         <div ref={timelineRef} className={styles.timelineContainer}>
             <div className={styles.timelineSpine}>
                 <div className={styles.timelineSpineTrack} />
-                <motion.div className={styles.timelineSpineProgress} style={{ scaleY: scrollYProgress }} />
+                <motion.div 
+                    className={styles.timelineSpineProgress} 
+                    style={{ scaleY: scrollYProgress }}
+                />
                 <div className={styles.dotsContainer}>
-                    {dotPositions.map((pos, index) => ( <TimelineDot key={index} position={pos} scrollYProgress={scrollYProgress} /> ))}
+                    {dotPositions.map((pos, index) => ( 
+                        <TimelineDot key={index} position={pos} scrollYProgress={scrollYProgress} /> 
+                    ))}
                 </div>
             </div>
             <div className={styles.timelineItemsWrapper}>
                 {releasesForThisMonth.length > 0 ? (
-                    releasesForThisMonth.map((release, index) => ( <TimelineItem key={release._id} release={release} index={index} /> ))
+                    releasesForThisMonth.map((release, index) => ( 
+                        <TimelineItem key={release._id} release={release} index={index} /> 
+                    ))
                 ) : (
-                    <motion.div style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}>لا إصدارات مجدولة لهذا الشهر.</motion.div>
+                    <motion.div 
+                        style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}
+                    >
+                        لا إصدارات مجدولة لهذا الشهر.
+                    </motion.div>
                 )}
             </div>
 
@@ -140,5 +168,3 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
         </div>
     );
 }
-
-

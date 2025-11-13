@@ -17,7 +17,7 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
     'PC': PCIcon,
-    'PlayStation 5': PS5Icon,
+    'PlayStation': PS5Icon,
     'Xbox': XboxIcon,
     'Switch': SwitchIcon,
 };
@@ -26,13 +26,16 @@ const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http:/
 
 const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { game?: { slug?: string } } }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
+    
+    // Glare effect logic
     const mouseX = useMotionValue(0.5);
     const mouseY = useMotionValue(0.5);
     const smoothMouseX = useSpring(mouseX, { damping: 20, stiffness: 150, mass: 0.7 });
     const smoothMouseY = useSpring(mouseY, { damping: 20, stiffness: 150, mass: 0.7 });
-    const glareX = useTransform(smoothMouseX, [0, 1], ['-10%', '110%']);
-    const glareY = useTransform(smoothMouseY, [0, 1], ['-10%', '110%']);
-
+    const glareX = useTransform(smoothMouseX, [0, 1], ['0%', '100%']);
+    const glareY = useTransform(smoothMouseY, [0, 1], ['0%', '100%']);
+    const glareOpacity = useTransform(smoothMouseX, [0, 0.5, 1], [0.3, 0.6, 0.3]);
+    
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         livingCardAnimation.onMouseMove(e);
         if (!livingCardRef.current) return;
@@ -65,13 +68,13 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}
         >
-            <Link href={linkPath} className={`${styles.timelineCard} no-underline`} style={{transformStyle: 'preserve-3d'}}>
+            <Link href={linkPath} className={`${styles.timelineCard} no-underline`}>
                 <motion.div
                     className={styles.livingCardGlare}
-                    style={{ '--mouse-x': glareX, '--mouse-y': glareY } as any}
+                    style={{ opacity: glareOpacity, '--mouse-x': glareX, '--mouse-y': glareY } as any}
                 />
                 
-                <div className={styles.imageContainer} style={{ transform: 'translateZ(20px)' }}>
+                <div className={styles.imageContainer}>
                     <Image
                         src={urlFor(release.mainImage).width(800).height(450).fit('crop').auto('format').url()}
                         alt={release.title}
@@ -83,7 +86,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                     />
                     {new Date(release.releaseDate) < new Date() && <div className={styles.releasedBadge}><CheckIcon className={styles.checkIcon} /> صدرت</div>}
                 </div>
-                <div className={styles.cardContent} style={{ transform: 'translateZ(40px)' }}>
+                <div className={styles.cardContent}>
                     <div className={styles.cardHeader}>
                         <h4>{release.title}</h4>
                         <p>{formattedDate}</p>
