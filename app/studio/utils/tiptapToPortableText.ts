@@ -118,10 +118,6 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
 
 // Helper function to process paragraphs, headings, blockquotes
 function processTextBlock(node: TiptapNode): any | null {
-    // MODIFIED: This check was too restrictive. Empty paragraphs are valid.
-    // The logic is now handled by the content processing below.
-    // if (!node.content && node.type !== 'paragraph') return null;
-
     const block: any = {
         _type: 'block',
         _key: uuidv4(),
@@ -134,13 +130,16 @@ function processTextBlock(node: TiptapNode): any | null {
             block.style = `h${node.attrs?.level || 2}`;
             break;
         case 'blockquote':
-            block.style = 'blockquote';
-            // Blockquotes in Sanity must contain at least one block-level child.
-            // We wrap the content in a paragraph.
-            const blockquoteContent = processTextBlock({ type: 'paragraph', content: node.content });
-            if (blockquoteContent) {
-                return blockquoteContent;
+            // An empty blockquote is not valid, so we need to ensure it has content.
+            // If the Tiptap node has content, process it into a paragraph.
+            if (node.content && node.content.length > 0) {
+                const blockquoteParagraph = processTextBlock({ type: 'paragraph', content: node.content });
+                if (blockquoteParagraph) {
+                    blockquoteParagraph.style = 'blockquote';
+                    return blockquoteParagraph;
+                }
             }
+            // If the blockquote is empty, return null to avoid creating an invalid block.
             return null;
         default:
             block.style = 'normal';
@@ -172,7 +171,7 @@ function processTextBlock(node: TiptapNode): any | null {
             marks: spanMarks,
         });
     });
-
+    
     // THE DEFINITIVE FIX:
     // If a block (like a paragraph) has no content (i.e., it's a blank line),
     // Sanity requires its `children` array to contain a single empty span.

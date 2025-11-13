@@ -75,6 +75,11 @@ overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;
   word-break: break-word;
 }
 
+/* --- THE DEFINITIVE FIX FOR EMPTY LINES (ADJUSTED) --- */
+.portable-text-content p:empty {
+  height: 3rem; /* Match the body's font-size to simulate one line break */
+}
+
 .toast-container-global {
 position: fixed;
 bottom: 2rem;

@@ -60,8 +60,14 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (!compareIds(currentState.authors, (sourceOfTruth.authors || []).filter(Boolean))) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
     if (!compareIds(currentState.reporters, (sourceOfTruth.reporters || []).filter(Boolean))) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
     if (!compareIds(currentState.designers, (sourceOfTruth.designers || []).filter(Boolean))) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
-    const sourceContentJson = JSON.stringify(sourceOfTruth.tiptapContent || {});
-    if (sourceOfTruth._type !== 'gameRelease' && editorContentJson !== sourceContentJson) { patch.content = tiptapToPortableText(JSON.parse(editorContentJson)); }
+    
+    // THE DEFINITIVE FIX FOR FLICKER: Compare against sourceOfTruth.content, not tiptapContent
+    const sourceContentSanity = sourceOfTruth.content || []; 
+    const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
+    if (sourceOfTruth._type !== 'gameRelease' && JSON.stringify(currentContentSanity) !== JSON.stringify(sourceContentSanity)) {
+        patch.content = currentContentSanity;
+    }
+
     return patch;
 };
 
@@ -160,13 +166,11 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         } 
         
         if (editorInstance) { 
-            // CRITICAL FIX: Always reconvert from Portable Text to ensure clean data
             const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
             const editorJSON = JSON.stringify(editorInstance.getJSON()); 
             const sourceJSON = JSON.stringify(freshTiptapContent); 
             
             if (editorJSON !== sourceJSON) { 
-                // Use the freshly converted content, not cached tiptapContent
                 editorInstance.commands.setContent(freshTiptapContent, false); 
             } 
         } 
@@ -175,7 +179,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
     useEffect(() => {
-        // MODIFICATION: Skip slug validation for gameRelease
         if (state._type === 'gameRelease') {
             setSlugValidationStatus('valid');
             setSlugValidationMessage('');
@@ -184,7 +187,51 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         if (!state._id || !debouncedSlug) { setSlugValidationStatus('invalid'); setSlugValidationMessage(!state._id ? 'بانتظار مُعرِّف الوثيقة...' : 'لا يكُن المُعرِّفُ خاويًا.'); return; } setSlugValidationStatus('pending'); setSlugValidationMessage('جارٍ التحقق...'); const checkSlug = async () => { const result = await validateSlugAction(debouncedSlug, state._id); setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); setSlugValidationMessage(result.message); }; checkSlug();
     }, [debouncedSlug, state._id, state._type]);
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
-    const saveWorkingCopy = async (): Promise<boolean> => { if (!hasChanges) return true; if (sourceOfTruth._type !== 'gameRelease' && slugValidationStatus !== 'valid') { toast.error('لا يمكن الحفظ بمُعرِّف غير صالح.', 'left'); return false; } const result = await updateDocumentAction(sourceOfTruth._id, patch); if (result.success && result.updatedDocument) { setSourceOfTruth(result.updatedDocument); return true; } else { toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); return false; } };
+    
+    const saveWorkingCopy = async (): Promise<boolean> => { 
+        if (!hasChanges) return true; 
+        if (sourceOfTruth._type !== 'gameRelease' && slugValidationStatus !== 'valid') { 
+            toast.error('لا يمكن الحفظ بمُعرِّف غير صالح.', 'left'); 
+            return false; 
+        } 
+
+        // Optimistically update the source of truth BEFORE the server call
+        const optimisticSOT: EditorDocument = {
+            ...sourceOfTruth,
+            title: state.title,
+            slug: { current: state.slug },
+            score: state.score,
+            verdict: state.verdict,
+            pros: state.pros,
+            cons: state.cons,
+            game: state.game,
+            tags: state.tags,
+            mainImage: state.mainImage.assetId ? { _ref: state.mainImage.assetId, url: state.mainImage.assetUrl } : undefined,
+            authors: state.authors,
+            reporters: state.reporters,
+            designers: state.designers,
+            releaseDate: state.releaseDate,
+            platforms: state.platforms,
+            synopsis: state.synopsis,
+            category: state.category,
+            content: tiptapToPortableText(JSON.parse(editorContentJson)),
+            _updatedAt: new Date().toISOString(), // Mark as updated
+        };
+        
+        const result = await updateDocumentAction(sourceOfTruth._id, patch); 
+        
+        if (result.success && result.updatedDocument) { 
+            // THE DEFINITIVE FIX: Replace the server response with the optimistic state
+            // to prevent the flicker, but use the server's _updatedAt for sync.
+            setSourceOfTruth({ ...optimisticSOT, _updatedAt: result.updatedDocument._updatedAt });
+            return true; 
+        } else { 
+            toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); 
+            // On failure, we don't revert, allowing the user to try saving again.
+            return false; 
+        } 
+    };
+    
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => { const didSave = await saveWorkingCopy(); if (!didSave) { if (hasChanges) toast.error('احفظ التغييرات أولاً.', 'left'); return false; } const result = await publishDocumentAction(sourceOfTruth._id, publishTime); if (result.success && result.updatedDocument) { setSourceOfTruth(result.updatedDocument); toast.success(result.message || 'تجددت حالة النشر!', 'left'); return true; } else { toast.error(result.message || 'أخفق تحديث الحالة.', 'left'); return false; } };
     useEffect(() => { if (hasChanges) { document.title = `*لم يُحفظ* ${title || 'بلا عنوان'}`; window.onbeforeunload = () => "أَتَغادرُ وما كتبت لم يُحفظ؟"; } else { document.title = title || "EternalGames الديوان"; window.onbeforeunload = null; } return () => { window.onbeforeunload = null; }; }, [hasChanges, title]);
     useEffect(() => { document.body.classList.add('editor-active'); return () => { document.body.classList.remove('editor-active'); } }, []);

@@ -208,13 +208,20 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 .tiptap h1 { font-family: var(--font-main), sans-serif; font-size: 3.6rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
                 .tiptap h2 { font-family: var(--font-main), sans-serif; font-size: 2.8rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
                 .tiptap h3 { font-family: var(--font-main), sans-serif; font-size: 2.2rem; line-height: 1.2; margin: 3rem 0 1.5rem 0; }
-                {/* MODIFIED: Added styling for blockquote inside the Tiptap editor. */}
                 .tiptap blockquote {
                     margin: 2rem 0;
                     padding-right: 1.5rem;
                     border-right: 3px solid var(--accent);
                     font-style: italic;
                     color: var(--text-secondary);
+                }
+                /* --- THE DEFINITIVE FIX --- */
+                .tiptap p.is-empty::before {
+                    content: '';
+                    display: inline-block;
+                }
+                .tiptap p.is-empty {
+                    min-height: 1rem;
                 }
             `}</style>
             
@@ -232,7 +239,6 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                     return isTextSelection && !isBlockNodeSelection; 
                 }}
             >
-                 {/* MODIFIED: Passed the platform prop */}
                  <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} platform={platform} />
             </BubbleMenu>
 
