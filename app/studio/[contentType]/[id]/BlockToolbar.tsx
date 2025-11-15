@@ -2,9 +2,12 @@
 'use client';
 
 import { Editor } from '@tiptap/react';
-import { motion } from 'framer-motion';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon } from '../../StudioIcons';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon } from '../../StudioIcons';
 import { QualityToggle } from './editor-components/QualityToggle';
+import { TableCreationPopover } from './editor-components/TableCreationPopover';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './BlockToolbar.module.css';
 import bubbleStyles from './Editor.module.css';
@@ -33,6 +36,10 @@ const TooltipButton = ({ onClick, title, children, disabled }: { onClick: () => 
 );
 
 export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQualityChange }: BlockToolbarProps) {
+    const [isTablePopoverOpen, setIsTablePopoverOpen] = useState(false);
+    const tablePopoverRef = useRef<HTMLDivElement>(null);
+    useClickOutside(tablePopoverRef, () => setIsTablePopoverOpen(false));
+
     const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid') => {
         if (!editor) return;
         if (type === 'image') {
@@ -49,6 +56,17 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
         }
     };
 
+    const handleTableSelect = (type: 'horizontal' | 'vertical') => {
+        if (!editor) return;
+        if (type === 'horizontal') {
+            editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
+        } else {
+            // FIXED: `toggleHeaderColumn` is the correct command.
+            editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: false }).toggleHeaderColumn().run();
+        }
+        setIsTablePopoverOpen(false);
+    };
+
     return (
         <motion.div 
             className={styles.blockToolbarContainer}
@@ -57,11 +75,25 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             exit={{ opacity: 0, y: 20 }}
             transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
         >
+            <div ref={tablePopoverRef} className={styles.optionButtonWrapper} style={{ position: 'relative' }}>
+                <TooltipButton onClick={() => setIsTablePopoverOpen(prev => !prev)} title="جدول" disabled={!editor}>
+                    <TableIcon />
+                </TooltipButton>
+                <AnimatePresence>
+                    {isTablePopoverOpen && (
+                        <motion.div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '0.75rem' }}>
+                            <TableCreationPopover onSelect={handleTableSelect} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+            <div className={bubbleStyles.toolbarDivider} />
             <TooltipButton onClick={() => addBlock('image')} title="صورة مفردة" disabled={!editor}><SingleImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('imageCompare')} title="مضاهاة صورتين" disabled={!editor}><CompareIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('twoImageGrid')} title="شبكة صورتين" disabled={!editor}><TwoImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('fourImageGrid')} title="شبكة 4 صور" disabled={!editor}><FourImageIcon /></TooltipButton>
-            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 0.4rem' }} />
+            <div className={bubbleStyles.toolbarDivider} />
+            {/* FIXED: Renamed prop to `onQualityChange` to match component definition */}
             <QualityToggle currentQuality={uploadQuality} onQualityChange={onUploadQualityChange} />
         </motion.div>
     );

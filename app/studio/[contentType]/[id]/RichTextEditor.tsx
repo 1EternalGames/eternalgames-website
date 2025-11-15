@@ -15,8 +15,8 @@ import { Color } from '@tiptap/extension-color';
 import { InputRule, Node, mergeAttributes, Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { slugify } from 'transliteration';
-import { useState, useEffect, useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
 import { uploadSanityAssetAction } from '../../actions';
@@ -26,8 +26,22 @@ import { ImageResizeComponent } from './ImageResizeComponent';
 import { ImageCompareComponent } from './ImageCompareComponent';
 import { TwoImageGridComponent } from './editor-components/TwoImageGridComponent';
 import { FourImageGridComponent } from './editor-components/FourImageGridComponent';
+import { EnhancedTable } from './extensions/EnhancedTable';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
 import styles from './Editor.module.css';
 
+const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" {...props}>
+        <circle cx="12" cy="5" r="1" />
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="12" cy="19" r="1" />
+        <circle cx="5" cy="5" r="1" />
+        <circle cx="5" cy="12" r="1" />
+        <circle cx="5" cy="19" r="1" />
+    </svg>
+);
 
 const formatFileSize = (bytes: number): string => { 
     if (bytes < 1024) return `${bytes} B`;
@@ -108,7 +122,7 @@ const TrailingNode = Extension.create({
                     const endPosition = doc.content.size;
                     const lastNode = doc.lastChild;
 
-                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'heading', 'blockquote'];
+                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'heading', 'blockquote', 'table'];
 
                     if (lastNode && nodeTypesThatNeedTrailingNode.includes(lastNode.type.name)) {
                         const paragraph = newState.schema.nodes.paragraph.create();
@@ -134,6 +148,8 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
     const [currentLinkUrl, setCurrentLinkUrl] = useState<string | undefined>(undefined);
     const [isMobile, setIsMobile] = useState(false);
     const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+    const bubbleMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -141,15 +157,19 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
         window.addEventListener('resize', checkMobile);
 
         const ua = navigator.userAgent;
-        if (/iPad|iPhone|iPod/.test(ua)) {
-            setPlatform('ios');
-        } else if (/Android/.test(ua)) {
-            setPlatform('android');
-        } else {
-            setPlatform('desktop');
+        if (/iPad|iPhone|iPod/.test(ua)) setPlatform('ios');
+        else if (/Android/.test(ua)) setPlatform('android');
+        else setPlatform('desktop');
+
+        const visualViewport = window.visualViewport;
+        if (visualViewport) {
+            const handleViewportChange = () => {
+                const isKeyboardVisible = visualViewport.height < window.innerHeight * 0.9;
+                setIsKeyboardOpen(isKeyboardVisible);
+            };
+            visualViewport.addEventListener('resize', handleViewportChange);
+            return () => visualViewport.removeEventListener('resize', handleViewportChange);
         }
-        
-        return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     const editor = useEditor({
@@ -179,6 +199,10 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             Placeholder.configure({ placeholder: 'خُطَّ ما في نفسِكَ هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
             Blockquote,
+            EnhancedTable.configure({ resizable: true }),
+            TableRow,
+            TableHeader,
+            TableCell,
             TrailingNode,
         ],
         editorProps: {
@@ -215,7 +239,6 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                     font-style: italic;
                     color: var(--text-secondary);
                 }
-                /* --- THE DEFINITIVE FIX --- */
                 .tiptap p.is-empty::before {
                     content: '';
                     display: inline-block;
@@ -225,21 +248,39 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 }
             `}</style>
             
-            <BubbleMenu 
-                editor={editor} 
-                tippyOptions={{ 
-                    duration: 100, 
-                    placement: platform === 'android' ? 'bottom-start' : 'top-end',
-                    offset: [0, 8] 
-                }} 
-                shouldShow={({ editor, state }) => { 
-                    const { from, to } = state.selection; 
-                    const isTextSelection = from !== to; 
-                    const isBlockNodeSelection = editor.isActive('image') || editor.isActive('imageCompare') || editor.isActive('twoImageGrid') || editor.isActive('fourImageGrid'); 
-                    return isTextSelection && !isBlockNodeSelection; 
+            <BubbleMenu
+                editor={editor}
+                tippyOptions={{
+                    duration: 100,
+                    placement: 'top',
+                    offset: [0, 8],
+                    appendTo: () => document.body, 
+                }}
+                shouldShow={({ editor, state }) => {
+                    const { from, to } = state.selection;
+                    const isTextSelection = from !== to;
+                    const isTableActive = editor.isActive('table');
+                    return isTextSelection && !isTableActive;
                 }}
             >
-                 <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} platform={platform} />
+                <div ref={bubbleMenuRef} className={isKeyboardOpen && isMobile ? styles.docked : ''}>
+                     <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} platform={platform} />
+                </div>
+            </BubbleMenu>
+
+            <BubbleMenu
+                editor={editor}
+                tippyOptions={{ duration: 100, placement: 'top', offset: [0, 8] }}
+                shouldShow={({ editor }) => editor.isActive('table')}
+            >
+                <motion.div drag dragMomentum={false} className={styles.formattingToolbar} onMouseDown={(e) => e.preventDefault()}>
+                    <div className={styles.dragHandle}><DragIcon /></div>
+                    <button onClick={() => editor.chain().focus().addColumnAfter().run()} className={styles.bubbleMenuButton}>عمود</button>
+                    <div className={styles.toolbarDivider} />
+                    <button onClick={() => editor.chain().focus().deleteColumn().run()} className={styles.bubbleMenuButton}>حذف عمود</button>
+                    <div className={styles.toolbarDivider} />
+                    <button onClick={() => editor.chain().focus().deleteTable().run()} className={`${styles.bubbleMenuButton} ${styles.deleteButton}`}>حذف الجدول</button>
+                </motion.div>
             </BubbleMenu>
 
             <LinkEditorModal isOpen={isLinkModalOpen} onClose={handleCloseLinkModal} onSubmit={handleSetLink} onRemove={handleRemoveLink} initialUrl={currentLinkUrl} />

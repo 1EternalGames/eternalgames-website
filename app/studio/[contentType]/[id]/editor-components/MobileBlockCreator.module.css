@@ -3,7 +3,7 @@
 .creatorContainer {
     position: fixed;
     bottom: 8rem; /* Position above the MobileViewToggle */
-    left: 2rem;   /* --- THE FIX: Anchored to the left --- */
+    left: 2rem;
     right: auto;
     z-index: 2001;
 }
@@ -21,8 +21,8 @@
     cursor: pointer;
     box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 50%, transparent);
     z-index: 122;
-    position: relative; /* Ensure it's on top */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition */
+    position: relative;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .creatorOrb.open {
@@ -43,14 +43,18 @@
 
 .creatorSatellites {
     position: absolute;
-    bottom: 55px; /* Centered on the orb */
-    left: 48px;   /* --- THE FIX: Centered on the orb (left side) --- */
+    bottom: 0;
+    left: 0;
+    width: 150px;
+    height: 150px;
     z-index: 121;
     pointer-events: none;
 }
 
 .satelliteWrapper {
     position: absolute;
+    bottom: 0;
+    left: 0;
     pointer-events: auto;
     display: flex; 
     align-items: center;
