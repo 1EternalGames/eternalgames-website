@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon } from '../../../StudioIcons';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon, HorizontalTableIcon, VerticalTableIcon } from '../../../StudioIcons';
 import styles from './MobileBlockCreator.module.css';
 
 interface MobileBlockCreatorProps {
@@ -30,8 +30,8 @@ const menuConfig: Record<MenuState, { id: string; title: string; icon: React.Rea
         { id: 'fourImageGrid', title: 'شبكة رباعية', icon: <FourImageIcon />, action: { type: 'command', command: 'fourImageGrid' } },
     ],
     table: [
-        { id: 'horizontal', title: 'جدول قياسي', icon: <TableIcon />, action: { type: 'command', command: 'horizontalTable' } },
-        { id: 'vertical', title: 'جدول مواصفات', icon: <TableIcon />, action: { type: 'command', command: 'verticalTable' } },
+        { id: 'horizontal', title: 'جدول قياسي', icon: <HorizontalTableIcon />, action: { type: 'command', command: 'horizontalTable' } },
+        { id: 'vertical', title: 'جدول مواصفات', icon: <VerticalTableIcon />, action: { type: 'command', command: 'verticalTable' } },
     ],
 };
 
@@ -74,7 +74,6 @@ export function MobileBlockCreator({ editor, onFileUpload }: MobileBlockCreatorP
             } else if (cmd === 'horizontalTable') {
                 editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
             } else if (cmd === 'verticalTable') {
-                // FIXED: The command chain for vertical tables must be separate actions.
                 editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: false }).toggleHeaderColumn().run();
             } else {
                 editor.chain().focus().insertContent({ type: cmd }).run();
