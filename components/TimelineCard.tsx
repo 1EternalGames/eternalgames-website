@@ -15,9 +15,11 @@ import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
+// THE DEFINITIVE FIX: The icon map now handles both legacy and current values.
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
     'PC': PCIcon,
     'PlayStation': PS5Icon,
+    'PlayStation 5': PS5Icon, // Legacy value support
     'Xbox': XboxIcon,
     'Switch': SwitchIcon,
 };
