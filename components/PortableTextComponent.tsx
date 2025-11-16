@@ -4,7 +4,7 @@
 import React from 'react'
 import { PortableText, PortableTextComponents, PortableTextComponentProps } from '@portabletext/react'
 import { urlFor } from '@/sanity/lib/image'
-import dynamic from 'next/dynamic' // <-- IMPORT DYNAMIC
+import dynamic from 'next/dynamic'
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
@@ -21,6 +21,9 @@ const TwoImageGrid = dynamic(() => import('./custom/TwoImageGrid'), {
     loading: () => <LoadingSpinner />,
 });
 const FourImageGrid = dynamic(() => import('./custom/FourImageGrid'), {
+    loading: () => <LoadingSpinner />,
+});
+const SanityTable = dynamic(() => import('./custom/SanityTable'), {
     loading: () => <LoadingSpinner />,
 });
 // --- END LAZY-LOADED COMPONENTS ---
@@ -67,7 +70,6 @@ const SanityImageComponent = ({ value }: { value: any }) => {
     );
 };
 
-// MODIFIED: Create a generic heading component to handle all levels.
 const HeadingComponent = ({ level, children }: { level: number, children?: React.ReactNode }) => {
     const textContent = Array.isArray(children) ? children.join('') : (children as string) || '';
     const id = slugify(textContent);
@@ -78,12 +80,11 @@ const HeadingComponent = ({ level, children }: { level: number, children?: React
         3: { fontSize: '2.2rem', margin: '4rem 0 1.5rem 0' }
     };
     
-    // MODIFIED: Use React.createElement to dynamically create the heading tag.
     return React.createElement(`h${level}`, { id, style: styles[level] || styles[2] }, children);
 }
 
 const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock>) => {
-    return <blockquote style={{ margin: '4rem 0', paddingLeft: '2rem', borderLeft: '4px solid var(--accent)', fontSize: '2.4rem', fontStyle: 'italic', color: 'var(--text-primary)' }}>{props.children}</blockquote>;
+    return <blockquote style={{ margin: '4rem 0', paddingRight: '2rem', borderRight: '4px solid var(--accent)', fontSize: '2.4rem', fontStyle: 'italic', color: 'var(--text-primary)' }}>{props.children}</blockquote>;
 }
 
 const components: PortableTextComponents = {
@@ -92,8 +93,8 @@ const components: PortableTextComponents = {
         imageCompare: ({ value }) => <ImageCompare value={value} />,
         twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
         fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
+        table: ({ value }) => <SanityTable value={value} />,
     },
-    // MODIFIED: Use the generic HeadingComponent for h1, h2, and h3.
     block: { 
         h1: ({children}) => <HeadingComponent level={1}>{children}</HeadingComponent>,
         h2: ({children}) => <HeadingComponent level={2}>{children}</HeadingComponent>,

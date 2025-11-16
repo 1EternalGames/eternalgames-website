@@ -21,10 +21,9 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
     const content: TiptapNode[] = [];
     let currentList: TiptapNode | null = null;
 
-    // Filter out any null/undefined items from the array
     const validBlocks = (blocks || []).filter(Boolean);
 
-    validBlocks.forEach((block) => {
+    validBlocks.forEach((block: any) => { // Use 'any' here to accommodate custom table type
         // --- HANDLE LIST ITEMS ---
         if (block._type === 'block' && block.listItem === 'bullet') {
             if (!currentList) {
@@ -41,6 +40,29 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
         if (currentList) {
             content.push(currentList);
             currentList = null;
+        }
+
+        // MODIFIED: Add table conversion logic
+        if (block._type === 'table') {
+            content.push({
+                type: 'table',
+                content: (block.rows || []).map((row: any) => ({
+                    type: 'tableRow',
+                    content: (row.cells || []).map((cell: any) => {
+                        // THE DEFINITIVE FIX: Use the `isHeader` flag to determine cell type.
+                        const cellType = cell.isHeader ? 'tableHeader' : 'tableCell';
+
+                        return {
+                            type: cellType,
+                            content: (cell.content || []).map((cellBlock: any) => ({
+                                type: 'paragraph',
+                                content: processBlockChildren(cellBlock),
+                            })),
+                        };
+                    }),
+                })),
+            });
+            return;
         }
 
         // --- HANDLE CUSTOM BLOCKS ---
@@ -106,10 +128,6 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
         if (block._type === 'block' && block.style) {
             const children = processBlockChildren(block);
             
-            // THE DEFINITIVE FIX:
-            // A Portable Text block with an empty span (`children.length === 1` and `children[0].text === ''`)
-            // must be converted to a Tiptap paragraph with NO `content` property.
-            // This correctly represents a blank line in the Tiptap editor.
             const isEffectivelyEmpty = children.length === 1 && children[0].text === '';
             const nodeContent = isEffectivelyEmpty ? {} : { content: children };
 
@@ -140,21 +158,17 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
 }
 
 function processBlockChildren(block: PortableTextBlock): TiptapNode[] {
-    // Ensure block.children is an array before mapping
     const children = Array.isArray(block.children) ? block.children : [];
     
-    // CRITICAL FIX: Filter out undefined/null children and handle empty text
     const processedChildren = children
-        .filter(span => span && span._type === 'span') // Only process valid spans
+        .filter(span => span && span._type === 'span')
         .map(span => {
-            // Ensure span.marks is an array before mapping
             const marks = (Array.isArray(span.marks) ? span.marks : []).map(mark => {
                 const markDefs = Array.isArray(block.markDefs) ? block.markDefs : [];
                 const markDef = markDefs.find(def => def._key === mark);
                 if (markDef?._type === 'link') {
                     return { type: 'link', attrs: { href: (markDef as any).href } };
                 }
-                // Handle 'color' annotations from Sanity
                 if (markDef?._type === 'color') {
                     return { type: 'textStyle', attrs: { color: (markDef as any).hex } };
                 }
@@ -163,10 +177,9 @@ function processBlockChildren(block: PortableTextBlock): TiptapNode[] {
                 return null;
             }).filter(Boolean) as { type: string, attrs?: any }[];
             
-            // CRITICAL: Handle undefined or null text
             return { 
                 type: 'text', 
-                text: span.text ?? '', // Use nullish coalescing to default to empty string
+                text: span.text ?? '',
                 marks 
             };
         });

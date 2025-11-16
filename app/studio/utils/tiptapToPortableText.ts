@@ -65,7 +65,6 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
 
         // --- IMAGE (DEFINITIVE FIX) ---
         if (node.type === 'image') {
-            // Prioritize the assetId attribute, which is the source of truth.
             const assetId = node.attrs?.assetId;
             if (assetId) {
                 portableTextBlocks.push({
@@ -74,9 +73,7 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
                     asset: { _type: 'reference', _ref: assetId },
                 });
             }
-            // Fallback for pasted/dragged images that might still be processing, though less likely now.
             else if (node.attrs?.src) {
-                 // Attempt to parse assetId from a Sanity CDN URL
                  const matches = node.attrs.src.match(/image-([a-fA-F0-9]+-[0-9]+x[0-9]+-[a-z]+)/);
                  if (matches && matches[1]) {
                      const parsedId = `image-${matches[1]}`;
@@ -89,6 +86,32 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
             }
             return;
         }
+        
+        // MODIFIED: Add table conversion logic
+        if (node.type === 'table') {
+            const table = {
+                _type: 'table',
+                _key: uuidv4(),
+                rows: (node.content || []).map(row => ({
+                    _type: 'tableRow',
+                    _key: uuidv4(),
+                    cells: (row.content || []).map(cell => {
+                        const cellContent = (cell.content || []).map(processTextBlock).filter(Boolean);
+                        // THE DEFINITIVE FIX: Embed the header status in the cell data.
+                        const isHeader = cell.type === 'tableHeader';
+                        return {
+                            _type: 'tableCell',
+                            _key: uuidv4(),
+                            content: cellContent,
+                            isHeader: isHeader ? true : undefined, // Only add the flag if it's true
+                        };
+                    }),
+                })),
+            };
+            portableTextBlocks.push(table);
+            return;
+        }
+
 
         // --- BULLET LISTS ---
         if (node.type === 'bulletList') {
@@ -130,8 +153,6 @@ function processTextBlock(node: TiptapNode): any | null {
             block.style = `h${node.attrs?.level || 2}`;
             break;
         case 'blockquote':
-            // An empty blockquote is not valid, so we need to ensure it has content.
-            // If the Tiptap node has content, process it into a paragraph.
             if (node.content && node.content.length > 0) {
                 const blockquoteParagraph = processTextBlock({ type: 'paragraph', content: node.content });
                 if (blockquoteParagraph) {
@@ -139,7 +160,6 @@ function processTextBlock(node: TiptapNode): any | null {
                     return blockquoteParagraph;
                 }
             }
-            // If the blockquote is empty, return null to avoid creating an invalid block.
             return null;
         default:
             block.style = 'normal';
@@ -172,9 +192,6 @@ function processTextBlock(node: TiptapNode): any | null {
         });
     });
     
-    // THE DEFINITIVE FIX:
-    // If a block (like a paragraph) has no content (i.e., it's a blank line),
-    // Sanity requires its `children` array to contain a single empty span.
     if (block.children.length === 0) {
         block.children.push({ _type: 'span', _key: uuidv4(), text: '', marks: [] });
     }

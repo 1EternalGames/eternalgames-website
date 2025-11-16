@@ -12,12 +12,8 @@ export default defineType({
     defineArrayMember({
       title: 'Block',
       type: 'block',
-      // Styles let you set what textual styles there are for blocks.
-      // These are the styles that will be available when the user selects
-      // a top-level block from the menu.
       styles: [
         {title: 'Normal', value: 'normal'},
-        // MODIFIED: Add H1 and H3 to the list of available styles.
         {title: 'H1', value: 'h1'},
         {title: 'H2', value: 'h2'},
         {title: 'H3', value: 'h3'},
@@ -25,15 +21,11 @@ export default defineType({
         {title: 'Quote', value: 'blockquote'},
       ],
       lists: [{title: 'Bullet', value: 'bullet'}],
-      // Marks let you mark up inline text in the block editor.
       marks: {
-        // Decorators usually describe a single property – e.g. a typographic
-        // preference or highlighting by editors.
         decorators: [
           {title: 'Strong', value: 'strong'},
           {title: 'Emphasis', value: 'em'},
         ],
-        // Annotations can be any object structure – e.g. a link or a footnote.
         annotations: [
           {
             title: 'URL',
@@ -47,7 +39,6 @@ export default defineType({
               }),
             ],
           },
-          // MODIFIED: Added a definition for a color annotation.
           {
             name: 'color',
             title: 'Color',
@@ -63,9 +54,6 @@ export default defineType({
         ],
       },
     }),
-    // You can add additional types here. Note that you can't use
-    // primitive types such as 'string' and 'number' in the same array
-    // as a block type.
     defineArrayMember({
       type: 'image',
       options: {hotspot: true},
@@ -78,6 +66,10 @@ export default defineType({
     }),
     defineArrayMember({
       type: 'fourImageGrid',
+    }),
+    // MODIFIED: Added table type to the schema.
+    defineArrayMember({
+      type: 'table',
     }),
   ],
 })
