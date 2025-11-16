@@ -43,7 +43,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
-  color: var(--text-secondary);
+  color: var(--text-primary); /* THE FIX: Changed from --text-secondary */
   transition: color 0.3s ease, transform 0.3s ease;
 }
 .designerCredit:hover {

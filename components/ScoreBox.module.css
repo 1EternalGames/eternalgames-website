@@ -66,11 +66,6 @@
   gap: 3rem;
   text-align: right;
 }
-@media (min-width: 640px) {
-  .scoreBoxProsCons {
-    grid-template-columns: 1fr 1fr;
-  }
-}
 
 .scoreBoxProsCons h4 {
   font-family: var(--font-main), sans-serif;
@@ -95,4 +90,13 @@
   gap: 1rem;
 }
 
-
+/* --- THE DEFINITIVE FIX FOR MOBILE --- */
+@media (max-width: 640px) {
+  .scoreBox {
+    padding: 2rem;
+  }
+  .scoreBoxProsCons {
+    grid-template-columns: 1fr; /* Stack to a single column */
+    gap: 4rem; /* Increase gap between pros and cons sections */
+  }
+}
