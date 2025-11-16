@@ -38,25 +38,31 @@
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: right; color: var(--text-secondary); opacity: 0.7; pointer-events: none; height: 0; }
 
 /* --- TABLE STYLES --- */
-.tiptap table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 2rem 0; }
-/* Standard Horizontal Table */
-.tiptap thead table { border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-.tiptap thead th, .tiptap thead td { border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-.tiptap thead th { font-weight: bold; background-color: color-mix(in srgb, var(--bg-secondary) 50%, #000); color: var(--text-primary); }
-/* Vertical "Specifications" Table */
-.tiptap tbody table { border: none; }
-.tiptap tbody th, .tiptap tbody td { border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-.tiptap tbody th { font-weight: 700; color: var(--accent); background-color: transparent; } /* MODIFIED: font-weight set to 700 */
-.tiptap table tr:first-child th, .tiptap table tr:first-child td { border-top: none; }
-.tiptap table tr:last-child th, .tiptap table tr:last-child td { border-bottom: none; }
-.tiptap table tr th:first-child, .tiptap table tr td:first-child { border-right: none; }
-.tiptap table tr th:last-child, .tiptap table tr td:last-child { border-left: none; }
-/* General Cell Behavior */
-.tiptap th, .tiptap td { min-width: 1em; padding: 1.2rem 1.5rem; vertical-align: top; box-sizing: border-box; position: relative; text-align: right; }
-.tiptap .selectedCell:after { content: ''; position: absolute; inset: 0; background: color-mix(in srgb, var(--accent) 20%, transparent); pointer-events: none; z-index: -1; }
-.tiptap .column-resize-handle { position: absolute; right: -2px; top: 0; width: 4px; bottom: -2px; z-index: 20; cursor: col-resize; background-color: var(--accent); opacity: 0; transition: opacity 0.2s; }
-.tiptap .column-resize-handle:hover, .tiptap.resize-cursor { opacity: 1 !important; }
-.tiptap table p.is-empty::before { content: ''; display: block; min-height: 1rem; }
+/* This is the outer wrapper for the custom node view */
+.tiptap .imageGridContainer table {
+    min-width: 100%; /* Ensure the table inside our custom component takes full width */
+}
+
+/* This targets the default tiptap table rendering, which is now HIDDEN */
+.tiptap > table {
+    display: none;
+}
+
+/* New styling for content inside our custom table component cells */
+.tiptap .imageGridContainer th p,
+.tiptap .imageGridContainer td p {
+    margin: 0;
+    padding: 1.5rem 2rem;
+    font-size: 1.6rem;
+    outline: none;
+}
+.tiptap .imageGridContainer th p {
+    color: var(--accent);
+    font-weight: 700;
+}
+.tiptap .imageGridContainer td p {
+    color: var(--text-primary);
+}
 
 
 .formattingToolbar { 

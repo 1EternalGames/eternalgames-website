@@ -52,16 +52,6 @@ export function TableCreationPopover({ onSelect }: TableCreationPopoverProps) {
                 </button>
                 <Tooltip text="جدول قياسي" />
             </div>
-            <div className="tooltip-container" style={{ position: 'relative' }}>
-                <button 
-                    onClick={() => onSelect('vertical')} 
-                    className={styles.bubbleMenuButton} 
-                    style={{ width: '44px', height: '44px' }}
-                >
-                    <VerticalTableIcon />
-                </button>
-                <Tooltip text="جدول مواصفات" />
-            </div>
         </motion.div>
     );
 }

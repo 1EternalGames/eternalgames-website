@@ -16,7 +16,7 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   align-items: center;
-  position: relative; /* Changed to relative for the pseudo-element */
+  position: relative;
 }
 
 /* THE DEFINITIVE FIX: Central Divider Line */
@@ -47,9 +47,16 @@
   position: relative;
 }
 
-/* Remove the old pseudo-element from the label */
-.detailLabel::before {
-  display: none;
+/* This is the new rule for the TableComponent header cell's divider */
+.detailLabel_before_override::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  left: 0;
+  width: 2px;
+  background-color: var(--accent);
+  box-shadow: 0 0 8px 0 var(--accent);
 }
 
 .detailValue {

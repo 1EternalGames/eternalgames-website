@@ -16,6 +16,7 @@ import { InputRule, Node, mergeAttributes, Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { slugify } from 'transliteration';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
@@ -26,15 +27,17 @@ import { ImageResizeComponent } from './ImageResizeComponent';
 import { ImageCompareComponent } from './ImageCompareComponent';
 import { TwoImageGridComponent } from './editor-components/TwoImageGridComponent';
 import { FourImageGridComponent } from './editor-components/FourImageGridComponent';
-import { EnhancedTable } from './extensions/EnhancedTable';
+import { GameDetailsNode } from './extensions/GameDetailsNode';
+import { StandardTableComponent } from './editor-components/StandardTableComponent';
+// THE DEFINITIVE FIX: Import the core table extensions from Tiptap
+import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
-import { GameDetailsNode } from './extensions/GameDetailsNode'; // NEW IMPORT
 import styles from './Editor.module.css';
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24" fill="none" {...props}>
         <path d="M20.964 4H16.9719M20.964 4C20.964 4.56018 19.4727 5.60678 18.9679 6M20.964 4C20.964 3.43982 19.4727 2.39322 18.9679 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
         <path d="M2.99921 4H6.99136M2.99921 4C2.99921 3.43982 4.49058 2.39322 4.99529 2M2.99921 4C2.99921 4.56018 4.49058 5.60678 4.99529 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
         <path d="M9.81505 22.0006V21.0595C9.81505 20.4116 9.60526 19.781 9.21707 19.2622L5.39435 14.1534C5.07668 13.7288 4.83978 13.2141 4.98565 12.7043C5.34585 11.4454 6.76792 10.3261 8.35901 12.2974L9.95917 14.0049V3.59381C10.0573 1.76459 13.1325 1.18685 13.4504 3.59381V9.52698C14.933 9.33608 21.9162 10.378 20.9003 14.7917C20.8517 15.0026 20.8032 15.2167 20.7557 15.4279C20.5493 16.346 19.9407 17.98 19.2696 18.9355C18.5705 19.9309 18.897 21.5353 18.8172 22.0019" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -120,7 +123,7 @@ const TrailingNode = Extension.create({
                     const endPosition = doc.content.size;
                     const lastNode = doc.lastChild;
 
-                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'heading', 'blockquote', 'table'];
+                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'table', 'heading', 'blockquote'];
 
                     if (lastNode && nodeTypesThatNeedTrailingNode.includes(lastNode.type.name)) {
                         const paragraph = newState.schema.nodes.paragraph.create();
@@ -196,9 +199,14 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'editor-link' }, }),
             Placeholder.configure({ placeholder: 'خُطَّ ما في نفسِكَ هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
-            GameDetailsNode, // NEW
+            GameDetailsNode, 
             Blockquote,
-            EnhancedTable.configure({ resizable: true }),
+            // THE DEFINITIVE FIX: Use the official Table extension and extend it with our custom component.
+            Table.configure({ resizable: true }).extend({
+                addNodeView() {
+                  return ReactNodeViewRenderer(StandardTableComponent);
+                },
+            }),
             TableRow,
             TableHeader,
             TableCell,
@@ -258,28 +266,12 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
                 shouldShow={({ editor, state }) => {
                     const { from, to } = state.selection;
                     const isTextSelection = from !== to;
-                    const isTableActive = editor.isActive('table');
-                    return isTextSelection && !isTableActive;
+                    return isTextSelection;
                 }}
             >
                 <div ref={bubbleMenuRef} className={isKeyboardOpen && isMobile ? styles.docked : ''}>
                      <FormattingToolbar editor={editor} onLinkClick={handleOpenLinkModal} platform={platform} />
                 </div>
-            </BubbleMenu>
-
-            <BubbleMenu
-                editor={editor}
-                tippyOptions={{ duration: 100, placement: 'top', offset: [0, 8] }}
-                shouldShow={({ editor }) => editor.isActive('table')}
-            >
-                <motion.div drag dragMomentum={false} className={styles.formattingToolbar} onMouseDown={(e) => e.preventDefault()}>
-                    <div className={styles.dragHandle}><DragIcon /></div>
-                    <button onClick={() => editor.chain().focus().addColumnAfter().run()} className={styles.bubbleMenuButton}>عمود</button>
-                    <div className={styles.toolbarDivider} />
-                    <button onClick={() => editor.chain().focus().deleteColumn().run()} className={styles.bubbleMenuButton}>حذف عمود</button>
-                    <div className={styles.toolbarDivider} />
-                    <button onClick={() => editor.chain().focus().deleteTable().run()} className={`${styles.bubbleMenuButton} ${styles.deleteButton}`}>حذف الجدول</button>
-                </motion.div>
             </BubbleMenu>
 
             <LinkEditorModal isOpen={isLinkModalOpen} onClose={handleCloseLinkModal} onSubmit={handleSetLink} onRemove={handleRemoveLink} initialUrl={currentLinkUrl} />

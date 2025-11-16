@@ -40,7 +40,7 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
     const tablePopoverRef = useRef<HTMLDivElement>(null);
     useClickOutside(tablePopoverRef, () => setIsTablePopoverOpen(false));
 
-    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails') => {
+    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails' | 'table') => {
         if (!editor) return;
         if (type === 'image') {
             const input = document.createElement('input');
@@ -51,20 +51,11 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
                 if (file) { onFileUpload(file); }
             };
             input.click();
+        } else if (type === 'table') {
+            editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
         } else {
             editor.chain().focus().insertContent({ type }).run();
         }
-    };
-
-    const handleTableSelect = (type: 'horizontal' | 'vertical') => {
-        if (!editor) return;
-        if (type === 'horizontal') {
-            editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
-        } else {
-            // FIXED: `toggleHeaderColumn` is the correct command.
-            editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: false }).toggleHeaderColumn().run();
-        }
-        setIsTablePopoverOpen(false);
     };
 
     return (
@@ -75,18 +66,9 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             exit={{ opacity: 0, y: 20 }}
             transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
         >
-            <div ref={tablePopoverRef} className={styles.optionButtonWrapper} style={{ position: 'relative' }}>
-                <TooltipButton onClick={() => setIsTablePopoverOpen(prev => !prev)} title="جدول" disabled={!editor}>
-                    <TableIcon />
-                </TooltipButton>
-                <AnimatePresence>
-                    {isTablePopoverOpen && (
-                        <motion.div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '0.75rem' }}>
-                            <TableCreationPopover onSelect={handleTableSelect} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+            <TooltipButton onClick={() => addBlock('table')} title="جدول قياسي" disabled={!editor}>
+                <TableIcon />
+            </TooltipButton>
             <TooltipButton onClick={() => addBlock('gameDetails')} title="تفاصيل اللعبة" disabled={!editor}><GameDetailsIcon /></TooltipButton>
             <div className={bubbleStyles.toolbarDivider} />
             <TooltipButton onClick={() => addBlock('image')} title="صورة مفردة" disabled={!editor}><SingleImageIcon /></TooltipButton>
@@ -94,7 +76,6 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             <TooltipButton onClick={() => addBlock('twoImageGrid')} title="شبكة صورتين" disabled={!editor}><TwoImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('fourImageGrid')} title="شبكة 4 صور" disabled={!editor}><FourImageIcon /></TooltipButton>
             <div className={bubbleStyles.toolbarDivider} />
-            {/* FIXED: Renamed prop to `onQualityChange` to match component definition */}
             <QualityToggle currentQuality={uploadQuality} onQualityChange={onUploadQualityChange} />
         </motion.div>
     );

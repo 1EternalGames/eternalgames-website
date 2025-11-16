@@ -97,7 +97,7 @@ const components: PortableTextComponents = {
         twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
         fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
         table: ({ value }) => <SanityTable value={value} />,
-        gameDetails: ({ value }) => <GameDetails details={value.details} width={value.width} />, // NEW
+        gameDetails: ({ value }) => <GameDetails details={value.details} />, // CORRECTED: Removed width prop
     },
     block: { 
         h1: ({children}) => <HeadingComponent level={1}>{children}</HeadingComponent>,

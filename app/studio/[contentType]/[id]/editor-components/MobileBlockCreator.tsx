@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon, HorizontalTableIcon, VerticalTableIcon } from '../../../StudioIcons';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon, GameDetailsIcon } from '../../../StudioIcons';
 import styles from './MobileBlockCreator.module.css';
 
 interface MobileBlockCreatorProps {
@@ -12,7 +12,7 @@ interface MobileBlockCreatorProps {
     onFileUpload: (file: File) => void;
 }
 
-type MenuState = 'root' | 'image' | 'table';
+type MenuState = 'root' | 'image';
 
 type MenuAction = 
     | { type: 'submenu'; state: MenuState }
@@ -21,17 +21,14 @@ type MenuAction =
 const menuConfig: Record<MenuState, { id: string; title: string; icon: React.ReactNode; action: MenuAction }[]> = {
     root: [
         { id: 'image', title: 'صورة', icon: <SingleImageIcon />, action: { type: 'submenu', state: 'image' } },
-        { id: 'table', title: 'جدول', icon: <TableIcon />, action: { type: 'submenu', state: 'table' } },
+        { id: 'table', title: 'جدول', icon: <TableIcon />, action: { type: 'command', command: 'table' } },
+        { id: 'gameDetails', title: 'تفاصيل', icon: <GameDetailsIcon />, action: { type: 'command', command: 'gameDetails' } },
         { id: 'compare', title: 'مقارنة', icon: <CompareIcon />, action: { type: 'command', command: 'imageCompare' } },
     ],
     image: [
         { id: 'singleImage', title: 'صورة مفردة', icon: <SingleImageIcon />, action: { type: 'command', command: 'image' } },
         { id: 'twoImageGrid', title: 'شبكة ثنائية', icon: <TwoImageIcon />, action: { type: 'command', command: 'twoImageGrid' } },
         { id: 'fourImageGrid', title: 'شبكة رباعية', icon: <FourImageIcon />, action: { type: 'command', command: 'fourImageGrid' } },
-    ],
-    table: [
-        { id: 'horizontal', title: 'جدول قياسي', icon: <HorizontalTableIcon />, action: { type: 'command', command: 'horizontalTable' } },
-        { id: 'vertical', title: 'جدول مواصفات', icon: <VerticalTableIcon />, action: { type: 'command', command: 'verticalTable' } },
     ],
 };
 
@@ -71,10 +68,8 @@ export function MobileBlockCreator({ editor, onFileUpload }: MobileBlockCreatorP
                     if (file) { onFileUpload(file); }
                 };
                 input.click();
-            } else if (cmd === 'horizontalTable') {
+            } else if (cmd === 'table') {
                 editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
-            } else if (cmd === 'verticalTable') {
-                editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: false }).toggleHeaderColumn().run();
             } else {
                 editor.chain().focus().insertContent({ type: cmd }).run();
             }
