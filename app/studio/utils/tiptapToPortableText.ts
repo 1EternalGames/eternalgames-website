@@ -72,6 +72,25 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
             });
             return;
         }
+        
+        // --- TABLE --- // ADDED
+        if (node.type === 'table') {
+            const tableRows: any[] = [];
+            (node.content?.[0]?.content || []).forEach((rowNode: TiptapNode) => {
+                const tableCells: any[] = [];
+                (rowNode.content || []).forEach((cellNode: TiptapNode) => {
+                    tableCells.push({
+                        _key: uuidv4(),
+                        _type: 'cell',
+                        isHeader: cellNode.type === 'tableHeader',
+                        content: tiptapToPortableText({ type: 'doc', content: cellNode.content || [] }),
+                    });
+                });
+                tableRows.push({ _key: uuidv4(), _type: 'row', cells: tableCells });
+            });
+            portableTextBlocks.push({ _type: 'table', _key: uuidv4(), rows: tableRows });
+            return;
+        }
 
         // --- IMAGE (DEFINITIVE FIX) ---
         if (node.type === 'image') {

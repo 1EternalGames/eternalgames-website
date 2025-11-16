@@ -52,6 +52,20 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
             });
             return;
         }
+        if (block._type === 'table') { // ADDED
+            const tableContent: TiptapNode[] = [];
+            (block.rows || []).forEach((row: any) => {
+                const rowContent: TiptapNode[] = [];
+                (row.cells || []).forEach((cell: any) => {
+                    const cellType = cell.isHeader ? 'tableHeader' : 'tableCell';
+                    const cellContent = portableTextToTiptap(cell.content || []).content;
+                    rowContent.push({ type: cellType, content: cellContent });
+                });
+                tableContent.push({ type: 'tableRow', content: rowContent });
+            });
+            content.push({ type: 'table', content: [{ type: 'tableContent', content: tableContent }] });
+            return;
+        }
         if (block._type === 'imageCompare') {
             const { image1, image2, size } = block as any;
             content.push({ 

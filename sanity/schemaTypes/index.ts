@@ -9,9 +9,10 @@ import imageCompare from './imageCompareType'
 import twoImageGrid from './twoImageGridType'
 import fourImageGrid from './fourImageGridType'
 import gameDetails from './gameDetailsType'
+import table from './tableType' // ADDED
 import author from './creators/authorType'
 import designer from './creators/designerType'
 import reporter from './creators/reporterType'
 import reviewer from './creators/reviewerType'
 
-export const schemaTypes = [review, article, news, author, designer, reporter, reviewer, game, tag, gameRelease, blockContent, imageCompare, twoImageGrid, fourImageGrid, gameDetails]
+export const schemaTypes = [review, article, news, author, designer, reporter, reviewer, game, tag, gameRelease, blockContent, imageCompare, twoImageGrid, fourImageGrid, gameDetails, table] // ADDED

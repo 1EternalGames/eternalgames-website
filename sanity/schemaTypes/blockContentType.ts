@@ -70,5 +70,8 @@ export default defineType({
     defineArrayMember({
       type: 'gameDetails',
     }),
+    defineArrayMember({ // ADDED
+      type: 'table',
+    }),
   ],
 })

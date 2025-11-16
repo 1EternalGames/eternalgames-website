@@ -3,7 +3,7 @@
 
 import { Editor } from '@tiptap/react';
 import { motion } from 'framer-motion';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, GameDetailsIcon } from '../../StudioIcons';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, GameDetailsIcon, TableIcon } from '../../StudioIcons';
 import { QualityToggle } from './editor-components/QualityToggle';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './BlockToolbar.module.css';
@@ -33,7 +33,7 @@ const TooltipButton = ({ onClick, title, children, disabled }: { onClick: () => 
 );
 
 export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQualityChange }: BlockToolbarProps) {
-    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails') => {
+    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails' | 'table') => {
         if (!editor) return;
         if (type === 'image') {
             const input = document.createElement('input');
@@ -44,6 +44,8 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
                 if (file) { onFileUpload(file); }
             };
             input.click();
+        } else if (type === 'table') {
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
         } else {
             editor.chain().focus().insertContent({ type }).run();
         }
@@ -58,6 +60,7 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
         >
             <TooltipButton onClick={() => addBlock('gameDetails')} title="تفاصيل اللعبة" disabled={!editor}><GameDetailsIcon /></TooltipButton>
+            <TooltipButton onClick={() => addBlock('table')} title="إدراج جدول" disabled={!editor}><TableIcon /></TooltipButton>
             <div className={bubbleStyles.toolbarDivider} />
             <TooltipButton onClick={() => addBlock('image')} title="صورة مفردة" disabled={!editor}><SingleImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('imageCompare')} title="مضاهاة صورتين" disabled={!editor}><CompareIcon /></TooltipButton>

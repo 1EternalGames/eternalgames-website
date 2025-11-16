@@ -37,34 +37,6 @@
 .tiptap h2 { font-family: var(--font-main), sans-serif; font-size: 2.8rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: right; color: var(--text-secondary); opacity: 0.7; pointer-events: none; height: 0; }
 
-/* --- TABLE STYLES --- */
-/* This is the outer wrapper for the custom node view */
-.tiptap .imageGridContainer table {
-    min-width: 100%; /* Ensure the table inside our custom component takes full width */
-}
-
-/* This targets the default tiptap table rendering, which is now HIDDEN */
-.tiptap > table {
-    display: none;
-}
-
-/* New styling for content inside our custom table component cells */
-.tiptap .imageGridContainer th p,
-.tiptap .imageGridContainer td p {
-    margin: 0;
-    padding: 1.5rem 2rem;
-    font-size: 1.6rem;
-    outline: none;
-}
-.tiptap .imageGridContainer th p {
-    color: var(--accent);
-    font-weight: 700;
-}
-.tiptap .imageGridContainer td p {
-    color: var(--text-primary);
-}
-
-
 .formattingToolbar { 
     display: flex; 
     align-items: center;
@@ -110,6 +82,42 @@
 .image-compare-container[data-size="large"] { max-width: 100%; }
 .image-grid-container { margin: 2rem 0; border-radius: 12px; transition: box-shadow 0.2s ease-out; padding: 1rem; border: 1px solid var(--border-color); background: var(--bg-primary); }
 .tiptap .ProseMirror-selectednode .image-grid-container { box-shadow: 0 0 0 3px var(--accent); }
+
+/* --- TABLE STYLES --- */
+.tiptap table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    text-align: right;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.tiptap th, .tiptap td {
+    border: 1px solid var(--border-color);
+    padding: 0.8rem 1.2rem;
+    vertical-align: top;
+}
+.tiptap th {
+    font-weight: bold;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+.tiptap .selectedCell:after {
+    z-index: 2;
+    position: absolute;
+    content: "";
+    left: 0; right: 0; top: 0; bottom: 0;
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    pointer-events: none;
+}
+.tiptap .column-resize-handle {
+    position: absolute;
+    right: -2px; top: 0; bottom: 0;
+    width: 4px;
+    background-color: var(--accent);
+    pointer-events: none;
+}
 
 @media (max-width: 1024px) {
     .sanctumMain { position: relative; overflow: hidden; height: calc(100% - 60px); }

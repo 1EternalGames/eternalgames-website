@@ -28,6 +28,10 @@ import { ImageCompareComponent } from './ImageCompareComponent';
 import { TwoImageGridComponent } from './editor-components/TwoImageGridComponent';
 import { FourImageGridComponent } from './editor-components/FourImageGridComponent';
 import { GameDetailsNode } from './extensions/GameDetailsNode';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 import styles from './Editor.module.css';
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -117,7 +121,7 @@ const TrailingNode = Extension.create({
                     const endPosition = doc.content.size;
                     const lastNode = doc.lastChild;
 
-                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'heading', 'blockquote'];
+                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'heading', 'blockquote', 'table'];
 
                     if (lastNode && nodeTypesThatNeedTrailingNode.includes(lastNode.type.name)) {
                         const paragraph = newState.schema.nodes.paragraph.create();
@@ -196,6 +200,10 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             GameDetailsNode, 
             Blockquote,
             TrailingNode,
+            Table.configure({ resizable: true }),
+            TableRow,
+            TableHeader,
+            TableCell,
         ],
         editorProps: {
             attributes: { class: styles.tiptap },
