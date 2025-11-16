@@ -44,7 +44,7 @@ const COLOR_PALETTE = [
     { title: 'Purples', colors: ['#F5F3FF', '#EDE9FE', '#DDD6FE', '#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6', '#4C1D95', '#2E1065'] },
 ];
 
-// --- NEW THEME-AWARE COLOR COMPONENT ---
+// --- THEME-AWARE COLOR COMPONENT ---
 const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 'color'; hex: string }>) => {
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -68,32 +68,39 @@ const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 
         }
     }
 
-    // If the color isn't from our predefined palette (e.g., custom hex), don't change it.
-    if (!colorInfo) {
-        return <span style={{ color: originalColor }}>{children}</span>;
+    // If it's a grayscale color, revert to default text color.
+    if (colorInfo && colorInfo.palette.title === 'Grays') {
+        return <span>{children}</span>;
     }
     
     let finalColor = originalColor;
-    const { palette, grade } = colorInfo;
 
-    // Special case for the Grayscale palette
-    if (palette.title === 'Grays') {
-        const oppositeGrade = 11 - grade; // e.g., 1 -> 10, 10 -> 1
-        if (resolvedTheme === 'dark' && grade > 5) { // Dark gray on dark bg
-             finalColor = palette.colors[oppositeGrade - 1];
-        } else if (resolvedTheme === 'light' && grade < 6) { // Light gray on light bg
-             finalColor = palette.colors[oppositeGrade - 1];
-        }
-    } 
-    // Rules for all other color palettes
-    else {
+    if (colorInfo) {
+        // Apply grade-based logic for palette colors
+        const { palette, grade } = colorInfo;
         if (resolvedTheme === 'light' && grade >= 1 && grade <= 4) {
-            // Very light color on light background, shift to grade 5 (mid-dark)
-            finalColor = palette.colors[4]; 
+            finalColor = palette.colors[4];
         } else if (resolvedTheme === 'dark' && grade >= 7 && grade <= 10) {
-            // Very dark color on dark background, shift to grade 6 (mid-light)
-            finalColor = palette.colors[5]; 
+            finalColor = palette.colors[5];
         }
+    }
+
+    // Luminance fallback for custom colors and extreme palette cases
+    const getLuminance = (hex: string): number => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        if (!result) return 0;
+        const r = parseInt(result[1], 16);
+        const g = parseInt(result[2], 16);
+        const b = parseInt(result[3], 16);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    
+    const luminance = getLuminance(finalColor);
+    
+    if (resolvedTheme === 'dark' && luminance < 60) {
+        finalColor = `color-mix(in srgb, ${finalColor} 20%, white 80%)`;
+    } else if (resolvedTheme === 'light' && luminance > 200) {
+        finalColor = `color-mix(in srgb, ${finalColor} 70%, black 30%)`;
     }
 
     return <span style={{ color: finalColor }}>{children}</span>;
