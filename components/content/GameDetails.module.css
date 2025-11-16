@@ -1,0 +1,69 @@
+/* components/content/GameDetails.module.css */
+.detailsContainer {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  margin: 4rem 0;
+}
+
+[data-theme='dark'] .detailsContainer {
+  box-shadow: 0 0 25px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  align-items: center;
+  position: relative;
+}
+
+.detailRow:not(:last-child) {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detailLabel {
+  padding: 1.5rem 2rem;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--accent);
+  text-align: right;
+  position: relative;
+}
+
+.detailLabel::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  left: 0;
+  width: 2px;
+  background-color: var(--accent);
+  box-shadow: 0 0 8px 0 var(--accent);
+}
+
+.detailValue {
+  padding: 1.5rem 2rem;
+  font-family: var(--font-main);
+  font-size: 1.6rem;
+  color: var(--text-primary);
+  text-align: right; /* Default to RTL alignment */
+}
+
+/* Enforce LTR text alignment when dir="ltr" is set */
+.detailValue[dir='ltr'] {
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .detailRow {
+    grid-template-columns: 1.5fr 1fr;
+  }
+  .detailLabel,
+  .detailValue {
+    padding: 1.2rem 1.5rem;
+    font-size: 1.5rem;
+  }
+}

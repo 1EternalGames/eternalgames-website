@@ -1,0 +1,247 @@
+/* components/custom/SanityTable.module.css */
+
+.tableWrapper {
+    margin: 5rem 0;
+    position: relative;
+}
+
+.tableWrapper::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--accent), transparent, var(--accent));
+    border-radius: 14px;
+    opacity: 0.15;
+    z-index: -1;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--border-color));
+}
+
+/* === HORIZONTAL TABLE === */
+.table.horizontal thead {
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--accent) 8%, var(--bg-secondary)),
+        var(--bg-secondary)
+    );
+    position: relative;
+}
+
+.table.horizontal thead::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        var(--accent) 50%,
+        transparent
+    );
+}
+
+.table.horizontal thead th {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.45rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2rem 2.4rem;
+    position: relative;
+}
+
+.table.horizontal thead th:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 1px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--accent) 25%, transparent),
+        transparent
+    );
+}
+
+.table.horizontal tbody tr {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.table.horizontal tbody tr::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.table.horizontal tbody tr:last-child::after {
+    display: none;
+}
+
+.table.horizontal tbody tr:hover {
+    background: linear-gradient(
+        to left,
+        color-mix(in srgb, var(--accent) 8%, transparent),
+        color-mix(in srgb, var(--accent) 4%, transparent)
+    );
+    box-shadow: inset -3px 0 0 var(--accent);
+}
+
+.table.horizontal tbody td {
+    padding: 1.8rem 2.4rem;
+    color: var(--text-primary);
+    font-size: 1.6rem;
+    position: relative;
+}
+
+.table.horizontal tbody td:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: color-mix(in srgb, var(--border-color) 40%, transparent);
+}
+
+/* === VERTICAL TABLE === */
+.table.vertical tbody tr {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.table.vertical tbody tr::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.table.vertical tbody tr:last-child::after {
+    display: none;
+}
+
+.table.vertical tbody th {
+    background: linear-gradient(
+        to left,
+        var(--bg-secondary),
+        color-mix(in srgb, var(--accent) 6%, var(--bg-secondary))
+    );
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.5rem;
+    padding: 1.8rem 2.4rem;
+    width: 32%;
+    position: relative;
+    border-left: 4px solid var(--accent);
+}
+
+.table.vertical tbody th::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 15%;
+    height: 70%;
+    width: 1px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--accent) 30%, transparent),
+        transparent
+    );
+}
+
+.table.vertical tbody td {
+    padding: 1.8rem 2.4rem;
+    color: var(--text-primary);
+    font-size: 1.6rem;
+}
+
+.table.vertical tbody tr:hover {
+    background: color-mix(in srgb, var(--accent) 4%, var(--bg-secondary));
+}
+
+.table.vertical tbody tr:hover th {
+    background: linear-gradient(
+        to left,
+        color-mix(in srgb, var(--accent) 4%, var(--bg-secondary)),
+        color-mix(in srgb, var(--accent) 10%, var(--bg-secondary))
+    );
+    border-left-color: color-mix(in srgb, var(--accent) 120%, #fff);
+}
+
+/* === SHARED STYLES === */
+.table th,
+.table td {
+    text-align: right;
+    vertical-align: middle;
+    line-height: 1.6;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .tableWrapper {
+        margin: 4rem 0;
+        overflow-x: auto;
+    }
+    
+    .table {
+        min-width: 640px;
+    }
+    
+    .table.horizontal thead th,
+    .table.horizontal tbody td,
+    .table.vertical tbody th,
+    .table.vertical tbody td {
+        padding: 1.5rem 2rem;
+        font-size: 1.4rem;
+    }
+    
+    .table.horizontal thead th {
+        font-size: 1.3rem;
+    }
+    
+    .table.vertical tbody th {
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tableWrapper {
+        margin: 3rem 0;
+    }
+    
+    .table {
+        min-width: 560px;
+    }
+    
+    .table.horizontal thead th,
+    .table.horizontal tbody td,
+    .table.vertical tbody th,
+    .table.vertical tbody td {
+        padding: 1.3rem 1.6rem;
+        font-size: 1.3rem;
+    }
+}
