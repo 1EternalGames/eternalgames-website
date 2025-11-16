@@ -67,7 +67,10 @@ export function MobileBlockCreator({ editor, onFileUpload }: MobileBlockCreatorP
                     if (file) { onFileUpload(file); }
                 };
                 input.click();
-            } else {
+            } else if (cmd === 'table') {
+                editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run();
+            }
+            else {
                 editor.chain().focus().insertContent({ type: cmd }).run();
             }
             setIsOpen(false);

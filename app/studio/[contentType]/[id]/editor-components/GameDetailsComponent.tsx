@@ -2,8 +2,9 @@
 'use client';
 
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import styles from '../Editor.module.css';
+import editorStyles from '../Editor.module.css';
 import gameDetailsStyles from '@/components/content/GameDetails.module.css';
+import componentStyles from './GameDetailsComponent.module.css'; // MODIFIED: Import new CSS module
 
 const isRTL = (s: string) => {
   if (!s) return true;
@@ -12,8 +13,6 @@ const isRTL = (s: string) => {
 };
 
 export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: NodeViewProps) => {
-  // THE DEFINITIVE FIX: Ensure `details` is always an array.
-  // `node.attrs.details` could be an object if data is malformed, so we check with `Array.isArray`.
   const details = Array.isArray(node.attrs.details) ? node.attrs.details : [];
 
   const handleValueChange = (index: number, value: string) => {
@@ -38,7 +37,7 @@ export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: Nod
   };
 
   return (
-    <NodeViewWrapper as="div" className={styles.imageGridContainer} data-drag-handle>
+    <NodeViewWrapper as="div" className={editorStyles.imageGridContainer} data-drag-handle>
       <div className={gameDetailsStyles.detailsContainer}>
         {details.map((detail: { label: string; value: string }, index: number) => (
           <div key={index} className={gameDetailsStyles.detailRow}>
@@ -46,8 +45,8 @@ export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: Nod
               type="text"
               value={detail.label}
               onChange={(e) => handleLabelChange(index, e.target.value)}
-              placeholder="Label (e.g., الناشر)"
-              className={`${gameDetailsStyles.detailLabel} ${styles.sidebarInput}`}
+              placeholder="التصنيف (مثال: الناشر)"
+              className={`${gameDetailsStyles.detailLabel} ${editorStyles.sidebarInput}`}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -61,8 +60,8 @@ export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: Nod
               type="text"
               value={detail.value}
               onChange={(e) => handleValueChange(index, e.target.value)}
-              placeholder="Value (e.g., Sony)"
-              className={`${gameDetailsStyles.detailValue} ${styles.sidebarInput}`}
+              placeholder="القيمة (مثال: Sony)"
+              className={`${gameDetailsStyles.detailValue} ${editorStyles.sidebarInput}`}
               dir={isRTL(detail.value) ? 'rtl' : 'ltr'}
               style={{
                 background: 'transparent',
@@ -90,12 +89,13 @@ export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: Nod
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-        <button onClick={addRow} className="outline-button">
-          + Add Row
+      {/* MODIFIED: Translated text and applied responsive styling */}
+      <div className={componentStyles.buttonContainer}>
+        <button onClick={addRow} className={`outline-button ${componentStyles.actionButton}`}>
+          + إضافة صف
         </button>
-        <button onClick={deleteNode} className="outline-button" style={{ borderColor: '#DC2626', color: '#DC2626', marginLeft: '1rem' }}>
-          Delete Block
+        <button onClick={deleteNode} className={`outline-button ${componentStyles.actionButton}`} style={{ borderColor: '#DC2626', color: '#DC2626' }}>
+          حذف الجدول
         </button>
       </div>
     </NodeViewWrapper>

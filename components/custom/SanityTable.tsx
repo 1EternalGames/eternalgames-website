@@ -1,12 +1,83 @@
 // components/custom/SanityTable.tsx
+'use client';
+
 import { PortableText } from '@portabletext/react';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 import styles from './SanityTable.module.css';
 
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.15,
+        },
+    },
+};
+
+const headerVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring' as const, // THE DEFINITIVE FIX
+            stiffness: 150,
+            damping: 25,
+            staggerChildren: 0.1,
+        },
+    },
+};
+
+const bodyVariants = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.12,
+        },
+    },
+};
+
+const rowVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring' as const, // THE DEFINITIVE FIX
+            stiffness: 200,
+            damping: 30,
+            staggerChildren: 0.07,
+        },
+    },
+};
+
+const cellVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        transition: {
+            type: 'spring' as const, // THE DEFINITIVE FIX
+            stiffness: 250,
+            damping: 20,
+        },
+    },
+};
+
 const CellContent = ({ content }: { content: any[] }) => {
-    return <PortableText value={content} />;
+    return (
+        <motion.div variants={cellVariants}>
+            <PortableText value={content} />
+        </motion.div>
+    );
 };
 
 export default function SanityTable({ value }: { value: any }) {
+    const tableRef = useRef(null);
+    const isInView = useInView(tableRef, { once: true, amount: 0.3 });
+
     if (!value || !value.rows || value.rows.length === 0) {
         return null;
     }
@@ -15,10 +86,16 @@ export default function SanityTable({ value }: { value: any }) {
     const bodyRows = hasHeaderRow ? value.rows.slice(1) : value.rows;
 
     return (
-        <div className={styles.tableContainer}>
+        <motion.div
+            ref={tableRef}
+            className={styles.tableContainer}
+            variants={containerVariants}
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+        >
             <table className={styles.table}>
                 {hasHeaderRow && (
-                    <thead>
+                    <motion.thead variants={headerVariants}>
                         <tr>
                             {value.rows[0].cells.map((cell: any) => (
                                 <th key={cell._key}>
@@ -26,20 +103,20 @@ export default function SanityTable({ value }: { value: any }) {
                                 </th>
                             ))}
                         </tr>
-                    </thead>
+                    </motion.thead>
                 )}
-                <tbody>
+                <motion.tbody variants={bodyVariants}>
                     {bodyRows.map((row: any) => (
-                        <tr key={row._key}>
+                        <motion.tr key={row._key} variants={rowVariants}>
                             {row.cells.map((cell: any) => (
                                 <td key={cell._key}>
                                     <CellContent content={cell.content} />
                                 </td>
                             ))}
-                        </tr>
+                        </motion.tr>
                     ))}
-                </tbody>
+                </motion.tbody>
             </table>
-        </div>
+        </motion.div>
     );
 }

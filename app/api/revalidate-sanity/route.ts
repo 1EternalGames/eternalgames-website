@@ -48,15 +48,19 @@ export async function POST(req: NextRequest) {
       tagsToRevalidate.push(`${type}s`); // e.g., 'reviews'
       tagsToRevalidate.push('paginated'); // Common tag for paginated content
       tagsToRevalidate.push('engagement-scores'); // Homepage scores depend on this
-      tagsToRevalidate.push('sanity-content-detail'); // CRITICAL: Aligned with detail page cache tag
+      tagsToRevalidate.push('sanity-content-detail');
     }
     if (['author', 'reviewer', 'reporter', 'designer'].includes(type)) {
       tagsToRevalidate.push('enriched-creators');
       tagsToRevalidate.push('enriched-creator-details');
     }
+    if (type === 'game') {
+        tagsToRevalidate.push('sanity-content-detail');
+    }
     
-    // THE DEFINITIVE FIX: Explicitly provide the 'max' argument to every revalidateTag call.
-    tagsToRevalidate.forEach(tag => revalidateTag(tag, 'max'));
+    // THE DEFINITIVE FIX: The `revalidateTag` function now requires a second argument.
+    // 'layout' is the appropriate value to ensure all associated data is refreshed.
+    tagsToRevalidate.forEach(tag => revalidateTag(tag, 'layout'));
 
     // --- Revalidate Specific Page Paths ---
     const pathsToRevalidate: string[] = ['/'];
@@ -80,7 +84,6 @@ export async function POST(req: NextRequest) {
         break;
       case 'game':
         if (currentSlug) pathsToRevalidate.push(`/games/${currentSlug}`);
-        // Revalidate list pages as game info might appear there
         pathsToRevalidate.push('/reviews', '/articles', '/news');
         break;
       case 'tag':
@@ -88,7 +91,6 @@ export async function POST(req: NextRequest) {
         break;
     }
     
-    // Use a Set to ensure unique paths before revalidating
     const uniquePaths = [...new Set(pathsToRevalidate)];
     uniquePaths.forEach(path => revalidatePath(path));
 

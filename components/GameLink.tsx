@@ -5,7 +5,7 @@ import styles from './GameLink.module.css';
 
 type GameLinkProps = {
     gameName?: string | null;
-    gameSlug?: string | null; // Expect the slug to be passed in
+    gameSlug?: string | null;
     className?: string;
 };
 
@@ -25,5 +25,3 @@ const GameLink = ({ gameName, gameSlug, className = '' }: GameLinkProps) => {
 };
 
 export default GameLink;
-
-

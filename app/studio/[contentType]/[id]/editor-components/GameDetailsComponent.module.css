@@ -1,0 +1,19 @@
+/* app/studio/[contentType]/[id]/editor-components/GameDetailsComponent.module.css */
+.buttonContainer {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.actionButton {
+    /* Inherits from global .outline-button but allows for overrides */
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .actionButton {
+        padding: 0.6rem 1.2rem;
+        font-size: 1.3rem;
+    }
+}
