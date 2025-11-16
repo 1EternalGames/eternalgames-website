@@ -42,29 +42,6 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
             currentList = null;
         }
 
-        // MODIFIED: Add table conversion logic
-        if (block._type === 'table') {
-            content.push({
-                type: 'table',
-                content: (block.rows || []).map((row: any) => ({
-                    type: 'tableRow',
-                    content: (row.cells || []).map((cell: any) => {
-                        // THE DEFINITIVE FIX: Use the `isHeader` flag to determine cell type.
-                        const cellType = cell.isHeader ? 'tableHeader' : 'tableCell';
-
-                        return {
-                            type: cellType,
-                            content: (cell.content || []).map((cellBlock: any) => ({
-                                type: 'paragraph',
-                                content: processBlockChildren(cellBlock),
-                            })),
-                        };
-                    }),
-                })),
-            });
-            return;
-        }
-
         // --- HANDLE CUSTOM BLOCKS ---
         if (block._type === 'gameDetails') {
             content.push({

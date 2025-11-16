@@ -28,12 +28,6 @@ import { ImageCompareComponent } from './ImageCompareComponent';
 import { TwoImageGridComponent } from './editor-components/TwoImageGridComponent';
 import { FourImageGridComponent } from './editor-components/FourImageGridComponent';
 import { GameDetailsNode } from './extensions/GameDetailsNode';
-import { StandardTableComponent } from './editor-components/StandardTableComponent';
-// THE DEFINITIVE FIX: Import the core table extensions from Tiptap
-import Table from '@tiptap/extension-table';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-import TableRow from '@tiptap/extension-table-row';
 import styles from './Editor.module.css';
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -123,7 +117,7 @@ const TrailingNode = Extension.create({
                     const endPosition = doc.content.size;
                     const lastNode = doc.lastChild;
 
-                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'table', 'heading', 'blockquote'];
+                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'heading', 'blockquote'];
 
                     if (lastNode && nodeTypesThatNeedTrailingNode.includes(lastNode.type.name)) {
                         const paragraph = newState.schema.nodes.paragraph.create();
@@ -201,15 +195,6 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
             GameDetailsNode, 
             Blockquote,
-            // THE DEFINITIVE FIX: Use the official Table extension and extend it with our custom component.
-            Table.configure({ resizable: true }).extend({
-                addNodeView() {
-                  return ReactNodeViewRenderer(StandardTableComponent);
-                },
-            }),
-            TableRow,
-            TableHeader,
-            TableCell,
             TrailingNode,
         ],
         editorProps: {

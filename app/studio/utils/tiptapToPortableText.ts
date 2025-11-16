@@ -97,32 +97,6 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
             return;
         }
         
-        // MODIFIED: Add table conversion logic
-        if (node.type === 'table') {
-            const table = {
-                _type: 'table',
-                _key: uuidv4(),
-                rows: (node.content || []).map(row => ({
-                    _type: 'tableRow',
-                    _key: uuidv4(),
-                    cells: (row.content || []).map(cell => {
-                        const cellContent = (cell.content || []).map(processTextBlock).filter(Boolean);
-                        // THE DEFINITIVE FIX: Embed the header status in the cell data.
-                        const isHeader = cell.type === 'tableHeader';
-                        return {
-                            _type: 'tableCell',
-                            _key: uuidv4(),
-                            content: cellContent,
-                            isHeader: isHeader ? true : undefined, // Only add the flag if it's true
-                        };
-                    }),
-                })),
-            };
-            portableTextBlocks.push(table);
-            return;
-        }
-
-
         // --- BULLET LISTS ---
         if (node.type === 'bulletList') {
             node.content?.forEach(listItem => {

@@ -2,12 +2,9 @@
 'use client';
 
 import { Editor } from '@tiptap/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useRef } from 'react';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon, GameDetailsIcon } from '../../StudioIcons';
+import { motion } from 'framer-motion';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, GameDetailsIcon } from '../../StudioIcons';
 import { QualityToggle } from './editor-components/QualityToggle';
-import { TableCreationPopover } from './editor-components/TableCreationPopover';
-import { useClickOutside } from '@/hooks/useClickOutside';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './BlockToolbar.module.css';
 import bubbleStyles from './Editor.module.css';
@@ -36,11 +33,7 @@ const TooltipButton = ({ onClick, title, children, disabled }: { onClick: () => 
 );
 
 export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQualityChange }: BlockToolbarProps) {
-    const [isTablePopoverOpen, setIsTablePopoverOpen] = useState(false);
-    const tablePopoverRef = useRef<HTMLDivElement>(null);
-    useClickOutside(tablePopoverRef, () => setIsTablePopoverOpen(false));
-
-    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails' | 'table') => {
+    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails') => {
         if (!editor) return;
         if (type === 'image') {
             const input = document.createElement('input');
@@ -51,8 +44,6 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
                 if (file) { onFileUpload(file); }
             };
             input.click();
-        } else if (type === 'table') {
-            editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
         } else {
             editor.chain().focus().insertContent({ type }).run();
         }
@@ -66,9 +57,6 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
             exit={{ opacity: 0, y: 20 }}
             transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
         >
-            <TooltipButton onClick={() => addBlock('table')} title="جدول قياسي" disabled={!editor}>
-                <TableIcon />
-            </TooltipButton>
             <TooltipButton onClick={() => addBlock('gameDetails')} title="تفاصيل اللعبة" disabled={!editor}><GameDetailsIcon /></TooltipButton>
             <div className={bubbleStyles.toolbarDivider} />
             <TooltipButton onClick={() => addBlock('image')} title="صورة مفردة" disabled={!editor}><SingleImageIcon /></TooltipButton>

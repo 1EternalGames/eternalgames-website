@@ -68,9 +68,7 @@ export default defineType({
       type: 'fourImageGrid',
     }),
     defineArrayMember({
-      name: 'table',
-      title: 'Table',
-      type: 'table',
+      type: 'gameDetails',
     }),
   ],
 })

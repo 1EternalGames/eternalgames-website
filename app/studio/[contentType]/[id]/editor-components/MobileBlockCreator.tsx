@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon, GameDetailsIcon } from '../../../StudioIcons';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, GameDetailsIcon } from '../../../StudioIcons';
 import styles from './MobileBlockCreator.module.css';
 
 interface MobileBlockCreatorProps {
@@ -21,7 +21,6 @@ type MenuAction =
 const menuConfig: Record<MenuState, { id: string; title: string; icon: React.ReactNode; action: MenuAction }[]> = {
     root: [
         { id: 'image', title: 'صورة', icon: <SingleImageIcon />, action: { type: 'submenu', state: 'image' } },
-        { id: 'table', title: 'جدول', icon: <TableIcon />, action: { type: 'command', command: 'table' } },
         { id: 'gameDetails', title: 'تفاصيل', icon: <GameDetailsIcon />, action: { type: 'command', command: 'gameDetails' } },
         { id: 'compare', title: 'مقارنة', icon: <CompareIcon />, action: { type: 'command', command: 'imageCompare' } },
     ],
@@ -68,8 +67,6 @@ export function MobileBlockCreator({ editor, onFileUpload }: MobileBlockCreatorP
                     if (file) { onFileUpload(file); }
                 };
                 input.click();
-            } else if (cmd === 'table') {
-                editor.chain().focus().insertTable({ rows: 2, cols: 3, withHeaderRow: true }).run();
             } else {
                 editor.chain().focus().insertContent({ type: cmd }).run();
             }
