@@ -29,6 +29,9 @@ export default function ReadingHud({
     const springyProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 40, restDelta: 0.001 });
     const progressValue = useTransform(scrollYProgress, (p) => p); // Raw progress MotionValue
 
+    // THE FIX: Create a new MotionValue for translateY animation.
+    const translateY = useTransform(springyProgress, [0, 1], ['-100%', '0%']);
+
     useEffect(() => {
         const unsubscribe = progressValue.on('change', (latestProgress) => {
             
@@ -93,7 +96,8 @@ export default function ReadingHud({
                     transition={{ duration: 0.5, ease: 'easeOut' }}
                 >
                     <div className={styles.track}>
-                        <motion.div className={styles.progress} style={{ scaleY: springyProgress }} />
+                        {/* THE FIX: Apply the new translateY style instead of scaleY */}
+                        <motion.div className={styles.progress} style={{ translateY }} />
                     </div>
                     <div className={styles.markers}>
                         {headings.map((h) => {

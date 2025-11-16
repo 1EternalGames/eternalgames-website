@@ -2,12 +2,14 @@
 
 .readingHud {
   position: fixed;
-  top: 50%;
+  bottom: 15vh; /* THE FIX: Anchor to the bottom */
+  top: auto; /* THE FIX: Unset top anchor */
   left: 2rem;
-  transform: translateY(-50%);
+  transform: none; /* THE FIX: Remove vertical centering transform */
   display: flex;
   align-items: center;
-  height: 300px;
+  height: 70vh; /* THE FIX: Set height relative to viewport height */
+  max-height: 700px; /* THE FIX: Add a max-height */
   z-index: 100;
 }
 
@@ -23,15 +25,18 @@
   background-color: var(--border-color);
   position: relative;
   border-radius: 2px;
+  overflow: hidden; /* THE FIX: This container now acts as a mask */
 }
 
 .progress {
   width: 100%;
   height: 100%;
   background-color: var(--accent);
-  transform-origin: top;
   border-radius: 2px;
   box-shadow: 0 0 8px 0 color-mix(in srgb, var(--accent) 70%, transparent);
+  /* THE FIX: We now animate translateY instead of scaleY */
+  transform-origin: top; 
+  will-change: transform;
 }
 
 .markers {
@@ -40,7 +45,7 @@
   right: 50%;
   width: 1px;
   height: 100%;
-  margin-right: -5px; /* THE FIX: Offset the markers container by half the marker width (10px/2) to center it */
+  margin-right: -5px; 
 }
 
 .marker {
@@ -54,13 +59,11 @@
   padding: 0;
 }
 
-/* New element for the visual dot and its animated state */
 .markerDot {
     width: 100%;
     height: 100%;
     border-radius: 50%;
     background-color: var(--border-color);
-    /* --- THE FIX: CSS-driven animation logic --- */
     transition: transform 0.15s ease-out, background-color 0.15s ease-out, box-shadow 0.15s ease-out;
     will-change: transform, background-color, box-shadow;
     transform: scale(1);
@@ -75,10 +78,9 @@
 .marker:hover .markerDot {
     background-color: var(--accent);
     transform: scale(2.2);
-    z-index: 2; /* Ensure hover state is visually on top of active state */
+    z-index: 2; 
 }
 
-/* This is the part with the glow and hover text */
 .marker::after {
   content: attr(data-title);
   position: absolute;
@@ -105,7 +107,6 @@
   left: 25px;
 }
 
-/* --- NEW: Mobile Version --- */
 .readingHudMobile {
   position: fixed;
   top: var(--nav-height-scrolled);
@@ -127,10 +128,10 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 0; /* RTL support */
+  right: 0; 
   width: 100%;
   background-color: var(--accent);
-  transform-origin: right; /* RTL support */
+  transform-origin: right; 
   box-shadow: 0 0 10px 0 var(--accent);
 }
 
