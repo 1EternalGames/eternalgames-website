@@ -1,14 +1,15 @@
 // components/PortableTextComponent.tsx
 'use client'
 
-import React from 'react'
-import { PortableText, PortableTextComponents, PortableTextComponentProps } from '@portabletext/react'
+import React, { useEffect, useState } from 'react'
+import { PortableText, PortableTextComponents, PortableTextComponentProps, PortableTextMarkComponentProps } from '@portabletext/react'
 import { urlFor } from '@/sanity/lib/image'
 import dynamic from 'next/dynamic'
 import { slugify } from 'transliteration';
 import NextImage from 'next/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
 import type { PortableTextBlock } from '@portabletext/types';
+import { useTheme } from 'next-themes';
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}><div className="spinner" /></div>;
@@ -30,6 +31,73 @@ const GameDetails = dynamic(() => import('./content/GameDetails'), {
     loading: () => <LoadingSpinner />,
 });
 // --- END LAZY-LOADED COMPONENTS ---
+
+// --- REPLICATED COLOR PALETTE FROM EDITOR ---
+const COLOR_PALETTE = [
+    { title: 'Grays', colors: ['#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151', '#1F2937'] },
+    { title: 'Reds', colors: ['#FEF2F2', '#FEE2E2', '#FECACA', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D', '#450A0A'] },
+    { title: 'Oranges', colors: ['#FFF7ED', '#FFEDD5', '#FED7AA', '#FB923C', '#F97316', '#EA580C', '#C2410C', '#9A3412', '#7C2D12', '#431407'] },
+    { title: 'Yellows', colors: ['#FEFCE8', '#FEF9C3', '#FEF08A', '#FACC15', '#EAB308', '#CA8A04', '#A16207', '#854D0E', '#713F12', '#422006'] },
+    { title: 'Greens', colors: ['#F0FDF4', '#DCFCE7', '#BBF7D0', '#4ADE80', '#22C55E', '#16A34A', '#15803D', '#166534', '#14532D', '#052e16'] },
+    { title: 'Cyans', colors: ['#ECFEFF', '#CFFAFE', '#A5F3FC', '#22D3EE', '#06B6D4', '#0891B2', '#0E7490', '#155E75', '#164E63', '#083344'] },
+    { title: 'Blues', colors: ['#EFF6FF', '#DBEAFE', '#BFDBFE', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF', '#1E3A8A', '#172554'] },
+    { title: 'Purples', colors: ['#F5F3FF', '#EDE9FE', '#DDD6FE', '#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6', '#4C1D95', '#2E1065'] },
+];
+
+// --- NEW THEME-AWARE COLOR COMPONENT ---
+const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 'color'; hex: string }>) => {
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const originalColor = value?.hex;
+
+    if (!mounted || !originalColor) {
+        return <span style={{ color: originalColor }}>{children}</span>;
+    }
+    
+    let colorInfo: { palette: (typeof COLOR_PALETTE)[0]; grade: number } | null = null;
+    for (const palette of COLOR_PALETTE) {
+        const gradeIndex = palette.colors.findIndex(c => c.toLowerCase() === originalColor.toLowerCase());
+        if (gradeIndex !== -1) {
+            colorInfo = { palette, grade: gradeIndex + 1 }; // Grade is 1-10
+            break;
+        }
+    }
+
+    // If the color isn't from our predefined palette (e.g., custom hex), don't change it.
+    if (!colorInfo) {
+        return <span style={{ color: originalColor }}>{children}</span>;
+    }
+    
+    let finalColor = originalColor;
+    const { palette, grade } = colorInfo;
+
+    // Special case for the Grayscale palette
+    if (palette.title === 'Grays') {
+        const oppositeGrade = 11 - grade; // e.g., 1 -> 10, 10 -> 1
+        if (resolvedTheme === 'dark' && grade > 5) { // Dark gray on dark bg
+             finalColor = palette.colors[oppositeGrade - 1];
+        } else if (resolvedTheme === 'light' && grade < 6) { // Light gray on light bg
+             finalColor = palette.colors[oppositeGrade - 1];
+        }
+    } 
+    // Rules for all other color palettes
+    else {
+        if (resolvedTheme === 'light' && grade >= 1 && grade <= 4) {
+            // Very light color on light background, shift to grade 5 (mid-dark)
+            finalColor = palette.colors[4]; 
+        } else if (resolvedTheme === 'dark' && grade >= 7 && grade <= 10) {
+            // Very dark color on dark background, shift to grade 6 (mid-light)
+            finalColor = palette.colors[5]; 
+        }
+    }
+
+    return <span style={{ color: finalColor }}>{children}</span>;
+};
 
 
 const SanityImageComponent = ({ value }: { value: any }) => {
@@ -97,7 +165,7 @@ const components: PortableTextComponents = {
         twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
         fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
         table: ({ value }) => <SanityTable value={value} />,
-        gameDetails: ({ value }) => <GameDetails details={value.details} />, // CORRECTED: Removed width prop
+        gameDetails: ({ value }) => <GameDetails details={value.details} />,
     },
     block: { 
         h1: ({children}) => <HeadingComponent level={1}>{children}</HeadingComponent>,
@@ -106,8 +174,15 @@ const components: PortableTextComponents = {
         blockquote: BlockquoteComponent 
     },
     marks: {
-        color: ({ value, children }) => {
-            return <span style={{ color: value?.hex }}>{children}</span>;
+        color: ColorMark,
+        link: ({ value, children }) => {
+            const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined;
+            const isExternal = rel === 'noreferrer noopener';
+            return (
+                <a href={value.href} rel={rel} target={isExternal ? "_blank" : "_self"}>
+                    {children}
+                </a>
+            );
         },
     },
 }
