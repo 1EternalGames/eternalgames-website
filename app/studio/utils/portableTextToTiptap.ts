@@ -52,18 +52,21 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
             });
             return;
         }
-        if (block._type === 'table') { // ADDED
+        if (block._type === 'table') { // THE DEFINITIVE FIX
             const tableContent: TiptapNode[] = [];
             (block.rows || []).forEach((row: any) => {
                 const rowContent: TiptapNode[] = [];
                 (row.cells || []).forEach((cell: any) => {
                     const cellType = cell.isHeader ? 'tableHeader' : 'tableCell';
+                    // The cell content from Sanity is already a Portable Text array.
+                    // We need to recursively call this function to convert it.
                     const cellContent = portableTextToTiptap(cell.content || []).content;
                     rowContent.push({ type: cellType, content: cellContent });
                 });
                 tableContent.push({ type: 'tableRow', content: rowContent });
             });
-            content.push({ type: 'table', content: [{ type: 'tableContent', content: tableContent }] });
+            // The structure is `table` > `tableRow`s. No `tableContent` wrapper is needed.
+            content.push({ type: 'table', content: tableContent });
             return;
         }
         if (block._type === 'imageCompare') {

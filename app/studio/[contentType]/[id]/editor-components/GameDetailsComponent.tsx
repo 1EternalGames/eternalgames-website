@@ -12,7 +12,9 @@ const isRTL = (s: string) => {
 };
 
 export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: NodeViewProps) => {
-  const details = node.attrs.details || [];
+  // THE DEFINITIVE FIX: Ensure `details` is always an array.
+  // `node.attrs.details` could be an object if data is malformed, so we check with `Array.isArray`.
+  const details = Array.isArray(node.attrs.details) ? node.attrs.details : [];
 
   const handleValueChange = (index: number, value: string) => {
     const newDetails = [...details];

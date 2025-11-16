@@ -32,6 +32,7 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import { TableComponent } from './editor-components/TableComponent'; // ADDED
 import styles from './Editor.module.css';
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -200,7 +201,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             GameDetailsNode, 
             Blockquote,
             TrailingNode,
-            Table.configure({ resizable: true }),
+            Table.configure({ resizable: false, cellMinWidth: 100 }).extend({ addNodeView() { return ReactNodeViewRenderer(TableComponent) } }), // MODIFIED
             TableRow,
             TableHeader,
             TableCell,

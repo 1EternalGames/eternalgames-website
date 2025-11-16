@@ -73,16 +73,19 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
             return;
         }
         
-        // --- TABLE --- // ADDED
+        // --- TABLE (THE DEFINITIVE FIX) ---
         if (node.type === 'table') {
             const tableRows: any[] = [];
-            (node.content?.[0]?.content || []).forEach((rowNode: TiptapNode) => {
+            // Tiptap's table content is an array of 'tableRow' nodes.
+            // The previous implementation had an extra incorrect level of nesting.
+            (node.content || []).forEach((rowNode: TiptapNode) => {
                 const tableCells: any[] = [];
                 (rowNode.content || []).forEach((cellNode: TiptapNode) => {
                     tableCells.push({
                         _key: uuidv4(),
                         _type: 'cell',
                         isHeader: cellNode.type === 'tableHeader',
+                        // Recursively convert the cell's content.
                         content: tiptapToPortableText({ type: 'doc', content: cellNode.content || [] }),
                     });
                 });
