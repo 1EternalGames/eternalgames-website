@@ -28,7 +28,7 @@ import { translateTag } from '@/lib/translations';
 type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedContent?: any[] };
 type ContentType = 'reviews' | 'articles' | 'news';
 
-export type Heading = { id: string; title: string; top: number; };
+export type Heading = { id: string; title: string; top: number; level: number }; // THE FIX: Added level property
 const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.5 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
@@ -61,7 +61,7 @@ export default function ContentPageClient({ item, type, children }: {
         
         let newHeadings: Heading[] = [];
 
-        const headingElements = Array.from(contentElement.querySelectorAll('h2'));
+        const headingElements = Array.from(contentElement.querySelectorAll('h1'));
         headingElements.forEach((h, index) => {
             let id = h.id;
             if (!id || seenIds.has(id)) { 
@@ -73,7 +73,8 @@ export default function ContentPageClient({ item, type, children }: {
             const topPosition = h.getBoundingClientRect().top + documentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
             
-            newHeadings.push({ id: id, title: h.textContent || '', top: Math.max(0, scrollToPosition) });
+            // THE FIX: Added level: 1 to the heading object.
+            newHeadings.push({ id: id, title: h.textContent || '', top: Math.max(0, scrollToPosition), level: 1 });
         });
 
         if (isReview) {
@@ -82,10 +83,12 @@ export default function ContentPageClient({ item, type, children }: {
                  const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
                  const scoreBoxScrollPosition = topPosition - navbarOffset;
                  
+                 // THE FIX: Added level: 1 for the ScoreBox entry as well.
                  newHeadings.push({ 
                      id: 'verdict-summary', 
                      title: 'الخلاصة', 
-                     top: Math.max(0, scoreBoxScrollPosition) 
+                     top: Math.max(0, scoreBoxScrollPosition),
+                     level: 1 
                  });
              }
         }

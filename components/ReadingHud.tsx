@@ -9,6 +9,7 @@ type Heading = {
     id: string;
     title: string;
     top: number;
+    level: number; // MODIFIED: Added level
 };
 
 // We don't need a custom hook; useScroll with a null target handles window scroll.
@@ -108,10 +109,13 @@ export default function ReadingHud({
                             
                             const topPercentage = (h.top / documentScrollHeight) * 100;
                             
+                            // MODIFIED: Conditionally add a class for h2 markers
+                            const markerClass = h.level === 2 ? styles.markerH2 : '';
+
                             return (
                                 <button
                                     key={h.id}
-                                    className={`${styles.marker} ${isActive ? styles.active : ''}`}
+                                    className={`${styles.marker} ${markerClass} ${isActive ? styles.active : ''}`}
                                     style={{ 
                                         top: `${topPercentage}%`,
                                     }}
