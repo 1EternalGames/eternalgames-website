@@ -30,6 +30,7 @@ import { EnhancedTable } from './extensions/EnhancedTable';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
+import { GameDetailsNode } from './extensions/GameDetailsNode'; // NEW IMPORT
 import styles from './Editor.module.css';
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -119,7 +120,7 @@ const TrailingNode = Extension.create({
                     const endPosition = doc.content.size;
                     const lastNode = doc.lastChild;
 
-                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'heading', 'blockquote', 'table'];
+                    const nodeTypesThatNeedTrailingNode = ['image', 'imageCompare', 'twoImageGrid', 'fourImageGrid', 'gameDetails', 'heading', 'blockquote', 'table'];
 
                     if (lastNode && nodeTypesThatNeedTrailingNode.includes(lastNode.type.name)) {
                         const paragraph = newState.schema.nodes.paragraph.create();
@@ -195,6 +196,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { class: 'editor-link' }, }),
             Placeholder.configure({ placeholder: 'خُطَّ ما في نفسِكَ هنا...' }),
             CustomImage, BulletList, ListItem, ImageCompareNode, TwoImageGridNode, FourImageGridNode,
+            GameDetailsNode, // NEW
             Blockquote,
             EnhancedTable.configure({ resizable: true }),
             TableRow,

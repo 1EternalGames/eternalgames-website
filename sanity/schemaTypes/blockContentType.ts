@@ -67,8 +67,9 @@ export default defineType({
     defineArrayMember({
       type: 'fourImageGrid',
     }),
-    // MODIFIED: Added table type to the schema.
     defineArrayMember({
+      name: 'table',
+      title: 'Table',
       type: 'table',
     }),
   ],

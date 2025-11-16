@@ -1,5 +1,13 @@
 'use client';
 
+export const GameDetailsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+        <line x1="9" y1="4" x2="9" y2="20"></line>
+    </svg>
+);
+
 // ADDED ICONS
 export const HorizontalTableIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" role="img" color="currentColor" {...props}>

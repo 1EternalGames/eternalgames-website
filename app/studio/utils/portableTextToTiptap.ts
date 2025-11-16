@@ -66,6 +66,15 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
         }
 
         // --- HANDLE CUSTOM BLOCKS ---
+        if (block._type === 'gameDetails') {
+            content.push({
+                type: 'gameDetails',
+                attrs: {
+                    details: block.details || [],
+                },
+            });
+            return;
+        }
         if (block._type === 'imageCompare') {
             const { image1, image2, size } = block as any;
             content.push({ 

@@ -4,7 +4,7 @@
 import { Editor } from '@tiptap/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
-import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon } from '../../StudioIcons';
+import { CompareIcon, TwoImageIcon, FourImageIcon, SingleImageIcon, TableIcon, GameDetailsIcon } from '../../StudioIcons';
 import { QualityToggle } from './editor-components/QualityToggle';
 import { TableCreationPopover } from './editor-components/TableCreationPopover';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -40,7 +40,7 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
     const tablePopoverRef = useRef<HTMLDivElement>(null);
     useClickOutside(tablePopoverRef, () => setIsTablePopoverOpen(false));
 
-    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid') => {
+    const addBlock = (type: 'image' | 'imageCompare' | 'twoImageGrid' | 'fourImageGrid' | 'gameDetails') => {
         if (!editor) return;
         if (type === 'image') {
             const input = document.createElement('input');
@@ -87,6 +87,7 @@ export function BlockToolbar({ editor, onFileUpload, uploadQuality, onUploadQual
                     )}
                 </AnimatePresence>
             </div>
+            <TooltipButton onClick={() => addBlock('gameDetails')} title="تفاصيل اللعبة" disabled={!editor}><GameDetailsIcon /></TooltipButton>
             <div className={bubbleStyles.toolbarDivider} />
             <TooltipButton onClick={() => addBlock('image')} title="صورة مفردة" disabled={!editor}><SingleImageIcon /></TooltipButton>
             <TooltipButton onClick={() => addBlock('imageCompare')} title="مضاهاة صورتين" disabled={!editor}><CompareIcon /></TooltipButton>

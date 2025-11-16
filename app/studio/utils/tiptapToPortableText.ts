@@ -62,6 +62,16 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
             });
             return;
         }
+        
+        // --- GAME DETAILS ---
+        if (node.type === 'gameDetails') {
+            portableTextBlocks.push({
+                _type: 'gameDetails',
+                _key: uuidv4(),
+                details: node.attrs?.details || [],
+            });
+            return;
+        }
 
         // --- IMAGE (DEFINITIVE FIX) ---
         if (node.type === 'image') {
