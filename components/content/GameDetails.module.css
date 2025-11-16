@@ -16,7 +16,21 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   align-items: center;
-  position: relative;
+  position: relative; /* Changed to relative for the pseudo-element */
+}
+
+/* THE DEFINITIVE FIX: Central Divider Line */
+.detailRow::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  /* Position the line at the end of the first grid column (2fr / 3fr total = 66.66%) */
+  right: calc(100% / 3);
+  left: auto;
+  width: 2px;
+  background-color: var(--accent);
+  box-shadow: 0 0 8px 0 var(--accent);
 }
 
 .detailRow:not(:last-child) {
@@ -33,15 +47,9 @@
   position: relative;
 }
 
+/* Remove the old pseudo-element from the label */
 .detailLabel::before {
-  content: '';
-  position: absolute;
-  top: 25%;
-  bottom: 25%;
-  left: 0;
-  width: 2px;
-  background-color: var(--accent);
-  box-shadow: 0 0 8px 0 var(--accent);
+  display: none;
 }
 
 .detailValue {
@@ -60,6 +68,10 @@
 @media (max-width: 768px) {
   .detailRow {
     grid-template-columns: 1.5fr 1fr;
+  }
+  /* THE DEFINITIVE FIX: Adjust divider for mobile grid */
+  .detailRow::before {
+    right: calc(100% / 2.5); /* 1fr / 2.5fr total */
   }
   .detailLabel,
   .detailValue {
