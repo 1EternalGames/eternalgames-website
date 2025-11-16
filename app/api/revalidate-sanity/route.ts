@@ -58,8 +58,7 @@ export async function POST(req: NextRequest) {
         tagsToRevalidate.push('sanity-content-detail');
     }
     
-    // THE DEFINITIVE FIX: The `revalidateTag` function now requires a second argument.
-    // 'layout' is the appropriate value to ensure all associated data is refreshed.
+    // THE DEFINITIVE FIX: The revalidateTag function now requires a second argument.
     tagsToRevalidate.forEach(tag => revalidateTag(tag, 'layout'));
 
     // --- Revalidate Specific Page Paths ---
