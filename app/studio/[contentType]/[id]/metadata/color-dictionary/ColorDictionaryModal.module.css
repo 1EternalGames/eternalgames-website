@@ -3,9 +3,9 @@
   display: grid;
   grid-template-columns: auto auto 1fr;
   gap: 1rem;
-  padding: 1rem 0 2rem 0;
-  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 2rem;
   margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .addForm .primary-button {
@@ -44,11 +44,63 @@
   filter: invert(1) grayscale(1);
 }
 
+.collapsibleSection {
+  /* This outer container is no longer needed for styling, but kept for structure */
+}
+
+.collapsibleHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1.2rem 1.5rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease-out, border-radius 0.2s ease-out, border-color 0.2s ease-out;
+}
+
+.collapsibleHeader:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent);
+}
+
+.collapsibleHeader.open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background-color: var(--bg-secondary);
+  border-bottom-color: transparent;
+}
+
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.arrowIcon {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.collapsibleContent {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: var(--bg-primary);
+}
+
 .mappingsList {
-  max-height: 40vh;
+  max-height: 35vh;
   overflow-y: auto;
-  padding-right: 1rem; /* RTL padding */
-  margin-right: -1rem; /* RTL negative margin */
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -58,7 +110,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   padding: 0.75rem 1rem;
   border-radius: 6px;
   border: 1px solid var(--border-color);

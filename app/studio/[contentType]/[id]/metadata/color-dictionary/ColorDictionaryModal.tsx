@@ -36,6 +36,7 @@ export default function ColorDictionaryModal({ isOpen, onClose, initialMappings,
   const [newWord, setNewWord] = useState('');
   const [newColor, setNewColor] = useState('#00E5FF');
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isListOpen, setIsListOpen] = useState(true); // State for the new accordion
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
   const colorPickerRef = useRef<HTMLDivElement>(null);
@@ -136,34 +137,60 @@ export default function ColorDictionaryModal({ isOpen, onClose, initialMappings,
             />
         </div>
 
-        <div className={styles.mappingsList}>
-            <AnimatePresence>
-                {mappings.length > 0 ? mappings.map((mapping) => (
-                    mapping._key && (
-                        <motion.div
-                            key={mapping._key}
-                            className={styles.mappingItem}
-                            variants={itemVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            layout
-                        >
-                            <div className={styles.itemInfo}>
-                                <div className={styles.itemColorPreview} style={{ backgroundColor: mapping.color }} />
-                                <span>{mapping.word}</span>
-                            </div>
-                            <button
-                                className={styles.removeButton}
-                                onClick={() => mapping._key && handleRemove(mapping._key)}
-                                disabled={isPending}
-                                aria-label={`Remove ${mapping.word}`}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-                        </motion.div>
-                    )
-                )) : <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لا توجد كلمات مُعرفة.</p>}
+        <div className={styles.collapsibleSection}>
+            <button className={`${styles.collapsibleHeader} ${isListOpen ? styles.open : ''}`} onClick={() => setIsListOpen(!isListOpen)}>
+                <div className={styles.headerInfo}>
+                    <span>الكلمات الحالية</span>
+                    <span style={{color: 'var(--text-secondary)'}}>({mappings.length})</span>
+                </div>
+                <motion.div animate={{ rotate: isListOpen ? 90 : 0 }} className={styles.arrowIcon}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </motion.div>
+            </button>
+            <AnimatePresence initial={false}>
+                {isListOpen && (
+                    <motion.div
+                        key="content"
+                        className={styles.collapsibleContent}
+                        initial="collapsed"
+                        animate="open"
+                        exit="collapsed"
+                        variants={{
+                            open: { opacity: 1, height: 'auto' },
+                            collapsed: { opacity: 0, height: 0 }
+                        }}
+                        transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    >
+                        <div className={styles.mappingsList}>
+                            {mappings.length > 0 ? mappings.map((mapping) => (
+                                mapping._key && (
+                                    <motion.div
+                                        key={mapping._key}
+                                        className={styles.mappingItem}
+                                        variants={itemVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="exit"
+                                        layout
+                                    >
+                                        <div className={styles.itemInfo}>
+                                            <div className={styles.itemColorPreview} style={{ backgroundColor: mapping.color }} />
+                                            <span>{mapping.word}</span>
+                                        </div>
+                                        <button
+                                            className={styles.removeButton}
+                                            onClick={() => mapping._key && handleRemove(mapping._key)}
+                                            disabled={isPending}
+                                            aria-label={`Remove ${mapping.word}`}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </motion.div>
+                                )
+                            )) : <p style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem 0'}}>لا توجد كلمات مُعرفة.</p>}
+                        </div>
+                    </motion.div>
+                )}
             </AnimatePresence>
         </div>
       
