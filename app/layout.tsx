@@ -29,8 +29,14 @@ export const metadata: Metadata = {
     template: '%s | EternalGames',
   },
   description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: 'EternalGames | حيث لا تُفنى الألعاب',
+    title: {
+      default: 'EternalGames | حيث لا تُفنى الألعاب',
+      template: '%s | EternalGames',
+    },
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
     url: siteUrl,
     siteName: 'EternalGames',
@@ -47,7 +53,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EternalGames | حيث لا تُفنى الألعاب',
+    title: {
+      default: 'EternalGames | حيث لا تُفنى الألعاب',
+      template: '%s | EternalGames',
+    },
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
     images: [`${siteUrl}/og.png`],
   },
