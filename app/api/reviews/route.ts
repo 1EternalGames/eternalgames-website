@@ -21,7 +21,7 @@ const getCachedPaginatedReviews = unstable_cache(
         return sanityData.map(adaptToCardProps).filter(Boolean);
     },
     ['paginated-reviews'],
-    { tags: ['reviews', 'paginated'] } // MODIFIED: Removed revalidate time
+    { tags: ['review'] }
 );
 
 export async function GET(req: NextRequest) {

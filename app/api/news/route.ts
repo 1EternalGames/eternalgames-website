@@ -21,14 +21,14 @@ const getCachedPaginatedNews = unstable_cache(
         return data;
     },
     ['paginated-news'],
-    { tags: ['news', 'paginated'] } // MODIFIED: Removed revalidate time
+    { tags: ['news'] }
 );
 
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         
-        const offset = parseInt(searchParams.get('offset') || '0');
+        const offset = parseInt(searchParams.get('offset') || '50');
         const limit = parseInt(searchParams.get('limit') || '50');
         const gameSlug = searchParams.get('game') || undefined;
         const searchTerm = searchParams.get('q') || undefined;

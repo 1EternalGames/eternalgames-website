@@ -19,7 +19,7 @@ const getCachedPaginatedArticles = unstable_cache(
         return sanityData.map(adaptToCardProps).filter(Boolean);
     },
     ['paginated-articles'],
-    { tags: ['articles', 'paginated'] } // MODIFIED: Removed revalidate time
+    { tags: ['article'] }
 );
 
 export async function GET(req: NextRequest) {

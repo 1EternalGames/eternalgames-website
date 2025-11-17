@@ -51,15 +51,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!slugArray || slugArray.length !== 2) return {};
   
   const [type, slug] = slugArray;
-  const config = (contentConfig as any)[type];
+  // Convert plural type from URL (e.g., 'reviews') to singular for config key (e.g., 'reviews')
+  const configKey = type;
+  const config = (contentConfig as any)[configKey];
   if (!config) return {};
 
-  const item = await getCachedSanityData(config.query, { slug });
+  // Use the uncached client here to ensure crawlers get the absolute latest data
+  const item = await client.fetch(config.query, { slug });
   if (!item) return {};
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   
-  // Generate OG image with proper format and absolute URL
   let ogImageUrl = `${siteUrl}/og.png`;
   
   if (item.mainImage?.asset) {
@@ -72,7 +74,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         .quality(85)
         .url();
       
-      // Ensure absolute URL with https protocol
       if (imageUrl) {
         ogImageUrl = imageUrl.startsWith('http') ? imageUrl : `https:${imageUrl}`;
       }
@@ -81,7 +82,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  // Generate description
   let description = 'اقرأ المزيد على EternalGames.';
   if (item._type === 'review' && item.verdict) {
     description = item.verdict.slice(0, 155);
@@ -97,12 +97,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const title = item.title || 'EternalGames';
+
   return {
-    title: item.title,
+    title,
     description: description,
     metadataBase: new URL(siteUrl),
     openGraph: {
-      title: item.title,
+      title,
       description: description,
       url: `${siteUrl}/${type}/${slug}`,
       siteName: 'EternalGames',
@@ -111,7 +113,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: item.title,
+          alt: title,
           type: 'image/jpeg',
         },
       ],
@@ -122,7 +124,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: item.title,
+      title,
       description: description,
       images: [ogImageUrl],
     },
@@ -131,13 +133,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 
 const getCachedSanityData = unstable_cache(
-    async (query: string, params: Record<string, any> = {}) => {
+    async (query: string, params: Record<string, any> = {}, tags: string[]) => {
         return client.fetch(query, params);
     },
     ['sanity-content-detail'],
-    {
-        tags: ['sanity-content-detail']
-    }
 );
 
 const getCachedCreatorDetails = unstable_cache(
@@ -158,7 +157,7 @@ const getCachedCreatorDetails = unstable_cache(
         }
     },
     ['enriched-creator-details'],
-    { tags: ['enriched-creator-details'] }
+    { tags: ['author', 'reviewer', 'reporter', 'designer'] }
 );
 
 async function enrichCreator(creator: any) {
@@ -187,16 +186,18 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     const [type, slug] = slugArray;
     const config = (contentConfig as any)[type];
     if (!config) notFound();
+    
+    const tags = [config.sanityType];
 
     let [item, colorDictionaryData]: [any, { autoColors: any[] }?] = await Promise.all([
-        getCachedSanityData(config.query, { slug }),
-        getCachedSanityData(colorDictionaryQuery)
+        getCachedSanityData(config.query, { slug }, tags),
+        getCachedSanityData(colorDictionaryQuery, {}, ['colorDictionary'])
     ]);
     
     if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
-        const fallbackContent = await getCachedSanityData(config.fallbackQuery, { currentId: item._id });
+        const fallbackContent = await getCachedSanityData(config.fallbackQuery, { currentId: item._id }, tags);
         item[config.relatedProp] = fallbackContent;
     }
 
