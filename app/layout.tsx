@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     siteName: 'EternalGames',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og.png', // Corrected path
         width: 1200,
         height: 630,
         alt: 'EternalGames Logo',
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'EternalGames | حيث لا تفنى الألعاب',
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
-    images: ['/og-image.png'],
+    images: [`${siteUrl}/og.png`], // Corrected path to be absolute for Twitter
   },
 };
 

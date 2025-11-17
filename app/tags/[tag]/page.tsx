@@ -17,7 +17,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = params;
   const tagSlug = decodeURIComponent(tag);
 
-  // Fetch the tag and the most recent article using this tag for an image
   const data = await client.fetch(
     `{
       "tag": *[_type == "tag" && slug.current == $slug][0]{title},
@@ -33,8 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `وسم: ${translatedTitle}`;
   const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
   const ogImageUrl = data.latestItem?.mainImage
-    ? urlFor(data.latestItem.mainImage).width(1200).height(630).fit('crop').auto('format').url()
-    : `${siteUrl}/og-image.png`;
+    ? urlFor(data.latestItem.mainImage).width(1200).height(630).fit('crop').format('jpg').url()
+    : `${siteUrl}/og.png`;
 
   return {
     title,

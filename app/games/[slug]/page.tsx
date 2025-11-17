@@ -23,12 +23,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!game) return {};
   
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   const title = `محور لعبة: ${game.title}`;
   const description = `استكشف كل المحتوى المتعلق بلعبة ${game.title} على EternalGames، من مراجعات ومقالات إلى آخر الأخبار.`;
   const ogImageUrl = game.mainImage 
-    ? urlFor(game.mainImage).width(1200).height(630).fit('crop').auto('format').url()
-    : `${siteUrl}/og-image.png`;
+    ? urlFor(game.mainImage).width(1200).height(630).fit('crop').format('jpg').url()
+    : `${siteUrl}/og.png`;
 
   return {
     title,

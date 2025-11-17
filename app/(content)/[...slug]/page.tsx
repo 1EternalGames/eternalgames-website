@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!item) return {};
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-  const ogImageUrl = urlFor(item.mainImage).width(1200).height(630).fit('crop').auto('format').url();
+  const ogImageUrl = urlFor(item.mainImage).width(1200).height(630).fit('crop').format('jpg').url(); // Added .format('jpg')
 
   let description = 'اقرأ المزيد على EternalGames.';
   if (item._type === 'review' && item.verdict) {
