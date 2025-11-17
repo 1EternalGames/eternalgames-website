@@ -29,14 +29,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ogImageUrl = game.mainImage 
     ? urlFor(game.mainImage).width(1200).height(630).fit('crop').format('jpg').url()
     : `${siteUrl}/og.png`;
+    const canonicalUrl = `/games/${gameSlug}`;
 
   return {
     title,
     description,
+    alternates: {
+        canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/games/${gameSlug}`,
+      url: `${siteUrl}${canonicalUrl}`,
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: game.title }],
       type: 'website',
     },

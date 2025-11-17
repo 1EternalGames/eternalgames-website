@@ -10,6 +10,9 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'المراجعات',
   description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames. تقييمات شاملة، تحليلات دقيقة، وحكم نهائي.',
+  alternates: {
+    canonical: '/reviews',
+  },
   openGraph: {
     title: 'مراجعات | EternalGames',
     description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames.',

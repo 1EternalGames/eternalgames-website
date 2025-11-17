@@ -98,15 +98,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const title = item.title || 'EternalGames';
+  const canonicalUrl = `/${type}/${slug}`;
 
   return {
     title,
     description: description,
     metadataBase: new URL(siteUrl),
+    alternates: {
+        canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description: description,
-      url: `${siteUrl}/${type}/${slug}`,
+      url: `${siteUrl}${canonicalUrl}`,
       siteName: 'EternalGames',
       images: [
         {

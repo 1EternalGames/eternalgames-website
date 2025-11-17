@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
   alternates: {
-    canonical: '/',
+    // MODIFIED: Removed the static canonical link that was overriding all pages.
   },
   openGraph: {
     title: {

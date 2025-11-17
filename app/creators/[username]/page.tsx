@@ -26,14 +26,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `استكشف جميع مساهمات ${user.name || username} على منصة EternalGames.`;
   // Use the user's avatar for the OG image if available, otherwise fallback
   const ogImageUrl = user.image || `${siteUrl}/og-image.png`;
+  const canonicalUrl = `/creators/${username}`;
 
   return {
     title,
     description,
+    alternates: {
+        canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/creators/${username}`,
+      url: `${siteUrl}${canonicalUrl}`,
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: user.name || username }],
       type: 'profile',
     },

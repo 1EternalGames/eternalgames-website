@@ -10,6 +10,9 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'الأخبار',
   description: 'تغطية شاملة وموجزة لآخر أخبار صناعة الألعاب. ابقَ على اطلاع دائم بكل ما هو جديد ومهم.',
+  alternates: {
+    canonical: '/news',
+  },
   openGraph: {
     title: 'الأخبار | EternalGames',
     description: 'تغطية شاملة وموجزة لآخر أخبار صناعة الألعاب.',

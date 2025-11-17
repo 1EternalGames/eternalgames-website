@@ -10,6 +10,9 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'المقالات',
   description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة لأحدث الظواهر في عالم الألعاب من خبراء EternalGames.',
+  alternates: {
+    canonical: '/articles',
+  },
   openGraph: {
     title: 'المقالات | EternalGames',
     description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة لأحدث الظواهر في عالم الألعاب.',
