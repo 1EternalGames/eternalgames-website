@@ -20,7 +20,7 @@ const cairo = Cairo({
   weight: ['400', '500', '700', '800'],
 });
 
-const siteUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

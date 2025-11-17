@@ -1,11 +1,60 @@
 // app/tags/[tag]/page.tsx
 import { client } from '@/lib/sanity.client';
-import { allContentByTagListQuery } from '@/lib/sanity.queries'; // Use LEAN query
+import { allContentByTagListQuery } from '@/lib/sanity.queries';
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
+import type { Metadata } from 'next';
+import { urlFor } from '@/sanity/lib/image';
 
-export const dynamicParams = true; // <--- ADDED THIS LINE
+export const dynamicParams = true;
+
+type Props = {
+  params: { tag: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { tag } = params;
+  const tagSlug = decodeURIComponent(tag);
+
+  // Fetch the tag and the most recent article using this tag for an image
+  const data = await client.fetch(
+    `{
+      "tag": *[_type == "tag" && slug.current == $slug][0]{title},
+      "latestItem": *[_type in ["review", "article", "news"] && ($slug in tags[]->slug.current || category->slug.current == $slug)] | order(publishedAt desc)[0]{mainImage}
+    }`,
+    { slug: tagSlug }
+  );
+
+  if (!data.tag) return {};
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const translatedTitle = translateTag(data.tag.title);
+  const title = `وسم: ${translatedTitle}`;
+  const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
+  const ogImageUrl = data.latestItem?.mainImage
+    ? urlFor(data.latestItem.mainImage).width(1200).height(630).fit('crop').auto('format').url()
+    : `${siteUrl}/og-image.png`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/tags/${tagSlug}`,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
+
 
 export async function generateStaticParams() {
     try {

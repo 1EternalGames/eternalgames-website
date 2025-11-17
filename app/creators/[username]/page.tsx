@@ -5,9 +5,46 @@ import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
-import { cache } from 'react'; // Import React's cache
+import { cache } from 'react';
+import type { Metadata } from 'next';
 
-export const dynamicParams = true; // <--- ADDED THIS LINE
+export const dynamicParams = true;
+
+type Props = {
+  params: { username: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username: encodedUsername } = params;
+  const username = decodeURIComponent(encodedUsername);
+  
+  const user = await getCachedUserByUsername(username);
+  if (!user) return {};
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const title = `أعمال ${user.name || username}`;
+  const description = `استكشف جميع مساهمات ${user.name || username} على منصة EternalGames.`;
+  // Use the user's avatar for the OG image if available, otherwise fallback
+  const ogImageUrl = user.image || `${siteUrl}/og-image.png`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/creators/${username}`,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: user.name || username }],
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
 
 export const generateStaticParams = cache(async () => {
     try {
@@ -32,7 +69,7 @@ const getCachedUserByUsername = cache(async (username: string) => {
     try {
         return await prisma.user.findUnique({
             where: { username: username },
-            select: { id: true, name: true, username: true },
+            select: { id: true, name: true, username: true, image: true }, // Added image to selection
         });
     } catch (error) {
         console.warn(`[BUILD WARNING] Database connection failed for creator page: "${username}".`, error);

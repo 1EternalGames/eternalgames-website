@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const item = await getCachedSanityData(config.query, { slug });
   if (!item) return {};
 
-  const siteUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   const ogImageUrl = urlFor(item.mainImage).width(1200).height(630).fit('crop').auto('format').url();
 
   let description = 'اقرأ المزيد على EternalGames.';

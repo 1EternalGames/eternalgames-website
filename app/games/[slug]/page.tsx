@@ -1,10 +1,53 @@
 // app/games/[slug]/page.tsx
 import { client } from '@/lib/sanity.client';
-import { allContentByGameListQuery } from '@/lib/sanity.queries'; // Use LEAN query
+import { allContentByGameListQuery } from '@/lib/sanity.queries';
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
+import type { Metadata } from 'next';
+import { urlFor } from '@/sanity/lib/image';
 
-export const dynamicParams = true; // <--- ADDED THIS LINE
+export const dynamicParams = true;
+
+type Props = {
+  params: { slug: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = params;
+  const gameSlug = decodeURIComponent(slug);
+
+  const game = await client.fetch(
+    `*[_type == "game" && slug.current == $slug][0]{title, mainImage}`,
+    { slug: gameSlug }
+  );
+
+  if (!game) return {};
+  
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const title = `محور لعبة: ${game.title}`;
+  const description = `استكشف كل المحتوى المتعلق بلعبة ${game.title} على EternalGames، من مراجعات ومقالات إلى آخر الأخبار.`;
+  const ogImageUrl = game.mainImage 
+    ? urlFor(game.mainImage).width(1200).height(630).fit('crop').auto('format').url()
+    : `${siteUrl}/og-image.png`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/games/${gameSlug}`,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: game.title }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
 
 export async function generateStaticParams() {
     try {
