@@ -10,7 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-// MODIFIED: PageTransitionWrapper import removed
+import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // MODIFIED: Import the new component
 import type { Metadata } from 'next';
 
 const cairo = Cairo({
@@ -30,7 +30,6 @@ export const metadata: Metadata = {
   },
   description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
   alternates: {
-    // MODIFIED: Removed the static canonical link that was overriding all pages.
   },
   openGraph: {
     title: {
@@ -87,9 +86,10 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
               <Lightbox />
               <Navbar />
               <main>
-                {/* MODIFIED: The redundant PageTransitionWrapper has been removed. */}
-                {/* Next.js will now automatically use app/template.tsx */}
-                {children}
+                {/* MODIFIED: The wrapper is now a standard component inside the layout */}
+                <PageTransitionWrapper>
+                  {children}
+                </PageTransitionWrapper>
               </main>
               <Footer />
               <StudioBar />
