@@ -5,6 +5,20 @@ import { groq } from 'next-sanity';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'المراجعات',
+  description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames. تقييمات شاملة، تحليلات دقيقة، وحكم نهائي.',
+  openGraph: {
+    title: 'مراجعات | EternalGames',
+    description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames.',
+  },
+  twitter: {
+    title: 'مراجعات | EternalGames',
+    description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames.',
+  }
+};
 
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
 const allTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}`;

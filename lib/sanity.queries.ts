@@ -1,6 +1,6 @@
 // lib/sanity.queries.ts
 
-import { groq } from 'next-sanity'
+import {groq} from 'next-sanity'
 
 // --- Base Fields & Projections (Optimized) ---
 const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
@@ -48,23 +48,23 @@ export const newsGridInitialQuery = groq`*[_type == "news" && ${publishedFilter}
 }`
 
 export const paginatedNewsQuery = (
-  gameSlug?: string, 
-  tagSlugs?: string[], 
-  searchTerm?: string, 
-  offset: number = 0, 
+  gameSlug?: string,
+  tagSlugs?: string[],
+  searchTerm?: string,
+  offset: number = 0,
   limit: number = 20,
-  sort: 'latest' | 'viral' = 'latest'
+  sort: 'latest' | 'viral' = 'latest',
 ) => {
-  let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`;
-  
-  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
-  if (tagSlugs && tagSlugs.length > 0) {
-    const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' || ');
-    filter += ` && (${tagFilter})`;
-  }
-  if (searchTerm) filter += ` && title match "${searchTerm}*"`;
+  let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`
 
-  const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc'; 
+  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
+  if (tagSlugs && tagSlugs.length > 0) {
+    const tagFilter = tagSlugs.map((slug) => `"${slug}" in tags[]->slug.current`).join(' || ')
+    filter += ` && (${tagFilter})`
+  }
+  if (searchTerm) filter += ` && title match "${searchTerm}*"`
+
+  const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc'
 
   return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
     ${apiListProjection}
@@ -73,33 +73,33 @@ export const paginatedNewsQuery = (
 
 // --- Reviews API/Page Queries ---
 export const paginatedReviewsQuery = (
-  gameSlug?: string, 
-  tagSlugs?: string[], 
-  searchTerm?: string, 
+  gameSlug?: string,
+  tagSlugs?: string[],
+  searchTerm?: string,
   scoreRange?: string,
-  offset: number = 0, 
+  offset: number = 0,
   limit: number = 20,
-  sort: 'latest' | 'score' = 'latest'
+  sort: 'latest' | 'score' = 'latest',
 ) => {
-  let filter = `_type == "review" && ${publishedFilter}`;
+  let filter = `_type == "review" && ${publishedFilter}`
 
-  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
+  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
 
   if (tagSlugs && tagSlugs.length > 0) {
-    const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' && ');
-    filter += ` && (${tagFilter})`;
+    const tagFilter = tagSlugs.map((slug) => `"${slug}" in tags[]->slug.current`).join(' && ')
+    filter += ` && (${tagFilter})`
   }
 
-  if (searchTerm) filter += ` && title match "${searchTerm}*"`;
-  
+  if (searchTerm) filter += ` && title match "${searchTerm}*"`
+
   if (scoreRange) {
-    if (scoreRange === '9-10') filter += ` && score >= 9 && score <= 10`;
-    else if (scoreRange === '8-8.9') filter += ` && score >= 8 && score < 9`;
-    else if (scoreRange === '7-7.9') filter += ` && score >= 7 && score < 8`;
-    else if (scoreRange === '<7') filter += ` && score < 7`;
+    if (scoreRange === '9-10') filter += ` && score >= 9 && score <= 10`
+    else if (scoreRange === '8-8.9') filter += ` && score >= 8 && score < 9`
+    else if (scoreRange === '7-7.9') filter += ` && score >= 7 && score < 8`
+    else if (scoreRange === '<7') filter += ` && score < 7`
   }
-  
-  const orderBy = sort === 'score' ? 'score desc, publishedAt desc' : 'publishedAt desc';
+
+  const orderBy = sort === 'score' ? 'score desc, publishedAt desc' : 'publishedAt desc'
 
   return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
     ${apiListProjection}
@@ -108,25 +108,25 @@ export const paginatedReviewsQuery = (
 
 // --- Articles API/Page Queries ---
 export const paginatedArticlesQuery = (
-  gameSlug?: string, 
-  tagSlugs?: string[], 
-  searchTerm?: string, 
-  offset: number = 0, 
+  gameSlug?: string,
+  tagSlugs?: string[],
+  searchTerm?: string,
+  offset: number = 0,
   limit: number = 20,
-  sort: 'latest' | 'viral' = 'latest'
+  sort: 'latest' | 'viral' = 'latest',
 ) => {
-  let filter = `_type == "article" && ${publishedFilter}`;
+  let filter = `_type == "article" && ${publishedFilter}`
 
-  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`;
+  if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
 
   if (tagSlugs && tagSlugs.length > 0) {
-    const tagFilter = tagSlugs.map(slug => `"${slug}" in tags[]->slug.current`).join(' && ');
-    filter += ` && (${tagFilter})`;
+    const tagFilter = tagSlugs.map((slug) => `"${slug}" in tags[]->slug.current`).join(' && ')
+    filter += ` && (${tagFilter})`
   }
 
-  if (searchTerm) filter += ` && title match "${searchTerm}*"`;
-  
-  const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc';
+  if (searchTerm) filter += ` && title match "${searchTerm}*"`
+
+  const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc'
 
   return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
     ${apiListProjection}
@@ -144,7 +144,7 @@ export const allContentByGameListQuery = groq`*[_type in ["review", "article", "
 export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && ($slug in tags[]->slug.current || category->slug.current == $slug)] | order(publishedAt desc) { ${cardListProjection} }`
 
 // --- Detail Page Queries ---
-const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} }, _type == "table" => {..., rows[]{..., cells[]{..., content[]{...}}}}, _type == "gameDetails" => { ... } }`
+const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} }, _type == "table" => {..., rows[]{..., cells[]{..., content[]{...}}}}, _type == "gameDetails" => { ... }, _type == 'youtube' => { ... } }`
 const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
 
 export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $slug && ${publishedFilter}][0] {
@@ -191,9 +191,9 @@ export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(release
 }`
 
 // --- Studio Editor Queries ---
-export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`;
-export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`;
-export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`;
+export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`
+export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`
+export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`
 
 export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] | order(_updatedAt desc)[0]{
   ...,
@@ -226,10 +226,11 @@ export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] 
       "image4": image4{..., asset->{_id, url, metadata}}
     },
     _type == "table" => {..., rows[]{..., cells[]{..., content[]{...}}}},
-    _type == "gameDetails" => { ... }
+    _type == "gameDetails" => { ... },
+    _type == 'youtube' => { ... }
   }
-}`;
+}`
 
 // --- Homepage Feed Queries ---
-export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`;
-export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`;
+export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`
+export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`

@@ -13,6 +13,8 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
 import { cache } from 'react';
 import { groq } from 'next-sanity';
+import type { Metadata } from 'next';
+import { urlFor } from '@/sanity/lib/image';
 
 const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
@@ -40,13 +42,70 @@ const contentConfig = {
     },
 };
 
+type Props = {
+  params: { slug: string[] };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug: slugArray } = params;
+  if (!slugArray || slugArray.length !== 2) return {};
+  
+  const [type, slug] = slugArray;
+  const config = (contentConfig as any)[type];
+  if (!config) return {};
+
+  const item = await getCachedSanityData(config.query, { slug });
+  if (!item) return {};
+
+  const siteUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const ogImageUrl = urlFor(item.mainImage).width(1200).height(630).fit('crop').auto('format').url();
+
+  let description = 'اقرأ المزيد على EternalGames.';
+  if (item._type === 'review' && item.verdict) {
+    description = item.verdict;
+  } else if (item.content) {
+    const firstTextblock = item.content.find((block: any) => block._type === 'block' && block.children?.some((child: any) => child.text));
+    if (firstTextblock) {
+      description = firstTextblock.children.map((child: any) => child.text).join(' ').slice(0, 155) + '...';
+    }
+  }
+
+  return {
+    title: item.title,
+    description: description,
+    openGraph: {
+      title: item.title,
+      description: description,
+      url: `${siteUrl}/${type}/${slug}`,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: item.title,
+        },
+      ],
+      type: 'article',
+      publishedTime: item.publishedAt,
+      authors: (item.authors || item.reporters || []).map((a: any) => a.name),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: item.title,
+      description: description,
+      images: [ogImageUrl],
+    },
+  };
+}
+
+
 const getCachedSanityData = unstable_cache(
     async (query: string, params: Record<string, any> = {}) => {
         return client.fetch(query, params);
     },
     ['sanity-content-detail'],
     {
-        tags: ['sanity-content-detail'] // ALIGNED TAG
+        tags: ['sanity-content-detail']
     }
 );
 
@@ -68,7 +127,7 @@ const getCachedCreatorDetails = unstable_cache(
         }
     },
     ['enriched-creator-details'],
-    { tags: ['enriched-creator-details'] } // MODIFIED: Removed revalidate time
+    { tags: ['enriched-creator-details'] }
 );
 
 async function enrichCreator(creator: any) {

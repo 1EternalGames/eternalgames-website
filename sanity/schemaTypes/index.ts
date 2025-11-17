@@ -15,7 +15,8 @@ import author from './creators/authorType'
 import designer from './creators/designerType'
 import reporter from './creators/reporterType'
 import reviewer from './creators/reviewerType'
-import colorDictionary from './custom_inputs/colorDictionaryType' // ADDED
+import colorDictionary from './custom_inputs/colorDictionaryType'
+import youtube from './custom_objects/youtubeType'
 
 export const schemaTypes = [
   // Documents
@@ -39,4 +40,5 @@ export const schemaTypes = [
   fourImageGrid,
   gameDetails,
   table,
+  youtube,
 ]

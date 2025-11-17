@@ -5,6 +5,20 @@ import { groq } from 'next-sanity';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import NewsPageClient from './NewsPageClient';
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'الأخبار',
+  description: 'تغطية شاملة وموجزة لآخر أخبار صناعة الألعاب. ابقَ على اطلاع دائم بكل ما هو جديد ومهم.',
+  openGraph: {
+    title: 'الأخبار | EternalGames',
+    description: 'تغطية شاملة وموجزة لآخر أخبار صناعة الألعاب.',
+  },
+  twitter: {
+    title: 'الأخبار | EternalGames',
+    description: 'تغطية شاملة وموجزة لآخر أخبار صناعة الألعاب.',
+  }
+};
 
 const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
 const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}`;

@@ -1,3 +1,5 @@
+// sanity/schemaTypes/blockContentType.ts
+
 import {defineType, defineArrayMember, defineField} from 'sanity'
 
 /**
@@ -70,8 +72,12 @@ export default defineType({
     defineArrayMember({
       type: 'gameDetails',
     }),
-    defineArrayMember({ // ADDED
+    defineArrayMember({
+      // ADDED
       type: 'table',
+    }),
+    defineArrayMember({
+      type: 'youtube',
     }),
   ],
 })
