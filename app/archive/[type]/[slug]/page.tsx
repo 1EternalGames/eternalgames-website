@@ -56,10 +56,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const item = await getCachedSanityData(config.query, { slug });
   if (!item) return {};
-  
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-  // Using .jpg format for maximum compatibility
-  const ogImageUrl = urlFor(item.mainImage).width(1200).height(630).fit('crop').format('jpg').url();
+  const ogImageUrl = urlFor(item.mainImage).width(1200).height(630).fit('crop').format('jpg').url(); // Added .format('jpg')
 
   let description = 'اقرأ المزيد على EternalGames.';
   if (item._type === 'review' && item.verdict) {
@@ -78,7 +77,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: item.title,
       description: description,
       url: `${siteUrl}/${type}/${slug}`,
-      images: [ // Using the more robust object format
+      images: [
         {
           url: ogImageUrl,
           width: 1200,
@@ -94,12 +93,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: item.title,
       description: description,
-      images: [ // Using the more robust object format
-        {
-          url: ogImageUrl,
-          alt: item.title,
-        }
-      ],
+      images: [ogImageUrl],
     },
   };
 }
