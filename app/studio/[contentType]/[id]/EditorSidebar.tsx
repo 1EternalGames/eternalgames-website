@@ -10,7 +10,8 @@ import { TagInput } from './metadata/TagInput';
 import { MainImageInput } from './metadata/MainImageInput';
 import { CreatorInput } from './metadata/CreatorInput';
 import { PlatformInput } from './metadata/PlatformInput';
-import { SlugInput } from './metadata/SlugInput'; // IMPORTED
+import { SlugInput } from './metadata/SlugInput';
+import ColorDictionaryManager from './metadata/color-dictionary/ColorDictionaryManager';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './Editor.module.css';
 
@@ -24,7 +25,7 @@ export function EditorSidebar({
     document, isOpen, documentState, dispatch, onSave, hasChanges, onPublish, 
     slugValidationStatus, slugValidationMessage, isDocumentValid, 
     mainImageUploadQuality, onMainImageUploadQualityChange,
-    allGames, allTags, allCreators
+    allGames, allTags, allCreators, colorDictionary
 }: any) {
     const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
@@ -164,6 +165,8 @@ export function EditorSidebar({
                         
                         {isReview && (<> <motion.hr variants={itemVariants} style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} /> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>التقييم (0-10) {score <= 0 && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}</label> <input type="number" value={score} onChange={(e) => handleFieldChange('score', parseFloat(e.target.value) || 0)} className={styles.sidebarInput} min="0" max="10" step="0.1" /> </motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>الخلاصة {!verdict.trim() && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}</label> <textarea value={verdict} onChange={(e) => handleFieldChange('verdict', e.target.value)} className={styles.sidebarInput} rows={3} /> </motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المحاسن" items={pros} setItems={(p: any) => handleFieldChange('pros', p)} /></motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المساوئ" items={cons} setItems={(c: any) => handleFieldChange('cons', c)} /></motion.div> </>)}
                     </fieldset>
+
+                    <ColorDictionaryManager initialMappings={colorDictionary || []} />
                     
                     <div className={styles.sidebarFooter}>
                         <motion.button onClick={handleSave} disabled={isSaveDisabled} className="primary-button" style={{ width: '100%', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} title={isSaveDisabled ? (hasChanges ? 'المُعرّف غير صالح' : 'لا تغييرات للحفظ') : 'حفظ التغييرات'} animate={{ backgroundColor: saveStatus === 'success' ? '#16A34A' : 'var(--accent)', color: saveStatus === 'success' ? '#fff' : 'inherit', width: isSaving ? '44px' : '100%', borderRadius: isSaving ? '50%' : '5px', paddingLeft: isSaving ? 0 : '2.4rem', paddingRight: isSaving ? 0 : '2.4rem' }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>

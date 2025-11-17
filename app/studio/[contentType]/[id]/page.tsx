@@ -5,8 +5,12 @@ import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
+import { groq } from 'next-sanity';
 
 export const runtime = 'nodejs';
+
+// ADDED: Query to fetch the color dictionary
+const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
 export default async function EditorPage({ params: paramsPromise }: { params: Promise<{ contentType: string; id: string }> }) {
     noStore();
@@ -19,23 +23,20 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
     const publicId = params.id.replace('drafts.', '');
     
     try {
-        const [document, allGames, allTags, allCreators] = await Promise.all([
+        const [document, allGames, allTags, allCreators, colorDictionary] = await Promise.all([
             sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }),
             sanityWriteClient.fetch(allGamesForStudioQuery),
             sanityWriteClient.fetch(allTagsForStudioQuery),
-            sanityWriteClient.fetch(allCreatorsForStudioQuery)
+            sanityWriteClient.fetch(allCreatorsForStudioQuery),
+            sanityWriteClient.fetch(colorDictionaryQuery), // ADDED: Fetch call
         ]);
         
         if (!document) {
             notFound();
         }
         
-        // CRITICAL FIX: Convert on-the-fly instead of caching in document
-        // This ensures fresh conversion with fixed empty paragraph handling
         const tiptapContent = portableTextToTiptap(document.content ?? []);
         
-        // Pass the converted content separately, don't merge into document
-        // EditorClient will do fresh conversions as needed
         const documentWithTiptapContent = { 
             ...document, 
             tiptapContent 
@@ -47,6 +48,7 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
                 allGames={allGames}
                 allTags={allTags}
                 allCreators={allCreators}
+                colorDictionary={colorDictionary?.autoColors || []} // ADDED: Pass data to client
             />
         );
     } catch (err: any) {

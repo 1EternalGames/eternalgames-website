@@ -1,7 +1,7 @@
 // components/PortableTextComponent.tsx
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { PortableText, PortableTextComponents, PortableTextComponentProps, PortableTextMarkComponentProps } from '@portabletext/react'
 import { urlFor } from '@/sanity/lib/image'
 import dynamic from 'next/dynamic'
@@ -32,7 +32,6 @@ const GameDetails = dynamic(() => import('./content/GameDetails'), {
 });
 // --- END LAZY-LOADED COMPONENTS ---
 
-// --- REPLICATED COLOR PALETTE FROM EDITOR ---
 const COLOR_PALETTE = [
     { title: 'Grays', colors: ['#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151', '#1F2937'] },
     { title: 'Reds', colors: ['#FEF2F2', '#FEE2E2', '#FECACA', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D', '#450A0A'] },
@@ -44,7 +43,11 @@ const COLOR_PALETTE = [
     { title: 'Purples', colors: ['#F5F3FF', '#EDE9FE', '#DDD6FE', '#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6', '#4C1D95', '#2E1065'] },
 ];
 
-// --- THEME-AWARE COLOR COMPONENT ---
+type ColorMapping = {
+  word: string;
+  color: string;
+}
+
 const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 'color'; hex: string }>) => {
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -63,12 +66,11 @@ const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 
     for (const palette of COLOR_PALETTE) {
         const gradeIndex = palette.colors.findIndex(c => c.toLowerCase() === originalColor.toLowerCase());
         if (gradeIndex !== -1) {
-            colorInfo = { palette, grade: gradeIndex + 1 }; // Grade is 1-10
+            colorInfo = { palette, grade: gradeIndex + 1 };
             break;
         }
     }
 
-    // If it's a grayscale color, revert to default text color.
     if (colorInfo && colorInfo.palette.title === 'Grays') {
         return <span>{children}</span>;
     }
@@ -76,7 +78,6 @@ const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 
     let finalColor = originalColor;
 
     if (colorInfo) {
-        // Apply grade-based logic for palette colors
         const { palette, grade } = colorInfo;
         if (resolvedTheme === 'light' && grade >= 1 && grade <= 4) {
             finalColor = palette.colors[4];
@@ -85,7 +86,6 @@ const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 
         }
     }
 
-    // Luminance fallback for custom colors and extreme palette cases
     const getLuminance = (hex: string): number => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         if (!result) return 0;
@@ -105,7 +105,6 @@ const ColorMark = ({ value, children }: PortableTextMarkComponentProps<{ _type: 
 
     return <span style={{ color: finalColor }}>{children}</span>;
 };
-
 
 const SanityImageComponent = ({ value }: { value: any }) => {
     const { asset, alt } = value;
@@ -165,37 +164,77 @@ const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock
     return <blockquote style={{ margin: '4rem 0', paddingRight: '2rem', borderRight: '4px solid var(--accent)', fontSize: '2.4rem', fontStyle: 'italic', color: 'var(--text-primary)' }}>{props.children}</blockquote>;
 }
 
-const components: PortableTextComponents = {
-    types: { 
-        image: SanityImageComponent,
-        imageCompare: ({ value }) => <ImageCompare value={value} />,
-        twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
-        fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
-        table: ({ value }) => <SanityTable value={value} />,
-        gameDetails: ({ value }) => <GameDetails details={value.details} />,
-    },
-    block: { 
-        h1: ({children}) => <HeadingComponent level={1}>{children}</HeadingComponent>,
-        h2: ({children}) => <HeadingComponent level={2}>{children}</HeadingComponent>,
-        h3: ({children}) => <HeadingComponent level={3}>{children}</HeadingComponent>,
-        blockquote: BlockquoteComponent 
-    },
-    marks: {
-        color: ColorMark,
-        link: ({ value, children }) => {
-            const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined;
-            const isExternal = rel === 'noreferrer noopener';
-            return (
-                <a href={value.href} rel={rel} target={isExternal ? "_blank" : "_self"}>
-                    {children}
-                </a>
-            );
-        },
-    },
-}
+// THE DEFINITIVE FIX: Encapsulate the entire logic within the `useMemo` hook that defines the `components`.
+// This avoids complex type inference issues by constructing the final object in one go.
 
-export default function PortableTextComponent({ content }: { content: any[] }) {
+export default function PortableTextComponent({ content, colorDictionary = [] }: { content: any[], colorDictionary?: ColorMapping[] }) {
     if (!content) return null
+
+    const components: PortableTextComponents = useMemo(() => {
+        const colorMap = new Map(colorDictionary.map(item => [item.word.toLowerCase(), item.color]));
+        const regex = colorDictionary.length > 0 
+            ? new RegExp(`\\b(${colorDictionary.map(item => item.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi')
+            : null;
+
+        const NormalBlockRenderer = (props: PortableTextComponentProps<PortableTextBlock>) => {
+            // If there's no regex, just render a plain paragraph.
+            if (!regex) {
+                return <p>{props.children}</p>;
+            }
+
+            return (
+                <p>
+                    {React.Children.map(props.children, (child: any) => {
+                        // If the child is not a plain string, render it as is. This handles marks (bold, links, etc.)
+                        if (typeof child !== 'string') {
+                            return child;
+                        }
+                        
+                        const parts = child.split(regex);
+
+                        return parts.map((part, i) => {
+                            const lowerPart = part.toLowerCase();
+                            if (colorMap.has(lowerPart)) {
+                                return <span key={i} style={{ color: colorMap.get(lowerPart), fontWeight: '600' }}>{part}</span>;
+                            }
+                            return <React.Fragment key={i}>{part}</React.Fragment>;
+                        });
+                    })}
+                </p>
+            );
+        };
+
+        return {
+            types: { 
+                image: SanityImageComponent,
+                imageCompare: ({ value }) => <ImageCompare value={value} />,
+                twoImageGrid: ({ value }) => <TwoImageGrid value={value} />,
+                fourImageGrid: ({ value }) => <FourImageGrid value={value} />,
+                table: ({ value }) => <SanityTable value={value} />,
+                gameDetails: ({ value }) => <GameDetails details={value.details} />,
+            },
+            block: { 
+                h1: ({children}) => <HeadingComponent level={1}>{children}</HeadingComponent>,
+                h2: ({children}) => <HeadingComponent level={2}>{children}</HeadingComponent>,
+                h3: ({children}) => <HeadingComponent level={3}>{children}</HeadingComponent>,
+                blockquote: BlockquoteComponent,
+                normal: NormalBlockRenderer, // Use the correctly typed renderer.
+            },
+            marks: {
+                color: ColorMark,
+                link: ({ value, children }) => {
+                    const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined;
+                    const isExternal = rel === 'noreferrer noopener';
+                    return (
+                        <a href={value.href} rel={rel} target={isExternal ? "_blank" : "_self"}>
+                            {children}
+                        </a>
+                    );
+                },
+            },
+        };
+    }, [colorDictionary]);
+
     return (
         <div className="portable-text-content" style={{ fontSize: '1.8rem', lineHeight: 1.8 }}>
             <PortableText value={content} components={components} />

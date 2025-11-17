@@ -1,0 +1,140 @@
+/* app/studio/[contentType]/[id]/metadata/color-dictionary/ColorDictionaryManager.module.css */
+.managerContainer {
+  border-top: 1px solid var(--border-color);
+}
+
+.toggleHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-main);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.collapsibleContent {
+  overflow: visible; /* THE DEFINITIVE FIX: Allow popover to display outside bounds */
+}
+
+.addForm {
+  display: grid;
+  grid-template-columns: auto auto 1fr; /* MODIFIED GRID LAYOUT */
+  gap: 1rem;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.addForm .primary-button {
+  padding: 0 1.5rem;
+}
+
+.colorPickerTriggerContainer { /* ADDED */
+  position: relative;
+}
+
+.colorInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 42px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+  cursor: pointer; /* ADDED */
+  transition: border-color 0.2s ease; /* ADDED */
+}
+
+.colorInputWrapper:hover { /* ADDED */
+  border-color: var(--accent);
+}
+
+
+.colorInput {
+  position: absolute;
+  inset: -5px; /* Make it larger to hide borders */
+  width: 150%;
+  height: 150%;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.colorInputText {
+  font-family: monospace;
+  font-size: 1.3rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  mix-blend-mode: difference;
+  filter: invert(1) grayscale(1);
+}
+
+.mappingsList {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mappingItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-primary);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-main);
+  font-weight: 500;
+}
+
+.itemColorPreview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.removeButton:hover {
+  color: #dc2626;
+  background-color: color-mix(in srgb, #dc2626 15%, transparent);
+}

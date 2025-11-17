@@ -29,13 +29,20 @@ type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedConten
 type ContentType = 'reviews' | 'articles' | 'news';
 
 export type Heading = { id: string; title: string; top: number; level: number }; // THE FIX: Added level property
+
+type ColorMapping = {
+  word: string;
+  color: string;
+}
+
 const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.5 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
-export default function ContentPageClient({ item, type, children }: {
+export default function ContentPageClient({ item, type, children, colorDictionary }: {
     item: ContentItem;
     type: ContentType;
     children: React.ReactNode;
+    colorDictionary: ColorMapping[];
 }) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     const openLightbox = useLightboxStore((state) => state.openLightbox);
@@ -210,7 +217,7 @@ export default function ContentPageClient({ item, type, children }: {
                                 </div>
 
                                 <div ref={articleBodyRef} className="article-body">
-                                    <PortableTextComponent content={item.content || []} />
+                                    <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
                                     {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
                                 </div>
                                 <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>

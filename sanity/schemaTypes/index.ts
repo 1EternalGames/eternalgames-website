@@ -1,3 +1,4 @@
+// sanity/schemaTypes/index.ts
 import blockContent from './blockContentType'
 import tag from './tagType'
 import review from './reviewType'
@@ -9,10 +10,33 @@ import imageCompare from './imageCompareType'
 import twoImageGrid from './twoImageGridType'
 import fourImageGrid from './fourImageGridType'
 import gameDetails from './gameDetailsType'
-import table from './tableType' // ADDED
+import table from './tableType'
 import author from './creators/authorType'
 import designer from './creators/designerType'
 import reporter from './creators/reporterType'
 import reviewer from './creators/reviewerType'
+import colorDictionary from './custom_inputs/colorDictionaryType' // ADDED
 
-export const schemaTypes = [review, article, news, author, designer, reporter, reviewer, game, tag, gameRelease, blockContent, imageCompare, twoImageGrid, fourImageGrid, gameDetails, table] // ADDED
+export const schemaTypes = [
+  // Documents
+  review,
+  article,
+  news,
+  game,
+  gameRelease,
+  tag,
+  // Creators
+  author,
+  designer,
+  reporter,
+  reviewer,
+  // Singleton Documents
+  colorDictionary, // ADDED
+  // Objects & Custom Inputs
+  blockContent,
+  imageCompare,
+  twoImageGrid,
+  fourImageGrid,
+  gameDetails,
+  table,
+]

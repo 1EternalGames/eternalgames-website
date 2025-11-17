@@ -12,6 +12,7 @@ import { tiptapToPortableText } from './utils/tiptapToPortableText';
 import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery } from '@/lib/sanity.queries';
 import type { QueryParams, IdentifiedSanityDocumentStub } from '@sanity/client';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function translateTitleToAction(title: string): Promise<string> {
     const session = await getServerSession(authOptions);
@@ -168,13 +169,13 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
 export async function deleteDocumentAction(docId: string): Promise<{ success: boolean; message?: string }> {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.roles) return { success: false, message: 'غير مُخَوَّل.' };
-    const docToحذف = await sanityWriteClient.fetch(groq`*[_id == $docId][0]{_type}`, { docId });
-    if (!docToحذف) return { success: false, message: 'الوثيقةُ مفقودة.' };
+    const docToDelete = await sanityWriteClient.fetch(groq`*[_id == $docId][0]{_type}`, { docId });
+    if (!docToDelete) return { success: false, message: 'الوثيقةُ مفقودة.' };
     const userRoles = session.user.roles;
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
-    const docType = docToحذف._type;
-    const canحذف = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
-    if (!canحذف) return { success: false, message: 'أذوناتٌ قاصرة.' };
+    const docType = docToDelete._type;
+    const canDelete = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
+    if (!canDelete) return { success: false, message: 'أذوناتٌ قاصرة.' };
     const result = await sanityWriteClient.delete(docId);
     if (result.results.length > 0) {
         revalidatePath('/studio');
@@ -380,4 +381,55 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
         console.error("Sanity asset upload failed:", error);
         return { success: false, error: 'أخفق رفع الملف.' };
     }
+}
+
+// --- NEW DICTIONARY ACTIONS ---
+
+export async function addOrUpdateColorDictionaryAction(newMapping: { word: string; color: string }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) throw new Error('Authentication required.');
+
+    const newEntry = { ...newMapping, _key: uuidv4() };
+
+    // THE DEFINITIVE FIX: Switched from `append` to a more robust `setIfMissing` and `insert` pattern.
+    const tx = sanityWriteClient.transaction();
+    
+    // 1. Create the document and the array field if they don't exist.
+    tx.createIfNotExists({ _id: 'colorDictionary', _type: 'colorDictionary', title: 'Color Dictionary' });
+    tx.patch('colorDictionary', (p) => p.setIfMissing({ autoColors: [] }));
+    
+    // 2. Insert the new item at the beginning of the array.
+    tx.patch('colorDictionary', (p) => 
+        p.insert('before', 'autoColors[0]', [newEntry])
+    );
+
+    await tx.commit({ returnDocuments: false });
+
+    const updatedDictionary = await sanityWriteClient.fetch(groq`*[_id == "colorDictionary"][0]`);
+
+    return { success: true, updatedDictionary };
+  } catch (error: any) {
+    console.error("Failed to update dictionary:", error);
+    return { success: false, message: error.message || 'Failed to update dictionary.' };
+  }
+}
+
+export async function removeColorDictionaryAction(keyToRemove: string) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) throw new Error('Authentication required.');
+
+    await sanityWriteClient
+      .patch('colorDictionary')
+      .unset([`autoColors[_key=="${keyToRemove}"]`])
+      .commit({ returnDocuments: false, autoGenerateArrayKeys: true });
+
+    const updatedDictionary = await sanityWriteClient.fetch(groq`*[_id == "colorDictionary"][0]`);
+
+    return { success: true, updatedDictionary };
+  } catch (error: any) {
+    console.error("Failed to remove from dictionary:", error);
+    return { success: false, message: error.message || 'Failed to remove from dictionary.' };
+  }
 }

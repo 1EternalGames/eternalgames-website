@@ -1,0 +1,100 @@
+/* app/studio/[contentType]/[id]/metadata/color-dictionary/ColorDictionaryModal.module.css */
+.addForm {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 1rem;
+  padding: 1rem 0 2rem 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.addForm .primary-button {
+  padding: 0 1.5rem;
+}
+
+.colorPickerTriggerContainer {
+  position: relative;
+}
+
+.colorInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 42px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.colorInputWrapper:hover {
+  border-color: var(--accent);
+}
+
+.colorInputText {
+  font-family: monospace;
+  font-size: 1.3rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  mix-blend-mode: difference;
+  filter: invert(1) grayscale(1);
+}
+
+.mappingsList {
+  max-height: 40vh;
+  overflow-y: auto;
+  padding-right: 1rem; /* RTL padding */
+  margin-right: -1rem; /* RTL negative margin */
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mappingItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-primary);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-main);
+  font-weight: 500;
+}
+
+.itemColorPreview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.removeButton:hover {
+  color: #dc2626;
+  background-color: color-mix(in srgb, #dc2626 15%, transparent);
+}

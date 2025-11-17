@@ -12,6 +12,9 @@ import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
 import { cache } from 'react';
+import { groq } from 'next-sanity';
+
+const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
 const contentConfig = {
     reviews: {
@@ -95,7 +98,11 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     const config = (contentConfig as any)[type];
     if (!config) notFound();
 
-    let item: any = await getCachedSanityData(config.query, { slug });
+    let [item, colorDictionaryData]: [any, { autoColors: any[] }?] = await Promise.all([
+        getCachedSanityData(config.query, { slug }),
+        getCachedSanityData(colorDictionaryQuery)
+    ]);
+    
     if (!item) notFound();
 
     if (!item[config.relatedProp] || item[config.relatedProp].length === 0) {
@@ -108,9 +115,11 @@ export default async function ContentPage({ params }: { params: { slug: string[]
             item[prop] = await Promise.all(item[prop].map(enrichCreator));
         }
     }
+    
+    const colorDictionary = colorDictionaryData?.autoColors || [];
 
     return (
-        <ContentPageClient item={item} type={type as any}>
+        <ContentPageClient item={item} type={type as any} colorDictionary={colorDictionary}>
             <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
                 <CommentSection slug={slug} />
             </Suspense>

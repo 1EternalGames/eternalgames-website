@@ -32,7 +32,8 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import { TableComponent } from './editor-components/TableComponent'; // ADDED
+import { TableComponent } from './editor-components/TableComponent';
+import { AutoColorExtension } from './extensions/AutoColorExtension';
 import styles from './Editor.module.css';
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -43,7 +44,7 @@ const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const formatFileSize = (bytes: number): string => { 
+const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
     const kb = bytes / 1024;
     if (kb < 1024) return `${kb.toFixed(1)} KB`;
@@ -140,9 +141,13 @@ const CustomImage = Node.create({ name: 'image', group: 'block', atom: true, dra
 const TwoImageGridNode = Node.create({ name: 'twoImageGrid', group: 'block', atom: true, addAttributes() { return { src1: null, assetId1: null, src2: null, assetId2: null }; }, parseHTML() { return [{ tag: 'div[data-type="two-image-grid"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'two-image-grid' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(TwoImageGridComponent); }, });
 const FourImageGridNode = Node.create({ name: 'fourImageGrid', group: 'block', atom: true, addAttributes() { return { src1: null, assetId1: null, src2: null, assetId2: null, src3: null, assetId3: null, src4: null, assetId4: null }; }, parseHTML() { return [{ tag: 'div[data-type="four-image-grid"]' }]; }, renderHTML({ HTMLAttributes }) { return ['div', mergeAttributes({ 'data-type': 'four-image-grid' }, HTMLAttributes)]; }, addNodeView() { return ReactNodeViewRenderer(FourImageGridComponent); }, });
 
-interface RichTextEditorProps { onEditorCreated: (editor: Editor) => void; initialContent?: any; }
+interface RichTextEditorProps { 
+  onEditorCreated: (editor: Editor) => void; 
+  initialContent?: any; 
+  colorDictionary?: { word: string; color: string }[];
+}
 
-export default function RichTextEditor({ onEditorCreated, initialContent }: RichTextEditorProps) {
+export default function RichTextEditor({ onEditorCreated, initialContent, colorDictionary = [] }: RichTextEditorProps) {
     const toast = useToast();
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const [currentLinkUrl, setCurrentLinkUrl] = useState<string | undefined>(undefined);
@@ -177,6 +182,9 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             StarterKit.configure({ heading: false, bulletList: false, listItem: false, bold: false, blockquote: false }),
             TextStyle,
             Color,
+            AutoColorExtension.configure({
+                colorMappings: colorDictionary,
+            }),
             Bold.extend({ addInputRules() { return [ new InputRule({ find: /(?:^|\s)(\*\*(?!\s+\*\*).+\*\*(?!\s+\*\*))$/, handler: ({ state, range, match }) => { const { tr } = state; const text = match[1]; const start = range.from; const end = range.to; tr.delete(start, end); tr.insertText(text.slice(2, -2), start); tr.addMark(start, start + text.length - 4, this.type.create()); }, }), ]; }, }),
             Heading.configure({ levels: [1, 2, 3] }).extend({
                 onCreate() {
@@ -201,7 +209,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             GameDetailsNode, 
             Blockquote,
             TrailingNode,
-            Table.configure({ resizable: false, cellMinWidth: 100 }).extend({ addNodeView() { return ReactNodeViewRenderer(TableComponent) } }), // MODIFIED
+            Table.configure({ resizable: false, cellMinWidth: 100 }).extend({ addNodeView() { return ReactNodeViewRenderer(TableComponent) } }),
             TableRow,
             TableHeader,
             TableCell,
@@ -217,7 +225,7 @@ export default function RichTextEditor({ onEditorCreated, initialContent }: Rich
             if (editor.isActive('link')) { setCurrentLinkUrl(editor.getAttributes('link').href); } 
             else { setCurrentLinkUrl(undefined); }
         },
-    });
+    }, [colorDictionary]); // THE DEFINITIVE FIX: Re-initialize the editor when the dictionary changes.
 
     const handleOpenLinkModal = useCallback(() => { setIsLinkModalOpen(true); }, []);
     const handleCloseLinkModal = useCallback(() => { setIsLinkModalOpen(false); setCurrentLinkUrl(undefined); editor?.chain().focus().run(); }, [editor]);

@@ -24,6 +24,12 @@ type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
 };
 
+type ColorMapping = {
+  _key?: string;
+  word: string;
+  color: string;
+}
+
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 
 const initialState = { _id: null, _type: null, title: '', slug: '', score: 0, verdict: '', pros: [], cons: [], game: null, tags: [], mainImage: { assetId: null, assetUrl: null }, authors: [], reporters: [], designers: [], publishedAt: null, isSlugManual: false, releaseDate: '', platforms: [], synopsis: '', category: null };
@@ -42,7 +48,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
     const compareIds = (arr1: any[], arr2: any[]) => JSON.stringify(normalize(arr1, []).map((i: any) => i._id).sort()) === JSON.stringify(normalize(arr2, []).map((i: any) => i._id).sort());
     if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
-    // MODIFICATION: Do not patch slug for gameRelease
     if (sourceOfTruth._type !== 'gameRelease' && normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
     if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
     if (normalize(currentState.verdict, '') !== normalize(sourceOfTruth.verdict, '')) patch.verdict = currentState.verdict;
@@ -61,7 +66,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (!compareIds(currentState.reporters, (sourceOfTruth.reporters || []).filter(Boolean))) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
     if (!compareIds(currentState.designers, (sourceOfTruth.designers || []).filter(Boolean))) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
     
-    // THE DEFINITIVE FIX FOR FLICKER: Compare against sourceOfTruth.content, not tiptapContent
     const sourceContentSanity = sourceOfTruth.content || []; 
     const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
     if (sourceOfTruth._type !== 'gameRelease' && JSON.stringify(currentContentSanity) !== JSON.stringify(sourceContentSanity)) {
@@ -72,7 +76,7 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 };
 
 
-export function EditorClient({ document: initialDocument, allGames, allTags, allCreators }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[] }) {
+export function EditorClient({ document: initialDocument, allGames, allTags, allCreators, colorDictionary: initialColorDictionary }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[], colorDictionary: ColorMapping[] }) {
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, initialState);
     const { title, slug, isSlugManual } = state;
@@ -86,6 +90,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [slugValidationMessage, setSlugValidationMessage] = useState('جارٍ التحقق...');
     const debouncedSlug = useDebounce(slug, 500);
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
+    const [colorDictionary, setColorDictionary] = useState<ColorMapping[]>(initialColorDictionary);
     
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
@@ -195,7 +200,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
             return false; 
         } 
 
-        // Optimistically update the source of truth BEFORE the server call
         const optimisticSOT: EditorDocument = {
             ...sourceOfTruth,
             title: state.title,
@@ -215,19 +219,16 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
             synopsis: state.synopsis,
             category: state.category,
             content: tiptapToPortableText(JSON.parse(editorContentJson)),
-            _updatedAt: new Date().toISOString(), // Mark as updated
+            _updatedAt: new Date().toISOString(),
         };
         
         const result = await updateDocumentAction(sourceOfTruth._id, patch); 
         
         if (result.success && result.updatedDocument) { 
-            // THE DEFINITIVE FIX: Replace the server response with the optimistic state
-            // to prevent the flicker, but use the server's _updatedAt for sync.
             setSourceOfTruth({ ...optimisticSOT, _updatedAt: result.updatedDocument._updatedAt });
             return true; 
         } else { 
             toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); 
-            // On failure, we don't revert, allowing the user to try saving again.
             return false; 
         } 
     };
@@ -269,6 +270,8 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         allGames={allGames} 
                         allTags={allTags} 
                         allCreators={allCreators} 
+                        colorDictionary={colorDictionary}
+                        onColorDictionaryUpdate={setColorDictionary} // CORRECTED: Pass the setter function
                     />
                 </motion.div>
                 <motion.div
@@ -289,6 +292,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} 
                         onEditorCreated={setEditorInstance} 
                         editor={editorInstance} 
+                        colorDictionary={colorDictionary} // CORRECTED: Pass the state down
                     />
                 </motion.div>
             </div>

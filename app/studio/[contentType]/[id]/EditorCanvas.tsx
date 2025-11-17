@@ -7,11 +7,24 @@ import { Editor } from '@tiptap/react';
 import React, { useRef, useLayoutEffect } from 'react';
 import styles from './Editor.module.css';
 
+type ColorMapping = { // ADDED TYPE
+  _key?: string;
+  word: string;
+  color: string;
+}
+
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false, loading: () => <div className={styles.canvasBodyPlaceholder}><p>جارٍ تحميل المحرر...</p></div> });
 
-interface EditorCanvasProps { document: any; title: string; onTitleChange: (newTitle: string) => void; onEditorCreated: (editor: Editor) => void; editor: Editor | null; }
+interface EditorCanvasProps { 
+    document: any; 
+    title: string; 
+    onTitleChange: (newTitle: string) => void; 
+    onEditorCreated: (editor: Editor) => void; 
+    editor: Editor | null;
+    colorDictionary: ColorMapping[]; // ADDED PROP
+}
 
-export function EditorCanvas({ document, title, onTitleChange, onEditorCreated, editor }: EditorCanvasProps) {
+export function EditorCanvas({ document, title, onTitleChange, onEditorCreated, editor, colorDictionary }: EditorCanvasProps) {
     const isRelease = document._type === 'gameRelease';
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -42,7 +55,7 @@ export function EditorCanvas({ document, title, onTitleChange, onEditorCreated, 
                             <p>لا نصَّ للإصدارات.<br />تُحرَّرُ البياناتُ من الشريط الجانبي.</p>
                         </div>
                     ) : (
-                        <RichTextEditor onEditorCreated={onEditorCreated} initialContent={document.tiptapContent} />
+                        <RichTextEditor onEditorCreated={onEditorCreated} initialContent={document.tiptapContent} colorDictionary={colorDictionary} />
                     )}
                 </div>
             </div>
