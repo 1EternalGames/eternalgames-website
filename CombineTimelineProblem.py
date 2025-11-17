@@ -2,19 +2,25 @@ import os
 
 # List of the 10 files related to the timeline issue
 files_to_collect = [
-    "app/releases/page.tsx",
-    "app/releases/ReleasePageClient.tsx",
-    "app/releases/ReleasesPage.module.css",
-    "components/KineticReleaseTimeline.tsx",
-    "components/KineticReleaseTimeline.module.css",
-    "components/TimelineCard.tsx",
-    "components/TimelineCard.module.css",
-    "components/AnimatedReleases.tsx",
+    "next.config.ts",
+    "next-env.d.ts",
+    "package.json",
+    ".env",
     "lib/sanity.queries.ts",
-    "sanity/schemaTypes/gameReleaseType.ts",
+    "app/layout.tsx",
+    "app/(content)/[...slug]/page.tsx",
+    "app/reviews/page.tsx",
+    "app/articles/page.tsx",
+    "app/news/page.tsx",
+    "app/games/[slug]/page.tsx",
+    "app/tags/[tag]/page.tsx",
+    "app/creators/[username]/page.tsx",
+    "public/og.png",
+    "public/fonts/Cairo-Bold.ttf"
+    
 ]
 
-output_filename = "EternalGames_Timeline_Context.txt"
+output_filename = "EternalGames_Shareable_Context.txt"
 
 def collect_files(file_list, output_file):
     """Reads content from a list of files and writes it to a single output file."""
