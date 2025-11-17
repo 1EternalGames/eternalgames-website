@@ -136,8 +136,18 @@
 
 @media (max-width: 1024px) {
     .sanctumMain { position: relative; overflow: hidden; height: calc(100% - 60px); }
-    .sanctumSidebar { position: absolute; top: 0; right: 0; width: 100%; max-width: none; z-index: 10; border-left: none; height: 100%; }
-    .sanctumCanvas { width: 100%; position: absolute; inset: 0; }
+    .sanctumSidebar { 
+        position: absolute; 
+        top: 0; 
+        right: 0; 
+        width: 100%; 
+        max-width: none; 
+        z-index: 10; 
+        border-left: none; 
+        height: 100%;
+        /* THE DEFINITIVE FIX: Add padding to prevent overlap with the bottom toggle bar */
+        padding-bottom: 80px;
+    }
     .canvasContent { padding: 3rem 1.5rem 10rem 1.5rem; }
     .canvasTitleInput { font-size: 2.4rem; }
     .canvasEditorWrapper { padding: 1.5rem; }
