@@ -1,20 +1,19 @@
-// components/PageTransitionWrapper.tsx
+// app/template.tsx
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import React from 'react';
 
-export default function PageTransitionWrapper({ children }: { children: React.ReactNode }) {
+export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       <motion.div
         key={pathname}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        // EXIT PROP REMOVED TO FIX THE LAYOUTID CONFLICT
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {children}

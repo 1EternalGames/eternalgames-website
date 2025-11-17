@@ -10,7 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // MODIFIED: Import the new component
+import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import type { Metadata } from 'next';
 
 const cairo = Cairo({
@@ -86,7 +86,6 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
               <Lightbox />
               <Navbar />
               <main>
-                {/* MODIFIED: The wrapper is now a standard component inside the layout */}
                 <PageTransitionWrapper>
                   {children}
                 </PageTransitionWrapper>
