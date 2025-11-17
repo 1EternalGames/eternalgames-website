@@ -9,4 +9,6 @@ export const sanityWriteClient = createClient({
     apiVersion,
     useCdn: false,
     token: process.env.SANITY_API_WRITE_TOKEN!,
+    // THE DEFINITIVE FIX: Explicitly tell this client to fetch drafts.
+    perspective: 'previewDrafts',
 });

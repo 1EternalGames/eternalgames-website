@@ -47,7 +47,9 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug: slugArray } = params;
+  // THE DEFINITIVE FIX: `params` can be a promise, so we must await it.
+  const awaitedParams = await params;
+  const { slug: slugArray } = awaitedParams;
   if (!slugArray || slugArray.length !== 2) return {};
   
   const [type, slug] = slugArray;

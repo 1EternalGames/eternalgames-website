@@ -195,7 +195,7 @@ export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc)
 export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`
 export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`
 
-export const editorDocumentQuery = groq`*[_id == $id || _id == 'drafts.' + $id] | order(_updatedAt desc)[0]{
+export const editorDocumentQuery = groq`*[_id in [$id, 'drafts.' + $id]] | order(_updatedAt desc)[0]{
   ...,
   "authors": authors[]->{_id, name, prismaUserId},
   "reporters": reporters[]->{_id, name, prismaUserId},
