@@ -10,7 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-import PageTransitionWrapper from '@/components/PageTransitionWrapper';
+// MODIFIED: PageTransitionWrapper import removed
 import type { Metadata } from 'next';
 
 const cairo = Cairo({
@@ -87,9 +87,9 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
               <Lightbox />
               <Navbar />
               <main>
-                <PageTransitionWrapper>
-                  {children}
-                </PageTransitionWrapper>
+                {/* MODIFIED: The redundant PageTransitionWrapper has been removed. */}
+                {/* Next.js will now automatically use app/template.tsx */}
+                {children}
               </main>
               <Footer />
               <StudioBar />
