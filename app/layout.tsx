@@ -25,18 +25,18 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'EternalGames | حيث لا تفنى الألعاب',
+    default: 'EternalGames | حيث لا تُفنى الألعاب',
     template: '%s | EternalGames',
   },
   description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
   openGraph: {
-    title: 'EternalGames | حيث لا تفنى الألعاب',
+    title: 'EternalGames | حيث لا تُفنى الألعاب',
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
     url: siteUrl,
     siteName: 'EternalGames',
     images: [
       {
-        url: '/og.png', // Corrected path
+        url: `${siteUrl}/og.png`,
         width: 1200,
         height: 630,
         alt: 'EternalGames Logo',
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EternalGames | حيث لا تفنى الألعاب',
+    title: 'EternalGames | حيث لا تُفنى الألعاب',
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
-    images: [`${siteUrl}/og.png`], // Corrected path to be absolute for Twitter
+    images: [`${siteUrl}/og.png`],
   },
 };
 

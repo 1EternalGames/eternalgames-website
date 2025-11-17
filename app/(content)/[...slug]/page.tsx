@@ -59,29 +59,48 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   
-  // Generate OG image with proper format
-  const ogImageUrl = item.mainImage 
-    ? urlFor(item.mainImage)
+  // Generate OG image with proper format and absolute URL
+  let ogImageUrl = `${siteUrl}/og.png`;
+  
+  if (item.mainImage?.asset) {
+    try {
+      const imageUrl = urlFor(item.mainImage)
         .width(1200)
         .height(630)
         .fit('crop')
-        .format('jpg')  // Add this
-        .url()
-    : `${siteUrl}/og.png`;
+        .format('jpg')
+        .quality(85)
+        .url();
+      
+      // Ensure absolute URL with https protocol
+      if (imageUrl) {
+        ogImageUrl = imageUrl.startsWith('http') ? imageUrl : `https:${imageUrl}`;
+      }
+    } catch (error) {
+      console.error('Error generating OG image:', error);
+    }
+  }
 
+  // Generate description
   let description = 'اقرأ المزيد على EternalGames.';
   if (item._type === 'review' && item.verdict) {
-    description = item.verdict;
+    description = item.verdict.slice(0, 155);
   } else if (item.content) {
-    const firstTextblock = item.content.find((block: any) => block._type === 'block' && block.children?.some((child: any) => child.text));
+    const firstTextblock = item.content.find((block: any) => 
+      block._type === 'block' && block.children?.some((child: any) => child.text)
+    );
     if (firstTextblock) {
-      description = firstTextblock.children.map((child: any) => child.text).join(' ').slice(0, 155) + '...';
+      description = firstTextblock.children
+        .map((child: any) => child.text)
+        .join(' ')
+        .slice(0, 155) + '...';
     }
   }
 
   return {
     title: item.title,
     description: description,
+    metadataBase: new URL(siteUrl),
     openGraph: {
       title: item.title,
       description: description,
@@ -93,6 +112,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           width: 1200,
           height: 630,
           alt: item.title,
+          type: 'image/jpeg',
         },
       ],
       type: 'article',

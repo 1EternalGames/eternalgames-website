@@ -496,3 +496,69 @@ export default defineConfig({
 
 ================================================================================
 
+--- START OF FILE sanity\lib\image.ts ---
+
+import createImageUrlBuilder from '@sanity/image-url'
+import { SanityImageSource } from "@sanity/image-url/lib/types/types";
+
+import { dataset, projectId } from '../env'
+
+// https://www.sanity.io/docs/image-url
+const builder = createImageUrlBuilder({ projectId, dataset })
+
+export const urlFor = (source: SanityImageSource) => {
+return builder.image(source)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--- END OF FILE sanity\lib\image.ts ---
+
+================================================================================
+
+--- START OF FILE sanity\lib\client.ts ---
+
+import { createClient } from 'next-sanity'
+
+import { apiVersion, dataset, projectId } from '../env'
+
+export const client = createClient({
+projectId,
+dataset,
+apiVersion,
+useCdn: true, // Set to false if statically generating pages, using ISR or tag-based revalidation
+})
+
+--- END OF FILE sanity\lib\client.ts ---
+
+================================================================================
+

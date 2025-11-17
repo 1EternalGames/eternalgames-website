@@ -2,25 +2,21 @@ import os
 
 # List of the 10 files related to the timeline issue
 files_to_collect = [
-    "next.config.ts",
-    "next-env.d.ts",
-    "package.json",
-    ".env",
+    "lib/sanity.server.ts",
     "lib/sanity.queries.ts",
-    "app/layout.tsx",
-    "app/(content)/[...slug]/page.tsx",
-    "app/reviews/page.tsx",
-    "app/articles/page.tsx",
-    "app/news/page.tsx",
-    "app/games/[slug]/page.tsx",
-    "app/tags/[tag]/page.tsx",
-    "app/creators/[username]/page.tsx",
-    "public/og.png",
-    "public/fonts/Cairo-Bold.ttf"
-    
+    "lib/sanity.loader.ts",
+    "lib/sanity.env.ts",
+    "lib/sanity.client.ts",
+    "sanity/.env",
+    "sanity/.env.local",
+    "sanity/env.ts",
+    "sanity/package.json",
+    "sanity/sanity.config.ts",
+    "sanity/lib/image.ts",
+    "sanity/lib/client.ts",
 ]
 
-output_filename = "EternalGames_Shareable_Context.txt"
+output_filename = "EternalGames_Sanity_Context.txt"
 
 def collect_files(file_list, output_file):
     """Reads content from a list of files and writes it to a single output file."""
