@@ -1,21 +1,32 @@
+// app/api/revalidate-sanity/route.ts
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { type NextRequest, NextResponse } from 'next/server';
 import { parseBody } from 'next-sanity/webhook';
+import { sanityWriteClient } from '@/lib/sanity.server';
+import { groq } from 'next-sanity';
+import prisma from '@/lib/prisma'; // Prisma is now available
 
-// Define a type for the expected webhook body for better type-safety
+export const runtime = 'nodejs'; // <-- ADDED: Force Node.js runtime for Prisma access
+
 interface WebhookBody {
-  _id: string; // Added _id to check for drafts
+  _id: string;
   _type: string;
   slug?: {
     current?: string;
   };
+  game?: { _ref: string };
+  tags?: { _ref: string }[];
+  category?: { _ref: string };
+  authors?: { _ref: string }[];
+  reporters?: { _ref: string }[];
 }
 
-// Ensure the secret is defined in your environment variables
 const secret = process.env.REVALIDATION_SECRET_TOKEN;
 if (!secret) {
   throw new Error('Missing REVALIDATION_SECRET_TOKEN in environment variables.');
 }
+
+const slugsFromRefsQuery = groq`*[_id in $refs && defined(slug.current)]{ "slug": slug.current }`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +41,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Bad Request: Missing _type or _id in body' }, { status: 400 });
     }
 
-    // Ignore any webhooks related to draft documents.
     if (body._id.startsWith('drafts.')) {
       return NextResponse.json({
         status: 200,
@@ -41,58 +51,86 @@ export async function POST(req: NextRequest) {
     }
 
     const { _type: type, slug } = body;
+    const pathsToRevalidate = new Set<string>(['/']);
+    const currentSlug = slug?.current;
 
-    // --- Revalidate Tags for Cached API Data ---
-    const tagsToRevalidate: string[] = [];
+    switch (type) {
+      case 'review':
+        pathsToRevalidate.add('/reviews');
+        if (currentSlug) pathsToRevalidate.add(`/reviews/${currentSlug}`);
+        break;
+      case 'article':
+        pathsToRevalidate.add('/articles');
+        if (currentSlug) pathsToRevalidate.add(`/articles/${currentSlug}`);
+        break;
+      case 'news':
+        pathsToRevalidate.add('/news');
+        if (currentSlug) pathsToRevalidate.add(`/news/${currentSlug}`);
+        break;
+      case 'gameRelease':
+        pathsToRevalidate.add('/releases');
+        pathsToRevalidate.add('/celestial-almanac');
+        break;
+      case 'game':
+        if (currentSlug) pathsToRevalidate.add(`/games/${currentSlug}`);
+        pathsToRevalidate.add('/reviews');
+        pathsToRevalidate.add('/articles');
+        pathsToRevalidate.add('/news');
+        break;
+      case 'tag':
+        if (currentSlug) pathsToRevalidate.add(`/tags/${currentSlug}`);
+        break;
+    }
+
     if (['review', 'article', 'news'].includes(type)) {
-      tagsToRevalidate.push(`${type}s`); // e.g., 'reviews'
-      tagsToRevalidate.push('paginated'); // Common tag for paginated content
-      tagsToRevalidate.push('engagement-scores'); // Homepage scores depend on this
-      tagsToRevalidate.push('sanity-content-detail');
+      const relatedRefs: string[] = [];
+      if (body.game?._ref) relatedRefs.push(body.game._ref);
+      if (body.tags) relatedRefs.push(...body.tags.map(t => t._ref));
+      if (body.category?._ref) relatedRefs.push(body.category._ref);
+      
+      if (relatedRefs.length > 0) {
+        const relatedSlugs = await sanityWriteClient.fetch<{ slug: string }[]>(slugsFromRefsQuery, { refs: relatedRefs });
+        relatedSlugs.forEach(item => {
+          pathsToRevalidate.add(`/games/${item.slug}`);
+          pathsToRevalidate.add(`/tags/${item.slug}`);
+        });
+      }
+      
+      const creatorRefs = [...(body.authors || []), ...(body.reporters || [])].map(c => c._ref);
+      if (creatorRefs.length > 0) {
+        const creatorUsernames = await sanityWriteClient.fetch<string[]>(
+          groq`*[_id in $refs && defined(prismaUserId)].prismaUserId`, { refs: creatorRefs }
+        );
+        
+        if (creatorUsernames.length > 0) {
+            const users = await prisma.user.findMany({
+                where: { id: { in: creatorUsernames } },
+                select: { username: true }
+            });
+            users.forEach(user => {
+                if(user.username) pathsToRevalidate.add(`/creators/${user.username}`);
+            });
+        }
+      }
+    }
+    
+    const tagsToRevalidate: string[] = [];
+     if (['review', 'article', 'news'].includes(type)) {
+      tagsToRevalidate.push(`${type}s`, 'paginated', 'engagement-scores', 'sanity-content-detail');
     }
     if (['author', 'reviewer', 'reporter', 'designer'].includes(type)) {
-      tagsToRevalidate.push('enriched-creators');
-      tagsToRevalidate.push('enriched-creator-details');
+      tagsToRevalidate.push('enriched-creators', 'enriched-creator-details');
     }
     if (type === 'game') {
         tagsToRevalidate.push('sanity-content-detail');
     }
     
-    // THE DEFINITIVE FIX: The `revalidateTag` function now requires a second argument.
-    // 'layout' is the appropriate value to ensure all associated data is refreshed.
+    // THE FIX: Added 'layout' argument to all revalidateTag calls
     tagsToRevalidate.forEach(tag => revalidateTag(tag, 'layout'));
 
-    // --- Revalidate Specific Page Paths ---
-    const pathsToRevalidate: string[] = ['/'];
-    const currentSlug = slug?.current;
 
-    switch (type) {
-      case 'review':
-        pathsToRevalidate.push('/reviews');
-        if (currentSlug) pathsToRevalidate.push(`/reviews/${currentSlug}`);
-        break;
-      case 'article':
-        pathsToRevalidate.push('/articles');
-        if (currentSlug) pathsToRevalidate.push(`/articles/${currentSlug}`);
-        break;
-      case 'news':
-        pathsToRevalidate.push('/news');
-        if (currentSlug) pathsToRevalidate.push(`/news/${currentSlug}`);
-        break;
-      case 'gameRelease':
-        pathsToRevalidate.push('/releases', '/celestial-almanac');
-        break;
-      case 'game':
-        if (currentSlug) pathsToRevalidate.push(`/games/${currentSlug}`);
-        pathsToRevalidate.push('/reviews', '/articles', '/news');
-        break;
-      case 'tag':
-        if (currentSlug) pathsToRevalidate.push(`/tags/${currentSlug}`);
-        break;
-    }
-    
-    const uniquePaths = [...new Set(pathsToRevalidate)];
-    uniquePaths.forEach(path => revalidatePath(path));
+    const finalPaths = Array.from(pathsToRevalidate);
+    finalPaths.forEach(path => revalidatePath(path));
 
     return NextResponse.json({
       status: 200,
@@ -100,7 +138,7 @@ export async function POST(req: NextRequest) {
       now: Date.now(),
       message: `Revalidated paths and tags for type: ${type}`,
       revalidatedTags: tagsToRevalidate,
-      revalidatedPaths: uniquePaths,
+      revalidatedPaths: finalPaths,
     });
 
   } catch (err: unknown) {

@@ -7,6 +7,8 @@ import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
 import { cache } from 'react'; // Import React's cache
 
+export const dynamicParams = true; // <--- ADDED THIS LINE
+
 export const generateStaticParams = cache(async () => {
     try {
         const usersWithUsernames = await prisma.user.findMany({
@@ -26,7 +28,6 @@ export const generateStaticParams = cache(async () => {
     }
 });
 
-// NEW CACHED FUNCTION: This wraps the Prisma query for the user.
 const getCachedUserByUsername = cache(async (username: string) => {
     try {
         return await prisma.user.findUnique({
@@ -43,7 +44,6 @@ export default async function CreatorHubPage({ params }: { params: { username: s
     const { username: encodedUsername } = await params;
     const username = decodeURIComponent(encodedUsername);
 
-    // USE THE CACHED FUNCTION instead of a direct Prisma call.
     const user = await getCachedUserByUsername(username);
 
     if (!user) {

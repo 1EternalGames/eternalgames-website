@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 
+export const dynamicParams = true; // <--- ADDED THIS LINE
+
 export async function generateStaticParams() {
     try {
         const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
@@ -30,7 +32,6 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
         notFound();
     }
 
-    // MODIFIED: Using lean query for initial content load
     const allItems = await client.fetch(allContentByTagListQuery, { slug: tagSlug });
 
     if (!allItems || allItems.length === 0) {

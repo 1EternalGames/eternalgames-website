@@ -4,6 +4,8 @@ import { allContentByGameListQuery } from '@/lib/sanity.queries'; // Use LEAN qu
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 
+export const dynamicParams = true; // <--- ADDED THIS LINE
+
 export async function generateStaticParams() {
     try {
         const slugs = await client.fetch<string[]>(`*[_type == "game" && defined(slug.current)][].slug.current`);
@@ -31,7 +33,6 @@ export default async function GameHubPage({ params }: { params: { slug: string }
 
     const allItems = await client.fetch(allContentByGameListQuery, { slug: gameSlug });
     
-    // THE DEFINITIVE FIX: The check is now correctly placed *before* the HubPageClient is rendered.
     if (!allItems || allItems.length === 0) {
         return (
              <div className="container page-container">
