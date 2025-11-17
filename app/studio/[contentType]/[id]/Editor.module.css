@@ -114,7 +114,7 @@
 
 
 .toolbarDivider { width: 1px; height: 20px; background-color: var(--border-color); margin: 0 0.4rem; }
-.dragHandle { cursor: grab; color: var(--text-secondary); padding: 0.4rem; display: flex; align-items: center; border-right: 1px solid var(--border-color); margin-right: 0.4rem; }
+.dragHandle { cursor: grab; color: var(--text-secondary); padding: 0.4rem; display: flex; align-items: center; border-right: 1px solid var(--border-color); margin-right: -0.4rem; }
 .dragHandle:active { cursor: grabbing; }
 
 .bubbleMenuButton { display: flex; align-items: center; justify-content: center; height: 36px; padding: 0 0.8rem; border-radius: 6px; background-color: transparent; border: none; cursor: pointer; color: var(--text-secondary); transition: background-color 0.15s ease-out, color 0.15s ease-out; font-family: var(--font-main); font-weight: 500; font-size: 1.4rem; }

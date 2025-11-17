@@ -532,7 +532,7 @@ export default function RichTextEditor({
         editor={editor}
         tippyOptions={{
           duration: 100,
-          placement: 'top',
+          placement: platform === 'android' ? 'bottom' : 'top',
           offset: [0, 8],
           appendTo: () => document.body,
         }}
