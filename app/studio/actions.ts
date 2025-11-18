@@ -25,7 +25,6 @@ export async function translateTitleToAction(title: string): Promise<string> {
         throw new Error('غير مُصرَّح به.');
     }
     
-    // THE DEFINITIVE FIX: Reverting to the free, keyless, and official MyMemory API.
     const apiUrl = process.env.TRANSLATION_API_URL;
     if (!apiUrl) {
         console.error("TRANSLATION_API_URL is not set. Falling back to basic slugify.");
@@ -46,16 +45,14 @@ export async function translateTitleToAction(title: string): Promise<string> {
             throw new Error("Invalid response structure from translation API.");
         }
 
-        // Slugify the properly translated English title.
         return slugify(translatedText, {
             lowercase: true,
             separator: '-',
-            allowedChars: 'a-zA-Z0-9-', // Ensure only URL-safe characters remain
+            allowedChars: 'a-zA-Z0-9-',
         });
 
     } catch (error) {
         console.error("Translation failed, falling back to basic transliteration:", error);
-        // Fallback to basic transliteration if the API call fails
         return slugify(title, {
             lowercase: true,
             separator: '-',
@@ -146,15 +143,22 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         }
 
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
-        revalidatePath('/studio');
         
-        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
-        if (!finalDoc) {
-             const publicDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
-             if (!publicDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
-             const docWithTiptap = { ...publicDoc, tiptapContent: portableTextToTiptap(publicDoc.content ?? []) };
-             return { success: true, updatedDocument: docWithTiptap };
+        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+        if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
+        
+        // --- THE DEFINITIVE FIX ---
+        // Revalidate all relevant paths after a successful save operation.
+        // This ensures the Vercel cache is purged and the live site reflects the latest draft.
+        revalidatePath('/studio');
+        const docType = finalDoc._type;
+        const slug = finalDoc.slug?.current;
+        if (slug) {
+            const contentTypePlural = docType === 'news' ? 'news' : `${docType}s`;
+            revalidatePath(`/${contentTypePlural}`); // e.g., /reviews
+            revalidatePath(`/${contentTypePlural}/${slug}`); // e.g., /reviews/the-slug
         }
+        // --- END FIX ---
         
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         return { success: true, updatedDocument: docWithTiptap };
@@ -221,7 +225,8 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             revalidatePath(`/${contentTypePlural}/${doc.slug}`);
             revalidatePath('/studio');
 
-            const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: draftId });
+            const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+            if (!finalDoc) throw new Error("Document not found after unpublish.");
             const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
             return { success: true, updatedDocument: docWithTiptap, message: 'أُلغيَ نشرُ الوثيقة.' };
         }
@@ -392,14 +397,11 @@ export async function addOrUpdateColorDictionaryAction(newMapping: { word: strin
 
     const newEntry = { ...newMapping, _key: uuidv4() };
 
-    // THE DEFINITIVE FIX: Switched from `append` to a more robust `setIfMissing` and `insert` pattern.
     const tx = sanityWriteClient.transaction();
     
-    // 1. Create the document and the array field if they don't exist.
     tx.createIfNotExists({ _id: 'colorDictionary', _type: 'colorDictionary', title: 'Color Dictionary' });
     tx.patch('colorDictionary', (p) => p.setIfMissing({ autoColors: [] }));
     
-    // 2. Insert the new item at the beginning of the array.
     tx.patch('colorDictionary', (p) => 
         p.insert('before', 'autoColors[0]', [newEntry])
     );
