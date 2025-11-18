@@ -28,6 +28,10 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
   addProseMirrorPlugins() {
     const { colorMappings } = this.options;
     
+    // THE DEFINITIVE FIX: This new implementation is more performant and less disruptive.
+    // It scans the document only for words that *should* be colored but currently aren't.
+    // It avoids removing and re-adding marks on every change, which was causing the editor
+    // to lose track of the active color mark at the cursor position.
     return [
       new Plugin({
         key: new PluginKey('autoColorApply'),
@@ -43,7 +47,6 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
           const wordsToFind = colorMappings.map(m => escapeRegExp(m.word)).join('|');
           const searchRegex = new RegExp(`\\b(${wordsToFind})\\b`, 'gi');
           const colorMap = new Map(colorMappings.map(item => [item.word.toLowerCase(), item.color]));
-          const dictionaryWords = new Set(colorMappings.map(item => item.word.toLowerCase()));
           
           const textStyleMark = this.editor.schema.marks.textStyle;
 
@@ -52,34 +55,6 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
               return;
             }
 
-            // --- THE DEFINITIVE FIX: Two-pass reconciliation (Un-mark then Mark) ---
-
-            // 1. Un-marking Pass: Remove incorrect color marks.
-            let marksToRemove: { from: number, to: number, mark: any }[] = [];
-            node.forEach((childNode: ProsemirrorNode, offset: number) => {
-              if (!childNode.isText) return;
-
-              childNode.marks.forEach(mark => {
-                if (mark.type === textStyleMark && mark.attrs.color) {
-                  const text = childNode.text ?? '';
-                  if (!dictionaryWords.has(text.toLowerCase())) {
-                    marksToRemove.push({
-                      from: pos + 1 + offset,
-                      to: pos + 1 + offset + childNode.nodeSize,
-                      mark
-                    });
-                  }
-                }
-              });
-            });
-
-            marksToRemove.forEach(({ from, to, mark }) => {
-              tr.removeMark(from, to, mark);
-              modified = true;
-            });
-
-
-            // 2. Marking Pass: Add new, correct color marks.
             node.forEach((childNode: ProsemirrorNode, offset: number) => {
               if (!childNode.isText) return;
 
@@ -93,6 +68,7 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
 
                 const hasColorMark = newState.doc.rangeHasMark(from, to, textStyleMark);
                 
+                // Only apply the mark if one doesn't already exist.
                 if (!hasColorMark) {
                   const color = colorMap.get(matchedWord.toLowerCase());
                   if (color) {
@@ -108,6 +84,8 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
             return null;
           }
 
+          // Return the transaction without setting 'addToHistory' to false,
+          // allowing the changes to be part of the undo stack.
           return tr;
         },
       }),

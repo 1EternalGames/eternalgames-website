@@ -41,6 +41,7 @@ import TableHeader from '@tiptap/extension-table-header'
 import {TableComponent} from './editor-components/TableComponent'
 import {AutoColorExtension} from './extensions/AutoColorExtension'
 import {YoutubeNode} from './extensions/YoutubeNode'
+import { DeactivateMarksExtension } from './extensions/DeactivateMarksExtension'; // <-- IMPORT THE NEW EXTENSION
 import styles from './Editor.module.css'
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -322,6 +323,7 @@ export default function RichTextEditor({
         AutoColorExtension.configure({
           colorMappings: colorDictionary,
         }),
+        DeactivateMarksExtension, // <-- USE THE NEW, CORRECT EXTENSION
         Bold.extend({
           addInputRules() {
             return [
@@ -440,7 +442,7 @@ export default function RichTextEditor({
       },
     },
     [colorDictionary],
-  ) // THE DEFINITIVE FIX: Re-initialize the editor when the dictionary changes.
+  ) 
 
   const handleOpenLinkModal = useCallback(() => {
     setIsLinkModalOpen(true)
