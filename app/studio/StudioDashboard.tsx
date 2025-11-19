@@ -13,6 +13,8 @@ import { urlFor } from '@/sanity/lib/image';
 import Image from 'next/image';
 import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './StudioDashboard.module.css';
+// THE FIX: Import useSession to force cookie sync
+import { useSession } from 'next-auth/react';
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
@@ -98,6 +100,18 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     const [isTouchDevice, setIsTouchDevice] = useState(false);
     const toast = useToast();
     const [isPending, startTransition] = useTransition();
+    
+    // THE FIX: Automatically sync session if server roles differ from client roles
+    const { data: session, update: updateSession } = useSession();
+    useEffect(() => {
+        const clientRoles = (session?.user as any)?.roles || [];
+        // Simple check: if server has roles and client has none, or lengths differ
+        // A deep comparison would be better, but this catches the "User vs Admin" case quickly.
+        if (userRoles.length > 0 && JSON.stringify(userRoles.sort()) !== JSON.stringify(clientRoles.sort())) {
+            console.log("Syncing session roles with server...");
+            updateSession(); 
+        }
+    }, [userRoles, session, updateSession]);
 
     useEffect(() => {
         setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -187,7 +201,8 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
             </motion.div>
             {filteredContent.length === 0 && <p style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}>لا محتوى.</p>}
 
-            <GenesisOrb />
+            {/* THE FIX: Pass userRoles prop down */}
+            <GenesisOrb userRoles={userRoles} />
         </>
     );
 }

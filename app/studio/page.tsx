@@ -2,11 +2,12 @@
 
 import { groq } from 'next-sanity';
 import { StudioDashboard } from './StudioDashboard';
-import { sanityWriteClient } from '@/lib/sanity.server'; // CORRECTED: Use server client
+import { sanityWriteClient } from '@/lib/sanity.server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
+import prisma from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
@@ -33,7 +34,16 @@ export default async function StudioPage() {
     noStore();
     
     const session = await getServerSession(authOptions);
-    const userRoles = (session?.user as any)?.roles || [];
+    
+    // THE DEFINITIVE FIX: Fetch fresh roles from DB
+    let userRoles: string[] = [];
+    if (session?.user?.id) {
+        const user = await prisma.user.findUnique({ 
+            where: { id: session.user.id },
+            select: { roles: { select: { name: true } } }
+        });
+        userRoles = user?.roles.map(r => r.name) || [];
+    }
     
     const isAdminOrDirector =
         userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
@@ -54,7 +64,7 @@ export default async function StudioPage() {
 
     const content =
         allowedContentTypes.length > 0
-            ? await sanityWriteClient.fetch(allEditableContentQuery, { // CORRECTED: Use server client
+            ? await sanityWriteClient.fetch(allEditableContentQuery, {
                   allowedTypes: allowedContentTypes,
               })
             : [];

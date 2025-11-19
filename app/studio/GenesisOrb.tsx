@@ -4,7 +4,7 @@
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+// REMOVED: useSession import is no longer the primary source of truth
 import { createDraftAction } from './actions';
 import { ReviewIcon, ArticleIcon, NewsIcon, ReleaseIcon } from '@/components/icons/index';
 import { useToast } from '@/lib/toastStore';
@@ -24,11 +24,11 @@ const orbContainerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, tr
 const satelliteVariants = { hidden: { scale: 0, opacity: 0, x: 0, y: 0 }, visible: (custom: { x: number; y: number }) => ({ scale: 1, opacity: 1, x: custom.x, y: custom.y, transition: { type: 'spring' as const, stiffness: 400, damping: 18 }, }), };
 const backdropVariants = { hidden: { scale: 0, opacity: 0, transition: { duration: 0.2, ease: "easeOut" as const } }, visible: { scale: 1, opacity: 1, transition: { type: "spring" as const, stiffness: 400, damping: 25 } }, };
 
-export function GenesisOrb() {
+// THE FIX: Accept userRoles as a prop
+export function GenesisOrb({ userRoles }: { userRoles: string[] }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
-    const { data: session } = useSession();
     const toast = useToast();
     const [isMobile, setIsMobile] = useState(false);
 
@@ -39,7 +39,6 @@ export function GenesisOrb() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const userRoles = (session?.user as any)?.roles || [];
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     
     const creationPermissions = useMemo(() => new Set( allContentTypes.filter(item => isAdminOrDirector || userRoles.includes(item.requiredRole)).map(item => item.type) ), [isAdminOrDirector, userRoles]);

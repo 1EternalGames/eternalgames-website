@@ -1,8 +1,7 @@
 // app/studio/actions.ts
 'use server';
 
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/authOptions';
+import { getAuthenticatedSession } from '@/lib/auth'; // <-- THE FIX: Use fresh session helper
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { sanityWriteClient } from '@/lib/sanity.server';
@@ -11,23 +10,22 @@ import { slugify } from 'transliteration';
 import { tiptapToPortableText } from './utils/tiptapToPortableText';
 import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery } from '@/lib/sanity.queries';
-import type { QueryParams, IdentifiedSanityDocumentStub } from '@sanity/client';
+import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function translateTitleToAction(title: string): Promise<string> {
-    const session = await getServerSession(authOptions);
-    const userRoles = (session?.user as any)?.roles || [];
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const userRoles = session.user.roles;
     const isAuthorized = userRoles.some((role: string) =>
       ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
     );
 
-    if (!session || !isAuthorized) {
+    if (!isAuthorized) {
         throw new Error('غير مُصرَّح به.');
     }
     
     const apiUrl = process.env.TRANSLATION_API_URL;
     if (!apiUrl) {
-        console.error("TRANSLATION_API_URL is not set. Falling back to basic slugify.");
         return slugify(title);
     }
     
@@ -52,7 +50,6 @@ export async function translateTitleToAction(title: string): Promise<string> {
         });
 
     } catch (error) {
-        console.error("Translation failed, falling back to basic transliteration:", error);
         return slugify(title, {
             lowercase: true,
             separator: '-',
@@ -63,10 +60,9 @@ export async function translateTitleToAction(title: string): Promise<string> {
 
 
 export async function createDraftAction(contentType: 'review' | 'article' | 'news' | 'gameRelease') {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles) throw new Error('غير مُخَوَّل.');
-    
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
     const userRoles = session.user.roles;
+    
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
     if (!canCreate) throw new Error('صلاحياتٌ قاصرة.');
 
@@ -80,21 +76,22 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
         let sanityCreator;
         const creatorTypeMap: Record<string, string> = { 'review': 'reviewer', 'article': 'author', 'news': 'reporter' };
         const sanityDocType = creatorTypeMap[contentType];
-        const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true, image: true } });
+        // User details are already fresh in session from getAuthenticatedSession
+        const user = session.user;
         if (!user || !user.name) throw new Error("المستخدمُ مفقودٌ أو الاسمُ غائب.");
         
-        const existingCreator = await sanityWriteClient.fetch(`*[_type == "${sanityDocType}" && prismaUserId == $userId][0]`, { userId: session.user.id });
+        const existingCreator = await sanityWriteClient.fetch(`*[_type == "${sanityDocType}" && prismaUserId == $userId][0]`, { userId: user.id });
         if (existingCreator) {
             sanityCreator = existingCreator;
         } else {
-            const newCreatorPayload: any = { _type: sanityDocType, _id: `${sanityDocType}-${session.user.id}`, name: user.name, prismaUserId: session.user.id };
+            const newCreatorPayload: any = { _type: sanityDocType, _id: `${sanityDocType}-${user.id}`, name: user.name, prismaUserId: user.id };
             if (user.image) {
                 try {
                     const response = await fetch(user.image);
                     const imageBlob = await response.blob();
                     const imageAsset = await sanityWriteClient.assets.upload('image', imageBlob, {
                         contentType: imageBlob.type,
-                        filename: `${session.user.id}-avatar.jpg`
+                        filename: `${user.id}-avatar.jpg`
                     });
                     newCreatorPayload.image = { _type: 'image', asset: { _type: 'reference', _ref: imageAsset._id }};
                 } catch (e) { console.warn('Image upload on draft creation failed', e); }
@@ -115,8 +112,8 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
 }
 
 export async function updateDocumentAction(docId: string, patchData: Record<string, any>): Promise<{ success: boolean; message?: string; updatedDocument?: any }> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return { success: false, message: 'غير مُخَوَّل.' };
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    if (!session) return { success: false, message: 'غير مُخَوَّل.' };
 
     const publicId = docId.replace('drafts.', '');
     const draftId = `drafts.${publicId}`;
@@ -147,18 +144,14 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
         
-        // --- THE DEFINITIVE FIX ---
-        // Revalidate all relevant paths after a successful save operation.
-        // This ensures the Vercel cache is purged and the live site reflects the latest draft.
         revalidatePath('/studio');
         const docType = finalDoc._type;
         const slug = finalDoc.slug?.current;
         if (slug) {
             const contentTypePlural = docType === 'news' ? 'news' : `${docType}s`;
-            revalidatePath(`/${contentTypePlural}`); // e.g., /reviews
-            revalidatePath(`/${contentTypePlural}/${slug}`); // e.g., /reviews/the-slug
+            revalidatePath(`/${contentTypePlural}`);
+            revalidatePath(`/${contentTypePlural}/${slug}`);
         }
-        // --- END FIX ---
         
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         return { success: true, updatedDocument: docWithTiptap };
@@ -169,17 +162,18 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
     }
 }
 
-
 export async function deleteDocumentAction(docId: string): Promise<{ success: boolean; message?: string }> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles) return { success: false, message: 'غير مُخَوَّل.' };
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const userRoles = session.user.roles;
+    
     const docToDelete = await sanityWriteClient.fetch(groq`*[_id == $docId][0]{_type}`, { docId });
     if (!docToDelete) return { success: false, message: 'الوثيقةُ مفقودة.' };
-    const userRoles = session.user.roles;
+    
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     const docType = docToDelete._type;
     const canDelete = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
     if (!canDelete) return { success: false, message: 'أذوناتٌ قاصرة.' };
+    
     const result = await sanityWriteClient.delete(docId);
     if (result.results.length > 0) {
         revalidatePath('/studio');
@@ -199,9 +193,10 @@ export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' |
 }
 
 export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
-    const session = await getServerSession(authOptions);
-    const userRoles = session?.user?.roles || [];
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const userRoles = session.user.roles;
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+    
     const doc = await sanityWriteClient.fetch(groq`*[_id == $docId || _id == 'drafts.' + $docId] | order(_updatedAt desc)[0]{_id, _type, "slug": slug.current}`, { docId });
     if (!doc) return { success: false, message: 'الوثيقةُ مفقودة.' };
     
@@ -289,8 +284,9 @@ export async function searchGamesAction(query: string): Promise<{_id: string, ti
 }
 
 export async function createGameAction(title: string): Promise<{_id: string, title: string} | null> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const userRoles = session.user.roles;
+    if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
         const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } });
         return { _id: newGame._id, title: newGame.title };
@@ -309,8 +305,9 @@ export async function searchTagsAction(query: string): Promise<{_id: string, tit
 }
 
 export async function createTagAction(title: string, category: 'Game' | 'Article' | 'News'): Promise<{_id: string, title: string} | null> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.roles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const userRoles = session.user.roles;
+    if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
         const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } });
         return { _id: newTag._id, title: newTag.title };
@@ -325,113 +322,56 @@ export async function getRecentTagsAction(): Promise<{_id: string, title: string
 }
 
 export async function validateSlugAction(slug: string, docId: string): Promise<{ isValid: boolean; message: string }> {
-    if (!docId) {
-        return { isValid: false, message: 'بانتظار مُعرِّف الوثيقة...' };
-    }
-    
-    if (!slug || slug.trim() === '') {
-        return { isValid: false, message: 'لا يكُن المُعرِّفُ خاويًا.' };
-    }
+    if (!docId) return { isValid: false, message: 'بانتظار مُعرِّف الوثيقة...' };
+    if (!slug || slug.trim() === '') return { isValid: false, message: 'لا يكُن المُعرِّفُ خاويًا.' };
     const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-    if (!slugRegex.test(slug)) {
-        return { isValid: false, message: 'المُعرِّف: حروفٌ وأرقامٌ وشَرْطاتٌ لا غير.' };
-    }
+    if (!slugRegex.test(slug)) return { isValid: false, message: 'المُعرِّف: حروفٌ وأرقامٌ وشَرْطاتٌ لا غير.' };
     
-    const query = groq`!defined(*[
-        _type in ["review", "article", "news", "gameRelease"] &&
-        slug.current == $slug &&
-        !(_id in [$draftId, $publicId])
-    ][0])`;
-    
+    const query = groq`!defined(*[_type in ["review", "article", "news", "gameRelease"] && slug.current == $slug && !(_id in [$draftId, $publicId])][0])`;
     try {
         const publicId = docId.replace('drafts.', '');
         const draftId = `drafts.${publicId}`;
-        
         const isUnique = await sanityWriteClient.fetch(query, { slug, draftId, publicId });
-        
-        if (isUnique) {
-            return { isValid: true, message: 'المُعرِّفُ صالح.' };
-        }
+        if (isUnique) return { isValid: true, message: 'المُعرِّفُ صالح.' };
         return { isValid: false, message: 'مُعرِّفٌ مُستعمل.' };
-
-    } catch (error) {
-        console.error('Sanity slug validation failed:', error);
-        return { isValid: false, message: 'أخفق التحقق لخطبٍ في الخادم.' };
-    }
+    } catch (error) { console.error('Sanity slug validation failed:', error); return { isValid: false, message: 'أخفق التحقق لخطبٍ في الخادم.' }; }
 }
 
 export async function uploadSanityAssetAction(formData: FormData): Promise<{ success: boolean; asset?: { _id: string; url: string }; error?: string }> {
-    const session = await getServerSession(authOptions);
-    const userRoles = session?.user?.roles || [];
-    const isCreatorOrAdmin = userRoles.some((role: string) =>
-      ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
-    );
+    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const userRoles = session.user.roles;
+    const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
 
-    if (!session?.user?.id || !isCreatorOrAdmin) {
-        return { success: false, error: 'غير مُصرَّح به' };
-    }
+    if (!isCreatorOrAdmin) return { success: false, error: 'غير مُصرَّح به' };
     
     const file = formData.get('file') as File | null;
-    if (!file) {
-        return { success: false, error: 'لم يُقدَّم ملف.' };
-    }
+    if (!file) return { success: false, error: 'لم يُقدَّم ملف.' };
 
     try {
-        const asset = await sanityWriteClient.assets.upload('image', file, {
-            filename: file.name,
-            contentType: file.type,
-        });
+        const asset = await sanityWriteClient.assets.upload('image', file, { filename: file.name, contentType: file.type });
         return { success: true, asset: { _id: asset._id, url: asset.url } };
-    } catch (error: any) {
-        console.error("Sanity asset upload failed:", error);
-        return { success: false, error: 'أخفق رفع الملف.' };
-    }
+    } catch (error: any) { console.error("Sanity asset upload failed:", error); return { success: false, error: 'أخفق رفع الملف.' }; }
 }
-
-// --- NEW DICTIONARY ACTIONS ---
 
 export async function addOrUpdateColorDictionaryAction(newMapping: { word: string; color: string }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) throw new Error('Authentication required.');
-
+    await getAuthenticatedSession(); // Verify auth
     const newEntry = { ...newMapping, _key: uuidv4() };
-
     const tx = sanityWriteClient.transaction();
-    
     tx.createIfNotExists({ _id: 'colorDictionary', _type: 'colorDictionary', title: 'Color Dictionary' });
     tx.patch('colorDictionary', (p) => p.setIfMissing({ autoColors: [] }));
-    
-    tx.patch('colorDictionary', (p) => 
-        p.insert('before', 'autoColors[0]', [newEntry])
-    );
-
+    tx.patch('colorDictionary', (p) => p.insert('before', 'autoColors[0]', [newEntry]) );
     await tx.commit({ returnDocuments: false });
-
     const updatedDictionary = await sanityWriteClient.fetch(groq`*[_id == "colorDictionary"][0]`);
-
     return { success: true, updatedDictionary };
-  } catch (error: any) {
-    console.error("Failed to update dictionary:", error);
-    return { success: false, message: error.message || 'Failed to update dictionary.' };
-  }
+  } catch (error: any) { console.error("Failed to update dictionary:", error); return { success: false, message: error.message || 'Failed to update dictionary.' }; }
 }
 
 export async function removeColorDictionaryAction(keyToRemove: string) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) throw new Error('Authentication required.');
-
-    await sanityWriteClient
-      .patch('colorDictionary')
-      .unset([`autoColors[_key=="${keyToRemove}"]`])
-      .commit({ returnDocuments: false, autoGenerateArrayKeys: true });
-
+    await getAuthenticatedSession(); // Verify auth
+    await sanityWriteClient.patch('colorDictionary').unset([`autoColors[_key=="${keyToRemove}"]`]).commit({ returnDocuments: false, autoGenerateArrayKeys: true });
     const updatedDictionary = await sanityWriteClient.fetch(groq`*[_id == "colorDictionary"][0]`);
-
     return { success: true, updatedDictionary };
-  } catch (error: any) {
-    console.error("Failed to remove from dictionary:", error);
-    return { success: false, message: error.message || 'Failed to remove from dictionary.' };
-  }
+  } catch (error: any) { console.error("Failed to remove from dictionary:", error); return { success: false, message: error.message || 'Failed to remove from dictionary.' }; }
 }

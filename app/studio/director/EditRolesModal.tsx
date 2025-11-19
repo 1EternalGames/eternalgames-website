@@ -5,8 +5,9 @@ import { useState, useTransition, useMemo } from 'react';
 import { updateUserRolesAction } from './actions';
 import { useToast } from '@/lib/toastStore';
 import type { User, Role } from '@prisma/client';
-import Modal from '@/components/modals/Modal'; // <-- THE FIX: Import generic modal
+import Modal from '@/components/modals/Modal';
 import modalStyles from '@/components/modals/Modals.module.css';
+import { useSession } from 'next-auth/react';
 
 type UserWithRoles = User & { roles: { name: string }[] };
 
@@ -14,6 +15,8 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
     const [selectedRoleIds, setSelectedRoleIds] = useState<Set<number>>(() => new Set(user.roles.map(r => allRoles.find(ar => ar.name === r.name)!.id)));
     const [isPending, startTransition] = useTransition();
     const toast = useToast();
+    
+    const { data: session, update: updateSession } = useSession();
     
     const manageableRoles = useMemo(() => allRoles.filter(role => role.name !== 'USER'), [allRoles]);
     const userRoleId = useMemo(() => allRoles.find(role => role.name === 'USER')?.id, [allRoles]);
@@ -40,6 +43,14 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
             const result = await updateUserRolesAction(user.id, Array.from(finalRoleIds));
             if (result.success && result.updatedRoles) {
                 onUpdate(user.id, result.updatedRoles);
+                
+                // THE FIX: Safely access the ID with optional chaining and type casting to avoid TS errors
+                const currentUserId = (session?.user as any)?.id;
+                
+                if (currentUserId && currentUserId === user.id) {
+                    await updateSession();
+                }
+
                 toast.success(`أدوار ${user.name} حُدِّثت.`);
                 onClose();
             } else {
@@ -81,5 +92,3 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
         </Modal>
     );
 }
-
-

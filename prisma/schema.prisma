@@ -28,7 +28,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onحذف: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -38,7 +38,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onحذف: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -80,7 +80,7 @@ model PasswordResetToken {
   token   String   @unique
   expires DateTime
   userId  String
-  user    User     @relation(fields: [userId], references: [id], onحذف: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Engagement {
@@ -90,7 +90,7 @@ model Engagement {
   userId      String
   contentId   Int
   contentType String
-  user        User           @relation(fields: [userId], references: [id], onحذف: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contentId, contentType, type])
 }
@@ -101,7 +101,7 @@ model Share {
   userId      String
   contentId   Int
   contentType String
-  user        User     @relation(fields: [userId], references: [id], onحذف: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Comment {
@@ -110,11 +110,11 @@ model Comment {
   updatedAt   DateTime      @updatedAt
   content     String
   contentSlug String
-  isحذفd   Boolean       @default(false)
+  isDeleted   Boolean       @default(false)
   authorId    String
   parentId    String?
-  author      User          @relation(fields: [authorId], references: [id], onحذف: Cascade)
-  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onحذف: NoAction, onUpdate: NoAction)
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies     Comment[]     @relation("CommentReplies")
   votes       CommentVote[]
 }
@@ -125,8 +125,8 @@ model CommentVote {
   type      VoteType
   userId    String
   commentId String
-  comment   Comment  @relation(fields: [commentId], references: [id], onحذف: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onحذف: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, commentId])
 }
@@ -140,8 +140,3 @@ enum EngagementType {
   LIKE
   BOOKMARK
 }
-
-
-
-
-

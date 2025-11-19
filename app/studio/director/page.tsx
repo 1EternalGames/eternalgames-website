@@ -8,12 +8,22 @@ import { UserManagementClient } from './UserManagementClient';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export default async function DirectorPage() {
-    noStore(); // Ensure data is always fresh
+    noStore(); 
 
     const session = await getServerSession(authOptions);
+    
+    // THE DEFINITIVE FIX: Fetch fresh roles from DB to ensure instant access revocation/granting
+    let userRoles: string[] = [];
+    if (session?.user?.id) {
+        const user = await prisma.user.findUnique({ 
+            where: { id: session.user.id },
+            select: { roles: { select: { name: true } } }
+        });
+        userRoles = user?.roles.map(r => r.name) || [];
+    }
 
-    // Secure the route: only allow users with the 'DIRECTOR' role
-    if (!session?.user?.roles.includes('DIRECTOR')) {
+    // Secure the route: only allow users with the 'DIRECTOR' role (verified against DB)
+    if (!userRoles.includes('DIRECTOR')) {
         redirect('/studio');
     }
 
@@ -35,11 +45,9 @@ export default async function DirectorPage() {
         <div className="container page-container">
             <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
                 <h1 className="page-title">الإدارة</h1>
-                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto' }}>عيّن وأدِر الأدوار. تسري التغييرات بعد إعادة تسجيل الدخول.</p>
+                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto' }}>عيّن وأدِر الأدوار. تسري التغييرات فورًا على الصلاحيات.</p>
             </header>
             <UserManagementClient initialUsers={users} allRoles={allRoles} />
         </div>
     );
 }
-
-

@@ -2,6 +2,7 @@
 'use client';
 
 import { updateUserAvatar, updateUserProfile, checkUsernameAvailability } from '@/app/actions/userActions';
+// THE FIX: Import User but define a looser type for the prop to handle partial selects and schema mismatches
 import { User } from '@prisma/client';
 import { useRef, useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
@@ -28,16 +29,29 @@ const ToggleSwitch = ({ checked, onChange, name }: { checked: boolean, onChange:
     </button>
 );
 
+// THE FIX: Define a specific type for the user prop that matches what we actually use and fetch.
+// This avoids issues where the Prisma User type requires fields (like 'lastRoleChange') that we don't select.
+type ProfileUser = {
+    id: string;
+    name?: string | null;
+    username?: string | null;
+    image?: string | null;
+    bio?: string | null;
+    twitterHandle?: string | null;
+    instagramHandle?: string | null;
+    age?: number | null;
+    country?: string | null;
+    agePublic: boolean;
+    countryPublic: boolean;
+}
 
-export default function ProfileEditForm({ user }: { user: User}) {
+export default function ProfileEditForm({ user }: { user: ProfileUser }) {
     const inputFileRef = useRef<HTMLInputElement>(null);
     const { update: updateSession } = useSession();
     const toast = useToast();
     const [isSaving, startSaveTransition] = useTransition();
     const [isCheckingUsername, startUsernameCheckTransition] = useTransition();
     
-    // THE FIX: Use nullish coalescing `?? ''` for robust state initialization.
-    // This guarantees the state is always a string, never null or undefined.
     const [avatarPreview, setAvatarPreview] = useState(user.image ?? '/default-avatar.svg');
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [name, setName] = useState(user.name ?? '');
