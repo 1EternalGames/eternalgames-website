@@ -1,0 +1,72 @@
+/* components/security/BanEnforcer.module.css */
+
+.banOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999; /* Highest possible priority */
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
+}
+
+.banCard {
+    background-color: #0f0f0f;
+    border: 1px solid #333;
+    border-right: 4px solid #DC2626; /* Red accent for "Danger/Ban" */
+    padding: 4rem;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 0 50px rgba(220, 38, 38, 0.2);
+}
+
+.banIcon {
+    color: #DC2626;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 2rem;
+}
+
+.banTitle {
+    font-family: var(--font-heading);
+    font-size: 3.2rem;
+    color: #fff;
+    margin: 0 0 1.5rem 0;
+}
+
+.banMessage {
+    font-family: var(--font-main);
+    font-size: 1.6rem;
+    color: #a1a1aa;
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.reasonContainer {
+    background-color: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    padding: 1.5rem;
+    border-radius: 6px;
+    text-align: right;
+}
+
+.reasonLabel {
+    display: block;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    color: #DC2626;
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+}
+
+.reasonText {
+    margin: 0;
+    font-family: var(--font-main);
+    color: #fff;
+    font-size: 1.5rem;
+}
