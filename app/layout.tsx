@@ -12,6 +12,10 @@ import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import type { Metadata } from 'next';
+// THE FIX: Imports for fetching fresh roles
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/authOptions';
+import prisma from '@/lib/prisma';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -61,7 +65,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode; }) {
+export default async function RootLayout({ children }: { children: React.ReactNode; }) {
+  // THE FIX: Fetch fresh roles from DB on every page load (server-side)
+  const session = await getServerSession(authOptions);
+  let userRoles: string[] = [];
+
+  if (session?.user?.id) {
+      try {
+          const user = await prisma.user.findUnique({
+              where: { id: session.user.id },
+              select: { roles: { select: { name: true } } }
+          });
+          userRoles = user?.roles.map(r => r.name) || [];
+      } catch (error) {
+          console.error("Failed to fetch user roles for layout:", error);
+          // Fallback to session roles if DB connection fails, to prevent app crash
+          userRoles = (session.user as any).roles || [];
+      }
+  }
+
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
@@ -91,7 +113,8 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 </PageTransitionWrapper>
               </main>
               <Footer />
-              <StudioBar />
+              {/* THE FIX: Pass the fresh roles to StudioBar */}
+              <StudioBar serverRoles={userRoles} />
               <ScrollToTopButton />
             </div>
           </ThemeProvider>

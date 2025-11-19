@@ -13,18 +13,16 @@ import { urlFor } from '@/sanity/lib/image';
 import Image from 'next/image';
 import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './StudioDashboard.module.css';
-// THE FIX: Import useSession to force cookie sync
 import { useSession } from 'next-auth/react';
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
 
-const ContentCanvas = ({ item, onDelete, isActive, onCardClick, isTouchDevice }: {
+const ContentCanvas = ({ item, onDelete, isActive, onCardClick }: {
     item: ContentCanvasItem;
     onDelete: (id: string) => Promise<void>;
     isActive: boolean;
     onCardClick: () => void;
-    isTouchDevice: boolean;
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const justClickedToClose = useRef(false);
@@ -37,8 +35,10 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick, isTouchDevice }:
         onCardClick();
     };
 
+    // THE FIX: Removed 'isTouchDevice' check. 
+    // Allows hover on laptops with touchscreens.
     const handleMouseEnter = () => {
-        if (isTouchDevice || justClickedToClose.current) {
+        if (justClickedToClose.current) {
             return;
         }
         setIsHovered(true);
@@ -49,7 +49,8 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick, isTouchDevice }:
         setIsHovered(false);
     };
 
-    const isDrawerVisible = isActive || (!isTouchDevice && isHovered);
+    // Drawer is visible if Active (Clicked) OR Hovered
+    const isDrawerVisible = isActive || isHovered;
 
     const imageUrlWithBuster = useMemo(() => {
         if (!item.mainImage?.asset) return null;
@@ -97,25 +98,17 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     const [activeTab, setActiveTab] = useState<ContentType>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
-    const [isTouchDevice, setIsTouchDevice] = useState(false);
     const toast = useToast();
     const [isPending, startTransition] = useTransition();
     
-    // THE FIX: Automatically sync session if server roles differ from client roles
     const { data: session, update: updateSession } = useSession();
     useEffect(() => {
         const clientRoles = (session?.user as any)?.roles || [];
-        // Simple check: if server has roles and client has none, or lengths differ
-        // A deep comparison would be better, but this catches the "User vs Admin" case quickly.
         if (userRoles.length > 0 && JSON.stringify(userRoles.sort()) !== JSON.stringify(clientRoles.sort())) {
             console.log("Syncing session roles with server...");
             updateSession(); 
         }
     }, [userRoles, session, updateSession]);
-
-    useEffect(() => {
-        setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    }, []);
 
     const availableTabs = useMemo(() => {
         const tabs: { label: string; value: ContentType }[] = [];
@@ -193,7 +186,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                                 onDelete={handleDelete}
                                 isActive={activeCardId === item._id}
                                 onCardClick={() => handleCardClick(item._id)}
-                                isTouchDevice={isTouchDevice}
+                                isTouchDevice={false} // Always pass false to enable hover behavior
                             />
                         </motion.div>
                     ))}
@@ -201,7 +194,6 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
             </motion.div>
             {filteredContent.length === 0 && <p style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}>لا محتوى.</p>}
 
-            {/* THE FIX: Pass userRoles prop down */}
             <GenesisOrb userRoles={userRoles} />
         </>
     );

@@ -8,7 +8,7 @@
   right: 2rem;
   /* --- END CUSTOMIZATION --- */
   left: auto;
-  z-index: 10;
+  z-index: 2000; /* THE FIX: Increased from 10 to 2000 to float above drawers */
   width: 80px;
   height: 80px;
 }
@@ -25,12 +25,10 @@
   border: none;
   cursor: pointer;
   box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--accent) 50%, transparent);
-  z-index: 12;
+  z-index: 2002; /* THE FIX: Higher than container */
   /* --- THE FIX: Centering styles applied directly to the button --- */
   display: flex;
   /* --- CUSTOMIZATION POINT (Icon Alignment) --- */
-  /* These two properties center the '+' icon inside the orb. */
-  /* You can adjust them if you use a different icon that is not symmetrical. */
   align-items: center; /* Vertical alignment */
   justify-content: center; /* Horizontal alignment */
   /* --- END CUSTOMIZATION --- */
@@ -51,7 +49,7 @@
   left: 50%;
   width: 0;
   height: 0;
-  z-index: 11;
+  z-index: 2001; /* THE FIX: Layer between orb and container */
   pointer-events: none;
 }
 

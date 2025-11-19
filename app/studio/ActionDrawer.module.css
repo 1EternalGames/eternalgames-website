@@ -5,13 +5,14 @@
   bottom: 0;
   right: 0;
   left: 0;
-  z-index: 10;
+  z-index: 50; /* Kept relatively low to be under Orb (2000) but over card content */
   overflow: hidden;
   background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--border-color);
   border-top-left-radius: 12px;
-  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  pointer-events: auto;
 }
 
 .actionDrawerButtons {
@@ -28,12 +29,14 @@
   border-radius: 50%;
   background-color: transparent;
   border: 1px solid transparent;
-  color: var(--text-primary); /* <-- THE FIX IS HERE */
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease-out;
+  position: relative;
+  z-index: 51;
 }
 .actionDrawerButton svg {
   width: 22px;
@@ -48,8 +51,3 @@
   background-color: #3f1a1a;
   color: #DC2626;
 }
-
-
-
-
-

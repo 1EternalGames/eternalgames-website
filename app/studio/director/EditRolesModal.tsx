@@ -8,6 +8,7 @@ import type { User, Role } from '@prisma/client';
 import Modal from '@/components/modals/Modal';
 import modalStyles from '@/components/modals/Modals.module.css';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation'; // <-- THE FIX: Import useRouter
 
 type UserWithRoles = User & { roles: { name: string }[] };
 
@@ -15,6 +16,7 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
     const [selectedRoleIds, setSelectedRoleIds] = useState<Set<number>>(() => new Set(user.roles.map(r => allRoles.find(ar => ar.name === r.name)!.id)));
     const [isPending, startTransition] = useTransition();
     const toast = useToast();
+    const router = useRouter(); // <-- THE FIX: Initialize router
     
     const { data: session, update: updateSession } = useSession();
     
@@ -44,11 +46,15 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
             if (result.success && result.updatedRoles) {
                 onUpdate(user.id, result.updatedRoles);
                 
-                // THE FIX: Safely access the ID with optional chaining and type casting to avoid TS errors
+                // If editing self...
                 const currentUserId = (session?.user as any)?.id;
-                
                 if (currentUserId && currentUserId === user.id) {
+                    // 1. Update the Client Session (Cookies/Context)
                     await updateSession();
+                    // 2. THE FIX: Refresh Server Components (Layouts, Page Guards)
+                    // This ensures that if I removed "Director" from myself,
+                    // the server immediately re-renders the page and kicks me out.
+                    router.refresh();
                 }
 
                 toast.success(`أدوار ${user.name} حُدِّثت.`);
