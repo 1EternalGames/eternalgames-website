@@ -57,6 +57,13 @@ model User {
   agePublic           Boolean              @default(true)
   countryPublic       Boolean              @default(true)
   instagramHandle     String?
+  
+  // --- BAN SYSTEM FIELDS ---
+  isBanned            Boolean              @default(false)
+  banReason           String?
+  bannedAt            DateTime?
+  // -------------------------
+
   accounts            Account[]
   engagements         Engagement[]
   comments            Comment[]

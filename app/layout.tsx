@@ -12,10 +12,10 @@ import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import type { Metadata } from 'next';
-// THE FIX: Imports for fetching fresh roles
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import prisma from '@/lib/prisma';
+import BanEnforcer from '@/components/security/BanEnforcer';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -66,20 +66,26 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  // THE FIX: Fetch fresh roles from DB on every page load (server-side)
   const session = await getServerSession(authOptions);
   let userRoles: string[] = [];
+  let isBanned = false;
+  let banReason = null;
 
   if (session?.user?.id) {
       try {
           const user = await prisma.user.findUnique({
               where: { id: session.user.id },
-              select: { roles: { select: { name: true } } }
+              select: { 
+                  roles: { select: { name: true } },
+                  isBanned: true,
+                  banReason: true
+              }
           });
           userRoles = user?.roles.map(r => r.name) || [];
+          isBanned = user?.isBanned || false;
+          banReason = user?.banReason || null;
       } catch (error) {
-          console.error("Failed to fetch user roles for layout:", error);
-          // Fallback to session roles if DB connection fails, to prevent app crash
+          console.error("Failed to fetch user details for layout:", error);
           userRoles = (session.user as any).roles || [];
       }
   }
@@ -102,6 +108,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
+          {/* Mount Ban Enforcer */}
+          <BanEnforcer isBanned={isBanned} reason={banReason} />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
               <ToastProvider />
@@ -113,7 +121,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </PageTransitionWrapper>
               </main>
               <Footer />
-              {/* THE FIX: Pass the fresh roles to StudioBar */}
               <StudioBar serverRoles={userRoles} />
               <ScrollToTopButton />
             </div>
