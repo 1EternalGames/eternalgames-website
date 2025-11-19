@@ -9,7 +9,7 @@ import { unstable_cache } from "next/cache";
 
 // --- CONFIGURATION ---
 // REPLACE THIS WITH YOUR EXACT EMAIL ADDRESS
-const OWNER_EMAIL = "YOUR_PRIVATE_EMAIL@gmail.com"; 
+const OWNER_EMAIL = "mhmfalsaadd@gmail.com"; 
 
 const PROTECTED_ROLES = ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'];
 
@@ -106,8 +106,8 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
             }
         });
 
-        // THE FIX: Added 'layout' as the second argument to satisfy the type definition
-        revalidateTag('ban-status', 'layout');
+        // THE FIX: Changed 'layout' to 'max' to satisfy CacheLife profile
+        revalidateTag('ban-status', 'max');
         revalidatePath('/studio/director');
         
         return { success: true, message: shouldBan ? "تم حظر المستخدم." : "تم رفع الحظر." };

@@ -21,6 +21,7 @@ function revalidateContentPaths(docType: string, slug?: string) {
     console.log(`[CACHE] Aggressive revalidation triggered for type: ${docType}, slug: ${slug}`);
     
     // 1. Always revalidate Studio and Homepage
+    // revalidatePath uses 'page' or 'layout' as type.
     revalidatePath('/studio', 'layout');
     revalidatePath('/', 'layout');
 
@@ -41,9 +42,9 @@ function revalidateContentPaths(docType: string, slug?: string) {
     }
 
     // 3. Revalidate global tags used by unstable_cache
-    // THE FIX: Added 'layout' as the second argument to satisfy Next.js 16 types
-    revalidateTag(docType, 'layout');
-    revalidateTag('layout', 'layout');
+    // THE FIX: Changed 'layout' to 'max' to satisfy the CacheLife profile requirement
+    revalidateTag(docType, 'max');
+    revalidateTag('layout', 'max');
 }
 
 export async function translateTitleToAction(title: string): Promise<string> {

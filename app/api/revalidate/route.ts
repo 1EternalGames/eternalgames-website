@@ -28,10 +28,9 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ message, body }), { status: 400 })
     }
     
-    // THE DEFINITIVE FIX: Added the required second argument 'layout' to revalidateTag.
-    // This tells Next.js to revalidate the data and re-render the surrounding layout if necessary.
+    // THE FIX: Changed 'layout' to 'max' to satisfy CacheLife profile
     console.log(`[REVALIDATE] Received webhook for type: ${body._type}. Revalidating tag...`)
-    revalidateTag(body._type, 'layout')
+    revalidateTag(body._type, 'max')
 
     const message = `Successfully revalidated tag: ${body._type}`
     console.log(`[REVALIDATE] ${message}`)

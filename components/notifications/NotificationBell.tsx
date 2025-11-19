@@ -9,6 +9,20 @@ import NotificationPanel from './NotificationPanel';
 import { getNotifications } from '@/app/actions/notificationActions';
 import styles from './Notifications.module.css';
 
+// THE FIX: Added 'as const' to the transition object to satisfy strict Framer Motion types
+const bellVariants = {
+    rest: { rotate: 0, scale: 1 },
+    hover: { 
+        rotate: [0, -10, 10, -5, 5, 0],
+        scale: 1.1,
+        transition: { 
+            duration: 0.5, 
+            ease: "easeInOut" as const
+        }
+    },
+    tap: { scale: 0.95, rotate: 0 }
+};
+
 export default function NotificationBell() {
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +44,6 @@ export default function NotificationBell() {
         if (session?.user) {
             fetchNotifications();
         }
-        // No interval here. STRICTLY on mount/session change.
     }, [session]);
 
     useEffect(() => {
@@ -54,8 +67,11 @@ export default function NotificationBell() {
             <motion.button
                 className={styles.bellButton}
                 onClick={() => setIsOpen(!isOpen)}
-                whileHover={{ scale: 1.1, rotate: 15 }}
-                whileTap={{ scale: 0.9 }}
+                initial="rest"
+                whileHover="hover"
+                whileTap="tap"
+                variants={bellVariants}
+                style={{ transformOrigin: 'top center' }}
                 title="الإشعارات"
             >
                 <NotificationIcon className={styles.bellIcon} />

@@ -9,7 +9,8 @@
     border: none;
     cursor: pointer;
     position: relative;
-    color: var(--text-secondary);
+    /* THE FIX: Ensures the bell is white/bright (primary text color) instead of gray */
+    color: var(--text-primary);
     padding: 0.5rem;
     display: flex;
     align-items: center;
