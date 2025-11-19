@@ -19,11 +19,14 @@ interface BanEnforcerProps {
 
 export default function BanEnforcer({ isBanned, reason }: BanEnforcerProps) {
     
+    // Simple effect to lock the body scroll if the user is banned upon page load
     useEffect(() => {
         if (isBanned) {
-            // Lock scrolling
             document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
         }
+        
         return () => {
             document.body.style.overflow = '';
         };

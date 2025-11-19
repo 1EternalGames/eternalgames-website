@@ -14,7 +14,7 @@ import Image from 'next/image';
 import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './StudioDashboard.module.css';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link'; // <-- ADDED
+import Link from 'next/link';
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
@@ -171,17 +171,9 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                 {isDirector && (
                     <Link 
                         href="/studio/director" 
-                        className="outline-button" 
-                        style={{ 
-                            marginTop: '2rem', 
-                            display: 'inline-flex', 
-                            alignItems: 'center', 
-                            gap: '1rem', 
-                            borderColor: '#FFD700', 
-                            color: '#FFD700' 
-                        }}
+                        className={`${styles.directorGateButton} no-underline`}
                     >
-                         <span style={{fontSize: '1.4rem', fontWeight: 700}}>بوابة الإدارة</span>
+                         <span>بوابة الإدارة</span>
                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
                     </Link>
                 )}
@@ -204,7 +196,6 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                                 onDelete={handleDelete}
                                 isActive={activeCardId === item._id}
                                 onCardClick={() => handleCardClick(item._id)}
-                                isTouchDevice={false} 
                             />
                         </motion.div>
                     ))}

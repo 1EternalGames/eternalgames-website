@@ -26,6 +26,44 @@
     max-width: 500px;
 }
 
+/* --- NEW: Director Gate Button Styles --- */
+.directorGateButton {
+    margin-top: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    padding: 1.2rem 3.5rem;
+    border: 2px solid #FFD700; /* Gold Border */
+    border-radius: 999px;
+    color: #FFD700;
+    background-color: transparent;
+    font-family: var(--font-main);
+    font-size: 1.8rem;
+    font-weight: 800;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    text-decoration: none; /* Failsafe against global link styles */
+}
+
+.directorGateButton:hover {
+    background-color: #FFD700;
+    color: #121212; /* Dark text for contrast against gold */
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+    border-color: #FFD700;
+}
+
+.directorGateButton svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+.directorGateButton:hover svg {
+    transform: rotate(-15deg) scale(1.1);
+}
+
 /* --- Mobile Overrides --- */
 @media (max-width: 768px) {
     .studioHeader {
@@ -46,5 +84,9 @@
     }
     .searchInput {
         max-width: 100%;
+    }
+    .directorGateButton {
+        padding: 1rem 2.5rem;
+        font-size: 1.6rem;
     }
 }
