@@ -73,6 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   if (session?.user?.id) {
       try {
+          // Resilience: Wrap DB call to prevent app crash on connection failure
           const user = await prisma.user.findUnique({
               where: { id: session.user.id },
               select: { 
@@ -85,8 +86,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           isBanned = user?.isBanned || false;
           banReason = user?.banReason || null;
       } catch (error) {
-          console.error("Failed to fetch user details for layout:", error);
+          console.error("Failed to fetch user details for layout (DB unreachable):", error);
+          // Fallback to session data if DB is down
           userRoles = (session.user as any).roles || [];
+          isBanned = false; // Assume innocent if DB is down
       }
   }
 

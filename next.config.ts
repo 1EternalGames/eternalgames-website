@@ -17,6 +17,16 @@ const nextConfig = {
             bodySizeLimit: '10mb',
         },
     },
+
+    // REQUIRED for @xenova/transformers to work in the browser
+    webpack: (config: any) => {
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            "sharp$": false,
+            "onnxruntime-node$": false,
+        }
+        return config;
+    },
 };
 
 export default nextConfig;
