@@ -39,8 +39,9 @@ function revalidateContentPaths(docType: string, slug?: string) {
     }
 
     // 3. Revalidate global tags used by unstable_cache
-    revalidateTag(docType);
-    revalidateTag('layout');
+    // THE FIX: Added 'layout' as the second argument to satisfy Next.js 15+ types
+    revalidateTag(docType, 'layout');
+    revalidateTag('layout', 'layout');
 }
 
 export async function translateTitleToAction(title: string): Promise<string> {
