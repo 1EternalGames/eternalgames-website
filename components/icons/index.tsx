@@ -126,3 +126,11 @@ export const PreviewIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <circle cx="12" cy="12" r="3"></circle>
     </svg>
 );
+
+export const NotificationIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M19 18V9.5C19 5.63401 15.866 2.5 12 2.5C8.13401 2.5 5 5.63401 5 9.5V18"></path>
+        <path d="M20.5 18H3.5"></path>
+        <path d="M13.5 20C13.5 20.8284 12.8284 21.5 12 21.5M10.5 20C10.5 20.8284 11.1716 21.5 12 21.5M12 21.5V20"></path>
+    </svg>
+);

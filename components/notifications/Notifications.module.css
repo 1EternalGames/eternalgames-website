@@ -1,0 +1,180 @@
+/* components/notifications/Notifications.module.css */
+
+.notificationWrapper {
+    position: relative;
+}
+
+.bellButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.bellButton:hover {
+    color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.bellIcon {
+    width: 24px;
+    height: 24px;
+}
+
+.notificationBadge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #DC2626;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid var(--bg-secondary);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.notificationPanel {
+    position: absolute;
+    top: calc(100% + 15px);
+    left: 0; /* Align left for RTL context in navbar */
+    width: 320px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3);
+    z-index: 1100;
+    overflow: hidden;
+    transform-origin: top left;
+    display: flex;
+    flex-direction: column;
+}
+
+.panelHeader {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: color-mix(in srgb, var(--bg-primary) 50%, transparent);
+    backdrop-filter: blur(10px);
+}
+
+.panelHeader h3 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-family: var(--font-heading);
+    color: var(--text-primary);
+}
+
+.markAllReadButton {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 1.2rem;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.markAllReadButton:hover {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.notificationsList {
+    max-height: 350px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.notificationItem {
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    gap: 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.notificationItem:last-child {
+    border-bottom: none;
+}
+
+.notificationItem:hover {
+    background-color: var(--bg-primary);
+}
+
+.notificationItem.unread {
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.notificationAvatar {
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+}
+
+.notificationContent {
+    flex-grow: 1;
+    font-size: 1.4rem;
+    line-height: 1.4;
+}
+
+.notificationLink {
+    text-decoration: none;
+    color: var(--text-primary);
+    display: block;
+}
+
+.senderName {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.notificationMeta {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-top: 0.4rem;
+}
+
+.unreadDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.emptyState {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+}
+
+@media (max-width: 768px) {
+    .notificationPanel {
+        position: fixed;
+        top: 70px; /* Below navbar */
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+        max-height: 60vh;
+    }
+}

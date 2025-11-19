@@ -6,12 +6,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 import UserProfile from './UserProfile';
+import NotificationBell from '@/components/notifications/NotificationBell'; // <-- ADDED IMPORT
 import { motion, AnimatePresence, Variants, Transition } from 'framer-motion';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useBodyClass } from '@/hooks/useBodyClass';
 import { useUIStore } from '@/lib/uiStore';
 import { ReviewIcon, NewsIcon, ArticleIcon, ReleaseIcon, StudioIcon, PreviewIcon } from '@/components/icons/index';
-// MODIFIED: Import the new icon
 import { EternalGamesIcon } from '@/components/icons/AuthIcons';
 import { useEditorStore } from '@/lib/editorStore';
 import { QualityToggle } from '@/app/studio/[contentType]/[id]/editor-components/QualityToggle';
@@ -186,6 +186,8 @@ const Navbar = () => {
                         </nav>
                         <div className={styles.navControls}>
                             {isEditorActive && <EditorPreviewButton />}
+                            {/* ADDED: Notification Bell */}
+                            <NotificationBell />
                             <ThemeToggle />
                             <UserProfile />
                             <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
@@ -215,6 +217,8 @@ const Navbar = () => {
                         </Link>
                         <div className={styles.mobileNavGroupRight}>
                             {isEditorActive && <EditorPreviewButton />}
+                            {/* ADDED: Notification Bell */}
+                            <NotificationBell />
                             <ThemeToggle />
                             <UserProfile />
                         </div>

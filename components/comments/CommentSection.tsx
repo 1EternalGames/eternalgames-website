@@ -8,6 +8,7 @@ import { postReplyOrComment } from '@/app/actions/commentActions';
 import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
 import CommentList from './CommentList';
+import CommentListSkeleton from '@/components/skeletons/CommentListSkeleton';
 import styles from './Comments.module.css';
 
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
@@ -23,16 +24,18 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-export default function CommentSection({ slug }: { slug: string; }) {
+// MODIFIED: Accept contentType prop
+export default function CommentSection({ slug, contentType }: { slug: string; contentType: string; }) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    // MODIFIED: State now manages comments, loading, and errors.
     const [comments, setComments] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // Helper to construct the full path
+    const currentPath = `/${contentType}/${slug}`;
 
-    // MODIFIED: Fetch comments on the client side.
     useEffect(() => {
         const fetchComments = async () => {
             setIsLoading(true);
@@ -80,7 +83,8 @@ export default function CommentSection({ slug }: { slug: string; }) {
 
         addOptimisticComment({ newComment: optimisticComment, parentId });
 
-        const result = await postReplyOrComment(slug, content, parentId);
+        // MODIFIED: Pass currentPath to the action
+        const result = await postReplyOrComment(slug, content, currentPath, parentId);
 
         if (result.success && result.comment) {
             setComments(currentComments => {
@@ -152,8 +156,10 @@ export default function CommentSection({ slug }: { slug: string; }) {
             )}
             
             <div>
-                {isLoading && <div className="spinner" style={{ margin: '4rem auto' }} />}
+                {isLoading && <CommentListSkeleton />}
+                
                 {error && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{error}</p>}
+                
                 {!isLoading && !error && (
                     <CommentList
                         comments={optimisticComments}

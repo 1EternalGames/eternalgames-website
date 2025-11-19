@@ -62,7 +62,6 @@ model User {
   isBanned            Boolean              @default(false)
   banReason           String?
   bannedAt            DateTime?
-  // -------------------------
 
   accounts            Account[]
   engagements         Engagement[]
@@ -72,6 +71,10 @@ model User {
   sessions            Session[]
   shares              Share[]
   roles               Role[]               @relation("RoleToUser")
+
+  // --- NOTIFICATION RELATIONS ---
+  receivedNotifications Notification[]     @relation("ReceivedNotifications")
+  sentNotifications     Notification[]     @relation("SentNotifications")
 }
 
 model VerificationToken {
@@ -136,6 +139,27 @@ model CommentVote {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, commentId])
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  createdAt    DateTime         @default(now())
+  userId       String           // The user receiving the notification
+  senderId     String           // The user who triggered it
+  type         NotificationType
+  resourceId   String           // e.g., the Comment ID
+  resourceSlug String           // The content slug
+  link         String           // Deep link to the content
+  read         Boolean          @default(false)
+
+  user         User             @relation("ReceivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  sender       User             @relation("SentNotifications", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum NotificationType {
+  REPLY
 }
 
 enum VoteType {
