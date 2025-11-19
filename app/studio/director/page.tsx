@@ -12,7 +12,6 @@ export default async function DirectorPage() {
 
     const session = await getServerSession(authOptions);
     
-    // THE DEFINITIVE FIX: Fetch fresh roles from DB to ensure instant access revocation/granting
     let userRoles: string[] = [];
     if (session?.user?.id) {
         const user = await prisma.user.findUnique({ 
@@ -22,12 +21,10 @@ export default async function DirectorPage() {
         userRoles = user?.roles.map(r => r.name) || [];
     }
 
-    // Secure the route: only allow users with the 'DIRECTOR' role (verified against DB)
     if (!userRoles.includes('DIRECTOR')) {
         redirect('/studio');
     }
 
-    // Fetch all users and all available roles from the database
     const users = await prisma.user.findMany({
         include: {
             roles: {
@@ -44,8 +41,10 @@ export default async function DirectorPage() {
     return (
         <div className="container page-container">
             <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                <h1 className="page-title">الإدارة</h1>
-                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto' }}>عيّن وأدِر الأدوار. تسري التغييرات فورًا على الصلاحيات.</p>
+                <h1 className="page-title">إدارة الديوان</h1>
+                <p className="sidebar-subtitle" style={{ fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto' }}>
+                    تحكَّم في رُتَب الأعضاء وصلاحياتهم. التغييراتُ نافذةٌ فورًا.
+                </p>
             </header>
             <UserManagementClient initialUsers={users} allRoles={allRoles} />
         </div>

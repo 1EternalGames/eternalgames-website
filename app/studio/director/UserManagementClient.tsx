@@ -7,18 +7,19 @@ import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EditRolesModal } from './EditRolesModal';
 import type { User, Role } from '@prisma/client';
+import { translateRole } from '@/lib/translations'; // <-- THE FIX: Import translator
 
-// Define a more specific type for the user object with roles included
 type UserWithRoles = User & { roles: { name: string }[] };
 
 const UserRow = ({ user, allRoles, onEdit }: { user: UserWithRoles, allRoles: Role[], onEdit: (user: UserWithRoles) => void }) => {
-    // Determine user's current roles for display
     const currentRoleNames = user.roles.map(r => r.name);
-    // Remove "USER" if other roles are present, and display only badges (Director, Reviewer, etc.)
+    // Filter out USER to show only special ranks
     const rolesToDisplay = currentRoleNames.filter(name => name !== 'USER').sort();
     
-    // Fallback if no roles other than USER are assigned
-    const displayString = rolesToDisplay.length > 0 ? rolesToDisplay.join(', ') : 'مستخدم (افتراضي)';
+    // THE FIX: Translate the roles before joining them
+    const displayString = rolesToDisplay.length > 0 
+        ? rolesToDisplay.map(translateRole).join('، ') 
+        : 'عضو (افتراضي)';
     
     return (
         <motion.div
@@ -40,7 +41,7 @@ const UserRow = ({ user, allRoles, onEdit }: { user: UserWithRoles, allRoles: Ro
                 <span className="roles-badge">{displayString}</span>
             </div>
             <div className="user-actions">
-                <button className="outline-button" onClick={() => onEdit(user)}>تعديل الأدوار</button>
+                <button className="outline-button" onClick={() => onEdit(user)}>تعديل الرتب</button>
             </div>
         </motion.div>
     );
@@ -127,8 +128,8 @@ export function UserManagementClient({ initialUsers, allRoles }: { initialUsers:
                 />
                 <div className="user-list">
                     <div className="user-list-header">
-                        <span>المستخدم</span>
-                        <span>الأدوار</span>
+                        <span>العضو</span>
+                        <span>الرتب</span>
                         <span></span>
                     </div>
                     <AnimatePresence>

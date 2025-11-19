@@ -58,6 +58,21 @@ const TAG_TRANSLATIONS: Record<string, string> = {
     "Story": "قصة",
 };
 
+// THE FIX: Added role translations
+const ROLE_TRANSLATIONS: Record<string, string> = {
+    "DIRECTOR": "المدير",
+    "ADMIN": "المسؤول",
+    "REVIEWER": "المُراجع",
+    "AUTHOR": "الكاتب",
+    "REPORTER": "المراسل",
+    "DESIGNER": "المصمم",
+    "USER": "عضو"
+};
+
 export const translateTag = (tagTitle: string): string => {
     return TAG_TRANSLATIONS[tagTitle] || tagTitle;
+};
+
+export const translateRole = (roleName: string): string => {
+    return ROLE_TRANSLATIONS[roleName] || roleName;
 };

@@ -8,7 +8,8 @@ import type { User, Role } from '@prisma/client';
 import Modal from '@/components/modals/Modal';
 import modalStyles from '@/components/modals/Modals.module.css';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation'; // <-- THE FIX: Import useRouter
+import { useRouter } from 'next/navigation';
+import { translateRole } from '@/lib/translations'; // <-- THE FIX: Import translator
 
 type UserWithRoles = User & { roles: { name: string }[] };
 
@@ -16,7 +17,7 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
     const [selectedRoleIds, setSelectedRoleIds] = useState<Set<number>>(() => new Set(user.roles.map(r => allRoles.find(ar => ar.name === r.name)!.id)));
     const [isPending, startTransition] = useTransition();
     const toast = useToast();
-    const router = useRouter(); // <-- THE FIX: Initialize router
+    const router = useRouter();
     
     const { data: session, update: updateSession } = useSession();
     
@@ -49,11 +50,7 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
                 // If editing self...
                 const currentUserId = (session?.user as any)?.id;
                 if (currentUserId && currentUserId === user.id) {
-                    // 1. Update the Client Session (Cookies/Context)
                     await updateSession();
-                    // 2. THE FIX: Refresh Server Components (Layouts, Page Guards)
-                    // This ensures that if I removed "Director" from myself,
-                    // the server immediately re-renders the page and kicks me out.
                     router.refresh();
                 }
 
@@ -67,8 +64,8 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
 
     return (
         <Modal isOpen={!!user} onClose={onClose}>
-            <h3 style={{ marginTop: 0 }}>تعديل أدوار {user.name}</h3>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '-1rem' }}>اختر الأدوار التي سيتقلَّدها هذا المستخدم.</p>
+            <h3 style={{ marginTop: 0 }}>تعديل رُتَب {user.name}</h3>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '-1rem' }}>اختر المهام الموكلة لهذا العضو.</p>
             <div className="roles-checklist" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: '1fr 1fr', 
@@ -83,8 +80,9 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
                             onChange={() => handleRoleToggle(role.id)}
                             style={{ width: '1.6rem', height: '1.6rem' }}
                         />
+                        {/* THE FIX: Use translated role name */}
                         <span style={{ fontWeight: role.name === 'DIRECTOR' ? 700 : 500, color: role.name === 'DIRECTOR' ? 'gold' : 'inherit' }}>
-                            {role.name}
+                            {translateRole(role.name)}
                         </span>
                     </label>
                 ))}

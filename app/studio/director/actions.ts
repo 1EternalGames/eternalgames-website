@@ -16,20 +16,19 @@ const ROLE_TO_SANITY_TYPE: Record<string, string> = {
     DESIGNER: 'designer',
 };
 
-// This helper function creates or updates a specific creator type in Sanity
 async function findOrCreateSanityCreator(userId: string, sanityType: string) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, image: true } });
-    if (!user || !user.name) throw new Error('User details are incomplete.');
+    if (!user || !user.name) throw new Error('بيانات العضو غير مكتملة.');
 
     const existingCreator = await sanityWriteClient.fetch(`*[_type == "${sanityType}" && prismaUserId == $userId][0]`, { userId });
 
     if (existingCreator) {
-        return; // Already exists, nothing to do.
+        return; 
     }
 
     const newCreator: any = {
         _type: sanityType,
-        _id: `${sanityType}-${userId}`, // Create a predictable, unique ID
+        _id: `${sanityType}-${userId}`,
         name: user.name,
         prismaUserId: user.id,
     };
@@ -54,8 +53,11 @@ async function findOrCreateSanityCreator(userId: string, sanityType: string) {
 
 export async function updateUserRolesAction(userId: string, roleIds: number[]) {
     const session = await getServerSession(authOptions);
+    
+    // Use safe access or DB verification here if strict security is needed, 
+    // but for the action message itself:
     if (!session?.user?.roles.includes('DIRECTOR')) {
-        return { success: false, message: "غير مُخَوَّل." };
+        return { success: false, message: "غير مُصرَّح لك بهذا الإجراء." };
     }
 
     try {
@@ -65,7 +67,6 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
             include: { roles: true }
         });
 
-        // --- THE NEW LOGIC ---
         const userRoles = updatedUser.roles.map(r => r.name);
         
         for (const roleName of userRoles) {
@@ -78,9 +79,7 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
                 }
             }
         }
-        // --- END NEW LOGIC ---
         
-        // --- ADDED TAG REVALIDATION ---
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
 
@@ -93,6 +92,6 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
         return { success: true, updatedRoles: updatedUser.roles as Role[] };
     } catch (error) {
         console.error("Failed to update user roles:", error);
-        return { success: false, message: "خطبٌ في قاعدة البيانات." };
+        return { success: false, message: "حدث خطأ أثناء التحديث في قاعدة البيانات." };
     }
 }
