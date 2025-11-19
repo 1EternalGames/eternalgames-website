@@ -13,6 +13,36 @@ import { editorDocumentQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * Helper to revalidate all necessary paths for a given content type.
+ * This ensures the Homepage, Studio, and Listing pages reflect changes immediately.
+ */
+function revalidateContentPaths(docType: string, slug?: string) {
+    // 1. Always revalidate Studio and Homepage
+    revalidatePath('/studio', 'layout');
+    revalidatePath('/', 'layout');
+
+    // 2. Determine the section path
+    let sectionPath = '';
+    switch (docType) {
+        case 'review': sectionPath = '/reviews'; break;
+        case 'article': sectionPath = '/articles'; break;
+        case 'news': sectionPath = '/news'; break;
+        case 'gameRelease': sectionPath = '/releases'; break;
+    }
+
+    if (sectionPath) {
+        revalidatePath(sectionPath, 'layout'); // Revalidate the list page (e.g., /reviews)
+        if (slug) {
+            revalidatePath(`${sectionPath}/${slug}`, 'layout'); // Revalidate the detail page
+        }
+    }
+
+    // 3. Revalidate global tags used by unstable_cache
+    revalidateTag(docType);
+    revalidateTag('layout');
+}
+
 export async function translateTitleToAction(title: string): Promise<string> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
@@ -142,14 +172,8 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
         
-        revalidatePath('/studio');
-        const docType = finalDoc._type;
-        const slug = finalDoc.slug?.current;
-        if (slug) {
-            const contentTypePlural = docType === 'news' ? 'news' : `${docType}s`;
-            revalidatePath(`/${contentTypePlural}`);
-            revalidatePath(`/${contentTypePlural}/${slug}`);
-        }
+        // FORCE REVALIDATION
+        revalidateContentPaths(finalDoc._type, finalDoc.slug?.current);
         
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         return { success: true, updatedDocument: docWithTiptap };
@@ -160,7 +184,6 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
     }
 }
 
-// --- THE FIXED DELETE FUNCTION ---
 export async function deleteDocumentAction(docId: string): Promise<{ success: boolean; message?: string }> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
@@ -170,8 +193,9 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
     const draftId = `drafts.${baseId}`;
 
     // 2. Fetch Metadata: Check if *either* version exists to verify type and ownership
+    // We also need the slug to revalidate the specific page
     const docToDelete = await sanityWriteClient.fetch(
-        groq`*[_id in [$baseId, $draftId]][0]{_type}`, 
+        groq`*[_id in [$baseId, $draftId]][0]{_type, "slug": slug.current}`, 
         { baseId, draftId }
     );
     
@@ -189,15 +213,16 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
     if (!canDelete) return { success: false, message: 'أذوناتٌ قاصرة.' };
     
     try {
-        // 3. Transactional Delete: Attempt to delete BOTH versions.
-        // Sanity transactions will ignore deletion operations on non-existent documents,
-        // so this safely removes whatever exists (draft, public, or both).
+        // 3. Transactional Delete
         const tx = sanityWriteClient.transaction();
         tx.delete(baseId);
         tx.delete(draftId);
         await tx.commit();
 
-        revalidatePath('/studio');
+        // 4. AGGRESSIVE REVALIDATION
+        // This ensures the item disappears from Homepage, List Pages, and Studio immediately.
+        revalidateContentPaths(docType, docToDelete.slug);
+
         return { success: true };
     } catch (error) {
         console.error("Delete failed:", error);
@@ -238,10 +263,8 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.patch(draftId, (p) => p.unset(['publishedAt']));
             await tx.commit({ returnDocuments: false });
 
-            const contentTypePlural = docType === 'news' ? 'news' : `${docType}s`;
-            revalidatePath(`/${contentTypePlural}`);
-            revalidatePath(`/${contentTypePlural}/${doc.slug}`);
-            revalidatePath('/studio');
+            // FORCE REVALIDATION
+            revalidateContentPaths(docType, doc.slug);
 
             const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
             if (!finalDoc) throw new Error("Document not found after unpublish.");
@@ -274,14 +297,10 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit();
         }
 
-        revalidatePath('/studio');
+        // FORCE REVALIDATION
+        revalidateContentPaths(docType, doc.slug);
         if (docType === 'gameRelease') {
-            revalidatePath('/releases');
-            revalidatePath('/celestial-almanac');
-        } else if (new Date(finalTime) <= new Date()) {
-            const contentTypePlural = docType === 'news' ? 'news' : `${docType}s`;
-            revalidatePath(`/${contentTypePlural}`);
-            revalidatePath(`/${contentTypePlural}/${doc.slug}`);
+            revalidatePath('/celestial-almanac', 'layout');
         }
 
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
