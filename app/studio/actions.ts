@@ -1,9 +1,9 @@
 // app/studio/actions.ts
 'use server';
 
-import { getAuthenticatedSession } from '@/lib/auth'; // <-- THE FIX: Use fresh session helper
+import { getAuthenticatedSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { sanityWriteClient } from '@/lib/sanity.server';
 import { groq } from 'next-sanity';
 import { slugify } from 'transliteration';
@@ -14,7 +14,7 @@ import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function translateTitleToAction(title: string): Promise<string> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     const isAuthorized = userRoles.some((role: string) =>
       ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
@@ -60,7 +60,7 @@ export async function translateTitleToAction(title: string): Promise<string> {
 
 
 export async function createDraftAction(contentType: 'review' | 'article' | 'news' | 'gameRelease') {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     
     const canCreate = (userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR')) || (contentType === 'review' && userRoles.includes('REVIEWER')) || (contentType === 'article' && userRoles.includes('AUTHOR')) || (contentType === 'news' && userRoles.includes('REPORTER'));
@@ -76,7 +76,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
         let sanityCreator;
         const creatorTypeMap: Record<string, string> = { 'review': 'reviewer', 'article': 'author', 'news': 'reporter' };
         const sanityDocType = creatorTypeMap[contentType];
-        // User details are already fresh in session from getAuthenticatedSession
         const user = session.user;
         if (!user || !user.name) throw new Error("المستخدمُ مفقودٌ أو الاسمُ غائب.");
         
@@ -103,7 +102,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     }
     
     if (contentType === 'review') { doc.score = 0; doc.verdict = '...'; doc.pros = []; doc.cons = []; }
-    if (contentType === 'article') doc.publishedYear = new Date().getFullYear();
     if (contentType === 'gameRelease') { doc.releaseDate = new Date().toISOString().split('T')[0]; doc.synopsis = '...'; doc.platforms = []; }
     
     const result = await sanityWriteClient.create(doc, { autoGenerateArrayKeys: true });
@@ -112,7 +110,7 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
 }
 
 export async function updateDocumentAction(docId: string, patchData: Record<string, any>): Promise<{ success: boolean; message?: string; updatedDocument?: any }> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     if (!session) return { success: false, message: 'غير مُخَوَّل.' };
 
     const publicId = docId.replace('drafts.', '');
@@ -162,24 +160,49 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
     }
 }
 
+// --- THE FIXED DELETE FUNCTION ---
 export async function deleteDocumentAction(docId: string): Promise<{ success: boolean; message?: string }> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     
-    const docToDelete = await sanityWriteClient.fetch(groq`*[_id == $docId][0]{_type}`, { docId });
+    // 1. Robust ID Resolution: Calculate both potential IDs (draft and public)
+    const baseId = docId.replace(/^drafts\./, '');
+    const draftId = `drafts.${baseId}`;
+
+    // 2. Fetch Metadata: Check if *either* version exists to verify type and ownership
+    const docToDelete = await sanityWriteClient.fetch(
+        groq`*[_id in [$baseId, $draftId]][0]{_type}`, 
+        { baseId, draftId }
+    );
+    
     if (!docToDelete) return { success: false, message: 'الوثيقةُ مفقودة.' };
     
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     const docType = docToDelete._type;
-    const canDelete = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
+    
+    const canDelete = 
+        isAdminOrDirector || 
+        (docType === 'review' && userRoles.includes('REVIEWER')) || 
+        (docType === 'article' && userRoles.includes('AUTHOR')) || 
+        (docType === 'news' && userRoles.includes('REPORTER'));
+
     if (!canDelete) return { success: false, message: 'أذوناتٌ قاصرة.' };
     
-    const result = await sanityWriteClient.delete(docId);
-    if (result.results.length > 0) {
+    try {
+        // 3. Transactional Delete: Attempt to delete BOTH versions.
+        // Sanity transactions will ignore deletion operations on non-existent documents,
+        // so this safely removes whatever exists (draft, public, or both).
+        const tx = sanityWriteClient.transaction();
+        tx.delete(baseId);
+        tx.delete(draftId);
+        await tx.commit();
+
         revalidatePath('/studio');
         return { success: true };
+    } catch (error) {
+        console.error("Delete failed:", error);
+        return { success: false, message: 'تأبى الحذف.' };
     }
-    return { success: false, message: 'تأبى الحذف.' };
 }
 
 export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER'): Promise<{ _id: string; name: string }[]> {
@@ -193,7 +216,7 @@ export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' |
 }
 
 export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     
@@ -284,7 +307,7 @@ export async function searchGamesAction(query: string): Promise<{_id: string, ti
 }
 
 export async function createGameAction(title: string): Promise<{_id: string, title: string} | null> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
@@ -305,7 +328,7 @@ export async function searchTagsAction(query: string): Promise<{_id: string, tit
 }
 
 export async function createTagAction(title: string, category: 'Game' | 'Article' | 'News'): Promise<{_id: string, title: string} | null> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try {
@@ -338,7 +361,7 @@ export async function validateSlugAction(slug: string, docId: string): Promise<{
 }
 
 export async function uploadSanityAssetAction(formData: FormData): Promise<{ success: boolean; asset?: { _id: string; url: string }; error?: string }> {
-    const session = await getAuthenticatedSession(); // <-- Uses FRESH roles
+    const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
 
@@ -355,7 +378,7 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
 
 export async function addOrUpdateColorDictionaryAction(newMapping: { word: string; color: string }) {
   try {
-    await getAuthenticatedSession(); // Verify auth
+    await getAuthenticatedSession();
     const newEntry = { ...newMapping, _key: uuidv4() };
     const tx = sanityWriteClient.transaction();
     tx.createIfNotExists({ _id: 'colorDictionary', _type: 'colorDictionary', title: 'Color Dictionary' });
@@ -369,7 +392,7 @@ export async function addOrUpdateColorDictionaryAction(newMapping: { word: strin
 
 export async function removeColorDictionaryAction(keyToRemove: string) {
   try {
-    await getAuthenticatedSession(); // Verify auth
+    await getAuthenticatedSession();
     await sanityWriteClient.patch('colorDictionary').unset([`autoColors[_key=="${keyToRemove}"]`]).commit({ returnDocuments: false, autoGenerateArrayKeys: true });
     const updatedDictionary = await sanityWriteClient.fetch(groq`*[_id == "colorDictionary"][0]`);
     return { success: true, updatedDictionary };

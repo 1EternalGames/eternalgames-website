@@ -4,7 +4,7 @@
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { VoteType } from '@prisma/client';
-import { getAuthenticatedSession } from '@/lib/auth'; // <-- IMPORT HELPER
+import { getAuthenticatedSession } from '@/lib/auth'; 
 
 export async function postReplyOrComment(contentSlug: string, content: string, parentId?: string) {
     try {
@@ -32,7 +32,16 @@ export async function deleteComment(commentId: string) {
             where: { id: commentId },
             include: { _count: { select: { replies: true } } }
         });
-        if (!commentToDelete || commentToDelete.authorId !== session.user.id) return { success: false, error: 'غير مصرح لك.' };
+        
+        if (!commentToDelete) return { success: false, error: 'التعليق غير موجود.' };
+
+        const userRoles = session.user.roles || [];
+        const isAuthor = commentToDelete.authorId === session.user.id;
+        const isModerator = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+
+        if (!isAuthor && !isModerator) {
+            return { success: false, error: 'غير مصرح لك.' };
+        }
 
         if (commentToDelete._count.replies > 0) {
             const updatedComment = await prisma.comment.update({

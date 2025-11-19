@@ -36,7 +36,11 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
     const [areRepliesVisible, setAreRepliesVisible] = useState(true);
     const [isLoadingReplies, setIsLoadingReplies] = useState(false);
     const replyCount = comment._count?.replies || 0;
-    const isAuthor = useMemo(() => session?.user?.id === comment.author.id, [session, comment.author.id]);
+    
+    const userRoles = (session?.user as any)?.roles || [];
+    const isAuthor = session?.user?.id === comment.author.id;
+    const isModerator = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+    const canDelete = isAuthor || isModerator;
 
     const handleToggleReplies = async () => { if (areRepliesVisible) { setAreRepliesVisible(false); return; } setIsLoadingReplies(true); setAreRepliesVisible(true); if (replies.length < replyCount) { const result = await getReplies(comment.id); if (result.success) { setReplies(result.replies as any[]); } } setIsLoadingReplies(false); };
     
@@ -86,9 +90,9 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
         <>
             <CommentVoteButtons commentId={comment.id} initialVotes={comment.votes} onVoteUpdate={onVoteUpdate} /> 
             {replyCount > 0 && (<button onClick={handleToggleReplies} className={`outline-button ${styles.viewRepliesButton}`} disabled={isLoadingReplies}>{isLoadingReplies ? 'جارٍ التحميل...' : areRepliesVisible ? 'إخفاء الردود' : `عرض ${replyCount} ${replyCount > 1 ? 'ردود' : 'رد'}`}</button>)} 
-            {isAuthor && ( <div className={styles.commentAuthorActions}>
-                <ActionButton onClick={() => setIsEditing(true)} aria-label="Edit" disabled={isPending}><EditIcon /></ActionButton>
-                <ActionButton onClick={() => setShowDeleteModal(true)} aria-label="Delete" disabled={isPending}><DeleteIcon /></ActionButton>
+            {(isAuthor || canDelete) && ( <div className={styles.commentAuthorActions}>
+                {isAuthor && <ActionButton onClick={() => setIsEditing(true)} aria-label="Edit" disabled={isPending}><EditIcon /></ActionButton>}
+                {canDelete && <ActionButton onClick={() => setShowDeleteModal(true)} aria-label="Delete" disabled={isPending}><DeleteIcon /></ActionButton>}
             </div> )}
         </>
     )}

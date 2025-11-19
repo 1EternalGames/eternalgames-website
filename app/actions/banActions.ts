@@ -9,7 +9,7 @@ import { unstable_cache } from "next/cache";
 
 // --- CONFIGURATION ---
 // REPLACE THIS WITH YOUR EXACT EMAIL ADDRESS
-const OWNER_EMAIL = "mhmfalsaadd@gmail.com"; 
+const OWNER_EMAIL = "YOUR_PRIVATE_EMAIL@gmail.com"; 
 
 const PROTECTED_ROLES = ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'];
 
@@ -55,7 +55,7 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
         const actorRoles = actor.roles.map(r => r.name);
         const isDirector = actorRoles.includes('DIRECTOR');
         const isAdmin = actorRoles.includes('ADMIN');
-        const isOwner = actor.email === OWNER_EMAIL; // <--- THE GOD CHECK
+        const isOwner = actor.email === OWNER_EMAIL; 
 
         // Basic Permission Check (Owner bypasses this)
         if (!isDirector && !isAdmin && !isOwner) {
@@ -72,13 +72,11 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
         const targetRoles = target.roles.map(r => r.name);
 
         // --- THE IMMUTABLE SHIELD ---
-        // If the target is the Owner, NO ONE can ban them.
         if (target.email === OWNER_EMAIL) {
             return { success: false, message: "هذا الكيان محصن ضد الحظر." };
         }
 
         // 3. Hierarchy Validation
-        // If actor is the Owner, skip ALL hierarchy checks (The Sword).
         if (!isOwner) {
             // Safety: Cannot ban self
             if (actor.id === target.id) {
@@ -108,7 +106,8 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
             }
         });
 
-        revalidateTag('ban-status');
+        // THE FIX: Added 'layout' as the second argument to satisfy the type definition
+        revalidateTag('ban-status', 'layout');
         revalidatePath('/studio/director');
         
         return { success: true, message: shouldBan ? "تم حظر المستخدم." : "تم رفع الحظر." };
