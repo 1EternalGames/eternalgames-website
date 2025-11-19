@@ -18,11 +18,13 @@ import { v4 as uuidv4 } from 'uuid';
  * This ensures the Homepage, Studio, and Listing pages reflect changes immediately.
  */
 function revalidateContentPaths(docType: string, slug?: string) {
+    console.log(`[CACHE] Aggressive revalidation triggered for type: ${docType}, slug: ${slug}`);
+    
     // 1. Always revalidate Studio and Homepage
     revalidatePath('/studio', 'layout');
     revalidatePath('/', 'layout');
 
-    // 2. Determine the section path
+    // 2. Determine the section path and revalidate
     let sectionPath = '';
     switch (docType) {
         case 'review': sectionPath = '/reviews'; break;
@@ -39,7 +41,7 @@ function revalidateContentPaths(docType: string, slug?: string) {
     }
 
     // 3. Revalidate global tags used by unstable_cache
-    // THE FIX: Added 'layout' as the second argument to satisfy Next.js 15+ types
+    // THE FIX: Added 'layout' as the second argument to satisfy Next.js 16 types
     revalidateTag(docType, 'layout');
     revalidateTag('layout', 'layout');
 }
@@ -136,7 +138,7 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     if (contentType === 'gameRelease') { doc.releaseDate = new Date().toISOString().split('T')[0]; doc.synopsis = '...'; doc.platforms = []; }
     
     const result = await sanityWriteClient.create(doc, { autoGenerateArrayKeys: true });
-    revalidatePath('/studio');
+    revalidatePath('/studio', 'layout');
     return { _id: result._id, _type: result._type };
 }
 
