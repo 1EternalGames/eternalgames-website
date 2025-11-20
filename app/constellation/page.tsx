@@ -8,6 +8,9 @@ import { enrichContentList } from '@/lib/enrichment';
 import ConstellationWrapper from './ConstellationWrapper';
 import type { SanityContentObject } from '@/components/constellation/config';
 
+// Force dynamic rendering because this page relies on user session cookies
+export const dynamic = 'force-dynamic';
+
 async function getConstellationData() {
     try {
         const session = await getServerSession(authOptions);
@@ -17,7 +20,6 @@ async function getConstellationData() {
 
         const userId = session.user.id;
 
-        // 1. Fetch all user interactions in parallel
         const [engagements, shares, comments] = await Promise.all([
             prisma.engagement.findMany({
                 where: { userId },
@@ -34,14 +36,13 @@ async function getConstellationData() {
             })
         ]);
 
-        // 2. Consolidate IDs
         const contentIds = new Set<number>();
-        engagements.forEach(e => contentIds.add(e.contentId));
-        shares.forEach(s => contentIds.add(s.contentId));
+        // THE FIX: Added explicit type annotations
+        engagements.forEach((e: { contentId: number }) => contentIds.add(e.contentId));
+        shares.forEach((s: { contentId: number }) => contentIds.add(s.contentId));
         
         const uniqueIds = Array.from(contentIds);
         
-        // 3. Fetch Sanity Content
         let userContent: SanityContentObject[] = [];
         if (uniqueIds.length > 0) {
             const rawContent = await client.fetch(contentByIdsQuery, { ids: uniqueIds });
@@ -50,7 +51,8 @@ async function getConstellationData() {
 
         return {
             userContent,
-            commentedSlugs: comments.map(c => c.contentSlug),
+            // THE FIX: Added explicit type annotation
+            commentedSlugs: comments.map((c: { contentSlug: string }) => c.contentSlug),
             isGuest: false
         };
 
