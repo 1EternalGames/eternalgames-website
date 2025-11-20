@@ -28,7 +28,8 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
 
-    const initialCards = useMemo(() => initialGridReviews.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridReviews]);
+    // OPTIMIZATION: 600px for grid items
+    const initialCards = useMemo(() => initialGridReviews.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridReviews]);
     const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);

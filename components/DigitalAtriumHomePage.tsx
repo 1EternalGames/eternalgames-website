@@ -9,7 +9,6 @@ import AnimatedGridBackground from './AnimatedGridBackground';
 import { ReviewIcon, ReleaseIcon } from '@/components/icons/index';
 import styles from './DigitalAtriumHomePage.module.css';
 import { CardProps } from '@/types';
-import FeedSkeleton from '@/components/homepage/feed/FeedSkeleton';
 
 export default function DigitalAtriumHomePage({
     reviews,
@@ -20,7 +19,8 @@ export default function DigitalAtriumHomePage({
     feedsContent: React.ReactNode;
     releasesSection: React.ReactNode;
 }) {
-  const adaptedReviews = (reviews || []).map(adaptToCardProps).filter(Boolean) as CardProps[];
+  // OPTIMIZATION: Vanguard cards are large, request 800px
+  const adaptedReviews = (reviews || []).map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[];
   
   return (
     <div className={styles.atriumPageContainer}>
@@ -34,9 +34,8 @@ export default function DigitalAtriumHomePage({
       
       <div className={styles.atriumMainContent}>
           <div className="container">
-              <Suspense fallback={<FeedSkeleton />}>
-                  {feedsContent}
-              </Suspense>
+              {/* SKELETON REMOVED */}
+              {feedsContent}
           </div>
           
           <ContentBlock title="إصدارات هذا الشهر" Icon={ReleaseIcon} variant="fullbleed">
@@ -44,7 +43,8 @@ export default function DigitalAtriumHomePage({
                   <p style={{textAlign: 'center', maxWidth: '600px', margin: '-2rem auto 4rem auto', color: 'var(--text-secondary)'}}>
                       نظرة على الألعاب التي ترى النور هذا الشهر. ما صدر منها قد وُسِمَ بعلامة.
                   </p>
-                  <Suspense fallback={<div className="spinner" style={{margin: '12rem auto'}} />}>
+                  {/* SKELETON REMOVED */}
+                  <Suspense fallback={null}>
                       {releasesSection}
                   </Suspense>
               </div>

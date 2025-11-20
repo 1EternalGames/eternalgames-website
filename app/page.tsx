@@ -13,7 +13,6 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList } from '@/lib/enrichment';
 
-// Cached engagement scores fetcher
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
         try {
@@ -68,12 +67,10 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
-    // THE FIX: Enrich all content types server-side to prevent client waterfalls
     const reviews = (await enrichContentList(reviewsRaw)) as SanityReview[];
     const homepageArticles = await enrichContentList(homepageArticlesRaw);
     const homepageNews = await enrichContentList(homepageNewsRaw);
 
-    // Reorder the reviews to place the highest-rated one first
     if (reviews.length > 0) {
         const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
             const topScore = reviews[topIndex].score ?? 0;
@@ -93,28 +90,30 @@ export default async function HomePage() {
         return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
     };
 
-    // Articles Logic
     const sortedArticlesByScore = sortItemsByScore(homepageArticles);
     const topArticlesRaw = sortedArticlesByScore.slice(0, 2);
     const topArticleIds = new Set(topArticlesRaw.map((a: any) => a._id));
-    const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
+    // OPTIMIZATION: Request 800px for top cards
+    const topArticles = topArticlesRaw.map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[];
 
     const latestArticles = homepageArticles
         .filter((a: any) => !topArticleIds.has(a._id))
         .slice(0, 10)
-        .map(adaptToCardProps)
+        // OPTIMIZATION: Request 400px for list items
+        .map(item => adaptToCardProps(item, { width: 400 }))
         .filter(Boolean) as CardProps[];
     
-    // News Logic
     const sortedNewsByScore = sortItemsByScore(homepageNews);
     const topNewsRaw = sortedNewsByScore.slice(0, 3);
     const topNewsIds = new Set(topNewsRaw.map((n: any) => n._id));
-    const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
+    // OPTIMIZATION: 600px for spotlight
+    const pinnedNews = topNewsRaw.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[];
 
     const newsList = homepageNews
         .filter((n: any) => !topNewsIds.has(n._id))
         .slice(0, 15)
-        .map(adaptToCardProps)
+        // OPTIMIZATION: 300px for stream
+        .map(item => adaptToCardProps(item, { width: 300 }))
         .filter(Boolean) as CardProps[];
 
     const feedsContent = (

@@ -5,7 +5,8 @@ import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import TagLinks from './TagLinks';
-import { motion } from 'framer-motion';
+// OPTIMIZATION: Import 'm' from framer-motion for LazyMotion support
+import { m } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -74,7 +75,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         : { ...livingCardAnimation.style, cursor: 'pointer' };
 
     return (
-        <motion.div
+        <m.div
             layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
             onClick={handleClick}
             className={styles.livingCardWrapper}
@@ -84,8 +85,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             <div
                 className={styles.articleCard}
             >
-                <motion.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}>
-                    {hasScore && ( <motion.div className={styles.score}>{article.score!.toFixed(1)}</motion.div> )}
+                <m.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}>
+                    {hasScore && ( <m.div className={styles.score}>{article.score!.toFixed(1)}</m.div> )}
                     <Image 
                         loader={sanityLoader}
                         src={imageSource}
@@ -99,10 +100,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         blurDataURL={article.blurDataURL}
                         priority={isPriority}
                     />
-                </motion.div>
-                <motion.div className={styles.cardContent}>
+                </m.div>
+                <m.div className={styles.cardContent}>
                     <div className={styles.cardTitleLink}>
-                        <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}>{article.title}</motion.h3>
+                        <m.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}>{article.title}</m.h3>
                     </div>
                     <div className={styles.cardMetadata}>
                         <CreatorCredit label="بقلم" creators={article.authors} />
@@ -116,9 +117,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     <div className={styles.tagContainer}>
                         <TagLinks tags={article.tags.slice(0, 5).map(tag => tag.title)} small={true} />
                     </div>
-                </motion.div>
+                </m.div>
             </div>
-        </motion.div>
+        </m.div>
     );
 };
 

@@ -25,7 +25,6 @@ import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 
-// Helper type to handle the Sanity slug object structure safely
 type Slug = { current: string } | string;
 
 type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
@@ -64,7 +63,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const isReview = type === 'reviews';
     const isNews = type === 'news';
     
-    // THE FIX: Robust slug string extraction
     const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
     
     const measureHeadings = useCallback(() => {
@@ -150,7 +148,11 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 
     const relatedContent = (item as any).relatedReviews || (item as any).relatedArticles || (item as any).relatedNews || [];
     const uniqueRelatedContent = relatedContent ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
-    const adaptedRelatedContent = (uniqueRelatedContent || []).map(adaptToCardProps).filter(Boolean) as CardProps[];
+    
+    // THE FIX: Wrap in arrow function and apply width optimization
+    const adaptedRelatedContent = (uniqueRelatedContent || [])
+        .map((related: any) => adaptToCardProps(related, { width: 600 }))
+        .filter(Boolean) as CardProps[];
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -212,7 +214,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                 <div className={styles.metaContainer}>
                                     <div className={styles.metaBlockLeft}>
                                         {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
-                                        {/* THE FIX: Pass the extracted string, not the object */}
                                         <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                     </div>
                                     <div className={styles.metaBlockRight}>

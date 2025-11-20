@@ -19,7 +19,6 @@ interface HubPageClientProps {
 }
 
 export default function HubPageClient({ initialItems, hubTitle, hubType, headerAction }: HubPageClientProps) {
-    // THE DEFINITIVE FIX: Safeguard against empty initial items.
     if (!initialItems || initialItems.length === 0) {
         return (
             <div className="container page-container">
@@ -53,8 +52,11 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
         }
     }, [activeSort]);
 
+    // THE FIX: Wrap in arrow function and apply width optimization
     const adaptedInitialItems = useMemo(() => 
-        (initialItems || []).map(adaptToCardProps).filter(Boolean) as CardProps[],
+        (initialItems || [])
+            .map(item => adaptToCardProps(item, { width: 600 }))
+            .filter(Boolean) as CardProps[],
         [initialItems]
     );
 

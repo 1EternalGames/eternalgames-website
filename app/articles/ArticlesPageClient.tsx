@@ -23,7 +23,7 @@ const fetchArticles = async (params: URLSearchParams) => {
     if (!res.ok) throw new Error('Failed to fetch articles');
     return res.json();
 };
-
+// ... ArrowIcon and MobileShowcase (unchanged, omitting for brevity as they are purely visual/local)
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
     <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points={direction === 'right' ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
@@ -75,7 +75,6 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
     );
 };
 
-
 export default function ArticlesPageClient({ featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags }: {
   featuredArticles: SanityArticle[]; initialGridArticles: SanityArticle[]; allGames: SanityGame[]; allGameTags: SanityTag[]; allArticleTypeTags: SanityTag[];
 }) {
@@ -84,7 +83,8 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const intersectionRef = useRef(null);
     const isInView = useInView(intersectionRef, { margin: '400px' });
 
-    const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
+    // OPTIMIZATION: 600px for grid items
+    const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);
@@ -133,7 +133,8 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const handleGameTagToggle = (tag: SanityTag) => { setSelectedGameTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAllFilters = () => { setSelectedGame(null); setSelectedGameTags([]); setSelectedArticleType(null); setSearchTerm(''); setSortOrder('latest'); };
     
-    const featuredForShowcase = useMemo(() => featuredArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [featuredArticles]);
+    // OPTIMIZATION: 800px for showcase items
+    const featuredForShowcase = useMemo(() => featuredArticles.map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[], [featuredArticles]);
     const activeBackgroundUrl = featuredForShowcase[activeIndex]?.imageUrl;
 
     return (

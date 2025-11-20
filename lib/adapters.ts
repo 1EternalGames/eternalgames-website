@@ -4,12 +4,8 @@ import { CardProps } from '@/types';
 
 const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
-export const adaptToCardProps = (item: any): CardProps | null => {
-    // THE DEFINITIVE FIX:
-    // If an item from Sanity is missing a `legacyId` or the item itself is null,
-    // it is considered corrupt data. We return `null` immediately. This prevents
-    // items with `undefined` IDs from reaching the UI, which was the root cause of
-    // both the disappearing cards (layoutId collision) and phantom bookmarks (state key collision).
+// THE OPTIMIZATION: Added `options` parameter with `width`
+export const adaptToCardProps = (item: any, options: { width?: number } = {}): CardProps | null => {
     if (!item || item.legacyId === null || item.legacyId === undefined) {
         return null;
     }
@@ -17,9 +13,15 @@ export const adaptToCardProps = (item: any): CardProps | null => {
     const imageAsset = item.mainImage?.asset || item.mainImageRef;
     let imageUrl = null;
     let blurDataURL: string = '';
+    
+    // Default to 1200 if not specified (safe default), but pages will now override this
+    const targetWidth = options.width || 1200;
+    // Calculate height based on 16:9 aspect ratio approximation for efficiency
+    const targetHeight = Math.round(targetWidth * 0.5625);
 
     if (imageAsset) {
-        imageUrl = urlFor(imageAsset).width(1600).height(900).fit('crop').auto('format').url();
+        // THE FIX: Request the specific dimension from Sanity CDN
+        imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
         blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url();
     }
 
@@ -64,7 +66,7 @@ export const adaptToCardProps = (item: any): CardProps | null => {
         score: item.score,
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
-        category: item.category?.title, // ADDED: Map the category title
+        category: item.category?.title,
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],

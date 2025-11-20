@@ -12,14 +12,15 @@ import { CardProps } from '@/types';
 export default function BookmarksGrid({ initialItems }: { initialItems: any[] }) {
     const bookmarksFromStore = useUserStore(state => state.bookmarks);
     
+    // THE FIX: Wrap in arrow function and apply width optimization for grid
     const initialBookmarkedItems = initialItems
-        .map(adaptToCardProps)
+        .map(item => adaptToCardProps(item, { width: 600 }))
         .filter(Boolean) as CardProps[];
     
     const [bookmarkedItems, setBookmarkedItems] = useState<CardProps[]>(initialBookmarkedItems);
 
     useEffect(() => {
-        // THE DEFINITIVE FIX: The keys being compared must use the numeric `legacyId`
+        // The keys being compared must use the numeric `legacyId`
         // to match the format used in the Zustand store (e.g., 'review-101').
         const currentKeysInGrid = new Set(bookmarkedItems.map(item => `${item.type}-${item.legacyId}`));
         

@@ -28,9 +28,11 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const intersectionRef = useRef(null);
     const isInView = useInView(intersectionRef, { margin: '400px' });
 
-    const adaptedHeroArticles = useMemo(() => heroArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [heroArticles]);
+    // OPTIMIZATION: 800px for hero
+    const adaptedHeroArticles = useMemo(() => heroArticles.map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[], [heroArticles]);
     
-    const initialCards = useMemo(() => initialGridArticles.map(adaptToCardProps).filter(Boolean) as CardProps[], [initialGridArticles]);
+    // OPTIMIZATION: 600px for grid
+    const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 50 ? 50 : null);
