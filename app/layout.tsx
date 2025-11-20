@@ -67,27 +67,42 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
   const session = await getServerSession(authOptions);
+  
   let userRoles: string[] = [];
   let isBanned = false;
   let banReason = null;
+  let initialUserState = null;
 
   if (session?.user?.id) {
-      // THE FIX: Wrap database call in try-catch to prevent 500 errors on connection drops
       try {
-          const user = await prisma.user.findUnique({
-              where: { id: session.user.id },
-              select: { 
-                  roles: { select: { name: true } },
-                  isBanned: true,
-                  banReason: true
-              }
-          });
+          // THE FIX: Fetch all user data (roles + engagements) in a single parallel batch
+          const [user, engagements, shares] = await Promise.all([
+              prisma.user.findUnique({
+                  where: { id: session.user.id },
+                  select: { 
+                      roles: { select: { name: true } },
+                      isBanned: true,
+                      banReason: true
+                  }
+              }),
+              prisma.engagement.findMany({ 
+                  where: { userId: session.user.id }, 
+                  select: { contentId: true, contentType: true, type: true } 
+              }),
+              prisma.share.findMany({ 
+                  where: { userId: session.user.id }, 
+                  select: { contentId: true, contentType: true } 
+              })
+          ]);
+
           userRoles = user?.roles.map(r => r.name) || [];
           isBanned = user?.isBanned || false;
           banReason = user?.banReason || null;
+          
+          initialUserState = { engagements, shares };
+
       } catch (error) {
           console.error("Failed to fetch user details in RootLayout:", error);
-          // Fallback values are already set (empty roles, not banned)
       }
   }
 
@@ -108,8 +123,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextAuthProvider>
-          <UserStoreHydration />
-          {/* Mount Ban Enforcer */}
+          {/* THE FIX: Pass server-fetched state to hydration component */}
+          <UserStoreHydration initialUserState={initialUserState} />
+          
           <BanEnforcer isBanned={isBanned} reason={banReason} />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
