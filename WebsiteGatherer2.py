@@ -27,9 +27,22 @@ auto_include_dirs = [
     "sanity",     # Added for Sanity Studio configuration
     "types",      # Added for TypeScript definitions
 ]
+
+# --- NEW EXCLUSION LIST ---
+# Folders to explicitly skip during os.walk
+# All paths should be relative to root_dir (e.g., "lib/generated")
+exclude_dirs_full_path = [
+    "lib/generated", # Added exclusion for generated files
+]
 # --- END OF CONFIGURATION ---
 
 print(f"Gathering project files into {output_file}...")
+
+# Convert exclude_dirs_full_path into a set for fast lookup
+# and ensure they start with the appropriate auto_include_dirs prefix
+# We will check for these full relative paths during os.walk
+exclude_dirs_set = set(exclude_dirs_full_path)
+
 
 with open(output_file, "w", encoding="utf-8", errors="ignore") as out:
     # --- 1. Handle root-level whitelist files ---
@@ -60,11 +73,34 @@ with open(output_file, "w", encoding="utf-8", errors="ignore") as out:
         if os.path.exists(folder_path):
             # We use dirnames here so we can modify the list *in place* to prevent os.walk from descending
             for dirpath, dirnames, filenames in os.walk(folder_path):
-                # Exclusion logic: Skip descending into node_modules, specifically for sanity/node_modules
-                # This is more efficient as it skips walking the whole directory tree.
-                if folder == "sanity" and "node_modules" in dirnames:
-                    dirnames.remove("node_modules")
-                    dirnames.remove(".sanity")
+                # Get the relative path of the current directory (dirpath)
+                current_rel_dir = os.path.relpath(dirpath, root_dir).replace('\\', '/')
+
+                # --- Exclusion Logic ---
+
+                # 1. Skip descending into 'node_modules' and '.sanity' inside the 'sanity' folder
+                if folder == "sanity":
+                    if "node_modules" in dirnames:
+                        dirnames.remove("node_modules")
+                    if ".sanity" in dirnames:
+                        dirnames.remove(".sanity")
+
+                # 2. Skip descending into any explicitly excluded directory (like 'lib/generated')
+                # Modify dirnames in place to prevent os.walk from entering excluded subdirectories
+                dirs_to_remove = []
+                for dirname in dirnames:
+                    full_rel_path = f"{current_rel_dir}/{dirname}"
+                    if full_rel_path in exclude_dirs_set:
+                        dirs_to_remove.append(dirname)
+
+                for dirname in dirs_to_remove:
+                    dirnames.remove(dirname)
+
+                # If the current directory itself is an exclusion, skip processing its files.
+                # This is a safeguard, though the dirnames modification should prevent us from reaching deep exclusions.
+                if current_rel_dir in exclude_dirs_set:
+                     continue
+
 
                 # Sort filenames for consistent output
                 for filename in sorted(filenames):
@@ -75,7 +111,9 @@ with open(output_file, "w", encoding="utf-8", errors="ignore") as out:
                     # Secondary check for exclusion (though the dirnames modification should cover it)
                     if rel_file_path.startswith("sanity/node_modules/"):
                         continue
-
+                    # A file inside an excluded directory should already be skipped by the 'continue' above,
+                    # but this can be a redundant check if needed.
+                    
                     try:
                         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                             content = f.read()

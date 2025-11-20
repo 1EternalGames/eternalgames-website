@@ -10,6 +10,7 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { urlFor } from '@/sanity/lib/image';
 import styles from './HubPage.module.css';
 import { CardProps, EngagementScore } from '@/types';
+import { useLayoutIdStore } from '@/lib/layoutIdStore';
 
 interface HubPageClientProps {
     initialItems: any[];
@@ -19,6 +20,14 @@ interface HubPageClientProps {
 }
 
 export default function HubPageClient({ initialItems, hubTitle, hubType, headerAction }: HubPageClientProps) {
+    // Retrieve the layout prefix from the store to match the source card
+    const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
+    
+    useEffect(() => {
+        // Reset prefix on unmount/navigation away
+        return () => setPrefix('default');
+    }, [setPrefix]);
+
     if (!initialItems || initialItems.length === 0) {
         return (
             <div className="container page-container">
@@ -52,7 +61,6 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
         }
     }, [activeSort]);
 
-    // THE FIX: Wrap in arrow function and apply width optimization
     const adaptedInitialItems = useMemo(() => 
         (initialItems || [])
             .map(item => adaptToCardProps(item, { width: 600 }))
@@ -92,20 +100,35 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
         ? urlFor(latestItem.mainImageRef).width(20).blur(10).auto('format').url()
         : null;
     
+    // Use a unique key for the hub if no specific prefix is set, otherwise use the prefix
+    // Note: For game hubs, we use the game title as a stable key if passed from TimelineCard
+    const heroLayoutId = layoutIdPrefix === 'default' 
+        ? `hub-hero-${hubTitle.replace(/\s+/g, '-')}` 
+        : `${layoutIdPrefix}-image`;
+
     const heroContent = (
-        <div className={styles.hubHero} style={{ height: heroImageUrl ? '40vh' : 'auto', marginBottom: heroImageUrl ? '-8rem' : '0', paddingTop: heroImageUrl ? '0' : `calc(var(--nav-height-scrolled) + 4rem)`}}>
+        <motion.div 
+            className={styles.hubHero} 
+            style={{ height: heroImageUrl ? '40vh' : 'auto', marginBottom: heroImageUrl ? '-8rem' : '0', paddingTop: heroImageUrl ? '0' : `calc(var(--nav-height-scrolled) + 4rem)`}}
+            layoutId={`${layoutIdPrefix}-container`}
+        >
             {heroImageUrl && (
                 <>
-                    <Image 
-                        src={heroImageUrl} 
-                        alt={`Background for ${hubTitle}`} 
-                        fill 
+                    <motion.div 
                         className={styles.heroBg}
-                        style={{ objectFit: 'cover' }} 
-                        priority 
-                        placeholder={heroBlurDataURL ? 'blur' : 'empty'}
-                        blurDataURL={heroBlurDataURL || ''}
-                    />
+                        layoutId={heroLayoutId}
+                        style={{ position: 'absolute', inset: 0, zIndex: -2 }}
+                    >
+                        <Image 
+                            src={heroImageUrl} 
+                            alt={`Background for ${hubTitle}`} 
+                            fill 
+                            style={{ objectFit: 'cover' }} 
+                            priority 
+                            placeholder={heroBlurDataURL ? 'blur' : 'empty'}
+                            blurDataURL={heroBlurDataURL || ''}
+                        />
+                    </motion.div>
                     <div className={styles.heroOverlay} />
                 </>
             )}
@@ -115,14 +138,18 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                 initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}
             >
                 {headerAction}
-                <h1 className={`${styles.heroTitle} page-title`} style={{margin: 0}}>
+                <motion.h1 
+                    className={`${styles.heroTitle} page-title`} 
+                    style={{margin: 0}}
+                    layoutId={`${layoutIdPrefix}-title`}
+                >
                     {hubType}<span>: &quot;{hubTitle}&quot;</span>
-                </h1>
+                </motion.h1>
             </motion.div>
-        </div>
+        </motion.div>
     );
 
-    const layoutIdPrefix = `hub-${hubType}-${hubTitle.replace(/\s+/g, '-')}`;
+    const listLayoutIdPrefix = `hub-${hubType}-${hubTitle.replace(/\s+/g, '-')}`;
 
     return (
         <div className={styles.hubPageContainer}>
@@ -160,7 +187,7 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                                 >
                                     <ArticleCard
                                         article={item}
-                                        layoutIdPrefix={layoutIdPrefix}
+                                        layoutIdPrefix={listLayoutIdPrefix}
                                     />
                                 </motion.div>
                             ))

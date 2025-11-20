@@ -32,6 +32,7 @@ const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
             onClick={handleClick}
             layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
             className={`${feedStyles.newsListItem} no-underline`}
+            style={{ display: 'grid' }}
         >
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
                 <Image 

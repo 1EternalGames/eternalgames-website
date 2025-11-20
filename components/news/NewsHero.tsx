@@ -45,12 +45,14 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
-                    onClick={handleClick}
-                    style={{ cursor: 'pointer' }}
                 >
                     <div className={styles.textContent}>
                         <p className={styles.storyCategory}>{primaryTag}</p>
-                        <div className={`${styles.storyLink} no-underline`}>
+                        <a 
+                            href={`/news/${item.slug}`}
+                            onClick={handleClick}
+                            className={`${styles.storyLink} no-underline`}
+                        >
                             <motion.h1 
                                 className={styles.storyTitle} 
                                 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
@@ -64,7 +66,7 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                                     </motion.span>
                                 ))}
                             </motion.h1>
-                        </div>
+                        </a>
                         <div className={styles.storyMeta}>
                             <CreatorCredit label="بواسطة" creators={item.authors} small disableLink />
                             <span className={styles.storyMetaDate}>
@@ -80,25 +82,38 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
 AnimatedStory.displayName = "AnimatedStory";
 
 
-const HeroBackground = memo(({ imageUrl, alt, layoutId }: { imageUrl: string; alt: string; layoutId: string }) => {
+const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix }: { imageUrl: string; alt: string; layoutId: string; legacyId: number; layoutIdPrefix: string }) => {
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    
+    // Allow clicking the background too
+    const handleClick = () => {
+        setPrefix(layoutIdPrefix);
+    };
+
     return (
         <motion.div 
             key={imageUrl} 
             className={styles.heroBackground} 
-            layoutId={layoutId}
+            layoutId={`${layoutIdPrefix}-card-container-${legacyId}`} // Transition container
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            onClick={handleClick}
         >
-             <Image
-                src={imageUrl}
-                alt={alt}
-                fill
-                priority
-                style={{ objectFit: 'cover', filter: 'grayscale(10%) brightness(0.7)'}}
-                sizes="100vw"
-            />
+             <motion.div 
+                style={{ position: 'relative', width: '100%', height: '100%' }}
+                layoutId={`${layoutIdPrefix}-card-image-${legacyId}`} // Transition image
+             >
+                <Image
+                    src={imageUrl}
+                    alt={alt}
+                    fill
+                    priority
+                    style={{ objectFit: 'cover', filter: 'grayscale(10%) brightness(0.7)'}}
+                    sizes="100vw"
+                />
+             </motion.div>
         </motion.div>
     );
 });
@@ -123,14 +138,20 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
     const layoutIdPrefix = "news-hero";
 
     return (
-        <motion.div 
-            layoutId={`${layoutIdPrefix}-card-container-${activeItem.legacyId}`}
+        <div 
             className={styles.heroContainer}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
         >
             <AnimatePresence>
-                 <HeroBackground key={activeItem.id} imageUrl={activeItem.imageUrl} alt={activeItem.title} layoutId={`${layoutIdPrefix}-card-image-${activeItem.legacyId}`} />
+                 <HeroBackground 
+                    key={activeItem.id} 
+                    imageUrl={activeItem.imageUrl} 
+                    alt={activeItem.title} 
+                    layoutId={`${layoutIdPrefix}-card-image-${activeItem.legacyId}`} 
+                    legacyId={activeItem.legacyId}
+                    layoutIdPrefix={layoutIdPrefix}
+                 />
             </AnimatePresence>
             
             <div className={styles.heroOverlay} />
@@ -147,9 +168,10 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
                         key={item.id}
                         className={`${styles.progressDot} ${activeIndex === index ? styles.active : ''}`}
                         onClick={() => setActiveIndex(index)}
+                        aria-label={`Go to news slide ${index + 1}`}
                     />
                 ))}
             </div>
-        </motion.div>
+        </div>
     );
 }
