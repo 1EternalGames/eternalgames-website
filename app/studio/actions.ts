@@ -13,19 +13,12 @@ import { editorDocumentQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Helper to revalidate all necessary paths for a given content type.
- * This ensures the Homepage, Studio, and Listing pages reflect changes immediately.
- */
 function revalidateContentPaths(docType: string, slug?: string) {
     console.log(`[CACHE] Aggressive revalidation triggered for type: ${docType}, slug: ${slug}`);
     
-    // 1. Always revalidate Studio and Homepage
-    // revalidatePath uses 'page' or 'layout' as type.
     revalidatePath('/studio', 'layout');
     revalidatePath('/', 'layout');
 
-    // 2. Determine the section path and revalidate
     let sectionPath = '';
     switch (docType) {
         case 'review': sectionPath = '/reviews'; break;
@@ -35,14 +28,13 @@ function revalidateContentPaths(docType: string, slug?: string) {
     }
 
     if (sectionPath) {
-        revalidatePath(sectionPath, 'layout'); // Revalidate the list page (e.g., /reviews)
+        revalidatePath(sectionPath, 'layout'); 
         if (slug) {
-            revalidatePath(`${sectionPath}/${slug}`, 'layout'); // Revalidate the detail page
+            revalidatePath(`${sectionPath}/${slug}`, 'layout'); 
         }
     }
 
-    // 3. Revalidate global tags used by unstable_cache
-    // THE FIX: Changed 'layout' to 'max' to satisfy the CacheLife profile requirement
+    // THE FIX: Added 'max' profile argument
     revalidateTag(docType, 'max');
     revalidateTag('layout', 'max');
 }
@@ -176,7 +168,6 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
         
-        // FORCE REVALIDATION
         revalidateContentPaths(finalDoc._type, finalDoc.slug?.current);
         
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
@@ -192,12 +183,9 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     
-    // 1. Robust ID Resolution: Calculate both potential IDs (draft and public)
     const baseId = docId.replace(/^drafts\./, '');
     const draftId = `drafts.${baseId}`;
 
-    // 2. Fetch Metadata: Check if *either* version exists to verify type and ownership
-    // We also need the slug to revalidate the specific page
     const docToDelete = await sanityWriteClient.fetch(
         groq`*[_id in [$baseId, $draftId]][0]{_type, "slug": slug.current}`, 
         { baseId, draftId }
@@ -217,14 +205,11 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
     if (!canDelete) return { success: false, message: 'أذوناتٌ قاصرة.' };
     
     try {
-        // 3. Transactional Delete
         const tx = sanityWriteClient.transaction();
         tx.delete(baseId);
         tx.delete(draftId);
         await tx.commit();
 
-        // 4. AGGRESSIVE REVALIDATION
-        // This ensures the item disappears from Homepage, List Pages, and Studio immediately.
         revalidateContentPaths(docType, docToDelete.slug);
 
         return { success: true };
@@ -267,7 +252,6 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.patch(draftId, (p) => p.unset(['publishedAt']));
             await tx.commit({ returnDocuments: false });
 
-            // FORCE REVALIDATION
             revalidateContentPaths(docType, doc.slug);
 
             const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
@@ -301,7 +285,6 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit();
         }
 
-        // FORCE REVALIDATION
         revalidateContentPaths(docType, doc.slug);
         if (docType === 'gameRelease') {
             revalidatePath('/celestial-almanac', 'layout');

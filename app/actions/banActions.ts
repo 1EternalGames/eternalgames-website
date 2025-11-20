@@ -8,12 +8,10 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { unstable_cache } from "next/cache";
 
 // --- CONFIGURATION ---
-// REPLACE THIS WITH YOUR EXACT EMAIL ADDRESS
 const OWNER_EMAIL = "mhmfalsaadd@gmail.com"; 
 
 const PROTECTED_ROLES = ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'];
 
-// --- 1. THE CACHED CHECK (Zero DB Load) ---
 const getCachedBanStatus = unstable_cache(
     async (userId: string) => {
         const user = await prisma.user.findUnique({
@@ -29,14 +27,12 @@ const getCachedBanStatus = unstable_cache(
     { tags: ['ban-status'] }
 );
 
-// --- 2. The Public Action ---
 export async function checkBanStatus() {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return { isBanned: false, banReason: null };
     return await getCachedBanStatus(session.user.id);
 }
 
-// --- 3. The Toggle Action ---
 export async function toggleUserBanAction(targetUserId: string, reason: string, shouldBan: boolean) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -44,7 +40,6 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
     }
 
     try {
-        // 1. Fetch Requester (Actor)
         const actor = await prisma.user.findUnique({
             where: { id: session.user.id },
             select: { id: true, email: true, roles: { select: { name: true } } }
@@ -57,12 +52,10 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
         const isAdmin = actorRoles.includes('ADMIN');
         const isOwner = actor.email === OWNER_EMAIL; 
 
-        // Basic Permission Check (Owner bypasses this)
         if (!isDirector && !isAdmin && !isOwner) {
             return { success: false, message: "صلاحياتك لا تسمح بالحظر." };
         }
 
-        // 2. Fetch Target User
         const target = await prisma.user.findUnique({
             where: { id: targetUserId },
             select: { id: true, email: true, roles: { select: { name: true } } }
@@ -71,14 +64,11 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
         if (!target) return { success: false, message: "المستخدم المستهدف غير موجود." };
         const targetRoles = target.roles.map(r => r.name);
 
-        // --- THE IMMUTABLE SHIELD ---
         if (target.email === OWNER_EMAIL) {
             return { success: false, message: "هذا الكيان محصن ضد الحظر." };
         }
 
-        // 3. Hierarchy Validation
         if (!isOwner) {
-            // Safety: Cannot ban self
             if (actor.id === target.id) {
                 return { success: false, message: "لا يمكنك حظر نفسك." };
             }
@@ -96,7 +86,6 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
             }
         }
 
-        // 4. Execute Ban/Unban
         await prisma.user.update({
             where: { id: targetUserId },
             data: {
@@ -106,7 +95,7 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
             }
         });
 
-        // THE FIX: Changed 'layout' to 'max' to satisfy CacheLife profile
+        // THE FIX: Added 'max' profile argument
         revalidateTag('ban-status', 'max');
         revalidatePath('/studio/director');
         

@@ -75,7 +75,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   if (session?.user?.id) {
       try {
-          // THE FIX: Fetch all user data (roles + engagements) in a single parallel batch
           const [user, engagements, shares] = await Promise.all([
               prisma.user.findUnique({
                   where: { id: session.user.id },
@@ -122,8 +121,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <NextAuthProvider>
-          {/* THE FIX: Pass server-fetched state to hydration component */}
+        {/* THE FIX: Pass the server session to the provider to avoid client-side refetching */}
+        <NextAuthProvider session={session}>
           <UserStoreHydration initialUserState={initialUserState} />
           
           <BanEnforcer isBanned={isBanned} reason={banReason} />

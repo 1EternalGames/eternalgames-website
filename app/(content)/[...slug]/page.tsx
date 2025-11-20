@@ -43,9 +43,20 @@ const contentConfig = {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
     const { slug: slugArray } = await params;
-    const [type, slug] = slugArray;
     
-    const item = await client.fetch(`*[_type == "${type === 'reviews' ? 'review' : type === 'articles' ? 'article' : 'news'}" && slug.current == $slug][0]{title, mainImage, synopsis}`, { slug });
+    // THE FIX: Validate slug array length and content to prevent 400 Errors on static assets
+    if (!slugArray || slugArray.length < 2) {
+        return {};
+    }
+
+    const [type, slug] = slugArray;
+
+    // Validate type to prevent default "news" fallthrough for garbage URLs
+    const sanityType = type === 'reviews' ? 'review' : type === 'articles' ? 'article' : type === 'news' ? 'news' : null;
+    
+    if (!sanityType) return {};
+    
+    const item = await client.fetch(`*[_type == "${sanityType}" && slug.current == $slug][0]{title, mainImage, synopsis}`, { slug });
 
     if (!item) return {};
 
@@ -62,7 +73,6 @@ const getCachedSanityData = unstable_cache(
     ['sanity-content-detail'],
 );
 
-// New helper to fetch comments server-side
 async function getComments(slug: string) {
     try {
         const comments = await prisma.comment.findMany({
@@ -105,15 +115,17 @@ export async function generateStaticParams() {
 
 export default async function ContentPage({ params }: { params: Promise<{ slug: string[] }> }) {
     const { slug: slugArray } = await params;
+    
+    // Strict validation for the page component as well
     if (!slugArray || slugArray.length !== 2) notFound();
     
     const [type, slug] = slugArray;
     const config = (contentConfig as any)[type];
+    
     if (!config) notFound();
     
     const tags = [config.sanityType];
 
-    // THE FIX: Fetch comments in parallel with Sanity content
     let [item, colorDictionaryData, comments] = await Promise.all([
         getCachedSanityData(config.query, { slug }, tags),
         getCachedSanityData(colorDictionaryQuery, {}, ['colorDictionary']),
@@ -127,7 +139,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
         item[config.relatedProp] = fallbackContent;
     }
 
-    // Server-side Enrichment
     for (const prop of config.creatorProps) {
         if (item[prop]) {
             item[prop] = await enrichCreators(item[prop]);

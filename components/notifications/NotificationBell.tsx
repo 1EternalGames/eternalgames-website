@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationIcon } from '@/components/icons/index';
 import { useSession } from 'next-auth/react';
 import NotificationPanel from './NotificationPanel';
-import { getNotifications } from '@/app/actions/notificationActions';
+import { useNotificationStore } from '@/lib/notificationStore';
 import styles from './Notifications.module.css';
 
 const bellVariants = {
@@ -25,36 +25,25 @@ const bellVariants = {
 export default function NotificationBell() {
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [notifications, setNotifications] = useState<any[]>([]);
     const panelRef = useRef<HTMLDivElement>(null);
+
+    // Connect to global store
+    const { 
+        notifications, 
+        unreadCount, 
+        fetchNotifications, 
+        setUnreadCount, 
+        setNotifications 
+    } = useNotificationStore();
 
     const userId = (session?.user as any)?.id;
 
-    // --- EXPERIMENT: FETCHING DISABLED ---
-    // Effectively turning off the notification system to check server load.
-    /*
     useEffect(() => {
-        const fetchNotifications = async () => {
-            if (!userId) return;
-            
-            try {
-                const result = await getNotifications();
-                if (result.success) {
-                    setNotifications(result.notifications || []);
-                    setUnreadCount(result.unreadCount || 0);
-                }
-            } catch (error) {
-                console.error("Failed to fetch notifications:", error);
-            }
-        };
-
         if (userId) {
+            // This call is safe to duplicate; the store handles deduplication
             fetchNotifications();
         }
-    }, [userId]);
-    */
-    // -------------------------------------
+    }, [userId, fetchNotifications]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -82,7 +71,7 @@ export default function NotificationBell() {
                 whileTap="tap"
                 variants={bellVariants}
                 style={{ transformOrigin: 'top center' }}
-                title="الإشعارات (معطل مؤقتاً)"
+                title="الإشعارات"
             >
                 <NotificationIcon className={styles.bellIcon} />
                 <AnimatePresence>

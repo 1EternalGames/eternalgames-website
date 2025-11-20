@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ message, body }), { status: 400 })
     }
     
-    // THE FIX: Changed 'layout' to 'max' to satisfy CacheLife profile
     console.log(`[REVALIDATE] Received webhook for type: ${body._type}. Revalidating tag...`)
+    // THE FIX: Added 'max' profile argument
     revalidateTag(body._type, 'max')
 
     const message = `Successfully revalidated tag: ${body._type}`

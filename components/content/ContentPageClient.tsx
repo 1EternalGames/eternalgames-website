@@ -25,10 +25,17 @@ import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 
-type ContentItem = (SanityReview | SanityArticle | SanityNews) & { relatedContent?: any[] };
+// Helper type to handle the Sanity slug object structure safely
+type Slug = { current: string } | string;
+
+type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
+    slug: Slug; 
+    relatedContent?: any[] 
+};
+
 type ContentType = 'reviews' | 'articles' | 'news';
 
-export type Heading = { id: string; title: string; top: number; level: number }; // THE FIX: Added level property
+export type Heading = { id: string; title: string; top: number; level: number }; 
 
 type ColorMapping = {
   word: string;
@@ -57,6 +64,9 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const isReview = type === 'reviews';
     const isNews = type === 'news';
     
+    // THE FIX: Robust slug string extraction
+    const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
+    
     const measureHeadings = useCallback(() => {
         const contentElement = articleBodyRef.current;
         const trackerElement = scrollTrackerRef.current;
@@ -80,7 +90,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
             const topPosition = h.getBoundingClientRect().top + documentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
             
-            // THE FIX: Added level: 1 to the heading object.
             newHeadings.push({ id: id, title: h.textContent || '', top: Math.max(0, scrollToPosition), level: 1 });
         });
 
@@ -90,7 +99,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                  const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
                  const scoreBoxScrollPosition = topPosition - navbarOffset;
                  
-                 // THE FIX: Added level: 1 for the ScoreBox entry as well.
                  newHeadings.push({ 
                      id: 'verdict-summary', 
                      title: 'الخلاصة', 
@@ -146,7 +154,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const publishedDate = new Date(item.publishedAt);
+    const publishedDate = new Date(item.publishedAt as string);
     const day = publishedDate.getDate();
     const year = publishedDate.getFullYear();
     const monthIndex = publishedDate.getMonth();
@@ -204,7 +212,8 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                 <div className={styles.metaContainer}>
                                     <div className={styles.metaBlockLeft}>
                                         {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
-                                        <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={item.slug} />
+                                        {/* THE FIX: Pass the extracted string, not the object */}
+                                        <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                     </div>
                                     <div className={styles.metaBlockRight}>
                                         <CreatorCredit label="بقلم" creators={primaryCreators} />
@@ -221,7 +230,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                     {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
                                 </div>
                                 <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                                    <TagLinks tags={(item.tags || []).map(t => t.title)} />
+                                    <TagLinks tags={(item.tags || []).map((t: any) => t.title)} />
                                 </div>
                             </main>
                             <aside className={styles.sidebar}>

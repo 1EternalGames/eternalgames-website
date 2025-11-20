@@ -21,6 +21,7 @@ declare module 'next-auth' {
   interface Session {
     user: User; // The user object now includes all our custom and default fields.
     needsOnboarding?: boolean;
+    expires: string; // THE FIX: Explicitly add expires to satisfy SessionProvider requirements
   }
 }
 
@@ -35,5 +36,3 @@ declare module 'next-auth/jwt' {
     needsOnboarding?: boolean;
   }
 }
-
-

@@ -2,7 +2,6 @@
 'use server';
 
 import prisma from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
 import { getAuthenticatedSession } from '@/lib/auth';
 import { EngagementType } from '@prisma/client';
 
@@ -16,16 +15,12 @@ async function setEngagement(userId: string, contentId: number, contentType: str
     };
 
     if (isEngaged) {
-        // If we want it to exist, create it if it doesn't. Do nothing if it already exists.
         await prisma.engagement.upsert({
             where: whereClause,
             update: {},
-            // THE DEFINITIVE FIX: The `create` payload must explicitly include all required fields.
             create: { userId, contentId, contentType, type: engagementType },
         });
     } else {
-        // If we want it to NOT exist, delete it. It's safe to call delete even if it's not there.
-        // Using `deleteMany` with a `where` is a safe way to handle this without checking existence first.
         await prisma.engagement.deleteMany({
             where: { userId, contentId, contentType, type: engagementType },
         });
@@ -36,6 +31,7 @@ export async function setBookmarkAction(contentId: number, contentType: string, 
     try {
         const session = await getAuthenticatedSession();
         await setEngagement(session.user.id, contentId, contentType, 'BOOKMARK', isBookmarked);
+        // No revalidation needed; UI is handled optimistically by the client store.
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setBookmarkAction failed:", error);
@@ -48,8 +44,9 @@ export async function setLikeAction(contentId: number, contentType: string, cont
         const session = await getAuthenticatedSession();
         await setEngagement(session.user.id, contentId, contentType, 'LIKE', isLiked);
         
-        // Revalidation is still useful here
-        revalidatePath(`/${contentType}s/${contentSlug}`);
+        // THE FIX: Removed revalidatePath. 
+        // The heart icon updates instantly via the client store.
+        // We don't need to rebuild the entire HTML page just for a like.
         
         return { success: true };
     } catch (error: any) {
@@ -58,7 +55,6 @@ export async function setLikeAction(contentId: number, contentType: string, cont
     }
 }
 
-// recordShareAction remains unchanged as it's not a toggle.
 export async function recordShareAction(contentId: number, contentType: string, contentSlug: string) {
     try {
         const session = await getAuthenticatedSession();
@@ -68,7 +64,8 @@ export async function recordShareAction(contentId: number, contentType: string, 
             data: { userId, contentId, contentType },
         });
 
-        revalidatePath(`/${contentType}s/${contentSlug}`);
+        // THE FIX: Removed revalidatePath.
+        // The store updates shares locally.
         
         const updatedShares = await prisma.share.findMany({
             where: { userId },
