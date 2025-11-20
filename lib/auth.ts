@@ -37,7 +37,7 @@ export async function getAuthenticatedSession(): Promise<Session> {
     }
 
     // Overwrite session data with fresh DB data
-    session.user.roles = user.roles.map(r => r.name);
+    session.user.roles = user.roles.map((r: any) => r.name);
     session.user.username = user.username;
     session.user.name = user.name;
     session.user.image = user.image;

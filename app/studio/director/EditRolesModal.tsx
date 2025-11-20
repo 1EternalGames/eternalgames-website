@@ -4,17 +4,18 @@
 import { useState, useTransition, useMemo } from 'react';
 import { updateUserRolesAction } from './actions';
 import { useToast } from '@/lib/toastStore';
-import type { User, Role } from '@prisma/client';
+import type { User, Role } from '@/lib/generated/client';
 import Modal from '@/components/modals/Modal';
 import modalStyles from '@/components/modals/Modals.module.css';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { translateRole } from '@/lib/translations'; // <-- THE FIX: Import translator
+import { translateRole } from '@/lib/translations';
 
 type UserWithRoles = User & { roles: { name: string }[] };
 
 export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: UserWithRoles, allRoles: Role[], onClose: () => void, onUpdate: (userId: string, newRoles: Role[]) => void }) {
-    const [selectedRoleIds, setSelectedRoleIds] = useState<Set<number>>(() => new Set(user.roles.map(r => allRoles.find(ar => ar.name === r.name)!.id)));
+    // CORRECTED: Removed the duplicate 'const [' and ensured correct type annotations for map
+    const [selectedRoleIds, setSelectedRoleIds] = useState<Set<number>>(() => new Set(user.roles.map((r: any) => allRoles.find(ar => ar.name === r.name)!.id)));
     const [isPending, startTransition] = useTransition();
     const toast = useToast();
     const router = useRouter();
@@ -80,7 +81,6 @@ export function EditRolesModal({ user, allRoles, onClose, onUpdate }: { user: Us
                             onChange={() => handleRoleToggle(role.id)}
                             style={{ width: '1.6rem', height: '1.6rem' }}
                         />
-                        {/* THE FIX: Use translated role name */}
                         <span style={{ fontWeight: role.name === 'DIRECTOR' ? 700 : 500, color: role.name === 'DIRECTOR' ? 'gold' : 'inherit' }}>
                             {translateRole(role.name)}
                         </span>

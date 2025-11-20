@@ -3,7 +3,7 @@
 
 import { updateUserAvatar, updateUserProfile, checkUsernameAvailability } from '@/app/actions/userActions';
 // THE FIX: Import User but define a looser type for the prop to handle partial selects and schema mismatches
-import { User } from '@prisma/client';
+import { User } from '@/lib/generated/client';
 import { useRef, useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';

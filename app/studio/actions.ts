@@ -222,7 +222,7 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
 export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER'): Promise<{ _id: string; name: string }[]> {
     const usersWithRole = await prisma.user.findMany({ where: { roles: { some: { name: roleName } }, name: { contains: query, mode: 'insensitive' } }, select: { id: true }, take: 10 });
     if (usersWithRole.length === 0) return [];
-    const prismaUserIds = usersWithRole.map(u => u.id);
+    const prismaUserIds = usersWithRole.map((u: any) => u.id);
     const sanityTypeMap = { REVIEWER: 'reviewer', AUTHOR: 'author', REPORTER: 'reporter', DESIGNER: 'designer' };
     const sanityType = sanityTypeMap[roleName];
     const sanityQuery = `*[_type == $sanityType && prismaUserId in $prismaUserIds]{_id, name}`;

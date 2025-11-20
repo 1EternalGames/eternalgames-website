@@ -3,7 +3,7 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { VoteType, NotificationType } from '@prisma/client';
+import { VoteType, NotificationType } from '@/lib/generated/client';
 import { getAuthenticatedSession } from '@/lib/auth'; 
 
 export async function postReplyOrComment(contentSlug: string, content: string, path: string, parentId?: string) {

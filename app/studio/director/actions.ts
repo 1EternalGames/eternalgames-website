@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/authOptions";
 import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { Role } from "@prisma/client";
+import { Role } from "@/lib/generated/client";
 import { sanityWriteClient } from "@/lib/sanity.server";
 
 const ROLE_TO_SANITY_TYPE: Record<string, string> = {
@@ -67,7 +67,7 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
             include: { roles: true }
         });
 
-        const userRoles = updatedUser.roles.map(r => r.name);
+        const userRoles = updatedUser.roles.map((r: any) => r.name);
         
         for (const roleName of userRoles) {
             const sanityType = ROLE_TO_SANITY_TYPE[roleName];

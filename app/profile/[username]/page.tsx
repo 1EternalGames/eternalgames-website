@@ -32,7 +32,7 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
     let contentTitles: { slug: string, title: string }[] = [];
     
     // 1. Extract content slugs from the user's recent comments.
-    const commentSlugs = user.comments.map(c => c.contentSlug);
+    const commentSlugs = user.comments.map((c: any) => c.contentSlug);
     
     if (commentSlugs.length > 0) {
         // 2. Fetch the titles for these slugs from Sanity.
@@ -53,7 +53,7 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
     const formattedJoinDate = `${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]} ${year}`;
 
 
-    const userRoles = user.roles.map(r => r.name);
+    const userRoles = user.roles.map((r: any) => r.name);
     const earnedBadges = getBadgesForUser({ createdAt: user.createdAt, _count: user._count, roles: userRoles });
     const avatarSrc = user.image || '/default-avatar.svg';
 
@@ -80,7 +80,7 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
                         <h2 className={styles.profileSectionTitle}>آخرُ نشاط</h2>
                         {user.comments.length > 0 ? (
                             <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '2rem'}}>
-                                {user.comments.map(comment => {
+                                {user.comments.map((comment: any) => {
                                     const contentTitle = titleMap.get(comment.contentSlug) || 'تعليقٌ لم يعد متاحًا';
                                     const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'news';
                                     const linkHref = `/${path}/${comment.contentSlug}`;

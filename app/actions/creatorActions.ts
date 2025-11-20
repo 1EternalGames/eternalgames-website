@@ -19,7 +19,7 @@ export async function getCreatorUsernames(creatorIds: string[]) {
         });
 
         // Create a map of prismaUserId -> username
-        const usernameMap = users.reduce((acc, user) => {
+        const usernameMap = users.reduce((acc: any, user: any) => {
             if (user.username) {
                 acc[user.id] = user.username;
             }

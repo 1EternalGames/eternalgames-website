@@ -90,7 +90,7 @@ export const useUserStore = create<UserState & UserActions>()(
                 set(state => ({ shares: [...state.shares, key] }));
                 const result = await recordShareAction(contentId, contentType, contentSlug);
                 if (result.success && result.shares) {
-                    set({ shares: result.shares.map(s => createContentKey(s.contentId, s.contentType)) });
+                    set({ shares: result.shares.map((s: any) => createContentKey(s.contentId, s.contentType)) });
                 }
             },
 

@@ -42,7 +42,7 @@ export default async function StudioPage() {
             where: { id: session.user.id },
             select: { roles: { select: { name: true } } }
         });
-        userRoles = user?.roles.map(r => r.name) || [];
+        userRoles = user?.roles.map((r: any) => r.name) || [];
     }
     
     const isAdminOrDirector =

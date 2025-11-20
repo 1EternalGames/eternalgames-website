@@ -22,7 +22,7 @@ const getCachedEngagementScoresMap = unstable_cache(
                 select: { contentId: true },
                 distinct: ['contentId']
             });
-            const ids = contentIdsQuery.map(i => i.contentId);
+            const ids = contentIdsQuery.map((i: any) => i.contentId);
 
             const [likes, shares] = await Promise.all([
                 prisma.engagement.groupBy({ by: ['contentId'], where: { contentId: { in: ids }, type: 'LIKE' }, _count: { userId: true } }),
@@ -30,9 +30,9 @@ const getCachedEngagementScoresMap = unstable_cache(
             ]);
 
             const scoresMap = new Map<number, number>();
-            ids.forEach(id => {
-                const likeCount = likes.find(s => s.contentId === id)?._count.userId || 0;
-                const shareCount = shares.find(s => s.contentId === id)?._count.userId || 0;
+            ids.forEach((id: number) => {
+                const likeCount = likes.find((s: any) => s.contentId === id)?._count.userId || 0;
+                const shareCount = shares.find((s: any) => s.contentId === id)?._count.userId || 0;
                 scoresMap.set(id, (likeCount * 2) + (shareCount * 5));
             });
             return Array.from(scoresMap.entries());

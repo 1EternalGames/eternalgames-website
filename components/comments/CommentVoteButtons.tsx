@@ -2,7 +2,7 @@
 'use client';
 import { useTransition, useOptimistic, useRef } from 'react';
 import { voteOnComment } from '@/app/actions/commentActions';
-import { VoteType } from '@prisma/client';
+import { VoteType } from '@/lib/generated/client';
 import { useUserStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
 import { motion, useAnimationControls } from 'framer-motion';

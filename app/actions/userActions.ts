@@ -22,9 +22,9 @@ async function syncUserToSanity(userId: string) {
             return;
         }
 
-        const userRoles = user.roles.map(r => r.name);
+        const userRoles = user.roles.map((r: any) => r.name);
         const creatorTypes = userRoles
-            .map(role => ({
+            .map((role: string) => ({
                 'REVIEWER': 'reviewer',
                 'AUTHOR': 'author',
                 'REPORTER': 'reporter',
@@ -340,7 +340,7 @@ export async function getCommentedContentIds() {
             select: { contentSlug: true },
             distinct: ['contentSlug'],
         });
-        return comments.map(c => c.contentSlug);
+        return comments.map((c: any) => c.contentSlug);
     } catch (error) {
         return [];
     }

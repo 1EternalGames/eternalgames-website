@@ -3,7 +3,7 @@
 
 import prisma from '@/lib/prisma';
 import { getAuthenticatedSession } from '@/lib/auth';
-import { EngagementType } from '@prisma/client';
+import { EngagementType } from '@/lib/generated/client';
 
 /**
  * An idempotent function to set the state of an engagement.

@@ -94,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               })
           ]);
 
-          userRoles = user?.roles.map(r => r.name) || [];
+          userRoles = user?.roles.map((r: any) => r.name) || [];
           isBanned = user?.isBanned || false;
           banReason = user?.banReason || null;
           

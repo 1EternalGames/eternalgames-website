@@ -18,7 +18,7 @@ export default async function DirectorPage() {
             where: { id: session.user.id },
             select: { roles: { select: { name: true } } }
         });
-        userRoles = user?.roles.map(r => r.name) || [];
+        userRoles = user?.roles.map((r: any) => r.name) || [];
     }
 
     if (!userRoles.includes('DIRECTOR')) {

@@ -47,7 +47,7 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
 
         if (!actor) return { success: false, message: "المستخدم غير موجود." };
         
-        const actorRoles = actor.roles.map(r => r.name);
+        const actorRoles = actor.roles.map((r: any) => r.name);
         const isDirector = actorRoles.includes('DIRECTOR');
         const isAdmin = actorRoles.includes('ADMIN');
         const isOwner = actor.email === OWNER_EMAIL; 
@@ -62,7 +62,7 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
         });
 
         if (!target) return { success: false, message: "المستخدم المستهدف غير موجود." };
-        const targetRoles = target.roles.map(r => r.name);
+        const targetRoles = target.roles.map((r: any) => r.name);
 
         if (target.email === OWNER_EMAIL) {
             return { success: false, message: "هذا الكيان محصن ضد الحظر." };
@@ -79,7 +79,7 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
                 }
             } 
             else if (isAdmin) {
-                const hasProtectedRole = targetRoles.some(role => PROTECTED_ROLES.includes(role));
+                const hasProtectedRole = targetRoles.some((role: string) => PROTECTED_ROLES.includes(role));
                 if (hasProtectedRole) {
                     return { success: false, message: "المسؤولون لا يملكون صلاحية حظر طاقم العمل." };
                 }

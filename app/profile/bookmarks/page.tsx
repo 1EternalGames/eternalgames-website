@@ -22,7 +22,7 @@ async function getBookmarkedContent() {
             orderBy: { createdAt: 'desc' }
         });
         
-        const ids = bookmarks.map(b => b.contentId);
+        const ids = bookmarks.map((b: any) => b.contentId);
         if (ids.length === 0) return [];
         
         const contentRaw = await client.fetch(contentByIdsQuery, { ids });

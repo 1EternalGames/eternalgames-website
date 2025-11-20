@@ -10,7 +10,7 @@ export const getCachedEnrichedCreators = unstable_cache(
                 where: { id: { in: creatorIds } },
                 select: { id: true, username: true },
             });
-            return users.map(u => [u.id, u.username || null]);
+            return users.map((u: any) => [u.id, u.username || null]);
         } catch (error) {
             console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment. Skipping. Error:`, error);
             return [];

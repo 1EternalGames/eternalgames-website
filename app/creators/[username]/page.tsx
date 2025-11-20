@@ -60,7 +60,7 @@ export const generateStaticParams = cache(async () => {
             select: { username: true },
         });
 
-        return usersWithUsernames.map((user) => ({
+        return usersWithUsernames.map((user: any) => ({
             username: encodeURIComponent(user.username!),
         }));
     } catch (error) {

@@ -9,7 +9,7 @@ import TwitterProvider from "next-auth/providers/twitter";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const authOptions = {
-    adapter: PrismaAdapter(prisma),
+    adapter: PrismaAdapter(prisma as any),
     providers: [
         CredentialsProvider({
             id: 'credentials',
@@ -107,7 +107,7 @@ export const authOptions = {
                     token.id = dbUser.id;
                     token.picture = dbUser.image;
                     token.name = dbUser.name;
-                    token.roles = dbUser.roles.map(role => role.name);
+                    token.roles = dbUser.roles.map((role: any) => role.name);
                     token.username = dbUser.username;
                     token.needsOnboarding = !dbUser.name || !dbUser.username;
                 }

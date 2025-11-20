@@ -1,5 +1,5 @@
 // scripts/fix-db.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/generated/client';
 
 const prisma = new PrismaClient();
 

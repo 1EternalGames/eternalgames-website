@@ -5,7 +5,7 @@ import { useState, useMemo, useTransition } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EditRolesModal } from './EditRolesModal';
-import type { User, Role } from '@prisma/client';
+import type { User, Role } from '@/lib/generated/client';
 import { translateRole } from '@/lib/translations';
 import Modal from '@/components/modals/Modal';
 import modalStyles from '@/components/modals/Modals.module.css';
@@ -63,8 +63,8 @@ const UnbanModal = ({ user, onClose, onConfirm }: { user: UserWithRoles, onClose
 };
 
 const UserRow = ({ user, allRoles, onEdit, onBanClick }: { user: UserWithRoles, allRoles: Role[], onEdit: (user: UserWithRoles) => void, onBanClick: (user: UserWithRoles) => void }) => {
-    const currentRoleNames = user.roles.map(r => r.name);
-    const rolesToDisplay = currentRoleNames.filter(name => name !== 'USER').sort();
+    const currentRoleNames = user.roles.map((r: any) => r.name);
+    const rolesToDisplay = currentRoleNames.filter((name: string) => name !== 'USER').sort();
     const displayString = rolesToDisplay.length > 0 ? rolesToDisplay.map(translateRole).join('، ') : 'عضو (افتراضي)';
     
     const isBanned = user.isBanned;

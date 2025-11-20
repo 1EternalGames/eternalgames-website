@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         where: { id: session.user.id },
         select: { roles: { select: { name: true } } }
     });
-    const userRoles = user?.roles.map(r => r.name) || [];
+    const userRoles = user?.roles.map((r: any) => r.name) || [];
 
     const isAuthorized = userRoles.some((role: string) =>
       ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
