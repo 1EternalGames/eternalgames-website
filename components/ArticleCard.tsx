@@ -5,8 +5,7 @@ import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import TagLinks from './TagLinks';
-// OPTIMIZATION: Import 'm' from framer-motion for LazyMotion support
-import { m } from 'framer-motion';
+import { m } from 'framer-motion'; 
 import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -26,7 +25,9 @@ type ArticleCardProps = {
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false }: ArticleCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
-    const { livingCardRef, livingCardAnimation } = useLivingCard();
+    
+    // THE FIX: Explicitly typed for HTMLAnchorElement
+    const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLAnchorElement>();
 
     const type = article.type;
     const isReview = type === 'review';
@@ -46,6 +47,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         if ((e.target as HTMLElement).closest('a, button, [role="button"]')) {
             return;
         }
+        if (e.ctrlKey || e.metaKey) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
@@ -75,12 +77,13 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         : { ...livingCardAnimation.style, cursor: 'pointer' };
 
     return (
-        <m.div
+        <m.a
+            href={linkPath}
             layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
             onClick={handleClick}
-            className={styles.livingCardWrapper}
+            className={`${styles.livingCardWrapper} no-underline`}
             {...wrapperProps}
-            style={motionStyle}
+            style={{ ...motionStyle, display: 'block' }}
         >
             <div
                 className={styles.articleCard}
@@ -119,7 +122,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     </div>
                 </m.div>
             </div>
-        </m.div>
+        </m.a>
     );
 };
 

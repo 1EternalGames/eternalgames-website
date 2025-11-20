@@ -23,7 +23,8 @@ import { useLayoutIdStore } from "@/lib/layoutIdStore";
 // --- Specific Card Renderers ---
 
 const TopArticleCard = memo(({ article }: { article: CardProps }) => {
-    const { livingCardRef, livingCardAnimation } = useLivingCard();
+    // THE FIX: Explicitly typed for HTMLAnchorElement
+    const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLAnchorElement>();
     const [isHovered, setIsHovered] = useState(false);
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
@@ -32,17 +33,20 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
 
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
+        if (e.ctrlKey || e.metaKey) return; // Allow new tab
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.div 
+        <motion.a
+            href={linkPath}
             layout
             layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
             ref={livingCardRef} 
-            style={{...livingCardAnimation.style, height: '100%', cursor: 'pointer'}} 
+            style={{...livingCardAnimation.style, height: '100%', cursor: 'pointer', display: 'block' }} 
+            className="no-underline"
             onMouseMove={livingCardAnimation.onMouseMove} 
             onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }} 
             onMouseLeave={() => { livingCardAnimation.onMouseLeave(); setIsHovered(false); }}
@@ -52,7 +56,7 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
             onClick={handleClick}
         >
             <div
-                className={`${feedStyles.topArticleCard} no-underline`}
+                className={feedStyles.topArticleCard}
             >
                 <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
                 
@@ -68,7 +72,7 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </motion.a>
     );
 });
 TopArticleCard.displayName = "TopArticleCard";

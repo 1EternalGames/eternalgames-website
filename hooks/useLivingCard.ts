@@ -13,8 +13,9 @@ const springConfig = { stiffness: 250, damping: 25 };
  * @param {boolean} options.isLead - If true, applies a more subtle rotation effect.
  * @returns An object containing the ref and motion props to apply to a Framer Motion component.
  */
-export function useLivingCard({ isLead = false } = {}) {
-    const ref = useRef<HTMLDivElement>(null);
+// THE FIX: Made the hook generic to support HTMLAnchorElement, HTMLDivElement, etc.
+export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead = false } = {}) {
+    const ref = useRef<T>(null);
     const { resolvedTheme } = useTheme();
     const [isHovered, setIsHovered] = useState(false);
 
@@ -47,12 +48,13 @@ export function useLivingCard({ isLead = false } = {}) {
         }
     );
 
-    const handlePointerMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    // THE FIX: Updated event type to accept the generic T
+    const handlePointerMove = (e: React.MouseEvent<T> | React.TouchEvent<T>) => {
         if (!ref.current) return;
         const { left, top, width, height } = ref.current.getBoundingClientRect();
         
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent<T>).clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent<T>).clientY;
 
         mouseX.set((clientX - left) / width);
         mouseY.set((clientY - top) / height);
@@ -76,10 +78,11 @@ export function useLivingCard({ isLead = false } = {}) {
                 boxShadow,
             },
             onMouseMove: handlePointerMove,
-            onTouchMove: handlePointerMove, // ADDED: Handler for touch movement
+            onTouchMove: handlePointerMove,
             onMouseEnter: onPointerEnter,
             onMouseLeave: onPointerLeave,
-            onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
+            // THE FIX: Updated event type to accept the generic T
+            onTouchStart: (e: React.TouchEvent<T>) => {
                 onPointerEnter();
                 handlePointerMove(e);
             },
