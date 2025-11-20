@@ -6,6 +6,7 @@ import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import ArticlesPageClient from './ArticlesPageClient';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { enrichContentList } from '@/lib/enrichment';
 
 export const metadata: Metadata = {
   title: 'المقالات',
@@ -40,7 +41,7 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function ArticlesPage() {
-  const [featuredArticles, initialGridArticles, allGames, allGameTagsRaw, allArticleTypeTagsRaw]: [SanityArticle[], SanityArticle[], SanityGame[], SanityTag[], SanityTag[]] = await Promise.all([
+  const [featuredArticlesRaw, initialGridArticlesRaw, allGames, allGameTagsRaw, allArticleTypeTagsRaw]: [SanityArticle[], SanityArticle[], SanityGame[], SanityTag[], SanityTag[]] = await Promise.all([
     client.fetch(featuredShowcaseArticlesQuery),
     client.fetch(allArticlesListQuery),
     client.fetch(allGamesQuery),
@@ -51,7 +52,7 @@ export default async function ArticlesPage() {
   const allGameTags = deduplicateTags(allGameTagsRaw);
   const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
 
-  if (!featuredArticles || featuredArticles.length === 0) {
+  if (!featuredArticlesRaw || featuredArticlesRaw.length === 0) {
     return (
         <div className="container page-container">
             <h1 className="page-title">أحدث المقالات</h1>
@@ -59,6 +60,10 @@ export default async function ArticlesPage() {
         </div>
     );
   }
+
+  // Enrich data with usernames server-side
+  const featuredArticles = (await enrichContentList(featuredArticlesRaw)) as SanityArticle[];
+  const initialGridArticles = (await enrichContentList(initialGridArticlesRaw)) as SanityArticle[];
 
   const ArticlesPageFallback = () => (
     <div className="container page-container" style={{display: 'flex', alignItems:'center', justifyContent: 'center'}}>

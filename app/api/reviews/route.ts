@@ -5,6 +5,7 @@ import { paginatedReviewsQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 import { ScoreFilter } from '@/components/filters/ReviewFilters';
+import { enrichContentList } from '@/lib/enrichment'; // <-- ADDED
 
 const getCachedPaginatedReviews = unstable_cache(
     async (
@@ -18,7 +19,9 @@ const getCachedPaginatedReviews = unstable_cache(
     ) => {
         const query = paginatedReviewsQuery(gameSlug, tagSlugs, searchTerm, scoreRange, offset, limit, sort);
         const sanityData = await client.fetch(query);
-        return sanityData.map(adaptToCardProps).filter(Boolean);
+        // THE FIX: Enrich data inside the cache function
+        const enrichedData = await enrichContentList(sanityData);
+        return enrichedData.map(adaptToCardProps).filter(Boolean);
     },
     ['paginated-reviews'],
     { tags: ['review'] }

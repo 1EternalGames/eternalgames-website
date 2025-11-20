@@ -72,17 +72,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   let banReason = null;
 
   if (session?.user?.id) {
-      const user = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: { 
-              roles: { select: { name: true } },
-              isBanned: true,
-              banReason: true
-          }
-      });
-      userRoles = user?.roles.map(r => r.name) || [];
-      isBanned = user?.isBanned || false;
-      banReason = user?.banReason || null;
+      // THE FIX: Wrap database call in try-catch to prevent 500 errors on connection drops
+      try {
+          const user = await prisma.user.findUnique({
+              where: { id: session.user.id },
+              select: { 
+                  roles: { select: { name: true } },
+                  isBanned: true,
+                  banReason: true
+              }
+          });
+          userRoles = user?.roles.map(r => r.name) || [];
+          isBanned = user?.isBanned || false;
+          banReason = user?.banReason || null;
+      } catch (error) {
+          console.error("Failed to fetch user details in RootLayout:", error);
+          // Fallback values are already set (empty roles, not banned)
+      }
   }
 
   return (

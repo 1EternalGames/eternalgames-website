@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUserStore } from '@/lib/store';
 import { useBodyClass } from '@/hooks/useBodyClass';
 import * as THREE from 'three';
-import { THEME_CONFIG, StarData, SanityContentObject, ScreenPosition, Placement } from './config';
+import { THEME_CONFIG, StarData, SanityContentObject, ScreenPosition } from './config';
 import { StarPreviewCard } from './StarPreviewCard';
 import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from './ConstellationControlPanel';
@@ -22,7 +22,13 @@ const CelestialGearIcon = () => (
     </svg>
 );
 
-export default function Constellation() {
+type InitialData = {
+    userContent: SanityContentObject[];
+    commentedSlugs: string[];
+    isGuest: boolean;
+} | null;
+
+export default function Constellation({ initialData }: { initialData?: InitialData }) {
     const [isHydrated, setIsHydrated] = useState(false);
     useEffect(() => { setIsHydrated(true); }, []);
 
@@ -40,17 +46,27 @@ export default function Constellation() {
     }, []);
     
     const { resolvedTheme } = useTheme();
+    // Still hook into store, but we might ignore it if initialData is present
     const { bookmarks, likes, shares } = useUserStore();
-    const [userContent, setUserContent] = useState<SanityContentObject[]>([]);
+    
+    const [userContent, setUserContent] = useState<SanityContentObject[]>(initialData?.userContent || []);
     const [activeStar, setActiveStar] = useState<StarData | null>(null);
     const [activeStarPosition, setActiveStarPosition] = useState<ScreenPosition | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
-    const [commentedContentSlugs, setCommentedContentSlugs] = useState<string[]>([]);
+    const [commentedContentSlugs, setCommentedContentSlugs] = useState<string[]>(initialData?.commentedSlugs || []);
 
     useBodyClass('editor-active', isPanelOpen);
 
+    // THE FIX: Only fetch client-side if NO initial server data is provided (Guest Mode)
     useEffect(() => {
         if (!isHydrated) return;
+        
+        // If we have server data, we don't need to fetch anything.
+        if (initialData && !initialData.isGuest) {
+            return;
+        }
+
+        // --- Guest / Fallback Logic ---
         getCommentedContentIds().then(slugs => { setCommentedContentSlugs(slugs); });
 
         const safeBookmarks = (bookmarks || []).map(k => Number(k.split('-')[1]));
@@ -78,7 +94,7 @@ export default function Constellation() {
             }
         };
         fetchContent();
-    }, [isHydrated, bookmarks, likes, shares]);
+    }, [isHydrated, bookmarks, likes, shares, initialData]);
 
     const PRESETS: Record<Preset, ConstellationSettings> = useMemo(() => ({
         'أداء': { activePreset: 'أداء', starCountMultiplier: 0.2, bloomIntensity: 0, alwaysShowOrbits: false, flawlessPathThickness: 1.5 },
@@ -123,6 +139,16 @@ export default function Constellation() {
     const chronologicalStars = useMemo(() => {
         if (!isHydrated || userContent.length === 0) return [];
         
+        // If we have server data, use the IDs from the content itself.
+        // Otherwise, fallback to store (though store should match content).
+        
+        // We need to reconstruct the 'actions' for the stars.
+        // If server data is present, we can infer actions if we passed them, 
+        // BUT for simplicity, we can still use the client store 'bookmarks/likes' arrays 
+        // to determine the *type* of the star, since hydration syncs those quickly.
+        // OR we can rely on the fact that if it's in `userContent`, the user engaged with it.
+        
+        // Let's rely on the Store for the *Action Types* (bookmarks/likes) as that's the source of truth for UI state.
         const safeBookmarks = (bookmarks || []).map(k => Number(k.split('-')[1]));
         const safeLikes = (likes || []).map(k => Number(k.split('-')[1]));
         const safeShares = (shares || []).map(k => Number(k.split('-')[1]));
@@ -134,10 +160,19 @@ export default function Constellation() {
             let type: "history" | "like" | "comment" | "share" = 'history'; 
             const actions: ("bookmark" | "like" | "comment" | "share")[] = [];
 
+            // Check Store + Server Comment Data
             if (safeLikes.includes(id)) { actions.push('like'); }
             if (safeShares.includes(id)) { actions.push('share'); }
             if (commentedContentSlugs.includes(content.slug)) { actions.push('comment'); }
             if (safeBookmarks.includes(id)) { actions.push('bookmark'); }
+
+            // Fallback: If store hasn't hydrated yet but we have content (server mode), assume simple 'like' or 'history'
+            // to ensure stars appear immediately.
+            if (initialData && !initialData.isGuest && actions.length === 0) {
+                // If it's in userContent but not in store yet, it's likely a like or bookmark.
+                // We can default to 'like' visually until store hydrates fully.
+                actions.push('like');
+            }
 
             if (actions.includes('like')) type = 'like';
             if (actions.includes('comment')) type = 'comment'; 
@@ -164,7 +199,7 @@ export default function Constellation() {
             return sortedStars.map((star, i) => ({ ...star, position: points[i] }));
         }
         return sortedStars;
-    }, [isHydrated, userContent, bookmarks, likes, shares, commentedContentSlugs]);
+    }, [isHydrated, userContent, bookmarks, likes, shares, commentedContentSlugs, initialData]);
 
     const handleSetActiveStar = useCallback((star: StarData, position: ScreenPosition) => {
         if (isMobile) {

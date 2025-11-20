@@ -29,11 +29,11 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const panelRef = useRef<HTMLDivElement>(null);
 
-    // THE DEFINITIVE FIX: 
-    // 1. Cast to 'any' to resolve TS error about 'id' missing on default User type.
-    // 2. This ID is stable, preventing the infinite fetch loop caused by object reference changes.
     const userId = (session?.user as any)?.id;
 
+    // --- EXPERIMENT: FETCHING DISABLED ---
+    // Effectively turning off the notification system to check server load.
+    /*
     useEffect(() => {
         const fetchNotifications = async () => {
             if (!userId) return;
@@ -53,6 +53,8 @@ export default function NotificationBell() {
             fetchNotifications();
         }
     }, [userId]);
+    */
+    // -------------------------------------
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -80,7 +82,7 @@ export default function NotificationBell() {
                 whileTap="tap"
                 variants={bellVariants}
                 style={{ transformOrigin: 'top center' }}
-                title="الإشعارات"
+                title="الإشعارات (معطل مؤقتاً)"
             >
                 <NotificationIcon className={styles.bellIcon} />
                 <AnimatePresence>

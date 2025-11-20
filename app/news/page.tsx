@@ -6,6 +6,7 @@ import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import NewsPageClient from './NewsPageClient';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { enrichContentList } from '@/lib/enrichment';
 
 export const metadata: Metadata = {
   title: 'الأخبار',
@@ -57,6 +58,10 @@ export default async function NewsPage() {
     );
   }
 
+  // Enrich data with usernames server-side
+  const heroArticles = (await enrichContentList(heroNewsRaw)) as SanityNews[];
+  const initialGridArticles = (await enrichContentList(initialGridNewsRaw)) as SanityNews[];
+
   const NewsPageFallback = () => (
     <div className="container page-container" style={{display: 'flex', alignItems:'center', justifyContent: 'center', minHeight: '80vh'}}>
       <div className="spinner" />
@@ -66,8 +71,8 @@ export default async function NewsPage() {
   return (
     <Suspense fallback={<NewsPageFallback />}>
       <NewsPageClient
-        heroArticles={heroNewsRaw || []}
-        initialGridArticles={initialGridNewsRaw || []}
+        heroArticles={heroArticles}
+        initialGridArticles={initialGridArticles}
         allGames={allGames || []}
         allTags={allTags || []}
       />

@@ -4,6 +4,7 @@ import { client } from '@/lib/sanity.client';
 import { paginatedNewsQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
+import { enrichContentList } from '@/lib/enrichment'; // <-- ADDED
 
 const getCachedPaginatedNews = unstable_cache(
     async (
@@ -17,7 +18,9 @@ const getCachedPaginatedNews = unstable_cache(
         const tags = tagSlugs?.length === 0 ? undefined : tagSlugs;
         const query = paginatedNewsQuery(gameSlug, tags, searchTerm, offset, limit, sort);
         const sanityData = await client.fetch(query);
-        const data = sanityData.map(adaptToCardProps).filter(Boolean);
+        // THE FIX: Enrich data inside the cache function
+        const enrichedData = await enrichContentList(sanityData);
+        const data = enrichedData.map(adaptToCardProps).filter(Boolean);
         return data;
     },
     ['paginated-news'],

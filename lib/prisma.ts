@@ -13,8 +13,6 @@ const prismaClientSingleton = () => {
         throw new Error('DATABASE_URL is not set in your environment variables');
     }
 
-    console.log("... [PRISMA] Using pooled database connection for all environments.");
-
     return new PrismaClient({
         datasources: {
             db: {

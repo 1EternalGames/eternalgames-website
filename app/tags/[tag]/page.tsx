@@ -6,15 +6,16 @@ import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
+import { enrichContentList } from '@/lib/enrichment'; // <-- ADDED
 
 export const dynamicParams = true;
 
 type Props = {
-  params: { tag: string };
+  params: Promise<{ tag: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tag } = params;
+  const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
 
   const data = await client.fetch(
@@ -67,7 +68,7 @@ export async function generateStaticParams() {
     }
 }
 
-export default async function TagPage({ params }: { params: { tag: string } }) {
+export default async function TagPage({ params }: { params: Promise<{ tag: string }> }) {
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
@@ -80,7 +81,9 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
         notFound();
     }
 
-    const allItems = await client.fetch(allContentByTagListQuery, { slug: tagSlug });
+    const allItemsRaw = await client.fetch(allContentByTagListQuery, { slug: tagSlug });
+    // THE FIX: Enrich with usernames server-side
+    const allItems = await enrichContentList(allItemsRaw);
 
     if (!allItems || allItems.length === 0) {
         return (

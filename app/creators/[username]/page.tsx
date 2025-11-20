@@ -7,15 +7,16 @@ import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
 import { cache } from 'react';
 import type { Metadata } from 'next';
+import { enrichContentList } from '@/lib/enrichment'; // <-- ADDED
 
 export const dynamicParams = true;
 
 type Props = {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { username: encodedUsername } = params;
+  const { username: encodedUsername } = await params;
   const username = decodeURIComponent(encodedUsername);
   
   const user = await getCachedUserByUsername(username);
@@ -24,7 +25,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   const title = `أعمال ${user.name || username}`;
   const description = `استكشف جميع مساهمات ${user.name || username} على منصة EternalGames.`;
-  // Use the user's avatar for the OG image if available, otherwise fallback
   const ogImageUrl = user.image || `${siteUrl}/og-image.png`;
   const canonicalUrl = `/creators/${username}`;
 
@@ -73,7 +73,7 @@ const getCachedUserByUsername = cache(async (username: string) => {
     try {
         return await prisma.user.findUnique({
             where: { username: username },
-            select: { id: true, name: true, username: true, image: true }, // Added image to selection
+            select: { id: true, name: true, username: true, image: true }, 
         });
     } catch (error) {
         console.warn(`[BUILD WARNING] Database connection failed for creator page: "${username}".`, error);
@@ -81,7 +81,7 @@ const getCachedUserByUsername = cache(async (username: string) => {
     }
 });
 
-export default async function CreatorHubPage({ params }: { params: { username: string } }) {
+export default async function CreatorHubPage({ params }: { params: Promise<{ username: string }> }) {
     const { username: encodedUsername } = await params;
     const username = decodeURIComponent(encodedUsername);
 
@@ -109,7 +109,9 @@ export default async function CreatorHubPage({ params }: { params: { username: s
     }
     
     const creatorIds = creatorDocs.map(doc => doc._id);
-    const allItems = await client.fetch(allContentByCreatorListQuery, { creatorIds });
+    const allItemsRaw = await client.fetch(allContentByCreatorListQuery, { creatorIds });
+    // THE FIX: Enrich with usernames server-side
+    const allItems = await enrichContentList(allItemsRaw);
 
     return (
         <HubPageClient

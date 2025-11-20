@@ -5,15 +5,16 @@ import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
+import { enrichContentList } from '@/lib/enrichment';
 
 export const dynamicParams = true;
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = params;
+  const { slug } = await params;
   const gameSlug = decodeURIComponent(slug);
 
   const game = await client.fetch(
@@ -65,7 +66,7 @@ export async function generateStaticParams() {
     }
 }
 
-export default async function GameHubPage({ params }: { params: { slug: string } }) {
+export default async function GameHubPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const gameSlug = decodeURIComponent(slug);
 
@@ -78,7 +79,8 @@ export default async function GameHubPage({ params }: { params: { slug: string }
         notFound();
     }
 
-    const allItems = await client.fetch(allContentByGameListQuery, { slug: gameSlug });
+    const allItemsRaw = await client.fetch(allContentByGameListQuery, { slug: gameSlug });
+    const allItems = await enrichContentList(allItemsRaw);
     
     if (!allItems || allItems.length === 0) {
         return (

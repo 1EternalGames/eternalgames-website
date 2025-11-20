@@ -7,44 +7,13 @@ import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
-import { SanityAuthor, SanityReview } from '@/types/sanity';
+import { SanityReview } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
+import { enrichContentList } from '@/lib/enrichment';
 
-const getCachedEnrichedCreators = unstable_cache(
-    async (creatorIds: string[]): Promise<[string, string | null][]> => {
-        if (creatorIds.length === 0) return [];
-        try {
-            const users = await prisma.user.findMany({
-                where: { id: { in: creatorIds } },
-                select: { id: true, username: true },
-            });
-            return users.map(u => [u.id, u.username || null]);
-        } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment. Skipping. Error:`, error);
-            return [];
-        }
-    },
-    ['enriched-creators'],
-    { tags: ['enriched-creators'] } // MODIFIED: Removed revalidate time
-);
-
-async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
-    if (!creators || creators.length === 0) return [];
-    
-    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
-    if (userIds.length === 0) return creators;
-
-    const usernameArray = await getCachedEnrichedCreators(userIds);
-    const usernameMap = new Map(usernameArray);
-
-    return creators.map(creator => ({
-        ...creator,
-        username: usernameMap.get(creator.prismaUserId) || creator.username || null,
-    }));
-}
-
+// Cached engagement scores fetcher
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
         try {
@@ -74,7 +43,7 @@ const getCachedEngagementScoresMap = unstable_cache(
         }
     },
     ['homepage-engagement-scores'],
-    { tags: ['engagement-scores'] } // MODIFIED: Removed revalidate time
+    { tags: ['engagement-scores'] }
 );
 
 
@@ -88,7 +57,7 @@ async function ReleasesSection() {
 
 export default async function HomePage() {
     const [
-        reviews, 
+        reviewsRaw, 
         homepageArticlesRaw, 
         homepageNewsRaw, 
         scoresArray
@@ -99,16 +68,19 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
+    // THE FIX: Enrich all content types server-side to prevent client waterfalls
+    const reviews = (await enrichContentList(reviewsRaw)) as SanityReview[];
+    const homepageArticles = await enrichContentList(homepageArticlesRaw);
+    const homepageNews = await enrichContentList(homepageNewsRaw);
+
     // Reorder the reviews to place the highest-rated one first
     if (reviews.length > 0) {
         const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
             const topScore = reviews[topIndex].score ?? 0;
             const currentScore = currentReview.score ?? 0;
-            // In case of a tie, the more recent one (already earlier in the array) wins
             return currentScore > topScore ? currentIndex : topIndex;
         }, 0);
         
-        // Move the top-rated review to the front if it's not already there
         if (topRatedIndex > 0) {
             const [topRatedReview] = reviews.splice(topRatedIndex, 1);
             reviews.unshift(topRatedReview);
@@ -117,35 +89,29 @@ export default async function HomePage() {
 
     const scoresMap = new Map(scoresArray);
     
-    const enrichedReviews = await Promise.all(
-        reviews.map(async (review: any) => ({
-            ...review,
-            authors: await enrichCreators(review.authors),
-            designers: await enrichCreators(review.designers),
-        }))
-    );
-    
     const sortItemsByScore = (items: any[]) => {
         return [...items].sort((a, b) => (scoresMap.get(b.legacyId) || 0) - (scoresMap.get(a.legacyId) || 0));
     };
 
-    const sortedArticlesByScore = sortItemsByScore(homepageArticlesRaw);
+    // Articles Logic
+    const sortedArticlesByScore = sortItemsByScore(homepageArticles);
     const topArticlesRaw = sortedArticlesByScore.slice(0, 2);
     const topArticleIds = new Set(topArticlesRaw.map((a: any) => a._id));
     const topArticles = topArticlesRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
 
-    const latestArticles = homepageArticlesRaw
+    const latestArticles = homepageArticles
         .filter((a: any) => !topArticleIds.has(a._id))
         .slice(0, 10)
         .map(adaptToCardProps)
         .filter(Boolean) as CardProps[];
     
-    const sortedNewsByScore = sortItemsByScore(homepageNewsRaw);
+    // News Logic
+    const sortedNewsByScore = sortItemsByScore(homepageNews);
     const topNewsRaw = sortedNewsByScore.slice(0, 3);
     const topNewsIds = new Set(topNewsRaw.map((n: any) => n._id));
     const pinnedNews = topNewsRaw.map(adaptToCardProps).filter(Boolean) as CardProps[];
 
-    const newsList = homepageNewsRaw
+    const newsList = homepageNews
         .filter((n: any) => !topNewsIds.has(n._id))
         .slice(0, 15)
         .map(adaptToCardProps)
@@ -164,7 +130,7 @@ export default async function HomePage() {
 
     return (
         <DigitalAtriumHomePage 
-            reviews={enrichedReviews}
+            reviews={reviews}
             feedsContent={feedsContent}
             releasesSection={releasesSection}
         />

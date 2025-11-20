@@ -1,14 +1,13 @@
 // components/comments/CommentSection.tsx
 'use client';
 
-import { useState, useOptimistic, useEffect } from 'react';
+import { useState, useOptimistic } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { postReplyOrComment } from '@/app/actions/commentActions';
 import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
 import CommentList from './CommentList';
-import CommentListSkeleton from '@/components/skeletons/CommentListSkeleton';
 import styles from './Comments.module.css';
 
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
@@ -24,36 +23,16 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-// MODIFIED: Accept contentType prop
-export default function CommentSection({ slug, contentType }: { slug: string; contentType: string; }) {
+// THE FIX: Accept initialComments prop and remove useEffect fetching
+export default function CommentSection({ slug, contentType, initialComments }: { slug: string; contentType: string; initialComments: any[] }) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    const [comments, setComments] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [comments, setComments] = useState<any[]>(initialComments);
     
-    // Helper to construct the full path
     const currentPath = `/${contentType}/${slug}`;
 
-    useEffect(() => {
-        const fetchComments = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const response = await fetch(`/api/comments/${slug}`);
-                if (!response.ok) throw new Error('Failed to fetch comments');
-                const data = await response.json();
-                setComments(data);
-            } catch (err) {
-                setError('Could not load comments.');
-                console.error(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchComments();
-    }, [slug]);
+    // Removed useEffect fetching logic completely. Data is now provided by the server.
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
@@ -83,7 +62,6 @@ export default function CommentSection({ slug, contentType }: { slug: string; co
 
         addOptimisticComment({ newComment: optimisticComment, parentId });
 
-        // MODIFIED: Pass currentPath to the action
         const result = await postReplyOrComment(slug, content, currentPath, parentId);
 
         if (result.success && result.comment) {
@@ -146,7 +124,6 @@ export default function CommentSection({ slug, contentType }: { slug: string; co
         setComments(prevComments => updateRecursive(prevComments));
     };
 
-
     return (
         <div className={styles.commentsSection}>
             {typedSession?.user ? (
@@ -156,21 +133,15 @@ export default function CommentSection({ slug, contentType }: { slug: string; co
             )}
             
             <div>
-                {isLoading && <CommentListSkeleton />}
-                
-                {error && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{error}</p>}
-                
-                {!isLoading && !error && (
-                    <CommentList
-                        comments={optimisticComments}
-                        session={typedSession}
-                        slug={slug}
-                        onVoteUpdate={handleVoteUpdate}
-                        onPostReply={handlePostComment}
-                        onDeleteSuccess={handleDeleteSuccess}
-                        onUpdateSuccess={handleUpdateSuccess}
-                    />
-                )}
+                <CommentList
+                    comments={optimisticComments}
+                    session={typedSession}
+                    slug={slug}
+                    onVoteUpdate={handleVoteUpdate}
+                    onPostReply={handlePostComment}
+                    onDeleteSuccess={handleDeleteSuccess}
+                    onUpdateSuccess={handleUpdateSuccess}
+                />
             </div>
         </div>
     );

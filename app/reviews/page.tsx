@@ -6,6 +6,7 @@ import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 
 export const metadata: Metadata = {
   title: 'المراجعات',
@@ -27,14 +28,14 @@ const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "s
 const allTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}`;
 
 export default async function ReviewsPage() {
-  const [heroReview, initialGridReviews, allGames, allTags]: [SanityReview, SanityReview[], SanityGame[], SanityTag[]] = await Promise.all([
+  const [heroReviewRaw, initialGridReviewsRaw, allGames, allTags]: [SanityReview, SanityReview[], SanityGame[], SanityTag[]] = await Promise.all([
     client.fetch(featuredHeroReviewQuery),
     client.fetch(allReviewsListQuery),
     client.fetch(allGamesQuery),
     client.fetch(allTagsQuery),
   ]);
 
-  if (!heroReview) {
+  if (!heroReviewRaw) {
     return (
       <div className="container page-container">
         <h1 className="page-title">المراجعات</h1>
@@ -43,6 +44,14 @@ export default async function ReviewsPage() {
     );
   }
 
+  // Enrich data with usernames server-side to prevent client-side waterfalls
+  const heroReview = {
+      ...heroReviewRaw,
+      authors: await enrichCreators(heroReviewRaw.authors),
+      designers: await enrichCreators(heroReviewRaw.designers)
+  };
+  
+  const initialGridReviews = (await enrichContentList(initialGridReviewsRaw)) as SanityReview[];
   const gridReviews = (initialGridReviews || []).filter(review => review._id !== heroReview._id);
 
   return (

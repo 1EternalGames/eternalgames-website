@@ -1,5 +1,4 @@
 // app/(content)/[...slug]/page.tsx
-// ... (Imports remain the same)
 import { unstable_cache } from 'next/cache';
 import { client } from '@/lib/sanity.client';
 import {
@@ -12,10 +11,9 @@ import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { Suspense } from 'react';
-import { cache } from 'react';
 import { groq } from 'next-sanity';
 import type { Metadata } from 'next';
-import { urlFor } from '@/sanity/lib/image';
+import { enrichCreators, enrichContentList } from '@/lib/enrichment';
 
 const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
@@ -43,7 +41,19 @@ const contentConfig = {
     },
 };
 
-// ... (Metadata functions remain same)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
+    const { slug: slugArray } = await params;
+    const [type, slug] = slugArray;
+    
+    const item = await client.fetch(`*[_type == "${type === 'reviews' ? 'review' : type === 'articles' ? 'article' : 'news'}" && slug.current == $slug][0]{title, mainImage, synopsis}`, { slug });
+
+    if (!item) return {};
+
+    return {
+        title: item.title,
+        description: item.synopsis || `Read the full ${type.slice(0, -1)} on EternalGames.`,
+    }
+}
 
 const getCachedSanityData = unstable_cache(
     async (query: string, params: Record<string, any> = {}, tags: string[]) => {
@@ -52,31 +62,32 @@ const getCachedSanityData = unstable_cache(
     ['sanity-content-detail'],
 );
 
-const getCachedCreatorDetails = unstable_cache(
-    async (prismaUserId: string) => {
-        try {
-            const user = await prisma.user.findUnique({
-                where: { id: prismaUserId },
-                select: { username: true, image: true, bio: true }
-            });
-            return {
-                username: user?.username || null,
-                image: user?.image || null,
-                bio: user?.bio || null,
-            };
-        } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed for creator enrichment (ID: ${prismaUserId}). Skipping. Error:`, error);
-            return { username: null, image: null, bio: null };
-        }
-    },
-    ['enriched-creator-details'],
-    { tags: ['author', 'reviewer', 'reporter', 'designer'] }
-);
-
-async function enrichCreator(creator: any) {
-    if (!creator || !creator.prismaUserId) return creator;
-    const userDetails = await getCachedCreatorDetails(creator.prismaUserId);
-    return { ...creator, ...userDetails };
+// New helper to fetch comments server-side
+async function getComments(slug: string) {
+    try {
+        const comments = await prisma.comment.findMany({
+            where: { contentSlug: slug, parentId: null },
+            include: { 
+                author: { select: { id: true, name: true, image: true, username: true } }, 
+                votes: true, 
+                _count: { select: { replies: true } }, 
+                replies: { 
+                    take: 2, 
+                    include: { 
+                        author: { select: { id: true, name: true, image: true, username: true } }, 
+                        votes: true, 
+                        _count: { select: { replies: true } } 
+                    }, 
+                    orderBy: { createdAt: 'asc' } 
+                } 
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        return comments;
+    } catch (error) {
+        console.error("Failed to fetch comments server-side:", error);
+        return [];
+    }
 }
 
 export async function generateStaticParams() {
@@ -87,12 +98,12 @@ export async function generateStaticParams() {
             return { slug: [type, c.slug] };
         });
     } catch (error) {
-        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for generateStaticParams. The build process cannot continue without a connection to the CMS.`, error);
+        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for generateStaticParams.`, error);
         throw error;
     }
 }
 
-export default async function ContentPage({ params }: { params: { slug: string[] } }) {
+export default async function ContentPage({ params }: { params: Promise<{ slug: string[] }> }) {
     const { slug: slugArray } = await params;
     if (!slugArray || slugArray.length !== 2) notFound();
     
@@ -102,9 +113,11 @@ export default async function ContentPage({ params }: { params: { slug: string[]
     
     const tags = [config.sanityType];
 
-    let [item, colorDictionaryData]: [any, { autoColors: any[] }?] = await Promise.all([
+    // THE FIX: Fetch comments in parallel with Sanity content
+    let [item, colorDictionaryData, comments] = await Promise.all([
         getCachedSanityData(config.query, { slug }, tags),
-        getCachedSanityData(colorDictionaryQuery, {}, ['colorDictionary'])
+        getCachedSanityData(colorDictionaryQuery, {}, ['colorDictionary']),
+        getComments(slug)
     ]);
     
     if (!item) notFound();
@@ -114,19 +127,22 @@ export default async function ContentPage({ params }: { params: { slug: string[]
         item[config.relatedProp] = fallbackContent;
     }
 
+    // Server-side Enrichment
     for (const prop of config.creatorProps) {
         if (item[prop]) {
-            item[prop] = await Promise.all(item[prop].map(enrichCreator));
+            item[prop] = await enrichCreators(item[prop]);
         }
+    }
+
+    if (item[config.relatedProp]) {
+        item[config.relatedProp] = await enrichContentList(item[config.relatedProp]);
     }
     
     const colorDictionary = colorDictionaryData?.autoColors || [];
 
     return (
         <ContentPageClient item={item} type={type as any} colorDictionary={colorDictionary}>
-            <Suspense fallback={<div className="spinner" style={{ margin: '8rem auto' }} />}>
-                <CommentSection slug={slug} contentType={type} /> 
-            </Suspense>
+            <CommentSection slug={slug} contentType={type} initialComments={comments} /> 
         </ContentPageClient>
     );
 }
