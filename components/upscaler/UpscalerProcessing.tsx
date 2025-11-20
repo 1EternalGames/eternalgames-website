@@ -30,12 +30,14 @@ export default function UpscalerProcessing({ status, progress, message, imageSrc
                     <div className="spinner" style={{ width: '50px', height: '50px', borderTopColor: 'var(--accent)' }} />
                     <p className={styles.statusMessage}>{message}</p>
                     
-                    {status === 'downloading' && (
+                    {/* Show progress bar for both downloading AND processing tiles */}
+                    {(status === 'downloading' || status === 'processing') && progress > 0 && (
                         <div className={styles.progressBarContainer}>
                             <div className={styles.progressBarTrack}>
                                 <motion.div 
                                     className={styles.progressBarFill} 
-                                    style={{ width: `${progress}%` }} 
+                                    style={{ width: `${progress}%` }}
+                                    animate={{ width: `${progress}%` }}
                                 />
                             </div>
                             <span className={styles.progressText}>{Math.round(progress)}%</span>

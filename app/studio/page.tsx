@@ -35,20 +35,14 @@ export default async function StudioPage() {
     
     const session = await getServerSession(authOptions);
     
-    // THE DEFINITIVE FIX: Fetch fresh roles from DB with error handling
+    // THE DEFINITIVE FIX: Fetch fresh roles from DB
     let userRoles: string[] = [];
     if (session?.user?.id) {
-        try {
-            const user = await prisma.user.findUnique({ 
-                where: { id: session.user.id },
-                select: { roles: { select: { name: true } } }
-            });
-            userRoles = user?.roles.map(r => r.name) || [];
-        } catch (error) {
-            console.error("Failed to fetch user roles for Studio (DB unreachable):", error);
-            // Fallback to session roles to allow access if DB is down but session is valid
-            userRoles = (session.user as any).roles || [];
-        }
+        const user = await prisma.user.findUnique({ 
+            where: { id: session.user.id },
+            select: { roles: { select: { name: true } } }
+        });
+        userRoles = user?.roles.map(r => r.name) || [];
     }
     
     const isAdminOrDirector =

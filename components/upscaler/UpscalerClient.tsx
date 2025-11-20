@@ -25,6 +25,19 @@ export default function UpscalerClient() {
         return <UpscalerDropzone onImageSelect={upscaleImage} />;
     }
 
+    if (status === 'error') {
+        return (
+            <div className={styles.dropzone} style={{ flexDirection: 'column', gap: '1rem', borderColor: '#DC2626' }}>
+                <h3 style={{ color: '#DC2626', margin: 0 }}>فشلت المعالجة</h3>
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '80%' }}>{message}</p>
+                <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>تأكد من دعم المتصفح لـ WebGL وافتح (F12) للتفاصيل.</p>
+                <button onClick={reset} className="primary-button" style={{ marginTop: '1rem' }}>
+                    حاول مجدداً
+                </button>
+            </div>
+        );
+    }
+
     if (status === 'complete' && resultSrc && originalSrc) {
         return (
             <div className={styles.resultContainer}>
@@ -45,7 +58,7 @@ export default function UpscalerClient() {
                         تحميل الصورة (PNG)
                     </motion.button>
                     <button onClick={reset} className="outline-button">
-                        معالجة صورة أخرى
+                        صورة جديدة
                     </button>
                 </div>
             </div>

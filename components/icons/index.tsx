@@ -1,4 +1,6 @@
 // components/icons/index.tsx
+'use client';
+
 import React from 'react';
 
 export const ReviewIcon = (props: React.SVGProps<SVGSVGElement>) => (

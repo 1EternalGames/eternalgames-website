@@ -9,7 +9,6 @@ import NotificationPanel from './NotificationPanel';
 import { getNotifications } from '@/app/actions/notificationActions';
 import styles from './Notifications.module.css';
 
-// THE FIX: Added 'as const' to the transition object to satisfy strict Framer Motion types
 const bellVariants = {
     rest: { rotate: 0, scale: 1 },
     hover: { 
@@ -30,21 +29,30 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const panelRef = useRef<HTMLDivElement>(null);
 
-    // Only fetch once on mount (page refresh)
+    // THE DEFINITIVE FIX: 
+    // 1. Cast to 'any' to resolve TS error about 'id' missing on default User type.
+    // 2. This ID is stable, preventing the infinite fetch loop caused by object reference changes.
+    const userId = (session?.user as any)?.id;
+
     useEffect(() => {
         const fetchNotifications = async () => {
-            if (!session?.user) return;
-            const result = await getNotifications();
-            if (result.success) {
-                setNotifications(result.notifications || []);
-                setUnreadCount(result.unreadCount || 0);
+            if (!userId) return;
+            
+            try {
+                const result = await getNotifications();
+                if (result.success) {
+                    setNotifications(result.notifications || []);
+                    setUnreadCount(result.unreadCount || 0);
+                }
+            } catch (error) {
+                console.error("Failed to fetch notifications:", error);
             }
         };
 
-        if (session?.user) {
+        if (userId) {
             fetchNotifications();
         }
-    }, [session]);
+    }, [userId]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

@@ -7,7 +7,7 @@ export type UpscaleStatus = 'idle' | 'init' | 'downloading' | 'processing' | 'co
 
 interface UpscalerState {
     status: UpscaleStatus;
-    progress: number; // 0-100 for download
+    progress: number; // 0-100
     message: string;
     resultSrc: string | null;
     originalSrc: string | null;
@@ -35,16 +35,17 @@ export function useUpscaler() {
 
             switch (status) {
                 case 'init':
-                    setState(prev => ({ ...prev, status: 'init', message: message || 'البدء...' }));
+                    setState(prev => ({ ...prev, status: 'init', message: message || 'البدء...', progress: 0 }));
                     break;
                 case 'downloading':
                     setState(prev => ({ ...prev, status: 'downloading', progress: progress || 0, message: 'تحميل نموذج الذكاء الاصطناعي...' }));
                     break;
                 case 'processing':
-                    setState(prev => ({ ...prev, status: 'processing', message: message || 'جارٍ المعالجة...' }));
+                    // Update progress bar during tile processing
+                    setState(prev => ({ ...prev, status: 'processing', progress: progress || 0, message: message || 'جارٍ المعالجة...' }));
                     break;
                 case 'complete':
-                    setState(prev => ({ ...prev, status: 'complete', resultSrc: result }));
+                    setState(prev => ({ ...prev, status: 'complete', resultSrc: result, progress: 100 }));
                     break;
                 case 'error':
                     setState(prev => ({ ...prev, status: 'error', message: message || 'حدث خطأ.' }));

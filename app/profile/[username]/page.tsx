@@ -13,8 +13,8 @@ function hasCreatorRole(userRoles: string[]): boolean {
     return userRoles.some(role => ['REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
 }
 
-export default async function PublicProfilePage({ params }: { params: { username: string } }) {
-    const { username: encodedUsername } = await params;
+export default async function PublicProfilePage({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
+    const { username: encodedUsername } = await paramsPromise;
     const username = decodeURIComponent(encodedUsername);
 
     const user = await prisma.user.findUnique({
@@ -28,12 +28,14 @@ export default async function PublicProfilePage({ params }: { params: { username
 
     if (!user) { notFound(); }
     
+    // OPTIMIZED: Parallelize data processing
+    let contentTitles: { slug: string, title: string }[] = [];
+    
     // 1. Extract content slugs from the user's recent comments.
     const commentSlugs = user.comments.map(c => c.contentSlug);
     
-    // 2. Fetch the titles for these slugs from Sanity.
-    let contentTitles: { slug: string, title: string }[] = [];
     if (commentSlugs.length > 0) {
+        // 2. Fetch the titles for these slugs from Sanity.
         contentTitles = await client.fetch(
             groq`*[_type in ["review", "article", "news"] && slug.current in $slugs]{ "slug": slug.current, title }`,
             { slugs: commentSlugs }
