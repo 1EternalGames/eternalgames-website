@@ -27,7 +27,6 @@ export default function NotificationBell() {
     const [isOpen, setIsOpen] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
 
-    // Connect to global store
     const { 
         notifications, 
         unreadCount, 
@@ -38,12 +37,24 @@ export default function NotificationBell() {
 
     const userId = (session?.user as any)?.id;
 
+    // 1. Initial Load: Smart Fetch (Cached)
+    // This will NOT fetch if data exists in localStorage and is fresh.
     useEffect(() => {
         if (userId) {
-            // This call is safe to duplicate; the store handles deduplication
-            fetchNotifications();
+            fetchNotifications(false);
         }
     }, [userId, fetchNotifications]);
+
+    // 2. On Click: Force Fetch (Live)
+    const handleToggle = () => {
+        const nextState = !isOpen;
+        setIsOpen(nextState);
+        
+        if (nextState) {
+            // When opening, force a refresh to get the latest updates
+            fetchNotifications(true);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +76,7 @@ export default function NotificationBell() {
         <div className={styles.notificationWrapper} ref={panelRef}>
             <motion.button
                 className={styles.bellButton}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggle}
                 initial="rest"
                 whileHover="hover"
                 whileTap="tap"
