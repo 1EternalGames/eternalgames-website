@@ -193,9 +193,13 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     // Auto-Save State
     const [clientSaveStatus, setClientSaveStatus] = useState<SaveStatus>('saved');
     const [serverSaveStatus, setServerSaveStatus] = useState<SaveStatus>('saved');
-    const clientSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
+
+    // References for the interval to access current data without stale closures
+    const stateRef = useRef(state);
+    const contentJsonRef = useRef(editorContentJson);
+    const needsClientSaveRef = useRef(false);
 
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
@@ -247,14 +251,10 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 const localData = JSON.parse(saved);
                 if (localData.state && localData.contentJson) {
                     console.log("[Hydration] Found local draft, restoring...");
-                    
                     dispatch({ type: 'INITIALIZE_STATE', payload: localData.state });
-                    
                     setEditorContentJson(localData.contentJson);
-
                     const contentObj = JSON.parse(localData.contentJson);
                     editorInstance.commands.setContent(contentObj, false); 
-
                     toast.info('تم استعادة مسودة غير محفوظة من جهازك.', 'left');
                 }
             } catch (e) {
@@ -269,57 +269,71 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
 
-    // --- AUTO SAVE LOGIC ---
+    // --- CONSTANT CLIENT AUTO-SAVE LOGIC ---
+    // 1. Update refs and dirty flag on change
     useEffect(() => {
+        stateRef.current = state;
+        contentJsonRef.current = editorContentJson;
+        
         if (hasChanges) {
-            setClientSaveStatus('saving');
-            setServerSaveStatus('pending');
+            needsClientSaveRef.current = true;
+            setClientSaveStatus('saving'); // Immediate visual feedback
+            setServerSaveStatus('pending'); // Server waiting
+        } else {
+            // If no changes (e.g. after manual save), visually reset
+            needsClientSaveRef.current = false;
+            setClientSaveStatus('saved');
+            setServerSaveStatus('saved');
+        }
+    }, [state, editorContentJson, hasChanges]);
 
-            if (clientSaveTimeoutRef.current) clearTimeout(clientSaveTimeoutRef.current);
-            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
-
-            // 3. Client Save (1s): Persist to LocalStorage
-            clientSaveTimeoutRef.current = setTimeout(() => {
+    // 2. Interval to check and save to LS every 300ms
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (needsClientSaveRef.current) {
                 const key = `eternal-draft-${sourceOfTruth._id}`;
                 const payload = {
-                    state,
-                    contentJson: editorContentJson,
+                    state: stateRef.current,
+                    contentJson: contentJsonRef.current,
                     updatedAt: new Date().toISOString()
                 };
                 localStorage.setItem(key, JSON.stringify(payload));
+                
+                needsClientSaveRef.current = false;
                 setClientSaveStatus('saved');
-            }, 1000);
+            }
+        }, 300);
 
-            // 4. Server Save (10s): Persist to Database
+        return () => clearInterval(intervalId);
+    }, [sourceOfTruth._id]);
+
+    // 3. Server Save Logic (Debounced 10s)
+    useEffect(() => {
+        if (hasChanges) {
+            // Clear existing timeout to debounce
+            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
+
+            // Set new timeout
             serverSaveTimeoutRef.current = setTimeout(async () => {
                 setServerSaveStatus('saving');
                 const success = await saveWorkingCopy();
                 if (success) {
                     setServerSaveStatus('saved');
                 } else {
-                    setServerSaveStatus('saved'); 
+                    setServerSaveStatus('saved'); // Reset visual state, error toast handles alert
                 }
-            }, 10000); // Modified to 10 seconds
+            }, 10000);
         }
-
-        return () => {
-            // Cleanup triggers on every dependency change
-        };
-    }, [hasChanges, state, editorContentJson, sourceOfTruth._id]);
-
-    useEffect(() => {
-        if (!hasChanges) {
-            if (clientSaveTimeoutRef.current) clearTimeout(clientSaveTimeoutRef.current);
-            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
-            setClientSaveStatus('saved');
-            setServerSaveStatus('saved');
-        }
-    }, [hasChanges]);
+        // No cleanup function here to clear timeout on unmount/change, 
+        // because we want the debounce logic to persist across renders.
+        // The timer is cleared explicitly above when hasChanges is detected.
+    }, [hasChanges]); // Depend only on hasChanges state flip
 
 
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => { 
+        // Sync state when Server Data updates (e.g. after a manual save)
         if (sourceOfTruth._id !== state._id || sourceOfTruth._updatedAt !== state._updatedAt) {
             const newState = getInitialEditorState(sourceOfTruth);
             dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
