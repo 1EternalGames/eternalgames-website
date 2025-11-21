@@ -43,10 +43,58 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
     }
 }
 
+// Helper to strip keys and normalize markDefs for accurate comparison
+const stripKeysAndNormalize = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(stripKeysAndNormalize);
+    } else if (obj !== null && typeof obj === 'object') {
+        if (obj._type === 'block' && Array.isArray(obj.markDefs) && Array.isArray(obj.children)) {
+            const keyMap: Record<string, string> = {};
+            const normalizedMarkDefs = obj.markDefs.map((def: any, index: number) => {
+                const newKey = `mark_def_${index}`;
+                keyMap[def._key] = newKey;
+                const { _key, ...rest } = def;
+                return { _key: newKey, ...stripKeysAndNormalize(rest) };
+            });
+
+            const normalizedChildren = obj.children.map((child: any) => {
+                const { _key, ...childRest } = child;
+                const newChild = stripKeysAndNormalize(childRest);
+                if (Array.isArray(newChild.marks)) {
+                    newChild.marks = newChild.marks.map((m: string) => keyMap[m] || m).sort();
+                }
+                return newChild;
+            });
+
+            const newObj: any = { ...obj };
+            delete newObj._key;
+            newObj.markDefs = normalizedMarkDefs;
+            newObj.children = normalizedChildren;
+            
+            for (const key in newObj) {
+                if (key !== 'markDefs' && key !== 'children' && key !== '_key') {
+                    newObj[key] = stripKeysAndNormalize(newObj[key]);
+                }
+            }
+            return newObj;
+        }
+
+        const newObj: any = {};
+        for (const key in obj) {
+            if (key !== '_key') {
+                newObj[key] = stripKeysAndNormalize(obj[key]);
+            }
+        }
+        return newObj;
+    }
+    return obj;
+};
+
 const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJson: string) => {
     const patch: Record<string, any> = {};
     const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
     const compareIds = (arr1: any[], arr2: any[]) => JSON.stringify(normalize(arr1, []).map((i: any) => i._id).sort()) === JSON.stringify(normalize(arr2, []).map((i: any) => i._id).sort());
+    
     if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
     if (sourceOfTruth._type !== 'gameRelease' && normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
     if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
@@ -68,8 +116,14 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     
     const sourceContentSanity = sourceOfTruth.content || []; 
     const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
-    if (sourceOfTruth._type !== 'gameRelease' && JSON.stringify(currentContentSanity) !== JSON.stringify(sourceContentSanity)) {
-        patch.content = currentContentSanity;
+    
+    if (sourceOfTruth._type !== 'gameRelease') {
+        const cleanSource = JSON.stringify(stripKeysAndNormalize(sourceContentSanity));
+        const cleanCurrent = JSON.stringify(stripKeysAndNormalize(currentContentSanity));
+        
+        if (cleanSource !== cleanCurrent) {
+            patch.content = currentContentSanity;
+        }
     }
 
     return patch;
@@ -94,17 +148,11 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
-    // THE DEFINITIVE FIX: Race Condition Handling
-    // We only set the editor inactive if we are truly leaving the studio context.
     useEffect(() => {
         setEditorActive(true);
         document.body.classList.add('editor-active');
-
         return () => {
-            // Check the current URL. If we are navigating to another editor page,
-            // 'isStillEditor' will be true, preventing the reset.
             const isStillEditor = window.location.pathname.match(/^\/studio\/(reviews|articles|news|releases)\//);
-            
             if (!isStillEditor) {
                 setEditorActive(false);
                 setLiveUrl(null);
@@ -116,7 +164,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     useEffect(() => {
         const { _type, slug: docSlug, publishedAt } = sourceOfTruth;
         const isPublished = publishedAt && new Date(publishedAt) <= new Date();
-
         if (isPublished && docSlug?.current && _type !== 'gameRelease') {
             const contentTypePlural = _type === 'review' ? 'reviews' : _type === 'article' ? 'articles' : 'news';
             const url = `/${contentTypePlural}/${docSlug.current}`;
@@ -131,11 +178,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         if (viewport) {
             const originalContent = viewport.getAttribute('content');
             viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-            return () => {
-                if (originalContent) {
-                    viewport.setAttribute('content', originalContent);
-                }
-            };
+            return () => { if (originalContent) { viewport.setAttribute('content', originalContent); } };
         }
     }, []);
 
@@ -159,10 +202,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 cons: sourceOfTruth.cons ?? [], 
                 game: sourceOfTruth.game || null, 
                 publishedAt: sourceOfTruth.publishedAt || null, 
-                mainImage: { 
-                    assetId: sourceOfTruth.mainImage?._ref || null, 
-                    assetUrl: sourceOfTruth.mainImage?.url || null 
-                }, 
+                mainImage: { assetId: sourceOfTruth.mainImage?._ref || null, assetUrl: sourceOfTruth.mainImage?.url || null }, 
                 authors: (sourceOfTruth.authors || []).filter(Boolean), 
                 reporters: (sourceOfTruth.reporters || []).filter(Boolean), 
                 designers: (sourceOfTruth.designers || []).filter(Boolean), 
@@ -173,35 +213,25 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 category: sourceOfTruth.category || null, 
             } 
         }); 
-        
         const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width; 
-        if (imageWidth && imageWidth >= 3840) { 
-            setMainImageUploadQuality('4k'); 
-        } else { 
-            setMainImageUploadQuality('1080p'); 
-        } 
-        
+        if (imageWidth && imageWidth >= 3840) { setMainImageUploadQuality('4k'); } else { setMainImageUploadQuality('1080p'); } 
         if (editorInstance) { 
             const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
             const editorJSON = JSON.stringify(editorInstance.getJSON()); 
             const sourceJSON = JSON.stringify(freshTiptapContent); 
-            
-            if (editorJSON !== sourceJSON) { 
-                editorInstance.commands.setContent(freshTiptapContent, false); 
-            } 
+            if (editorJSON !== sourceJSON) { editorInstance.commands.setContent(freshTiptapContent, false); } 
         } 
     }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance, sourceOfTruth.slug]);
 
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
     useEffect(() => {
-        if (state._type === 'gameRelease') {
-            setSlugValidationStatus('valid');
-            setSlugValidationMessage('');
-            return;
-        }
-        if (!state._id || !debouncedSlug) { setSlugValidationStatus('invalid'); setSlugValidationMessage(!state._id ? 'بانتظار مُعرِّف الوثيقة...' : 'لا يكُن المُعرِّفُ خاويًا.'); return; } setSlugValidationStatus('pending'); setSlugValidationMessage('جارٍ التحقق...'); const checkSlug = async () => { const result = await validateSlugAction(debouncedSlug, state._id); setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); setSlugValidationMessage(result.message); }; checkSlug();
+        if (state._type === 'gameRelease') { setSlugValidationStatus('valid'); setSlugValidationMessage(''); return; }
+        if (!state._id || !debouncedSlug) { setSlugValidationStatus('invalid'); setSlugValidationMessage(!state._id ? 'بانتظار مُعرِّف الوثيقة...' : 'لا يكُن المُعرِّفُ خاويًا.'); return; } 
+        setSlugValidationStatus('pending'); setSlugValidationMessage('جارٍ التحقق...'); 
+        const checkSlug = async () => { const result = await validateSlugAction(debouncedSlug, state._id); setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); setSlugValidationMessage(result.message); }; checkSlug();
     }, [debouncedSlug, state._id, state._type]);
+
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
     const saveWorkingCopy = async (): Promise<boolean> => { 
@@ -244,7 +274,29 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         } 
     };
     
-    const handlePublish = async (publishTime?: string | null): Promise<boolean> => { const didSave = await saveWorkingCopy(); if (!didSave) { if (hasChanges) toast.error('احفظ التغييرات أولاً.', 'left'); return false; } const result = await publishDocumentAction(sourceOfTruth._id, publishTime); if (result.success && result.updatedDocument) { setSourceOfTruth(result.updatedDocument); toast.success(result.message || 'تجددت حالة النشر!', 'left'); return true; } else { toast.error(result.message || 'أخفق تحديث الحالة.', 'left'); return false; } };
+    const handlePublish = async (publishTime?: string | null): Promise<boolean> => { 
+        const didSave = await saveWorkingCopy(); 
+        if (!didSave) { 
+            if (hasChanges) toast.error('احفظ التغييرات أولاً.', 'left'); 
+            return false; 
+        } 
+        const result = await publishDocumentAction(sourceOfTruth._id, publishTime); 
+        if (result.success && result.updatedDocument) { 
+            // THE FIX: Merge server result but preserve the local content state to prevent false-positive diffs.
+            // Since saveWorkingCopy() just succeeded, our local state.content is the source of truth.
+            setSourceOfTruth(prev => ({
+                ...result.updatedDocument,
+                content: prev.content, 
+                tiptapContent: prev.tiptapContent
+            })); 
+            toast.success(result.message || 'تجددت حالة النشر!', 'left'); 
+            return true; 
+        } else { 
+            toast.error(result.message || 'أخفق تحديث الحالة.', 'left'); 
+            return false; 
+        } 
+    };
+
     useEffect(() => { if (hasChanges) { document.title = `*لم يُحفظ* ${title || 'بلا عنوان'}`; window.onbeforeunload = () => "أَتَغادرُ وما كتبت لم يُحفظ؟"; } else { document.title = title || "EternalGames الديوان"; window.onbeforeunload = null; } return () => { window.onbeforeunload = null; }; }, [hasChanges, title]);
     
     const isRelease = initialDocument._type === 'gameRelease';
@@ -253,14 +305,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         <div className={styles.sanctumContainer}>
             <div className={styles.sanctumMain}>
                 <motion.div
-                    style={{
-                        position: isMobile ? 'absolute' : 'relative',
-                        top: 0,
-                        right: 0,
-                        bottom: 0,
-                        width: isMobile ? '100%' : 'auto',
-                        pointerEvents: isMobile && !isSidebarOpen ? 'none' : 'auto',
-                    }}
+                    style={{ position: isMobile ? 'absolute' : 'relative', top: 0, right: 0, bottom: 0, width: isMobile ? '100%' : 'auto', pointerEvents: isMobile && !isSidebarOpen ? 'none' : 'auto' }}
                     animate={{ x: isMobile ? (isSidebarOpen ? '0%' : '100%') : '0%' }}
                     transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                 >
@@ -285,14 +330,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                     />
                 </motion.div>
                 <motion.div
-                    style={{
-                        position: isMobile ? 'absolute' : 'relative',
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        width: '100%',
-                        pointerEvents: isMobile && isSidebarOpen ? 'none' : 'auto',
-                    }}
+                    style={{ position: isMobile ? 'absolute' : 'relative', top: 0, left: 0, bottom: 0, width: '100%', pointerEvents: isMobile && isSidebarOpen ? 'none' : 'auto' }}
                     animate={{ x: isMobile ? (isSidebarOpen ? '-100%' : '0%') : '0%' }}
                     transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                 >

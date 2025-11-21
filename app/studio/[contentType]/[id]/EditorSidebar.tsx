@@ -66,7 +66,25 @@ export function EditorSidebar({
     const isSlugValid = slugValidationStatus === 'valid';
     const isSlugPending = slugValidationStatus === 'pending';
 
-    const handlePublishClick = () => { startPublishTransition(async () => { const publishDate = isRelease ? '' : (scheduledDateTime || ''); if (hasChanges) { const saveSuccess = await onSave(); if (saveSuccess) { await onPublish(publishDate); } } else { await onPublish(publishDate); } }); };
+    const handlePublishClick = () => { 
+        startPublishTransition(async () => { 
+            const publishDate = isRelease ? '' : (scheduledDateTime || ''); 
+            let success = false;
+            if (hasChanges) { 
+                const saveSuccess = await onSave(); 
+                if (saveSuccess) { 
+                    success = await onPublish(publishDate); 
+                } 
+            } else { 
+                success = await onPublish(publishDate); 
+            } 
+            
+            // THE FIX: Clear schedule input if publish was successful
+            if (success) {
+                setScheduledDateTime('');
+            }
+        }); 
+    };
     
     const publishButtonText = useMemo(() => {
         if (isRelease) { return "تحديث الإصدار"; }
@@ -75,8 +93,37 @@ export function EditorSidebar({
         return hasChanges ? "حفظ ونشر" : "نشر";
     }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
 
+    const canPerformPublishAction = useMemo(() => {
+        // 1. If there are unsaved changes, action is always allowed (Save & Publish/Update)
+        if (hasChanges) return true;
+        
+        // 2. If it's a Game Release with no changes, disable update
+        if (isRelease) return false;
+
+        // 3. If it's a Draft (never published), always allow Publish
+        if (!publishedAt) return true;
+
+        // 4. If Scheduled (future date)
+        if (isScheduled) {
+            // Always allow action on scheduled items (e.g., "Publish Now" to override schedule)
+            return true;
+        }
+
+        // 5. If Live (Published)
+        if (isPublished) {
+            // Only allow if setting a NEW schedule (Re-schedule)
+            if (scheduledDateTime) return true;
+            // Otherwise, if live and no changes, disable to prevent redundant updates
+            return false;
+        }
+        
+        return true;
+    }, [hasChanges, isRelease, publishedAt, isScheduled, isPublished, scheduledDateTime]);
+
     const isSaveDisabled = isSaving || !hasChanges || !isSlugValid || isSlugPending || isPublishing;
-    const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending || isSaving;
+    
+    const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending || isSaving || !canPerformPublishAction;
+    
     const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending || isSaving;
     const handleFieldChange = (field: string, value: any) => { dispatch({ type: 'UPDATE_FIELD', payload: { field, value } }); };
     const creatorsForRole = (sanityType: string) => allCreators.filter((c: any) => c._type === sanityType);
