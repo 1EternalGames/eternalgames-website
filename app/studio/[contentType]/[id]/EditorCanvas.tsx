@@ -6,8 +6,9 @@ import dynamic from 'next/dynamic';
 import { Editor } from '@tiptap/react';
 import React, { useRef, useLayoutEffect } from 'react';
 import styles from './Editor.module.css';
+import { SaveStatusIcons, SaveStatus } from './SaveStatusIcons';
 
-type ColorMapping = { // ADDED TYPE
+type ColorMapping = {
   _key?: string;
   word: string;
   color: string;
@@ -21,10 +22,21 @@ interface EditorCanvasProps {
     onTitleChange: (newTitle: string) => void; 
     onEditorCreated: (editor: Editor) => void; 
     editor: Editor | null;
-    colorDictionary: ColorMapping[]; // ADDED PROP
+    colorDictionary: ColorMapping[];
+    clientSaveStatus?: SaveStatus;
+    serverSaveStatus?: SaveStatus;
 }
 
-export function EditorCanvas({ document, title, onTitleChange, onEditorCreated, editor, colorDictionary }: EditorCanvasProps) {
+export function EditorCanvas({ 
+    document, 
+    title, 
+    onTitleChange, 
+    onEditorCreated, 
+    editor, 
+    colorDictionary,
+    clientSaveStatus = 'saved',
+    serverSaveStatus = 'saved'
+}: EditorCanvasProps) {
     const isRelease = document._type === 'gameRelease';
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,6 +52,8 @@ export function EditorCanvas({ document, title, onTitleChange, onEditorCreated, 
     return (
         <motion.div className={styles.sanctumCanvas} style={{position: 'relative'}} transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}>
             <div className={styles.canvasContent}>
+                <SaveStatusIcons clientState={clientSaveStatus} serverState={serverSaveStatus} />
+                
                 <textarea
                     ref={textareaRef}
                     value={title}

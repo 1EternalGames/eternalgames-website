@@ -1,0 +1,68 @@
+
+.container {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    justify-content: flex-end;
+    padding: 0 0.5rem;
+}
+
+.iconWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    transition: color 0.3s ease;
+}
+
+.iconWrapper svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Status Colors */
+.saved {
+    color: var(--accent); /* Cyan */
+}
+
+.pending,
+.saving {
+    color: var(--text-secondary); /* Gray */
+}
+
+/* Animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.saving svg {
+    animation: spin 1s linear infinite;
+}
+
+.tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    border: 1px solid var(--border-color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    margin-bottom: 5px;
+    z-index: 10;
+}
+
+.iconWrapper:hover .tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-3px);
+}

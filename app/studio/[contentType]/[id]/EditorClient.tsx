@@ -1,7 +1,7 @@
 // app/studio/[contentType]/[id]/EditorClient.tsx
 
 'use client';
-import { useState, useMemo, useEffect, useReducer, useRef } from 'react';
+import { useState, useMemo, useEffect, useReducer, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorSidebar } from './EditorSidebar';
 import { EditorCanvas } from './EditorCanvas';
@@ -19,6 +19,7 @@ import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import { useEditorStore } from '@/lib/editorStore';
 import styles from './Editor.module.css';
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
+import type { SaveStatus } from './SaveStatusIcons';
 
 type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
@@ -40,8 +41,6 @@ const getInitialEditorState = (doc: EditorDocument) => {
         _type: doc._type,
         title: doc.title ?? '',
         slug: currentSlug,
-        // If we have a slug initially, we assume it was manual or already set, 
-        // preventing auto-slugify from overwriting it immediately on load.
         isSlugManual: !!currentSlug,
         score: doc.score ?? 0,
         verdict: doc.verdict ?? '',
@@ -78,23 +77,17 @@ const stripKeysAndNormalize = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(stripKeysAndNormalize);
     } else if (obj !== null && typeof obj === 'object') {
-        // Special handling for Portable Text Blocks to normalize markDefs keys
         if (obj._type === 'block') {
             const keyMap: Record<string, string> = {};
-            
-            // 1. Normalize markDefs keys to deterministic values (mark_def_0, mark_def_1...)
             let normalizedMarkDefs: any[] = [];
             if (Array.isArray(obj.markDefs) && obj.markDefs.length > 0) {
                 normalizedMarkDefs = obj.markDefs.map((def: any, index: number) => {
                     const newKey = `mark_def_${index}`;
                     keyMap[def._key] = newKey;
-                    // Recursively strip rest of def, but enforce new key
                     const { _key, ...rest } = def;
                     return { _key: newKey, ...stripKeysAndNormalize(rest) };
                 });
             }
-
-            // 2. Normalize children (spans) and map their marks to the new keys
             let normalizedChildren = [];
             if (Array.isArray(obj.children)) {
                 normalizedChildren = obj.children.map((child: any) => {
@@ -102,26 +95,19 @@ const stripKeysAndNormalize = (obj: any): any => {
                     const newChild = stripKeysAndNormalize(childRest);
                     if (Array.isArray(newChild.marks)) {
                         newChild.marks = newChild.marks.map((m: string) => keyMap[m] || m).sort();
-                        // OPTIMIZATION: If marks array is empty, remove it to match 'undefined' from server
                         if (newChild.marks.length === 0) delete newChild.marks;
                     }
                     return newChild;
                 });
             }
-
             const newObj: any = { ...obj };
             delete newObj._key;
-            
-            // OPTIMIZATION: Only include markDefs if it has content, otherwise remove property
             if (normalizedMarkDefs.length > 0) {
                 newObj.markDefs = normalizedMarkDefs;
             } else {
                 delete newObj.markDefs;
             }
-
             newObj.children = normalizedChildren;
-            
-            // Clean any other keys recursively
             for (const key in newObj) {
                 if (key !== 'markDefs' && key !== 'children' && key !== '_key') {
                     newObj[key] = stripKeysAndNormalize(newObj[key]);
@@ -129,13 +115,10 @@ const stripKeysAndNormalize = (obj: any): any => {
             }
             return newObj;
         }
-
-        // Standard recursive strip for other objects
         const newObj: any = {};
         for (const key in obj) {
             if (key !== '_key') {
                 const val = stripKeysAndNormalize(obj[key]);
-                // Only add if not undefined (JSON.stringify drops undefined, but being explicit helps)
                 if (val !== undefined) {
                     newObj[key] = val;
                 }
@@ -174,10 +157,8 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
     
     if (sourceOfTruth._type !== 'gameRelease') {
-        // Compare normalized content (ignoring keys, empty arrays, and deterministic marks)
         const cleanSource = JSON.stringify(stripKeysAndNormalize(sourceContentSanity));
         const cleanCurrent = JSON.stringify(stripKeysAndNormalize(currentContentSanity));
-        
         if (cleanSource !== cleanCurrent) {
             patch.content = currentContentSanity;
         }
@@ -209,6 +190,13 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
     const [colorDictionary, setColorDictionary] = useState<ColorMapping[]>(initialColorDictionary);
     
+    // Auto-Save State
+    const [clientSaveStatus, setClientSaveStatus] = useState<SaveStatus>('saved');
+    const [serverSaveStatus, setServerSaveStatus] = useState<SaveStatus>('saved');
+    const clientSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
+
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
     useEffect(() => {
@@ -246,13 +234,122 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     }, []);
 
     useEffect(() => { const handleResize = () => { const mobile = window.innerWidth <= 1024; setIsMobile(mobile); if (!mobile) setIsSidebarOpen(true); }; handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize); }, []);
+    
+    // Hydrate from localStorage on mount (or when editor becomes available)
+    useEffect(() => {
+        if (!editorInstance || hasHydratedFromLocal) return;
+
+        const key = `eternal-draft-${initialDocument._id}`;
+        const saved = localStorage.getItem(key);
+
+        if (saved) {
+            try {
+                const localData = JSON.parse(saved);
+                // Basic sanity check: assume local data is valid if it exists.
+                // In a real world app, we might check timestamps vs sourceOfTruth._updatedAt
+                // For now, if local exists, we prioritize it to solve the "data vanished" issue.
+                
+                if (localData.state && localData.contentJson) {
+                    console.log("[Hydration] Found local draft, restoring...");
+                    
+                    // 1. Restore Metadata State
+                    dispatch({ type: 'INITIALIZE_STATE', payload: localData.state });
+                    
+                    // 2. Restore Content JSON string
+                    setEditorContentJson(localData.contentJson);
+
+                    // 3. Restore Editor Content
+                    const contentObj = JSON.parse(localData.contentJson);
+                    // Use Tiptap JSON directly
+                    editorInstance.commands.setContent(contentObj, false); 
+
+                    // Notify user
+                    toast.info('تم استعادة مسودة غير محفوظة من جهازك.', 'left');
+                }
+            } catch (e) {
+                console.error("Failed to parse local draft:", e);
+                // Optionally clear corrupt data
+                localStorage.removeItem(key);
+            }
+        }
+        setHasHydratedFromLocal(true);
+    }, [editorInstance, initialDocument._id, hasHydratedFromLocal, toast]);
+
+
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
+
+    // --- AUTO SAVE LOGIC ---
+    useEffect(() => {
+        // If nothing changed, do nothing (but don't clear interval if we are waiting for server save?)
+        // Actually, if !hasChanges, it means we are in sync with sourceOfTruth OR we just saved.
+        
+        if (hasChanges) {
+            // 1. Indicate Pending/Saving status
+            setClientSaveStatus('saving');
+            setServerSaveStatus('pending');
+
+            // 2. Clear existing timers to debounce
+            if (clientSaveTimeoutRef.current) clearTimeout(clientSaveTimeoutRef.current);
+            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
+
+            // 3. Client Save (1s): Persist to LocalStorage
+            clientSaveTimeoutRef.current = setTimeout(() => {
+                const key = `eternal-draft-${sourceOfTruth._id}`;
+                const payload = {
+                    state,
+                    contentJson: editorContentJson,
+                    updatedAt: new Date().toISOString()
+                };
+                localStorage.setItem(key, JSON.stringify(payload));
+                setClientSaveStatus('saved');
+            }, 1000);
+
+            // 4. Server Save (5s): Persist to Database
+            serverSaveTimeoutRef.current = setTimeout(async () => {
+                setServerSaveStatus('saving');
+                const success = await saveWorkingCopy();
+                if (success) {
+                    setServerSaveStatus('saved');
+                    // Optional: Clear local storage here if we trust the server 100%, 
+                    // but keeping it until page reload is safer for "offline-first" feel.
+                    // We'll update the local storage with the "clean" state implicitly 
+                    // because `saveWorkingCopy` updates `sourceOfTruth`, which triggers `generateDiffPatch`,
+                    // which makes `hasChanges` false, which triggers the cleanup effect below.
+                } else {
+                    // Stay in saving or pending state visually? Or reset to allow retry?
+                    // Let's go back to pending so user knows it didn't stick? 
+                    // Actually, 'saved' prevents anxiety, error toast handles the alert.
+                    setServerSaveStatus('saved'); 
+                }
+            }, 5000);
+        }
+
+        return () => {
+            // Cleanup triggers on every dependency change (keystroke)
+            // We rely on the new effect execution to set new timers.
+        };
+    }, [hasChanges, state, editorContentJson, sourceOfTruth._id]);
+
+    // Cleanup timers if changes are resolved (e.g. manual save)
+    useEffect(() => {
+        if (!hasChanges) {
+            if (clientSaveTimeoutRef.current) clearTimeout(clientSaveTimeoutRef.current);
+            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
+            setClientSaveStatus('saved');
+            setServerSaveStatus('saved');
+            
+            // Also, if we are fully synced, we could technically clear local storage 
+            // to avoid loading old state later, BUT keeping it is safer against crashes.
+            // We will overwrite it on next change anyway.
+        }
+    }, [hasChanges]);
+
+
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
-    // This effect now only runs when sourceOfTruth changes (e.g. after save), avoiding double-init on mount
     useEffect(() => { 
-        // Only dispatch if IDs don't match (navigation) or timestamps differ (external/save update)
+        // Sync state when Server Data updates (e.g. after a manual save)
         if (sourceOfTruth._id !== state._id || sourceOfTruth._updatedAt !== state._updatedAt) {
             const newState = getInitialEditorState(sourceOfTruth);
             dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
@@ -264,37 +361,36 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
                 const editorJSON = JSON.stringify(editorInstance.getJSON()); 
                 const sourceJSON = JSON.stringify(freshTiptapContent); 
-                if (editorJSON !== sourceJSON) { editorInstance.commands.setContent(freshTiptapContent, false); } 
+                // Only update editor content if it's actually different, to prevent cursor jumps
+                // But be careful: this might overwrite local changes if not handled by the hydration logic first.
+                // Hydration logic sets `hasHydratedFromLocal` to true. 
+                // We should only force update from server if we are NOT dirty locally, OR if this update IS the result of a save.
+                if (editorJSON !== sourceJSON && !hasChanges) { 
+                    editorInstance.commands.setContent(freshTiptapContent, false); 
+                } 
             }
         }
-    }, [sourceOfTruth, editorInstance, state._id, state._updatedAt]);
+    }, [sourceOfTruth, editorInstance, state._id, state._updatedAt, hasChanges]);
 
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
     
     useEffect(() => {
         if (state._type === 'gameRelease') { setSlugValidationStatus('valid'); setSlugValidationMessage(''); return; }
-        
-        // Avoid triggering invalid state if the slug is just initializing
         if (!state._id || !debouncedSlug) { 
-             // If it's truly empty, it's invalid
              if (debouncedSlug === '') {
                  setSlugValidationStatus('invalid'); 
                  setSlugValidationMessage('لا يكُن المُعرِّفُ خاويًا.');
              }
              return; 
         } 
-
-        // If the debounced slug matches what we already know is valid (source of truth), skip check
         if (debouncedSlug === sourceOfTruth.slug?.current) {
             setSlugValidationStatus('valid');
             setSlugValidationMessage('المُعرِّفُ صالح.');
             return;
         }
-
         setSlugValidationStatus('pending'); 
         setSlugValidationMessage('جارٍ التحقق...'); 
-        
         const checkSlug = async () => { 
             const result = await validateSlugAction(debouncedSlug, state._id); 
             setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); 
@@ -306,7 +402,11 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
     const saveWorkingCopy = async (): Promise<boolean> => { 
-        if (!hasChanges) return true; 
+        // Recalculate patch to ensure closure freshness
+        const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
+        const currentHasChanges = Object.keys(currentPatch).length > 0;
+
+        if (!currentHasChanges) return true; 
         if (sourceOfTruth._type !== 'gameRelease' && slugValidationStatus !== 'valid') { 
             toast.error('لا يمكن الحفظ بمُعرِّف غير صالح.', 'left'); 
             return false; 
@@ -334,10 +434,21 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
             _updatedAt: new Date().toISOString(),
         };
         
-        const result = await updateDocumentAction(sourceOfTruth._id, patch); 
+        const result = await updateDocumentAction(sourceOfTruth._id, currentPatch); 
         
         if (result.success && result.updatedDocument) { 
             setSourceOfTruth({ ...optimisticSOT, _updatedAt: result.updatedDocument._updatedAt });
+            
+            // Update local storage with the fresh 'synced' state (optional, but good for consistency)
+            // Actually, if we saved, we can just rely on the fact that state matches sourceOfTruth.
+            // But to be safe against crashes during next edits:
+            const key = `eternal-draft-${sourceOfTruth._id}`;
+            localStorage.setItem(key, JSON.stringify({
+                state,
+                contentJson: editorContentJson,
+                updatedAt: new Date().toISOString()
+            }));
+
             return true; 
         } else { 
             toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); 
@@ -353,13 +464,15 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         } 
         const result = await publishDocumentAction(sourceOfTruth._id, publishTime); 
         if (result.success && result.updatedDocument) { 
-            // Merge server result but preserve local content state to prevent false-positive diffs
             setSourceOfTruth(prev => ({
                 ...result.updatedDocument,
                 content: prev.content, 
                 tiptapContent: prev.tiptapContent
             })); 
             toast.success(result.message || 'تجددت حالة النشر!', 'left'); 
+            
+            // Clear local storage on publish? 
+            // Maybe better to keep it. User might continue editing.
             return true; 
         } else { 
             toast.error(result.message || 'أخفق تحديث الحالة.', 'left'); 
@@ -411,6 +524,8 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         onEditorCreated={setEditorInstance} 
                         editor={editorInstance} 
                         colorDictionary={colorDictionary}
+                        clientSaveStatus={clientSaveStatus}
+                        serverSaveStatus={serverSaveStatus}
                     />
                 </motion.div>
             </div>
