@@ -1,6 +1,8 @@
+// components/Footer.tsx
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import styles from './Footer.module.css';
 
 //  Dedicated, Correctly Scaled Icon Components
@@ -33,40 +35,52 @@ const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const Footer = () => {
-return (
-<footer className={`${styles.footer} ${styles.newFooterLayout}`}>
-<div className={`container ${styles.footerContainer}`}>
-<div className={`${styles.footerSocialsWrapper}`}>
-<a href="https://x.com/1EternalGames" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter" className="no-underline">
-<div className={styles.socialLinkFrame}><XIcon className={styles.socialIconSvg} /></div>
-</a>
-<a href="https://www.tiktok.com/@1eternalgames" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="no-underline">
-<div className={styles.socialLinkFrame}><TikTokIcon className={styles.socialIconSvg} /></div>
-</a>
-<a href="https://www.youtube.com/@1eternalgames" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="no-underline">
-<div className={styles.socialLinkFrame}><YouTubeIcon className={styles.socialIconSvg} /></div>
-</a>
-<a href="https://www.instagram.com/1eternalgames" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="no-underline">
-<div className={styles.socialLinkFrame}><InstagramIcon className={styles.socialIconSvg} /></div>
-</a>
-<a href="https://www.facebook.com/people/Eternal-Games/61574132488834/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="no-underline">
-<div className={styles.socialLinkFrame}><FacebookIcon className={styles.socialIconSvg} /></div>
-</a>
-</div>
+  const pathname = usePathname();
 
-<div className={styles.footerDivider}></div>
+  // THE DEFINITIVE FIX:
+  // Completely unmount the footer if we are in a specific studio editor route.
+  // This regex matches /studio/reviews/..., /studio/news/..., etc.
+  // but does NOT match /studio (the dashboard), which should have a footer.
+  const isStudioEditor = /^\/studio\/(reviews|articles|news|releases)\/.+/.test(pathname);
 
-<div className={styles.footerInfo}>
-<p className={styles.footerCopyright}>&copy; {new Date().getFullYear()} EternalGames</p>
-<span className={styles.infoSeparator}>•</span>
-<a href="https://x.com/MoVisionX" target="_blank" rel="noopener noreferrer" className={`${styles.designerCredit} no-underline`}>
-<span>تطوير محمد السعد - @MoVisionX</span>
-<XIcon className={styles.designerIcon} />
-</a>
-</div>
-</div>
-</footer>
-);
+  if (isStudioEditor) {
+    return null;
+  }
+
+  return (
+    <footer className={`${styles.footer} ${styles.newFooterLayout}`}>
+      <div className={`container ${styles.footerContainer}`}>
+        <div className={`${styles.footerSocialsWrapper}`}>
+          <a href="https://x.com/1EternalGames" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter" className="no-underline">
+            <div className={styles.socialLinkFrame}><XIcon className={styles.socialIconSvg} /></div>
+          </a>
+          <a href="https://www.tiktok.com/@1eternalgames" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="no-underline">
+            <div className={styles.socialLinkFrame}><TikTokIcon className={styles.socialIconSvg} /></div>
+          </a>
+          <a href="https://www.youtube.com/@1eternalgames" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="no-underline">
+            <div className={styles.socialLinkFrame}><YouTubeIcon className={styles.socialIconSvg} /></div>
+          </a>
+          <a href="https://www.instagram.com/1eternalgames" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="no-underline">
+            <div className={styles.socialLinkFrame}><InstagramIcon className={styles.socialIconSvg} /></div>
+          </a>
+          <a href="https://www.facebook.com/people/Eternal-Games/61574132488834/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="no-underline">
+            <div className={styles.socialLinkFrame}><FacebookIcon className={styles.socialIconSvg} /></div>
+          </a>
+        </div>
+
+        <div className={styles.footerDivider}></div>
+
+        <div className={styles.footerInfo}>
+          <p className={styles.footerCopyright}>&copy; {new Date().getFullYear()} EternalGames</p>
+          <span className={styles.infoSeparator}>•</span>
+          <a href="https://x.com/MoVisionX" target="_blank" rel="noopener noreferrer" className={`${styles.designerCredit} no-underline`}>
+            <span>تطوير محمد السعد - @MoVisionX</span>
+            <XIcon className={styles.designerIcon} />
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
 };
 
 export default Footer;

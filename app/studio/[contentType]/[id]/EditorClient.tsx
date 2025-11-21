@@ -94,11 +94,22 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     useBodyClass('sidebar-open', isSidebarOpen && isMobile);
     
+    // THE DEFINITIVE FIX: Race Condition Handling
+    // We only set the editor inactive if we are truly leaving the studio context.
     useEffect(() => {
         setEditorActive(true);
+        document.body.classList.add('editor-active');
+
         return () => {
-            setEditorActive(false);
-            setLiveUrl(null);
+            // Check the current URL. If we are navigating to another editor page,
+            // 'isStillEditor' will be true, preventing the reset.
+            const isStillEditor = window.location.pathname.match(/^\/studio\/(reviews|articles|news|releases)\//);
+            
+            if (!isStillEditor) {
+                setEditorActive(false);
+                setLiveUrl(null);
+                document.body.classList.remove('editor-active');
+            }
         };
     }, [setEditorActive, setLiveUrl]);
 
@@ -235,7 +246,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => { const didSave = await saveWorkingCopy(); if (!didSave) { if (hasChanges) toast.error('احفظ التغييرات أولاً.', 'left'); return false; } const result = await publishDocumentAction(sourceOfTruth._id, publishTime); if (result.success && result.updatedDocument) { setSourceOfTruth(result.updatedDocument); toast.success(result.message || 'تجددت حالة النشر!', 'left'); return true; } else { toast.error(result.message || 'أخفق تحديث الحالة.', 'left'); return false; } };
     useEffect(() => { if (hasChanges) { document.title = `*لم يُحفظ* ${title || 'بلا عنوان'}`; window.onbeforeunload = () => "أَتَغادرُ وما كتبت لم يُحفظ؟"; } else { document.title = title || "EternalGames الديوان"; window.onbeforeunload = null; } return () => { window.onbeforeunload = null; }; }, [hasChanges, title]);
-    useEffect(() => { document.body.classList.add('editor-active'); return () => { document.body.classList.remove('editor-active'); } }, []);
     
     const isRelease = initialDocument._type === 'gameRelease';
 
@@ -271,7 +281,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         allTags={allTags} 
                         allCreators={allCreators} 
                         colorDictionary={colorDictionary}
-                        onColorDictionaryUpdate={setColorDictionary} // CORRECTED: Pass the setter function
+                        onColorDictionaryUpdate={setColorDictionary}
                     />
                 </motion.div>
                 <motion.div
@@ -292,7 +302,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         onTitleChange={(newTitle) => dispatch({ type: 'UPDATE_FIELD', payload: { field: 'title', value: newTitle } })} 
                         onEditorCreated={setEditorInstance} 
                         editor={editorInstance} 
-                        colorDictionary={colorDictionary} // CORRECTED: Pass the state down
+                        colorDictionary={colorDictionary}
                     />
                 </motion.div>
             </div>
