@@ -1,7 +1,6 @@
 // app/studio/[contentType]/[id]/extensions/AutoColorExtension.ts
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Node as ProsemirrorNode } from 'prosemirror-model';
 
 type ColorMapping = {
   word: string;
@@ -28,10 +27,6 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
   addProseMirrorPlugins() {
     const { colorMappings } = this.options;
     
-    // THE DEFINITIVE FIX: This new implementation is more performant and less disruptive.
-    // It scans the document only for words that *should* be colored but currently aren't.
-    // It avoids removing and re-adding marks on every change, which was causing the editor
-    // to lose track of the active color mark at the cursor position.
     return [
       new Plugin({
         key: new PluginKey('autoColorApply'),
@@ -44,48 +39,107 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
           const tr = newState.tr;
           let modified = false;
 
-          const wordsToFind = colorMappings.map(m => escapeRegExp(m.word)).join('|');
+          // Prepare regex and color map
+          // We sort by length descending to match longest words first if there are overlaps
+          const sortedMappings = [...colorMappings].sort((a, b) => b.word.length - a.word.length);
+          const wordsToFind = sortedMappings.map(m => escapeRegExp(m.word)).join('|');
+          // Use 'gi' for case-insensitive matching, respecting word boundaries
           const searchRegex = new RegExp(`\\b(${wordsToFind})\\b`, 'gi');
-          const colorMap = new Map(colorMappings.map(item => [item.word.toLowerCase(), item.color]));
           
+          const colorMap = new Map<string, string>();
+          colorMappings.forEach(m => colorMap.set(m.word.toLowerCase(), m.color));
+          
+          const managedColors = new Set(colorMappings.map(m => m.color));
           const textStyleMark = this.editor.schema.marks.textStyle;
 
-          newState.doc.forEach((node: ProsemirrorNode, pos: number) => {
-            if (!node.isBlock || !node.textContent) {
-              return;
+          newState.doc.forEach((node, pos) => {
+            if (!node.isTextblock) return;
+
+            const text = node.textContent;
+            if (!text) return;
+
+            // 1. Calculate Desired Matches based on current text content
+            const matches: {start: number, end: number, color: string}[] = [];
+            let match;
+            searchRegex.lastIndex = 0; // Reset regex
+            
+            while ((match = searchRegex.exec(text)) !== null) {
+                const word = match[0];
+                const color = colorMap.get(word.toLowerCase());
+                if (color) {
+                    matches.push({
+                        start: pos + 1 + match.index,
+                        end: pos + 1 + match.index + word.length,
+                        color
+                    });
+                }
             }
 
-            node.forEach((childNode: ProsemirrorNode, offset: number) => {
-              if (!childNode.isText) return;
-
-              const text = childNode.text ?? '';
-              let match;
-
-              while ((match = searchRegex.exec(text)) !== null) {
-                const matchedWord = match[0];
-                const from = pos + 1 + offset + match.index;
-                const to = from + matchedWord.length;
-
-                const hasColorMark = newState.doc.rangeHasMark(from, to, textStyleMark);
+            // 2. Check if Update is Needed (Reconciliation)
+            // We assume the block needs an update unless proved otherwise.
+            // To prove it's valid, every text node must exactly match the expected color state.
+            let needsUpdate = false;
+            
+            let currentPos = pos + 1;
+            
+            // Iterate over the node's content (text nodes and inline nodes)
+            node.content.forEach((child) => {
+                if (needsUpdate) return; // Optimization: stop if we already know we need to update
                 
-                // Only apply the mark if one doesn't already exist.
-                if (!hasColorMark) {
-                  const color = colorMap.get(matchedWord.toLowerCase());
-                  if (color) {
-                    tr.addMark(from, to, textStyleMark.create({ color }));
-                    modified = true;
-                  }
+                if (!child.isText) {
+                    currentPos += child.nodeSize;
+                    return;
                 }
-              }
+                
+                const childEnd = currentPos + child.text!.length;
+                
+                // Check for any existing managed mark on this text node
+                const hasManagedColor = child.marks.find(m => m.type.name === 'textStyle' && m.attrs.color && managedColors.has(m.attrs.color));
+                
+                if (hasManagedColor) {
+                    const currentColor = hasManagedColor.attrs.color;
+                    // Valid if this ENTIRE text node range falls within a 'match' of the same color.
+                    // If a text node has a color but isn't part of a valid word match (e.g. "xbox" inside "xboxo"), it's invalid.
+                    const isValid = matches.some(m => 
+                        m.color === currentColor && 
+                        m.start <= currentPos && 
+                        m.end >= childEnd
+                    );
+                    if (!isValid) needsUpdate = true;
+                } else {
+                    // Valid if this text node does NOT overlap with any match.
+                    // If it overlaps a match, it implies it SHOULD have a color but doesn't.
+                    const isMissingColor = matches.some(m => 
+                        Math.max(currentPos, m.start) < Math.min(childEnd, m.end)
+                    );
+                    if (isMissingColor) needsUpdate = true;
+                }
+                
+                currentPos += child.nodeSize;
             });
+
+            // 3. Apply Update if needed
+            if (needsUpdate) {
+                modified = true;
+                const blockStart = pos + 1;
+                const blockEnd = pos + 1 + node.content.size;
+
+                // Strip all managed colors from this block first (Cleanup)
+                managedColors.forEach(color => {
+                    tr.removeMark(blockStart, blockEnd, textStyleMark.create({ color }));
+                });
+
+                // Apply the correct colors (Application)
+                matches.forEach(m => {
+                    tr.addMark(m.start, m.end, textStyleMark.create({ color: m.color }));
+                });
+            }
           });
 
           if (!modified) {
             return null;
           }
 
-          // Return the transaction without setting 'addToHistory' to false,
-          // allowing the changes to be part of the undo stack.
           return tr;
         },
       }),

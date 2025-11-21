@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRef, useState } from 'react';
 import styles from './ColorPicker.module.css';
 
-// MODIFIED: Added a 'representative' color for each category to be used as the visual tab.
+// Only one middle gray as requested to avoid black/white conflicts
 const COLOR_PALETTE = [
-    { title: 'Grays', representative: '#9CA3AF', colors: ['#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151', '#1F2937'] },
+    { title: 'Grays', representative: '#9CA3AF', colors: ['#9CA3AF'] },
     { title: 'Reds', representative: '#F87171', colors: ['#FEF2F2', '#FEE2E2', '#FECACA', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D', '#450A0A'] },
     { title: 'Oranges', representative: '#FB923C', colors: ['#FFF7ED', '#FFEDD5', '#FED7AA', '#FB923C', '#F97316', '#EA580C', '#C2410C', '#9A3412', '#7C2D12', '#431407'] },
     { title: 'Yellows', representative: '#FACC15', colors: ['#FEFCE8', '#FEF9C3', '#FEF08A', '#FACC15', '#EAB308', '#CA8A04', '#A16207', '#854D0E', '#713F12', '#422006'] },
@@ -39,11 +39,26 @@ const Swatch = ({ color, isActive, onClick, className = '' }: { color: string, i
     </motion.button>
 );
 
+// Helper to calculate contrast color for the icon (black or white)
+const getContrastColor = (hex: string) => {
+    if (!hex || !hex.startsWith('#') || hex.length < 7) return 'var(--text-primary)';
+    
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    
+    // Calculate brightness
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    
+    // Return black for light colors, white for dark colors
+    return (yiq >= 128) ? '#000000' : '#FFFFFF';
+};
+
 export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverStyle: React.CSSProperties }) {
     const colorInputRef = useRef<HTMLInputElement>(null);
     const [activeTab, setActiveTab] = useState(COLOR_PALETTE[0].title);
 
-    const currentColor = editor.getAttributes('textStyle').color || '#FFFFFF'; // Default to white
+    const currentColor = editor.getAttributes('textStyle').color || '#FFFFFF';
     const activePalette = COLOR_PALETTE.find(p => p.title === activeTab);
     const isCustomColor = !COLOR_PALETTE.flatMap(s => s.colors).some(c => c.toLowerCase() === currentColor.toLowerCase());
 
@@ -58,6 +73,8 @@ export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverS
     const handleCustomColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         editor.chain().focus().setColor(event.target.value).run();
     };
+
+    const iconColor = isCustomColor ? getContrastColor(currentColor) : 'var(--text-secondary)';
 
     return (
         <motion.div
@@ -110,7 +127,10 @@ export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverS
                         type="button"
                         onClick={() => colorInputRef.current?.click()}
                         className={styles.customColorButton}
-                        style={{ background: isCustomColor ? currentColor : 'var(--bg-primary)', color: isCustomColor ? '#fff' : 'var(--text-secondary)' }}
+                        style={{ 
+                            background: isCustomColor ? currentColor : 'var(--bg-primary)', 
+                            color: iconColor 
+                        }}
                         whileHover={{ scale: 1.1 }}
                         transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                     >

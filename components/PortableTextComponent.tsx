@@ -45,20 +45,12 @@ const YoutubeEmbed = dynamic(() => import('./content/YoutubeEmbed'), {
 })
 // --- END LAZY-LOADED COMPONENTS ---
 
+// MODIFIED: Cleaned palette. Only one mid-gray.
 const COLOR_PALETTE = [
   {
     title: 'Grays',
     colors: [
-      '#FFFFFF',
-      '#F9FAFB',
-      '#F3F4F6',
-      '#E5E7EB',
-      '#D1D5DB',
-      '#9CA3AF',
-      '#6B7280',
-      '#4B5563',
-      '#374151',
-      '#1F2937',
+      '#9CA3AF', // Middle Gray (Safe for both modes)
     ],
   },
   {
@@ -173,6 +165,38 @@ type ColorMapping = {
   color: string
 }
 
+// --- THE DEFINITIVE FIX: Math-based Color Safety ---
+// This function checks if a color is basically a shade of gray (achromatic)
+// and if it's too close to pure black or pure white.
+// If so, we return TRUE to indicate it should be ignored (inherit theme color).
+const shouldIgnoreColor = (hex: string): boolean => {
+  if (!hex || !hex.startsWith('#')) return true
+
+  // Parse Hex
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return true
+
+  // 1. Check Saturation/Difference
+  // If R, G, and B are very close to each other, it is a shade of gray.
+  const maxDiff = Math.max(Math.abs(r - g), Math.abs(r - b), Math.abs(g - b))
+  const isGrayscale = maxDiff < 20 // Tolerance for "slightly tinted" grays
+
+  if (isGrayscale) {
+    // 2. Check Brightness
+    // 0 = Black, 255 = White.
+    // If it's < 60 (Dark Gray/Black) OR > 190 (Light Gray/White), we ignore it.
+    // We only allow mid-tones (like #9CA3AF which is approx 160).
+    if (r < 80 || r > 180) {
+      return true // Ignore this color, let CSS control it
+    }
+  }
+
+  return false // Color is vibrant or a safe mid-gray; allow it.
+}
+
 const ColorMark = ({
   value,
   children,
@@ -187,34 +211,21 @@ const ColorMark = ({
   const originalColor = value?.hex
 
   if (!mounted || !originalColor) {
+    // Server-side or hydration mismatch prevention: simpler rendering
     return <span style={{color: originalColor}}>{children}</span>
   }
 
-  let colorInfo: {palette: (typeof COLOR_PALETTE)[0]; grade: number} | null = null
-  for (const palette of COLOR_PALETTE) {
-    const gradeIndex = palette.colors.findIndex(
-      (c) => c.toLowerCase() === originalColor.toLowerCase(),
-    )
-    if (gradeIndex !== -1) {
-      colorInfo = {palette, grade: gradeIndex + 1}
-      break
-    }
-  }
-
-  if (colorInfo && colorInfo.palette.title === 'Grays') {
+  // APPLY THE FIX:
+  // If the color detects as a dangerous near-black or near-white, discard the style.
+  if (shouldIgnoreColor(originalColor)) {
     return <span>{children}</span>
   }
 
-  let finalColor = originalColor
+  // --- EXISTING LOGIC for Adjusting Legibility of Colors ---
+  // If the color survived the filter (e.g. it's Red or Blue), we still
+  // check luminance to make sure it's readable against the current background theme.
 
-  if (colorInfo) {
-    const {palette, grade} = colorInfo
-    if (resolvedTheme === 'light' && grade >= 1 && grade <= 4) {
-      finalColor = palette.colors[4]
-    } else if (resolvedTheme === 'dark' && grade >= 7 && grade <= 10) {
-      finalColor = palette.colors[5]
-    }
-  }
+  let finalColor = originalColor
 
   const getLuminance = (hex: string): number => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -228,8 +239,10 @@ const ColorMark = ({
   const luminance = getLuminance(finalColor)
 
   if (resolvedTheme === 'dark' && luminance < 60) {
-    finalColor = `color-mix(in srgb, ${finalColor} 20%, white 80%)`
+    // If dark mode and color is too dark, lighten it
+    finalColor = `color-mix(in srgb, ${finalColor} 30%, white 70%)`
   } else if (resolvedTheme === 'light' && luminance > 200) {
+    // If light mode and color is too bright, darken it
     finalColor = `color-mix(in srgb, ${finalColor} 70%, black 30%)`
   }
 
@@ -311,9 +324,6 @@ const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock
   )
 }
 
-// THE DEFINITIVE FIX: Encapsulate the entire logic within the `useMemo` hook that defines the `components`.
-// This avoids complex type inference issues by constructing the final object in one go.
-
 export default function PortableTextComponent({
   content,
   colorDictionary = [],
@@ -336,7 +346,6 @@ export default function PortableTextComponent({
         : null
 
     const NormalBlockRenderer = (props: PortableTextComponentProps<PortableTextBlock>) => {
-      // If there's no regex, just render a plain paragraph.
       if (!regex) {
         return <p>{props.children}</p>
       }
@@ -344,7 +353,6 @@ export default function PortableTextComponent({
       return (
         <p>
           {React.Children.map(props.children, (child: any) => {
-            // If the child is not a plain string, render it as is. This handles marks (bold, links, etc.)
             if (typeof child !== 'string') {
               return child
             }
@@ -382,7 +390,7 @@ export default function PortableTextComponent({
         h2: ({children}) => <HeadingComponent level={2}>{children}</HeadingComponent>,
         h3: ({children}) => <HeadingComponent level={3}>{children}</HeadingComponent>,
         blockquote: BlockquoteComponent,
-        normal: NormalBlockRenderer, // Use the correctly typed renderer.
+        normal: NormalBlockRenderer,
       },
       marks: {
         color: ColorMark,
