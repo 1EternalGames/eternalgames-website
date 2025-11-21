@@ -78,29 +78,50 @@ const stripKeysAndNormalize = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(stripKeysAndNormalize);
     } else if (obj !== null && typeof obj === 'object') {
-        if (obj._type === 'block' && Array.isArray(obj.markDefs) && Array.isArray(obj.children)) {
+        // Special handling for Portable Text Blocks to normalize markDefs keys
+        if (obj._type === 'block') {
             const keyMap: Record<string, string> = {};
-            const normalizedMarkDefs = obj.markDefs.map((def: any, index: number) => {
-                const newKey = `mark_def_${index}`;
-                keyMap[def._key] = newKey;
-                const { _key, ...rest } = def;
-                return { _key: newKey, ...stripKeysAndNormalize(rest) };
-            });
+            
+            // 1. Normalize markDefs keys to deterministic values (mark_def_0, mark_def_1...)
+            let normalizedMarkDefs: any[] = [];
+            if (Array.isArray(obj.markDefs) && obj.markDefs.length > 0) {
+                normalizedMarkDefs = obj.markDefs.map((def: any, index: number) => {
+                    const newKey = `mark_def_${index}`;
+                    keyMap[def._key] = newKey;
+                    // Recursively strip rest of def, but enforce new key
+                    const { _key, ...rest } = def;
+                    return { _key: newKey, ...stripKeysAndNormalize(rest) };
+                });
+            }
 
-            const normalizedChildren = obj.children.map((child: any) => {
-                const { _key, ...childRest } = child;
-                const newChild = stripKeysAndNormalize(childRest);
-                if (Array.isArray(newChild.marks)) {
-                    newChild.marks = newChild.marks.map((m: string) => keyMap[m] || m).sort();
-                }
-                return newChild;
-            });
+            // 2. Normalize children (spans) and map their marks to the new keys
+            let normalizedChildren = [];
+            if (Array.isArray(obj.children)) {
+                normalizedChildren = obj.children.map((child: any) => {
+                    const { _key, ...childRest } = child;
+                    const newChild = stripKeysAndNormalize(childRest);
+                    if (Array.isArray(newChild.marks)) {
+                        newChild.marks = newChild.marks.map((m: string) => keyMap[m] || m).sort();
+                        // OPTIMIZATION: If marks array is empty, remove it to match 'undefined' from server
+                        if (newChild.marks.length === 0) delete newChild.marks;
+                    }
+                    return newChild;
+                });
+            }
 
             const newObj: any = { ...obj };
             delete newObj._key;
-            newObj.markDefs = normalizedMarkDefs;
+            
+            // OPTIMIZATION: Only include markDefs if it has content, otherwise remove property
+            if (normalizedMarkDefs.length > 0) {
+                newObj.markDefs = normalizedMarkDefs;
+            } else {
+                delete newObj.markDefs;
+            }
+
             newObj.children = normalizedChildren;
             
+            // Clean any other keys recursively
             for (const key in newObj) {
                 if (key !== 'markDefs' && key !== 'children' && key !== '_key') {
                     newObj[key] = stripKeysAndNormalize(newObj[key]);
@@ -109,10 +130,15 @@ const stripKeysAndNormalize = (obj: any): any => {
             return newObj;
         }
 
+        // Standard recursive strip for other objects
         const newObj: any = {};
         for (const key in obj) {
             if (key !== '_key') {
-                newObj[key] = stripKeysAndNormalize(obj[key]);
+                const val = stripKeysAndNormalize(obj[key]);
+                // Only add if not undefined (JSON.stringify drops undefined, but being explicit helps)
+                if (val !== undefined) {
+                    newObj[key] = val;
+                }
             }
         }
         return newObj;
@@ -148,6 +174,7 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
     
     if (sourceOfTruth._type !== 'gameRelease') {
+        // Compare normalized content (ignoring keys, empty arrays, and deterministic marks)
         const cleanSource = JSON.stringify(stripKeysAndNormalize(sourceContentSanity));
         const cleanCurrent = JSON.stringify(stripKeysAndNormalize(currentContentSanity));
         
@@ -162,7 +189,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 
 export function EditorClient({ document: initialDocument, allGames, allTags, allCreators, colorDictionary: initialColorDictionary }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[], colorDictionary: ColorMapping[] }) {
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
-    // THE FIX: Initialize reducer state directly with data, avoiding the empty state flash
     const [state, dispatch] = useReducer(editorReducer, getInitialEditorState(initialDocument));
     const { title, slug, isSlugManual } = state;
     const toast = useToast();
@@ -172,7 +198,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [mainImageUploadQuality, setMainImageUploadQuality] = useState<UploadQuality>('1080p');
     const { blockUploadQuality, setBlockUploadQuality, setEditorActive, setLiveUrl } = useEditorStore();
 
-    // THE FIX: Initialize status based on the presence of a slug
     const [slugValidationStatus, setSlugValidationStatus] = useState<'pending' | 'valid' | 'invalid'>(
         initialDocument.slug?.current ? 'valid' : 'pending'
     );
@@ -328,7 +353,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         } 
         const result = await publishDocumentAction(sourceOfTruth._id, publishTime); 
         if (result.success && result.updatedDocument) { 
-            // THE FIX: Merge server result but preserve local content state to prevent false-positive diffs
+            // Merge server result but preserve local content state to prevent false-positive diffs
             setSourceOfTruth(prev => ({
                 ...result.updatedDocument,
                 content: prev.content, 

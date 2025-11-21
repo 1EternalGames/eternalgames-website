@@ -2,6 +2,7 @@
 
 import {PortableTextBlock} from '@portabletext/types'
 import type {SanityImageObject as SanityImage} from '@sanity/image-url/lib/types/types'
+import { projectId, dataset } from '@/lib/sanity.env'
 
 // Type definitions for Tiptap's JSON structure
 interface TiptapNode {
@@ -10,6 +11,31 @@ interface TiptapNode {
   content?: TiptapNode[]
   text?: string
   marks?: {type: string; attrs?: Record<string, any>}[]
+}
+
+// Helper to reconstruct Sanity CDN URL from an Asset ID/Ref
+// Format: image-AssetID-WidthxHeight-Format
+const buildSanityUrl = (ref?: string): string | null => {
+  if (!ref) return null;
+  const parts = ref.split('-');
+  // We expect 4 parts: ["image", "id", "dimensions", "format"]
+  if (parts.length !== 4) return null;
+  const id = parts[1];
+  const dimensions = parts[2];
+  const format = parts[3];
+  return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
+}
+
+const resolveImageAttrs = (sanityImageObj: any) => {
+  const asset = sanityImageObj?.asset;
+  const assetId = asset?._id || asset?._ref;
+  let url = asset?.url;
+
+  if (!url && assetId) {
+    url = buildSanityUrl(assetId);
+  }
+
+  return { assetId, url };
 }
 
 /**
@@ -24,7 +50,6 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
   const validBlocks = (blocks || []).filter(Boolean)
 
   validBlocks.forEach((block: any) => {
-    // Use 'any' here to accommodate custom table type
     // --- HANDLE LIST ITEMS ---
     if (block._type === 'block' && block.listItem === 'bullet') {
       if (!currentList) {
@@ -63,75 +88,86 @@ export function portableTextToTiptap(blocks: PortableTextBlock[] = []): Record<s
       return
     }
     if (block._type === 'table') {
-      // THE DEFINITIVE FIX
       const tableContent: TiptapNode[] = []
       ;(block.rows || []).forEach((row: any) => {
         const rowContent: TiptapNode[] = []
         ;(row.cells || []).forEach((cell: any) => {
           const cellType = cell.isHeader ? 'tableHeader' : 'tableCell'
-          // The cell content from Sanity is already a Portable Text array.
-          // We need to recursively call this function to convert it.
           const cellContent = portableTextToTiptap(cell.content || []).content
           rowContent.push({type: cellType, content: cellContent})
         })
         tableContent.push({type: 'tableRow', content: rowContent})
       })
-      // The structure is `table` > `tableRow`s. No `tableContent` wrapper is needed.
       content.push({type: 'table', content: tableContent})
       return
     }
+    
     if (block._type === 'imageCompare') {
       const {image1, image2, size} = block as any
+      const img1 = resolveImageAttrs(image1);
+      const img2 = resolveImageAttrs(image2);
+      
       content.push({
         type: 'imageCompare',
         attrs: {
-          src1: image1?.asset?.url,
-          assetId1: image1?.asset?._id,
-          src2: image2?.asset?.url,
-          assetId2: image2?.asset?._id,
+          src1: img1.url,
+          assetId1: img1.assetId,
+          src2: img2.url,
+          assetId2: img2.assetId,
           'data-size': size || 'large',
         },
       })
       return
     }
+    
     if (block._type === 'twoImageGrid') {
       const {image1, image2} = block as any
+      const img1 = resolveImageAttrs(image1);
+      const img2 = resolveImageAttrs(image2);
+
       content.push({
         type: 'twoImageGrid',
         attrs: {
-          src1: image1?.asset?.url,
-          assetId1: image1?.asset?._id,
-          src2: image2?.asset?.url,
-          assetId2: image2?.asset?._id,
+          src1: img1.url,
+          assetId1: img1.assetId,
+          src2: img2.url,
+          assetId2: img2.assetId,
         },
       })
       return
     }
+    
     if (block._type === 'fourImageGrid') {
       const {image1, image2, image3, image4} = block as any
+      const img1 = resolveImageAttrs(image1);
+      const img2 = resolveImageAttrs(image2);
+      const img3 = resolveImageAttrs(image3);
+      const img4 = resolveImageAttrs(image4);
+
       content.push({
         type: 'fourImageGrid',
         attrs: {
-          src1: image1?.asset?.url,
-          assetId1: image1?.asset?._id,
-          src2: image2?.asset?.url,
-          assetId2: image2?.asset?._id,
-          src3: image3?.asset?.url,
-          assetId3: image3?.asset?._id,
-          src4: image4?.asset?.url,
-          assetId4: image4?.asset?._id,
+          src1: img1.url,
+          assetId1: img1.assetId,
+          src2: img2.url,
+          assetId2: img2.assetId,
+          src3: img3.url,
+          assetId3: img3.assetId,
+          src4: img4.url,
+          assetId4: img4.assetId,
         },
       })
       return
     }
+    
     if (block._type === 'image') {
-      const imageBlock = block as unknown as SanityImage & {asset: {_id: string; url: string}}
-      if (imageBlock.asset?._id && imageBlock.asset?.url) {
+      const img = resolveImageAttrs(block);
+      if (img.assetId && img.url) {
         content.push({
           type: 'image',
           attrs: {
-            src: imageBlock.asset.url,
-            assetId: imageBlock.asset._id,
+            src: img.url,
+            assetId: img.assetId,
           },
         })
       }
