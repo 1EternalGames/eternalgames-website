@@ -3,13 +3,13 @@
 
 import React from 'react';
 
-// This component has been neutralized to prevent conflict with app/template.tsx.
-// It now acts as a simple pass-through, which is safer than removing it 
-// and potentially breaking imports in layout.tsx.
+// MODIFIED: Removed AnimatePresence and motion.div to resolve nested animation conflict.
+// This component now acts as a simple pass-through wrapper.
+// The actual page transition logic is handled in app/template.tsx.
 export default function PageTransitionWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
-        {children}
+      {children}
     </>
   );
 }

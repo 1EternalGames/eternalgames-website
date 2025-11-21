@@ -43,8 +43,8 @@ type ColorMapping = {
   color: string;
 }
 
-// Delay content fade-in slightly to let the layout morph finish cleanly
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.5, duration: 0.5 } } };
+// Keep the delayed fade-in for text content
+const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.8 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
 export default function ContentPageClient({ item, type, children, colorDictionary }: {
@@ -132,7 +132,9 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    // Scroll to top instantly before painting to ensure the Hero image starts at the correct Y coordinate (0)
+    // This scroll reset is now SAFE because the template freezes the background.
+    // It ensures the "Target" hero image is at the top of the viewport where it belongs,
+    // allowing Framer Motion to interpolate correctly from the "Source" card.
     useIsomorphicLayoutEffect(() => {
         window.scrollTo(0, 0);
     }, []);
@@ -184,16 +186,13 @@ export default function ContentPageClient({ item, type, children, colorDictionar
             />
 
             <motion.div
-                // REMOVED `layout` prop here. This was causing the container to try and animate its bounding box
-                // from the small card size to the full page size, causing the "jump". 
-                // Now only the layoutId elements inside will morph.
+                layout
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
                 transition={springTransition}
                 style={{ 
                     backgroundColor: 'var(--bg-primary)',
                     zIndex: 50,
-                    position: 'relative',
-                    minHeight: '100vh' // Ensure background covers full viewport
+                    position: 'relative'
                 }}
             >
                 <motion.div 
