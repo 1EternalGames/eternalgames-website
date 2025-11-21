@@ -2,10 +2,9 @@
 'use client';
 
 import React, { memo } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import TagLinks from './TagLinks';
-import { m } from 'framer-motion'; 
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -25,13 +24,10 @@ type ArticleCardProps = {
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false }: ArticleCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
-    
-    // THE FIX: Explicitly typed for HTMLAnchorElement
-    const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLAnchorElement>();
+    const { livingCardRef, livingCardAnimation } = useLivingCard();
 
     const type = article.type;
-    const isReview = type === 'review';
-
+    
     const getLinkBasePath = () => {
         switch (type) {
             case 'review': return '/reviews/';
@@ -47,7 +43,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         if ((e.target as HTMLElement).closest('a, button, [role="button"]')) {
             return;
         }
-        if (e.ctrlKey || e.metaKey) return;
         e.preventDefault();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
@@ -57,10 +52,13 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         router.prefetch(linkPath);
     };
 
-    const hasScore = isReview && typeof article.score === 'number';
-    
+    const hasScore = type === 'review' && typeof article.score === 'number';
     const imageSource = article.imageUrl;
     if (!imageSource) return null;
+
+    // MODIFIED: Slower spring configuration for more visible transition
+    // Lower stiffness = slower movement. Damping prevents too much bouncing.
+    const springTransition = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
     const wrapperProps = disableLivingEffect ? {} : {
         ref: livingCardRef,
@@ -73,23 +71,25 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     };
     
     const motionStyle = disableLivingEffect 
-        ? { cursor: 'pointer' } 
-        : { ...livingCardAnimation.style, cursor: 'pointer' };
+        ? { cursor: 'pointer', position: 'relative', zIndex: 20 } 
+        : { ...livingCardAnimation.style, cursor: 'pointer', position: 'relative', zIndex: 20 };
 
     return (
-        <m.a
-            href={linkPath}
+        <motion.div
             layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
+            transition={springTransition}
             onClick={handleClick}
-            className={`${styles.livingCardWrapper} no-underline`}
+            className={styles.livingCardWrapper}
             {...wrapperProps}
-            style={{ ...motionStyle, display: 'block' }}
+            style={motionStyle as any}
         >
-            <div
-                className={styles.articleCard}
-            >
-                <m.div className={styles.imageContainer} layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}>
-                    {hasScore && ( <m.div className={styles.score}>{article.score!.toFixed(1)}</m.div> )}
+            <div className={styles.articleCard}>
+                <motion.div 
+                    className={styles.imageContainer} 
+                    layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}
+                    transition={springTransition}
+                >
+                    {hasScore && ( <motion.div className={styles.score}>{article.score!.toFixed(1)}</motion.div> )}
                     <Image 
                         loader={sanityLoader}
                         src={imageSource}
@@ -103,10 +103,15 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         blurDataURL={article.blurDataURL}
                         priority={isPriority}
                     />
-                </m.div>
-                <m.div className={styles.cardContent}>
+                </motion.div>
+                <motion.div className={styles.cardContent}>
                     <div className={styles.cardTitleLink}>
-                        <m.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}>{article.title}</m.h3>
+                        <motion.h3 
+                            layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}
+                            transition={springTransition}
+                        >
+                            {article.title}
+                        </motion.h3>
                     </div>
                     <div className={styles.cardMetadata}>
                         <CreatorCredit label="بقلم" creators={article.authors} />
@@ -120,9 +125,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     <div className={styles.tagContainer}>
                         <TagLinks tags={article.tags.slice(0, 5).map(tag => tag.title)} small={true} />
                     </div>
-                </m.div>
+                </motion.div>
             </div>
-        </m.a>
+        </motion.div>
     );
 };
 

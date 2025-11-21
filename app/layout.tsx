@@ -10,139 +10,54 @@ import ToastProvider from '@/components/ToastProvider';
 import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
-import PageTransitionWrapper from '@/components/PageTransitionWrapper';
-import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/authOptions';
-import prisma from '@/lib/prisma';
-import BanEnforcer from '@/components/security/BanEnforcer';
+import PageTransitionWrapper from '@/components/PageTransitionWrapper'; // MODIFIED: Re-importing the wrapper
 
 const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  display: 'swap',
-  variable: '--font-main',
-  weight: ['400', '500', '700', '800'],
+subsets: ['arabic', 'latin'],
+display: 'swap',
+variable: '--font-main',
+weight: ['400', '500', '700', '800'],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+export const metadata = { title: 'EternalGames | حيث لا تفنى الألعاب', description: 'لا فناء للألعاب.', };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: 'EternalGames | حيث لا تُفنى الألعاب',
-    template: '%s | EternalGames',
-  },
-  description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
-  alternates: {
-  },
-  openGraph: {
-    title: {
-      default: 'EternalGames | حيث لا تُفنى الألعاب',
-      template: '%s | EternalGames',
-    },
-    description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
-    url: siteUrl,
-    siteName: 'EternalGames',
-    images: [
-      {
-        url: `${siteUrl}/og.png`,
-        width: 1200,
-        height: 630,
-        alt: 'EternalGames Logo',
-      },
-    ],
-    locale: 'ar_SA',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: {
-      default: 'EternalGames | حيث لا تُفنى الألعاب',
-      template: '%s | EternalGames',
-    },
-    description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
-    images: [`${siteUrl}/og.png`],
-  },
-};
-
-export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  const session = await getServerSession(authOptions);
-  
-  let userRoles: string[] = [];
-  let isBanned = false;
-  let banReason = null;
-  let initialUserState = null;
-
-  if (session?.user?.id) {
-      try {
-          const [user, engagements, shares] = await Promise.all([
-              prisma.user.findUnique({
-                  where: { id: session.user.id },
-                  select: { 
-                      roles: { select: { name: true } },
-                      isBanned: true,
-                      banReason: true
-                  }
-              }),
-              prisma.engagement.findMany({ 
-                  where: { userId: session.user.id }, 
-                  select: { contentId: true, contentType: true, type: true } 
-              }),
-              prisma.share.findMany({ 
-                  where: { userId: session.user.id }, 
-                  select: { contentId: true, contentType: true } 
-              })
-          ]);
-
-          userRoles = user?.roles.map((r: any) => r.name) || [];
-          isBanned = user?.isBanned || false;
-          banReason = user?.banReason || null;
-          
-          initialUserState = { engagements, shares };
-
-      } catch (error) {
-          console.error("Failed to fetch user details in RootLayout:", error);
-      }
-  }
-
-  return (
-    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://cdn.sanity.io"
-          crossOrigin="anonymous"
-        />
-      </head>
-      <body>
-        {/* THE FIX: Pass the server session to the provider to avoid client-side refetching */}
-        <NextAuthProvider session={session}>
-          <UserStoreHydration initialUserState={initialUserState} />
-          
-          <BanEnforcer isBanned={isBanned} reason={banReason} />
-          <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
-              <ToastProvider />
-              <Lightbox />
-              <Navbar />
-              <main>
-                <PageTransitionWrapper>
-                  {children}
-                </PageTransitionWrapper>
-              </main>
-              <Footer />
-              <StudioBar serverRoles={userRoles} />
-              <ScrollToTopButton />
-            </div>
-          </ThemeProvider>
-        </NextAuthProvider>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
+return (
+<html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossOrigin="anonymous"
+/>
+<link
+    rel="preconnect"
+    href="https://cdn.sanity.io"
+    crossOrigin="anonymous"
+/>
+</head>
+<body>
+<NextAuthProvider>
+<UserStoreHydration />
+<ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
+<div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
+    <ToastProvider />
+    <Lightbox /> 
+    <Navbar />
+    {/* MODIFIED: Re-introducing the PageTransitionWrapper to create the nested animation structure */}
+    <main>
+        <PageTransitionWrapper>
+            {children}
+        </PageTransitionWrapper>
+    </main>
+    <Footer />
+    <StudioBar />
+    <ScrollToTopButton />
+</div>
+</ThemeProvider>
+</NextAuthProvider>
+</body>
+</html>
+);
 }

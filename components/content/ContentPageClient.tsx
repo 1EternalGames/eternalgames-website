@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -25,6 +25,8 @@ import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 type Slug = { current: string } | string;
 
 type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
@@ -41,7 +43,8 @@ type ColorMapping = {
   color: string;
 }
 
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.5 } } };
+// Delayed content fade-in to ensure layout animation has time to settle visually first
+const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.8 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
 export default function ContentPageClient({ item, type, children, colorDictionary }: {
@@ -129,7 +132,10 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    // Force scroll to top immediately on mount to prepare destination layout
+    useIsomorphicLayoutEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     useEffect(() => {
         const timeout = setTimeout(() => setIsLayoutStable(true), 1500); 
@@ -149,7 +155,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const relatedContent = (item as any).relatedReviews || (item as any).relatedArticles || (item as any).relatedNews || [];
     const uniqueRelatedContent = relatedContent ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
     
-    // THE FIX: Wrap in arrow function and apply width optimization
     const adaptedRelatedContent = (uniqueRelatedContent || [])
         .map((related: any) => adaptToCardProps(related, { width: 600 }))
         .filter(Boolean) as CardProps[];
@@ -168,7 +173,8 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
-    const springTransition = { type: 'spring' as const, stiffness: 200, damping: 35 };
+    // Matches the slower, heavier spring of the card
+    const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
 
     return (
         <>
@@ -179,9 +185,14 @@ export default function ContentPageClient({ item, type, children, colorDictionar
             />
 
             <motion.div
+                layout
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
                 transition={springTransition}
-                style={{ backgroundColor: 'var(--bg-primary)' }}
+                style={{ 
+                    backgroundColor: 'var(--bg-primary)',
+                    zIndex: 50, // Match high z-index for seamless layering
+                    position: 'relative'
+                }}
             >
                 <motion.div 
                     layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} 
