@@ -245,30 +245,20 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         if (saved) {
             try {
                 const localData = JSON.parse(saved);
-                // Basic sanity check: assume local data is valid if it exists.
-                // In a real world app, we might check timestamps vs sourceOfTruth._updatedAt
-                // For now, if local exists, we prioritize it to solve the "data vanished" issue.
-                
                 if (localData.state && localData.contentJson) {
                     console.log("[Hydration] Found local draft, restoring...");
                     
-                    // 1. Restore Metadata State
                     dispatch({ type: 'INITIALIZE_STATE', payload: localData.state });
                     
-                    // 2. Restore Content JSON string
                     setEditorContentJson(localData.contentJson);
 
-                    // 3. Restore Editor Content
                     const contentObj = JSON.parse(localData.contentJson);
-                    // Use Tiptap JSON directly
                     editorInstance.commands.setContent(contentObj, false); 
 
-                    // Notify user
                     toast.info('تم استعادة مسودة غير محفوظة من جهازك.', 'left');
                 }
             } catch (e) {
                 console.error("Failed to parse local draft:", e);
-                // Optionally clear corrupt data
                 localStorage.removeItem(key);
             }
         }
@@ -281,15 +271,10 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
 
     // --- AUTO SAVE LOGIC ---
     useEffect(() => {
-        // If nothing changed, do nothing (but don't clear interval if we are waiting for server save?)
-        // Actually, if !hasChanges, it means we are in sync with sourceOfTruth OR we just saved.
-        
         if (hasChanges) {
-            // 1. Indicate Pending/Saving status
             setClientSaveStatus('saving');
             setServerSaveStatus('pending');
 
-            // 2. Clear existing timers to debounce
             if (clientSaveTimeoutRef.current) clearTimeout(clientSaveTimeoutRef.current);
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
 
@@ -305,43 +290,29 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 setClientSaveStatus('saved');
             }, 1000);
 
-            // 4. Server Save (5s): Persist to Database
+            // 4. Server Save (10s): Persist to Database
             serverSaveTimeoutRef.current = setTimeout(async () => {
                 setServerSaveStatus('saving');
                 const success = await saveWorkingCopy();
                 if (success) {
                     setServerSaveStatus('saved');
-                    // Optional: Clear local storage here if we trust the server 100%, 
-                    // but keeping it until page reload is safer for "offline-first" feel.
-                    // We'll update the local storage with the "clean" state implicitly 
-                    // because `saveWorkingCopy` updates `sourceOfTruth`, which triggers `generateDiffPatch`,
-                    // which makes `hasChanges` false, which triggers the cleanup effect below.
                 } else {
-                    // Stay in saving or pending state visually? Or reset to allow retry?
-                    // Let's go back to pending so user knows it didn't stick? 
-                    // Actually, 'saved' prevents anxiety, error toast handles the alert.
                     setServerSaveStatus('saved'); 
                 }
-            }, 5000);
+            }, 10000); // Modified to 10 seconds
         }
 
         return () => {
-            // Cleanup triggers on every dependency change (keystroke)
-            // We rely on the new effect execution to set new timers.
+            // Cleanup triggers on every dependency change
         };
     }, [hasChanges, state, editorContentJson, sourceOfTruth._id]);
 
-    // Cleanup timers if changes are resolved (e.g. manual save)
     useEffect(() => {
         if (!hasChanges) {
             if (clientSaveTimeoutRef.current) clearTimeout(clientSaveTimeoutRef.current);
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
             setClientSaveStatus('saved');
             setServerSaveStatus('saved');
-            
-            // Also, if we are fully synced, we could technically clear local storage 
-            // to avoid loading old state later, BUT keeping it is safer against crashes.
-            // We will overwrite it on next change anyway.
         }
     }, [hasChanges]);
 
@@ -349,7 +320,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => { 
-        // Sync state when Server Data updates (e.g. after a manual save)
         if (sourceOfTruth._id !== state._id || sourceOfTruth._updatedAt !== state._updatedAt) {
             const newState = getInitialEditorState(sourceOfTruth);
             dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
@@ -361,10 +331,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
                 const editorJSON = JSON.stringify(editorInstance.getJSON()); 
                 const sourceJSON = JSON.stringify(freshTiptapContent); 
-                // Only update editor content if it's actually different, to prevent cursor jumps
-                // But be careful: this might overwrite local changes if not handled by the hydration logic first.
-                // Hydration logic sets `hasHydratedFromLocal` to true. 
-                // We should only force update from server if we are NOT dirty locally, OR if this update IS the result of a save.
                 if (editorJSON !== sourceJSON && !hasChanges) { 
                     editorInstance.commands.setContent(freshTiptapContent, false); 
                 } 
@@ -402,7 +368,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
     const saveWorkingCopy = async (): Promise<boolean> => { 
-        // Recalculate patch to ensure closure freshness
         const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
         const currentHasChanges = Object.keys(currentPatch).length > 0;
 
@@ -439,9 +404,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         if (result.success && result.updatedDocument) { 
             setSourceOfTruth({ ...optimisticSOT, _updatedAt: result.updatedDocument._updatedAt });
             
-            // Update local storage with the fresh 'synced' state (optional, but good for consistency)
-            // Actually, if we saved, we can just rely on the fact that state matches sourceOfTruth.
-            // But to be safe against crashes during next edits:
             const key = `eternal-draft-${sourceOfTruth._id}`;
             localStorage.setItem(key, JSON.stringify({
                 state,
@@ -470,9 +432,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                 tiptapContent: prev.tiptapContent
             })); 
             toast.success(result.message || 'تجددت حالة النشر!', 'left'); 
-            
-            // Clear local storage on publish? 
-            // Maybe better to keep it. User might continue editing.
             return true; 
         } else { 
             toast.error(result.message || 'أخفق تحديث الحالة.', 'left'); 

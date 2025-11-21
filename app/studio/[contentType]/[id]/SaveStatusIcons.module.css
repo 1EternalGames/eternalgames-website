@@ -1,11 +1,12 @@
-
 .container {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    /* Reduced gap slightly as requested */
+    gap: 1.2rem; 
     margin-bottom: 1.5rem;
+    /* Aligned to Right (Flex Start in RTL) to be above the title/content */
     justify-content: flex-end;
-    padding: 0 0.5rem;
+    padding: 0 3rem;
 }
 
 .iconWrapper {
@@ -65,4 +66,16 @@
 .iconWrapper:hover .tooltip {
     opacity: 1;
     transform: translateX(-50%) translateY(-3px);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .iconWrapper {
+        width: 20px;
+        height: 20px;
+    }
+    .container {
+        margin-bottom: 1rem;
+        /* Keep alignment consistent */
+    }
 }
