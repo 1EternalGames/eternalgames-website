@@ -43,8 +43,8 @@ type ColorMapping = {
   color: string;
 }
 
-// Delayed content fade-in to ensure layout animation has time to settle visually first
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.8 } } };
+// Delay content fade-in slightly to let the layout morph finish cleanly
+const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.5, duration: 0.5 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 
 export default function ContentPageClient({ item, type, children, colorDictionary }: {
@@ -132,7 +132,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    // Force scroll to top immediately on mount to prepare destination layout
+    // Scroll to top instantly before painting to ensure the Hero image starts at the correct Y coordinate (0)
     useIsomorphicLayoutEffect(() => {
         window.scrollTo(0, 0);
     }, []);
@@ -173,7 +173,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
-    // Matches the slower, heavier spring of the card
     const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
 
     return (
@@ -185,13 +184,16 @@ export default function ContentPageClient({ item, type, children, colorDictionar
             />
 
             <motion.div
-                layout
+                // REMOVED `layout` prop here. This was causing the container to try and animate its bounding box
+                // from the small card size to the full page size, causing the "jump". 
+                // Now only the layoutId elements inside will morph.
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
                 transition={springTransition}
                 style={{ 
                     backgroundColor: 'var(--bg-primary)',
-                    zIndex: 50, // Match high z-index for seamless layering
-                    position: 'relative'
+                    zIndex: 50,
+                    position: 'relative',
+                    minHeight: '100vh' // Ensure background covers full viewport
                 }}
             >
                 <motion.div 
