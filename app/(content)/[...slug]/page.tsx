@@ -47,6 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     
     if (!sanityType) return {};
     
+    // Use CDN for metadata (fast)
     const item = await client.fetch(`*[_type == "${sanityType}" && slug.current == $slug][0]{title, synopsis}`, { slug });
 
     if (!item) return {};
@@ -57,8 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
 }
 
-// --- ASYNC COMPONENT FOR COMMENTS (Streaming) ---
-// This isolates the slow DB call so the rest of the page loads first.
+// --- ASYNC COMPONENT FOR COMMENTS (Streamed in later) ---
 async function CommentsLoader({ slug, contentType }: { slug: string, contentType: string }) {
     try {
         const comments = await prisma.comment.findMany({
@@ -110,7 +110,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     if (!config) notFound();
 
     // 1. Fetch Content from Sanity (Fast CDN)
-    // We do NOT fetch comments here anymore to prevent waterfall blocking.
     const itemPromise = client.fetch(config.query, { slug });
     const colorsPromise = client.fetch(colorDictionaryQuery);
 
@@ -121,10 +120,8 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!item) notFound();
 
-    // 2. Enrich Creators (Usernames)
-    // We keep this here as it's usually fast for a few IDs, 
-    // but if this is still slow, we can move it to client side later.
-    // For now, removing the massive Comment DB call is the priority fix.
+    // 2. Enrich Creators (Now Cached via unstable_cache)
+    // This will now hit the Vercel Data Cache instead of the DB after the first visit.
     const enrichmentTasks = [];
 
     for (const prop of config.creatorProps) {
@@ -148,8 +145,8 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     return (
         <ContentPageClient item={item} type={type as any} colorDictionary={colorDictionary}>
             {/* 
-               We wrap the DB-heavy component in Suspense.
-               This allows the page to be interactive immediately while comments load.
+               Comments are streamed in. The page loads immediately, 
+               showing a spinner only at the comment section. 
             */}
             <Suspense fallback={
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
