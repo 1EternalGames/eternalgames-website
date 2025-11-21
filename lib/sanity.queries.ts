@@ -16,6 +16,7 @@ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${main
 "reporters": reporters[]->{${creatorFields}},
 "designers": designers[]->{${creatorFields}}, 
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}`
+
 const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
 "mainImageRef": mainImage.asset, 
@@ -38,7 +39,6 @@ score,
 `
 
 // --- News Hub Specific Queries ---
-
 export const newsHeroQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] {
   ${cardProjection}, synopsis
 }`
@@ -56,16 +56,13 @@ export const paginatedNewsQuery = (
   sort: 'latest' | 'viral' = 'latest',
 ) => {
   let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`
-
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
   if (tagSlugs && tagSlugs.length > 0) {
     const tagFilter = tagSlugs.map((slug) => `"${slug}" in tags[]->slug.current`).join(' || ')
     filter += ` && (${tagFilter})`
   }
   if (searchTerm) filter += ` && title match "${searchTerm}*"`
-
   const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc'
-
   return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
     ${apiListProjection}
   }`
@@ -82,25 +79,19 @@ export const paginatedReviewsQuery = (
   sort: 'latest' | 'score' = 'latest',
 ) => {
   let filter = `_type == "review" && ${publishedFilter}`
-
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
-
   if (tagSlugs && tagSlugs.length > 0) {
     const tagFilter = tagSlugs.map((slug) => `"${slug}" in tags[]->slug.current`).join(' && ')
     filter += ` && (${tagFilter})`
   }
-
   if (searchTerm) filter += ` && title match "${searchTerm}*"`
-
   if (scoreRange) {
     if (scoreRange === '9-10') filter += ` && score >= 9 && score <= 10`
     else if (scoreRange === '8-8.9') filter += ` && score >= 8 && score < 9`
     else if (scoreRange === '7-7.9') filter += ` && score >= 7 && score < 8`
     else if (scoreRange === '<7') filter += ` && score < 7`
   }
-
   const orderBy = sort === 'score' ? 'score desc, publishedAt desc' : 'publishedAt desc'
-
   return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
     ${apiListProjection}
   }`
@@ -116,18 +107,13 @@ export const paginatedArticlesQuery = (
   sort: 'latest' | 'viral' = 'latest',
 ) => {
   let filter = `_type == "article" && ${publishedFilter}`
-
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
-
   if (tagSlugs && tagSlugs.length > 0) {
     const tagFilter = tagSlugs.map((slug) => `"${slug}" in tags[]->slug.current`).join(' && ')
     filter += ` && (${tagFilter})`
   }
-
   if (searchTerm) filter += ` && title match "${searchTerm}*"`
-
   const orderBy = sort === 'latest' ? 'publishedAt desc' : '_updatedAt desc'
-
   return groq`*[${filter}] | order(${orderBy}) [${offset}...${offset + limit}] {
     ${apiListProjection}
   }`
@@ -143,26 +129,38 @@ export const allContentByCreatorListQuery = groq`*[_type in ["review", "article"
 export const allContentByGameListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`
 export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && ($slug in tags[]->slug.current || category->slug.current == $slug)] | order(publishedAt desc) { ${cardListProjection} }`
 
-// --- Detail Page Queries ---
+// --- Detail Page Queries (OPTIMIZED WITH COALESCE) ---
 const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} }, _type == "table" => {..., rows[]{..., cells[]{..., content[]{...}}}}, _type == "gameDetails" => { ... }, _type == 'youtube' => { ... } }`
 const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
 
+// THE FIX: Use coalesce to fetch fallback content instantly within the same query
 export const reviewBySlugQuery = groq`*[_type == "review" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
   "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{${tagFields}},
-  "relatedReviews": relatedReviews[${publishedFilter}]->${relatedContentProjection},
+  "relatedReviews": coalesce(
+    relatedReviews[${publishedFilter}]->${relatedContentProjection},
+    *[_type == "review" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}
+  ),
   ${contentProjection}
 }`
+
 export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "authors": authors[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
   "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "tags": tags[]->{_id, title, "slug": slug.current},
-  "relatedArticles": relatedArticles[${publishedFilter}]->${relatedContentProjection},
+  "relatedArticles": coalesce(
+    relatedArticles[${publishedFilter}]->${relatedContentProjection},
+    *[_type == "article" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}
+  ),
   ${contentProjection}
 }`
+
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] {
   ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}},
   "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "category": category->{_id, title, "slug": slug.current},
-  "relatedNews": relatedNews[${publishedFilter}]->${relatedContentProjection},
+  "relatedNews": coalesce(
+    relatedNews[${publishedFilter}]->${relatedContentProjection},
+    *[_type == "news" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}
+  ),
   ${contentProjection}
 }`
 
