@@ -76,9 +76,15 @@ export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug &
   ${contentProjection}
 }`
 
-// --- OPTIMIZED QUERIES ---
-// New: Optimized query for tags page using direct ID reference instead of slug join
-export const allContentByTagIdQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && (references($tagId) || category._ref == $tagId)] | order(publishedAt desc) { ${cardListProjection} }`
+// --- OPTIMIZED SINGLE-PASS TAG QUERY ---
+// This query resolves the Tag ID from the slug AND finds all referencing content in one go.
+export const tagPageDataQuery = groq`{
+  "tag": *[_type == "tag" && slug.current == $slug][0]{_id, title},
+  "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && (
+    references(*[_type == "tag" && slug.current == $slug][0]._id) || 
+    category->slug.current == $slug
+  )] | order(publishedAt desc) { ${cardListProjection} }
+}`
 
 // ... Existing queries ...
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest') => {
@@ -113,7 +119,6 @@ export const allReviewsListQuery = groq`*[_type == "review" && ${publishedFilter
 export const allArticlesListQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
 export const allContentByCreatorListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`
 export const allContentByGameListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`
-// Retaining the old query for compatibility or fallback, but marking it.
 export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && ($slug in tags[]->slug.current || category->slug.current == $slug)] | order(publishedAt desc) { ${cardListProjection} }`
 export const latestReviewsFallbackQuery = groq`*[_type == "review" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
 export const latestArticlesFallbackQuery = groq`*[_type == "article" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`

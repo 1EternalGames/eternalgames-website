@@ -7,9 +7,8 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import { groq } from 'next-sanity';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { getCachedDocument } from '@/lib/sanity.fetch';
+import { getCachedDocument } from '@/lib/sanity.fetch'; // Use cached fetcher
 
-// Fetch color dictionary (lightweight, singleton)
 const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
 const typeMap: Record<string, string> = {
@@ -26,8 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // Uses the request-memoized fetcher. This triggers the fetch.
-    // The result is cached for the Page component.
+    // Trigger the fetch. Result is memoized for the Page component.
     const item = await getCachedDocument(sanityType, slug);
 
     if (!item) return {};
@@ -59,8 +57,9 @@ async function CommentsLoader({ slug, contentType }: { slug: string, contentType
 
 export async function generateStaticParams() {
     try {
-        // Optional: Limit this to the most recent 100 items to speed up build
-        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100]{ "slug": slug.current, _type }`);
+        // Limit static generation to recent items to keep build times reasonable. 
+        // Older items will be ISR'd on first request.
+        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...50]{ "slug": slug.current, _type }`);
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
             return { slug: [type, c.slug] };
@@ -80,7 +79,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // Parallelize the cached document retrieval (likely instant/cached) and the color dictionary fetch
+    // Parallel execution: Retrieve memoized doc promise & fetch colors
     const [item, colorDictionaryData] = await Promise.all([
         getCachedDocument(sanityType, slug),
         client.fetch(colorDictionaryQuery)

@@ -1,11 +1,11 @@
 // app/tags/[tag]/page.tsx
-import { client } from '@/lib/sanity.client';
-import { allContentByTagIdQuery } from '@/lib/sanity.queries'; // Use the new ID-based query
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
+import { getCachedTagPageData } from '@/lib/sanity.fetch'; // Use cached fetcher
+import { client } from '@/lib/sanity.client'; // For static params only
 
 export const dynamicParams = true;
 
@@ -17,18 +17,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
 
-  // Optimized: Fetch minimal data for metadata
-  const tagData = await client.fetch(
-    `*[_type == "tag" && slug.current == $slug][0]{title}`,
-    { slug: tagSlug }
-  );
+  // Efficient: Reuses the exact same promise as the page component
+  const data = await getCachedTagPageData(tagSlug);
 
-  if (!tagData) return {};
+  if (!data?.tag) return {};
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-  const translatedTitle = translateTag(tagData.title);
+  const translatedTitle = translateTag(data.tag.title);
   const title = `وسم: ${translatedTitle}`;
   const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
+  
+  // Find the latest image from the items list
+  const latestItem = data.items && data.items.length > 0 ? data.items[0] : null;
+  const ogImageUrl = latestItem?.mainImageRef
+    ? urlFor(latestItem.mainImageRef).width(1200).height(630).fit('crop').format('jpg').url()
+    : `${siteUrl}/og.png`;
 
   return {
     title,
@@ -37,6 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url: `${siteUrl}/tags/${tagSlug}`,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
       type: 'website',
     },
   };
@@ -44,6 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export async function generateStaticParams() {
     try {
+        // Only fetch the slugs to build static paths
         const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
         return slugs.map((slug) => ({
             tag: slug,
@@ -57,24 +62,19 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
-    // Step 1: Fetch the Tag ID and Title. This is a very fast index lookup.
-    const tagDoc = await client.fetch(
-        `*[_type == "tag" && slug.current == $slug][0]{_id, title}`, 
-        { slug: tagSlug }
-    );
+    // Efficient: Reuses the exact same promise as metadata
+    const data = await getCachedTagPageData(tagSlug);
 
-    if (!tagDoc) {
+    if (!data?.tag) {
         notFound();
     }
 
-    // Step 2: Fetch content referencing this Tag ID.
-    // This is much faster than filtering by slug string in a join.
-    const allItems = await client.fetch(allContentByTagIdQuery, { tagId: tagDoc._id });
+    const { tag: tagMeta, items: allItems } = data;
 
     if (!allItems || allItems.length === 0) {
         return (
             <div className="container page-container">
-                <h1 className="page-title">وسم: &quot;{translateTag(tagDoc.title)}&quot;</h1>
+                <h1 className="page-title">وسم: &quot;{translateTag(tagMeta.title)}&quot;</h1>
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُنشر عملٌ بهذا الوسم بعد.</p>
             </div>
         );
@@ -83,7 +83,7 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     return (
          <HubPageClient
             initialItems={allItems}
-            hubTitle={translateTag(tagDoc.title)}
+            hubTitle={translateTag(tagMeta.title)}
             hubType="وسم"
         />
     );
