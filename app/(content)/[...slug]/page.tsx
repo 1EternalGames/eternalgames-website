@@ -39,36 +39,16 @@ const contentConfig = {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
     const { slug: slugArray } = await params;
-    
     if (!slugArray || slugArray.length < 2) return {};
     
     const [type, slug] = slugArray;
     const sanityType = type === 'reviews' ? 'review' : type === 'articles' ? 'article' : type === 'news' ? 'news' : null;
     if (!sanityType) return {};
     
-    // This now uses useCdn: true via the global client, so it's fast.
     const item = await client.fetch(`*[_type == "${sanityType}" && slug.current == $slug][0]{title, synopsis}`, { slug });
-
     if (!item) return {};
     return { title: item.title, description: item.synopsis || `Read the full ${type.slice(0, -1)} on EternalGames.` }
 }
-
-// THE FIX: Make the cache key dynamic based on the query arguments
-const getCachedSanityData = unstable_cache(
-    async (query: string, params: Record<string, any> = {}) => {
-        return client.fetch(query, params);
-    },
-    // The key must be generated dynamically by Next.js based on the arguments passed.
-    // Since we can't pass a function here, we simply trust client.fetch + useCdn: true
-    // But since we MUST use unstable_cache to dedupe database enrichment later (not here),
-    // let's just use the specific slug in the tags.
-    ['content-page-data'], 
-    { tags: ['content-page'] } 
-);
-// Note: We are now relying on Sanity's CDN (useCdn: true) for the fetch speed. 
-// The unstable_cache wrapper is actually redundant for the raw fetch if useCdn is true, 
-// but we keep it if you want Next.js Data Cache control. 
-// Ideally, just call client.fetch directly.
 
 async function getComments(slug: string) {
     try {
@@ -78,15 +58,7 @@ async function getComments(slug: string) {
                 author: { select: { id: true, name: true, image: true, username: true } }, 
                 votes: true, 
                 _count: { select: { replies: true } }, 
-                replies: { 
-                    take: 2, 
-                    include: { 
-                        author: { select: { id: true, name: true, image: true, username: true } }, 
-                        votes: true, 
-                        _count: { select: { replies: true } } 
-                    }, 
-                    orderBy: { createdAt: 'asc' } 
-                } 
+                replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } 
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -105,7 +77,7 @@ export async function generateStaticParams() {
             return { slug: [type, c.slug] };
         });
     } catch (error) {
-        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for generateStaticParams.`, error);
+        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs.`, error);
         throw error;
     }
 }
@@ -118,9 +90,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const config = (contentConfig as any)[type];
     if (!config) notFound();
 
-    // 1. Parallel Fetching: Content, Colors, Comments
-    // Note: We call client.fetch directly here. It uses useCdn: true (fast).
-    // We rely on Sanity's Edge CDN rather than Next.js Data Cache for the main doc, reducing overhead.
+    // 1. Parallel Fetching: Sanity (useCdn=true) and DB (Comments)
     const itemPromise = client.fetch(config.query, { slug });
     const colorsPromise = client.fetch(colorDictionaryQuery);
     const commentsPromise = getComments(slug);
@@ -133,11 +103,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!item) notFound();
 
-    // 2. Parallel Enrichment
-    // We no longer need to check for fallback content here; GROQ handles it.
-    // We just need to enrich creators (DB) and related content creators (DB).
-    
-    // We create an array of promises for enrichment tasks
+    // 2. Parallel Enrichment (Resolving Usernames from DB)
     const enrichmentTasks = [];
 
     // Enrich Main Creators
@@ -156,7 +122,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
         );
     }
 
-    // Wait for all DB enrichments to finish in parallel
     await Promise.all(enrichmentTasks);
     
     const colorDictionary = colorDictionaryData?.autoColors || [];
