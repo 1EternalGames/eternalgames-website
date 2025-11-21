@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
-import { enrichContentList } from '@/lib/enrichment';
 
 export const dynamicParams = true;
 
@@ -26,30 +25,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   const title = `محور لعبة: ${game.title}`;
-  const description = `استكشف كل المحتوى المتعلق بلعبة ${game.title} على EternalGames، من مراجعات ومقالات إلى آخر الأخبار.`;
+  const description = `استكشف كل المحتوى المتعلق بلعبة ${game.title} على EternalGames.`;
   const ogImageUrl = game.mainImage 
     ? urlFor(game.mainImage).width(1200).height(630).fit('crop').format('jpg').url()
     : `${siteUrl}/og.png`;
-    const canonicalUrl = `/games/${gameSlug}`;
 
   return {
     title,
     description,
-    alternates: {
-        canonical: canonicalUrl,
-    },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}${canonicalUrl}`,
+      url: `${siteUrl}/games/${gameSlug}`,
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: game.title }],
       type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [ogImageUrl],
     },
   };
 }
@@ -61,8 +50,7 @@ export async function generateStaticParams() {
             slug,
         }));
     } catch (error) {
-        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for game hub pages. Build cannot continue.`, error);
-        throw error;
+        return [];
     }
 }
 
@@ -70,17 +58,19 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
     const { slug } = await params;
     const gameSlug = decodeURIComponent(slug);
 
-    const gameMeta = await client.fetch(
-        `*[_type == "game" && slug.current == $slug][0]{title}`,
-        { slug: gameSlug }
-    );
+    const gameMetaPromise = client.fetch(`*[_type == "game" && slug.current == $slug][0]{title}`, { slug: gameSlug });
+    const allItemsPromise = client.fetch(allContentByGameListQuery, { slug: gameSlug });
+
+    const [gameMeta, allItems] = await Promise.all([
+        gameMetaPromise,
+        allItemsPromise
+    ]);
 
     if (!gameMeta) {
         notFound();
     }
 
-    const allItemsRaw = await client.fetch(allContentByGameListQuery, { slug: gameSlug });
-    const allItems = await enrichContentList(allItemsRaw);
+    // PERFORMANCE FIX: Removed `enrichContentList`. 
     
     if (!allItems || allItems.length === 0) {
         return (

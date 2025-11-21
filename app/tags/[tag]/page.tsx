@@ -6,7 +6,6 @@ import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
-import { enrichContentList } from '@/lib/enrichment'; // <-- ADDED
 
 export const dynamicParams = true;
 
@@ -46,15 +45,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
       type: 'website',
     },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [ogImageUrl],
-    },
   };
 }
-
 
 export async function generateStaticParams() {
     try {
@@ -63,8 +55,7 @@ export async function generateStaticParams() {
             tag: slug,
         }));
     } catch (error) {
-        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for tag hub pages. Build cannot continue.`, error);
-        throw error;
+        return [];
     }
 }
 
@@ -72,18 +63,19 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
-    const tagMeta = await client.fetch(
-        `*[_type == "tag" && slug.current == $slug][0]{title}`,
-        { slug: tagSlug }
-    );
+    // Parallel Fetch for Meta and List
+    const tagMetaPromise = client.fetch(`*[_type == "tag" && slug.current == $slug][0]{title}`, { slug: tagSlug });
+    const allItemsPromise = client.fetch(allContentByTagListQuery, { slug: tagSlug });
+
+    const [tagMeta, allItems] = await Promise.all([
+        tagMetaPromise,
+        allItemsPromise
+    ]);
 
     if (!tagMeta) {
         notFound();
     }
 
-    const allItemsRaw = await client.fetch(allContentByTagListQuery, { slug: tagSlug });
-    // THE FIX: Enrich with usernames server-side
-    const allItems = await enrichContentList(allItemsRaw);
 
     if (!allItems || allItems.length === 0) {
         return (

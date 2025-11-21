@@ -11,54 +11,37 @@ import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { groq } from 'next-sanity';
 import type { Metadata } from 'next';
-import { enrichCreators, enrichContentList } from '@/lib/enrichment';
-import { Suspense } from 'react';
+import { Suspense, cache } from 'react';
+
+// CACHE OPTIMIZATION: Deduplicate requests between generateMetadata and Page
+const getCachedItem = cache(async (query: string, params: any) => {
+    return await client.fetch(query, params);
+});
 
 const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
 const contentConfig = {
-    reviews: {
-        query: reviewBySlugQuery,
-        relatedProp: 'relatedReviews',
-        creatorProps: ['authors', 'designers'],
-        sanityType: 'review',
-    },
-    articles: {
-        query: articleBySlugQuery,
-        relatedProp: 'relatedArticles',
-        creatorProps: ['authors', 'designers'],
-        sanityType: 'article',
-    },
-    news: {
-        query: newsBySlugQuery,
-        relatedProp: 'relatedNews',
-        creatorProps: ['reporters', 'designers'],
-        sanityType: 'news',
-    },
+    reviews: { query: reviewBySlugQuery, sanityType: 'review' },
+    articles: { query: articleBySlugQuery, sanityType: 'article' },
+    news: { query: newsBySlugQuery, sanityType: 'news' },
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
     const { slug: slugArray } = await params;
-    
     if (!slugArray || slugArray.length < 2) return {};
-
+    
     const [type, slug] = slugArray;
     const sanityType = type === 'reviews' ? 'review' : type === 'articles' ? 'article' : type === 'news' ? 'news' : null;
-    
     if (!sanityType) return {};
     
-    // Use CDN for metadata (fast)
+    // Uses the cached client fetch
     const item = await client.fetch(`*[_type == "${sanityType}" && slug.current == $slug][0]{title, synopsis}`, { slug });
 
     if (!item) return {};
-
-    return {
-        title: item.title,
-        description: item.synopsis || `Read the full ${type.slice(0, -1)} on EternalGames.`,
-    }
+    return { title: item.title, description: item.synopsis || `Read the full ${type.slice(0, -1)} on EternalGames.` }
 }
 
-// --- ASYNC COMPONENT FOR COMMENTS (Streamed in later) ---
+// --- ASYNC COMMENT LOADER ---
 async function CommentsLoader({ slug, contentType }: { slug: string, contentType: string }) {
     try {
         const comments = await prisma.comment.findMany({
@@ -67,21 +50,13 @@ async function CommentsLoader({ slug, contentType }: { slug: string, contentType
                 author: { select: { id: true, name: true, image: true, username: true } }, 
                 votes: true, 
                 _count: { select: { replies: true } }, 
-                replies: { 
-                    take: 2, 
-                    include: { 
-                        author: { select: { id: true, name: true, image: true, username: true } }, 
-                        votes: true, 
-                        _count: { select: { replies: true } } 
-                    }, 
-                    orderBy: { createdAt: 'asc' } 
-                } 
+                replies: { take: 2, include: { author: { select: { id: true, name: true, image: true, username: true } }, votes: true, _count: { select: { replies: true } } }, orderBy: { createdAt: 'asc' } } 
             },
             orderBy: { createdAt: 'desc' },
         });
         return <CommentSection slug={slug} contentType={contentType} initialComments={comments} />;
     } catch (error) {
-        console.error("Failed to fetch comments server-side:", error);
+        console.error("Failed to fetch comments:", error);
         return <CommentSection slug={slug} contentType={contentType} initialComments={[]} />;
     }
 }
@@ -94,8 +69,7 @@ export async function generateStaticParams() {
             return { slug: [type, c.slug] };
         });
     } catch (error) {
-        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch slugs for generateStaticParams.`, error);
-        throw error;
+        return [];
     }
 }
 
@@ -109,8 +83,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!config) notFound();
 
-    // 1. Fetch Content from Sanity (Fast CDN)
-    const itemPromise = client.fetch(config.query, { slug });
+    const itemPromise = getCachedItem(config.query, { slug });
     const colorsPromise = client.fetch(colorDictionaryQuery);
 
     const [item, colorDictionaryData] = await Promise.all([
@@ -120,39 +93,11 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!item) notFound();
 
-    // 2. Enrich Creators (Now Cached via unstable_cache)
-    // This will now hit the Vercel Data Cache instead of the DB after the first visit.
-    const enrichmentTasks = [];
-
-    for (const prop of config.creatorProps) {
-        if (item[prop]) {
-            enrichmentTasks.push(
-                enrichCreators(item[prop]).then(res => item[prop] = res)
-            );
-        }
-    }
-
-    if (item[config.relatedProp]) {
-        enrichmentTasks.push(
-            enrichContentList(item[config.relatedProp]).then(res => item[config.relatedProp] = res)
-        );
-    }
-
-    await Promise.all(enrichmentTasks);
-    
     const colorDictionary = colorDictionaryData?.autoColors || [];
 
     return (
         <ContentPageClient item={item} type={type as any} colorDictionary={colorDictionary}>
-            {/* 
-               Comments are streamed in. The page loads immediately, 
-               showing a spinner only at the comment section. 
-            */}
-            <Suspense fallback={
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-                    <div className="spinner" />
-                </div>
-            }>
+            <Suspense fallback={<div className="spinner" style={{margin: '4rem auto'}}></div>}>
                 <CommentsLoader slug={slug} contentType={type} />
             </Suspense>
         </ContentPageClient>
