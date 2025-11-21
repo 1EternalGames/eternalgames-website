@@ -32,11 +32,41 @@ type ColorMapping = {
 
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 
-const initialState = { _id: null, _type: null, title: '', slug: '', score: 0, verdict: '', pros: [], cons: [], game: null, tags: [], mainImage: { assetId: null, assetUrl: null }, authors: [], reporters: [], designers: [], publishedAt: null, isSlugManual: false, releaseDate: '', platforms: [], synopsis: '', category: null };
+// Helper to generate state from a document (used for initialization and resets)
+const getInitialEditorState = (doc: EditorDocument) => {
+    const currentSlug = doc.slug?.current ?? '';
+    return {
+        _id: doc._id,
+        _type: doc._type,
+        title: doc.title ?? '',
+        slug: currentSlug,
+        // If we have a slug initially, we assume it was manual or already set, 
+        // preventing auto-slugify from overwriting it immediately on load.
+        isSlugManual: !!currentSlug,
+        score: doc.score ?? 0,
+        verdict: doc.verdict ?? '',
+        pros: doc.pros ?? [],
+        cons: doc.cons ?? [],
+        game: doc.game || null,
+        publishedAt: doc.publishedAt || null,
+        mainImage: {
+            assetId: doc.mainImage?._ref || null,
+            assetUrl: doc.mainImage?.url || null
+        },
+        authors: (doc.authors || []).filter(Boolean),
+        reporters: (doc.reporters || []).filter(Boolean),
+        designers: (doc.designers || []).filter(Boolean),
+        tags: (doc.tags || []).filter(Boolean),
+        releaseDate: doc.releaseDate || '',
+        platforms: doc.platforms || [],
+        synopsis: doc.synopsis || '',
+        category: doc.category || null,
+    };
+};
 
 function editorReducer(state: any, action: { type: string; payload: any }) {
     switch (action.type) {
-        case 'INITIALIZE_STATE': return { ...state, ...action.payload, isSlugManual: !!action.payload.slug, };
+        case 'INITIALIZE_STATE': return { ...state, ...action.payload, isSlugManual: !!action.payload.slug };
         case 'UPDATE_FIELD': return { ...state, [action.payload.field]: action.payload.value };
         case 'UPDATE_SLUG': return { ...state, slug: clientSlugify(action.payload.slug), isManual: action.payload.isManual };
         default: throw new Error(`Unhandled action type: ${action.type}`);
@@ -132,7 +162,8 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 
 export function EditorClient({ document: initialDocument, allGames, allTags, allCreators, colorDictionary: initialColorDictionary }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[], colorDictionary: ColorMapping[] }) {
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
-    const [state, dispatch] = useReducer(editorReducer, initialState);
+    // THE FIX: Initialize reducer state directly with data, avoiding the empty state flash
+    const [state, dispatch] = useReducer(editorReducer, getInitialEditorState(initialDocument));
     const { title, slug, isSlugManual } = state;
     const toast = useToast();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -140,8 +171,15 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
     const [mainImageUploadQuality, setMainImageUploadQuality] = useState<UploadQuality>('1080p');
     const { blockUploadQuality, setBlockUploadQuality, setEditorActive, setLiveUrl } = useEditorStore();
-    const [slugValidationStatus, setSlugValidationStatus] = useState<'pending' | 'valid' | 'invalid'>('pending');
-    const [slugValidationMessage, setSlugValidationMessage] = useState('جارٍ التحقق...');
+
+    // THE FIX: Initialize status based on the presence of a slug
+    const [slugValidationStatus, setSlugValidationStatus] = useState<'pending' | 'valid' | 'invalid'>(
+        initialDocument.slug?.current ? 'valid' : 'pending'
+    );
+    const [slugValidationMessage, setSlugValidationMessage] = useState(
+        initialDocument.slug?.current ? 'المُعرِّفُ صالح.' : 'جارٍ التحقق...'
+    );
+
     const debouncedSlug = useDebounce(slug, 500);
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
     const [colorDictionary, setColorDictionary] = useState<ColorMapping[]>(initialColorDictionary);
@@ -187,50 +225,58 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const hasChanges = Object.keys(patch).length > 0;
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
+    // This effect now only runs when sourceOfTruth changes (e.g. after save), avoiding double-init on mount
     useEffect(() => { 
-        const currentSlug = sourceOfTruth.slug?.current ?? '';
-        dispatch({ 
-            type: 'INITIALIZE_STATE', 
-            payload: { 
-                _id: sourceOfTruth._id, 
-                _type: sourceOfTruth._type, 
-                title: sourceOfTruth.title ?? '', 
-                slug: currentSlug, 
-                score: sourceOfTruth.score ?? 0, 
-                verdict: sourceOfTruth.verdict ?? '', 
-                pros: sourceOfTruth.pros ?? [], 
-                cons: sourceOfTruth.cons ?? [], 
-                game: sourceOfTruth.game || null, 
-                publishedAt: sourceOfTruth.publishedAt || null, 
-                mainImage: { assetId: sourceOfTruth.mainImage?._ref || null, assetUrl: sourceOfTruth.mainImage?.url || null }, 
-                authors: (sourceOfTruth.authors || []).filter(Boolean), 
-                reporters: (sourceOfTruth.reporters || []).filter(Boolean), 
-                designers: (sourceOfTruth.designers || []).filter(Boolean), 
-                tags: (sourceOfTruth.tags || []).filter(Boolean), 
-                releaseDate: sourceOfTruth.releaseDate || '', 
-                platforms: sourceOfTruth.platforms || [], 
-                synopsis: sourceOfTruth.synopsis || '', 
-                category: sourceOfTruth.category || null, 
-            } 
-        }); 
-        const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width; 
-        if (imageWidth && imageWidth >= 3840) { setMainImageUploadQuality('4k'); } else { setMainImageUploadQuality('1080p'); } 
-        if (editorInstance) { 
-            const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
-            const editorJSON = JSON.stringify(editorInstance.getJSON()); 
-            const sourceJSON = JSON.stringify(freshTiptapContent); 
-            if (editorJSON !== sourceJSON) { editorInstance.commands.setContent(freshTiptapContent, false); } 
-        } 
-    }, [sourceOfTruth._id, sourceOfTruth._updatedAt, editorInstance, sourceOfTruth.slug]);
+        // Only dispatch if IDs don't match (navigation) or timestamps differ (external/save update)
+        if (sourceOfTruth._id !== state._id || sourceOfTruth._updatedAt !== state._updatedAt) {
+            const newState = getInitialEditorState(sourceOfTruth);
+            dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
+            
+            const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width; 
+            if (imageWidth && imageWidth >= 3840) { setMainImageUploadQuality('4k'); } else { setMainImageUploadQuality('1080p'); } 
+            
+            if (editorInstance) { 
+                const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
+                const editorJSON = JSON.stringify(editorInstance.getJSON()); 
+                const sourceJSON = JSON.stringify(freshTiptapContent); 
+                if (editorJSON !== sourceJSON) { editorInstance.commands.setContent(freshTiptapContent, false); } 
+            }
+        }
+    }, [sourceOfTruth, editorInstance, state._id, state._updatedAt]);
 
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
     useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
+    
     useEffect(() => {
         if (state._type === 'gameRelease') { setSlugValidationStatus('valid'); setSlugValidationMessage(''); return; }
-        if (!state._id || !debouncedSlug) { setSlugValidationStatus('invalid'); setSlugValidationMessage(!state._id ? 'بانتظار مُعرِّف الوثيقة...' : 'لا يكُن المُعرِّفُ خاويًا.'); return; } 
-        setSlugValidationStatus('pending'); setSlugValidationMessage('جارٍ التحقق...'); 
-        const checkSlug = async () => { const result = await validateSlugAction(debouncedSlug, state._id); setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); setSlugValidationMessage(result.message); }; checkSlug();
-    }, [debouncedSlug, state._id, state._type]);
+        
+        // Avoid triggering invalid state if the slug is just initializing
+        if (!state._id || !debouncedSlug) { 
+             // If it's truly empty, it's invalid
+             if (debouncedSlug === '') {
+                 setSlugValidationStatus('invalid'); 
+                 setSlugValidationMessage('لا يكُن المُعرِّفُ خاويًا.');
+             }
+             return; 
+        } 
+
+        // If the debounced slug matches what we already know is valid (source of truth), skip check
+        if (debouncedSlug === sourceOfTruth.slug?.current) {
+            setSlugValidationStatus('valid');
+            setSlugValidationMessage('المُعرِّفُ صالح.');
+            return;
+        }
+
+        setSlugValidationStatus('pending'); 
+        setSlugValidationMessage('جارٍ التحقق...'); 
+        
+        const checkSlug = async () => { 
+            const result = await validateSlugAction(debouncedSlug, state._id); 
+            setSlugValidationStatus(result.isValid ? 'valid' : 'invalid'); 
+            setSlugValidationMessage(result.message); 
+        }; 
+        checkSlug();
+    }, [debouncedSlug, state._id, state._type, sourceOfTruth.slug?.current]);
 
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
@@ -282,8 +328,7 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         } 
         const result = await publishDocumentAction(sourceOfTruth._id, publishTime); 
         if (result.success && result.updatedDocument) { 
-            // THE FIX: Merge server result but preserve the local content state to prevent false-positive diffs.
-            // Since saveWorkingCopy() just succeeded, our local state.content is the source of truth.
+            // THE FIX: Merge server result but preserve local content state to prevent false-positive diffs
             setSourceOfTruth(prev => ({
                 ...result.updatedDocument,
                 content: prev.content, 
