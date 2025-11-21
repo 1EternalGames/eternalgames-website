@@ -32,7 +32,18 @@
 .canvasTitleInput:focus { box-shadow: 0 2px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 4px; }
 .canvasEditorWrapper { position: relative; padding: 3rem; border: 1px solid var(--border-color); border-radius: 12px; background-color: var(--bg-secondary); box-shadow: 0 10px 30px -15px color-mix(in srgb, var(--text-primary) 10%, transparent); transition: border-color 0.3s ease, box-shadow 0.3s ease; }
 .canvasEditorWrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent), 0 10px 30px -15px color-mix(in srgb, var(--text-primary) 10%, transparent); }
-.tiptap { outline: none; text-align: right; }
+
+/* THE FIX: Enforce wrapping and prevent overflow */
+.tiptap { 
+    outline: none; 
+    text-align: right; 
+    overflow-wrap: break-word; 
+    word-break: break-word;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+}
+
 .tiptap > * + * { margin-top: 1.25em; }
 .tiptap h2 { font-family: var(--font-main), sans-serif; font-size: 2.8rem; line-height: 1.2; margin: 4rem 0 2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: right; color: var(--text-secondary); opacity: 0.7; pointer-events: none; height: 0; }

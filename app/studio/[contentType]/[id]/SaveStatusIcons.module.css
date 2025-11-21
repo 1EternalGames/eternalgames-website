@@ -1,12 +1,10 @@
 .container {
     display: flex;
     align-items: center;
-    /* Reduced gap slightly as requested */
-    gap: 1.2rem; 
+    gap: 1.2rem;
     margin-bottom: 1.5rem;
-    /* Aligned to Right (Flex Start in RTL) to be above the title/content */
     justify-content: flex-end;
-    padding: 0 3rem;
+    padding: 0 4rem;
 }
 
 .iconWrapper {
@@ -14,8 +12,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     transition: color 0.3s ease;
 }
 
@@ -34,14 +32,14 @@
     color: var(--text-secondary); /* Gray */
 }
 
-/* Animation */
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+/* Data Flow Animation (Bobbing Arrow) */
+@keyframes flow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-1px); } /* Reduced from -3px */
 }
 
-.saving svg {
-    animation: spin 1s linear infinite;
+.saving .arrow {
+    animation: flow 1s ease-in-out infinite;
 }
 
 .tooltip {
@@ -70,12 +68,13 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-    .iconWrapper {
-        width: 20px;
-        height: 20px;
-    }
     .container {
+        padding: 0 1.5rem;
         margin-bottom: 1rem;
-        /* Keep alignment consistent */
+        gap: 0.8rem;
+    }
+    .iconWrapper {
+        width: 25px;
+        height: 25px;
     }
 }
