@@ -1,44 +1,40 @@
 // app/(content)/[...slug]/page.tsx
 import { client } from '@/lib/sanity.client';
-import {
-    reviewBySlugQuery,
-    articleBySlugQuery,
-    newsBySlugQuery,
-} from '@/lib/sanity.queries';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import { groq } from 'next-sanity';
 import type { Metadata } from 'next';
-import { Suspense, cache } from 'react';
+import { Suspense } from 'react';
+import { getCachedDocument } from '@/lib/sanity.fetch';
 
-// CACHE OPTIMIZATION: Deduplicate requests between generateMetadata and Page
-const getCachedItem = cache(async (query: string, params: any) => {
-    return await client.fetch(query, params);
-});
-
+// Fetch color dictionary (lightweight, singleton)
 const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
-const contentConfig = {
-    reviews: { query: reviewBySlugQuery, sanityType: 'review' },
-    articles: { query: articleBySlugQuery, sanityType: 'article' },
-    news: { query: newsBySlugQuery, sanityType: 'news' },
+const typeMap: Record<string, string> = {
+    reviews: 'review',
+    articles: 'article',
+    news: 'news',
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
     const { slug: slugArray } = await params;
     if (!slugArray || slugArray.length < 2) return {};
     
-    const [type, slug] = slugArray;
-    const sanityType = type === 'reviews' ? 'review' : type === 'articles' ? 'article' : type === 'news' ? 'news' : null;
+    const [section, slug] = slugArray;
+    const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // Uses the cached client fetch
-    const item = await client.fetch(`*[_type == "${sanityType}" && slug.current == $slug][0]{title, synopsis}`, { slug });
+    // Uses the request-memoized fetcher. This triggers the fetch.
+    // The result is cached for the Page component.
+    const item = await getCachedDocument(sanityType, slug);
 
     if (!item) return {};
-    return { title: item.title, description: item.synopsis || `Read the full ${type.slice(0, -1)} on EternalGames.` }
+    return { 
+        title: item.title, 
+        description: item.synopsis || `Read the full ${sanityType} on EternalGames.` 
+    };
 }
 
 // --- ASYNC COMMENT LOADER ---
@@ -63,7 +59,8 @@ async function CommentsLoader({ slug, contentType }: { slug: string, contentType
 
 export async function generateStaticParams() {
     try {
-        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]]{ "slug": slug.current, _type }`);
+        // Optional: Limit this to the most recent 100 items to speed up build
+        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100]{ "slug": slug.current, _type }`);
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
             return { slug: [type, c.slug] };
@@ -78,17 +75,15 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!slugArray || slugArray.length !== 2) notFound();
     
-    const [type, slug] = slugArray;
-    const config = (contentConfig as any)[type];
+    const [section, slug] = slugArray;
+    const sanityType = typeMap[section];
     
-    if (!config) notFound();
+    if (!sanityType) notFound();
 
-    const itemPromise = getCachedItem(config.query, { slug });
-    const colorsPromise = client.fetch(colorDictionaryQuery);
-
+    // Parallelize the cached document retrieval (likely instant/cached) and the color dictionary fetch
     const [item, colorDictionaryData] = await Promise.all([
-        itemPromise,
-        colorsPromise
+        getCachedDocument(sanityType, slug),
+        client.fetch(colorDictionaryQuery)
     ]);
     
     if (!item) notFound();
@@ -96,9 +91,9 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const colorDictionary = colorDictionaryData?.autoColors || [];
 
     return (
-        <ContentPageClient item={item} type={type as any} colorDictionary={colorDictionary}>
+        <ContentPageClient item={item} type={section as any} colorDictionary={colorDictionary}>
             <Suspense fallback={<div className="spinner" style={{margin: '4rem auto'}}></div>}>
-                <CommentsLoader slug={slug} contentType={type} />
+                <CommentsLoader slug={slug} contentType={section} />
             </Suspense>
         </ContentPageClient>
     );

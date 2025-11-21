@@ -38,11 +38,11 @@ score,
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}
 `
 
-// --- Standard Queries (Keep these as they were or updated for consistency) ---
+// --- Standard Queries ---
 export const newsHeroQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] { ${cardProjection}, synopsis }`
 export const newsGridInitialQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...50] { ${cardListProjection} }`
 
-// --- The Optimized Content Queries (THE FIX) ---
+// --- Content Queries ---
 const contentProjection = groq`content[]{ ..., _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, _type == "imageCompare" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "twoImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}} }, _type == "fourImageGrid" => { "image1": image1{..., asset->{_id, url}}, "image2": image2{..., asset->{_id, url}}, "image3": image3{..., asset->{_id, url}}, "image4": image4{..., asset->{_id, url}} }, _type == "table" => {..., rows[]{..., cells[]{..., content[]{...}}}}, _type == "gameDetails" => { ... }, _type == 'youtube' => { ... } }`
 const relatedContentProjection = groq`{ _id, _type, legacyId, title, "slug": slug.current, "mainImage": mainImage{${mainImageFields}}, score, "authors": authors[]->{name, prismaUserId}, "reporters": reporters[]->{name, prismaUserId}, "publishedAt": publishedAt }`
 
@@ -76,7 +76,11 @@ export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug &
   ${contentProjection}
 }`
 
-// ... Keep the rest of your existing queries (paginatedNewsQuery, etc.) below ...
+// --- OPTIMIZED QUERIES ---
+// New: Optimized query for tags page using direct ID reference instead of slug join
+export const allContentByTagIdQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && (references($tagId) || category._ref == $tagId)] | order(publishedAt desc) { ${cardListProjection} }`
+
+// ... Existing queries ...
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest') => {
   let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`
@@ -109,6 +113,7 @@ export const allReviewsListQuery = groq`*[_type == "review" && ${publishedFilter
 export const allArticlesListQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
 export const allContentByCreatorListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`
 export const allContentByGameListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`
+// Retaining the old query for compatibility or fallback, but marking it.
 export const allContentByTagListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && ($slug in tags[]->slug.current || category->slug.current == $slug)] | order(publishedAt desc) { ${cardListProjection} }`
 export const latestReviewsFallbackQuery = groq`*[_type == "review" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
 export const latestArticlesFallbackQuery = groq`*[_type == "article" && ${publishedFilter} && _id != $currentId] | order(publishedAt desc)[0...3] ${relatedContentProjection}`
