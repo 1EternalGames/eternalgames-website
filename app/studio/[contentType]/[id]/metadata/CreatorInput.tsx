@@ -63,11 +63,13 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
     }, []);
 
     const addCreator = (creator: Creator) => {
+        // Immediate state update
         if (!validSelectedCreators.some(c => c._id === creator._id)) {
             onCreatorsChange([...validSelectedCreators, creator]);
         }
         setSearchTerm('');
-        inputRef.current?.focus();
+        // Keep focus on input to allow rapid selection
+        setTimeout(() => inputRef.current?.focus(), 0);
     };
     
     const removeCreator = (creatorIdToRemove: string) => {
@@ -112,9 +114,10 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                                         <button 
                                             type="button" 
                                             key={creator._id} 
-                                            // FIX: onMouseDown strictly prevents focus loss; onClick handles logic
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={() => addCreator(creator)}
+                                            // FIX: Execute logic immediately on MouseDown.
+                                            // preventDefault() stops the input from blurring.
+                                            // addCreator() runs the logic instantly.
+                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); addCreator(creator); }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
                                             className={styles.popoverItemButton}
                                         > 

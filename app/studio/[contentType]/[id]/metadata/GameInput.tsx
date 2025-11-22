@@ -46,7 +46,11 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
         return () => document.removeEventListener('mousedown', handleClickOutside); 
     }, []);
 
-    const handleSelect = (game: Game) => { onGameSelect(game); setIsPopoverOpen(false); };
+    const handleSelect = (game: Game) => { 
+        onGameSelect(game); 
+        setIsPopoverOpen(false); 
+    };
+    
     const handleOpenModal = () => { setIsPopoverOpen(false); setIsAddGameModalOpen(true); };
     const handleCreateGame = async (title: string) => { const newGame = await createGameAction(title); if (newGame) { onGameSelect(newGame); } setIsAddGameModalOpen(false); setSearchTerm(''); };
     
@@ -96,9 +100,8 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                         <button 
                                             type="button" 
                                             key={game._id} 
-                                            // FIX: Split logic
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={() => handleSelect(game)}
+                                            // FIX: Move logic to onMouseDown to prevent focus loss/race conditions
+                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleSelect(game); }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
                                             className={styles.popoverItemButton}
                                         >
@@ -111,9 +114,8 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                     {searchTerm.length > 1 && (
                                         <button 
                                             type="button" 
-                                            // FIX: Split logic
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={handleOpenModal}
+                                            // FIX: Move logic to onMouseDown
+                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }}
                                         >
                                             + إنشاء جديد: "{searchTerm.trim()}"
