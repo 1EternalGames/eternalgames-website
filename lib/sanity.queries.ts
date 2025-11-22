@@ -145,6 +145,9 @@ export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", 
 export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`
 export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`
 
+// --- BATCHED QUERIES FOR INDEX PAGES ---
+// Note: Limits are reduced (12-15) to ensure fast response times.
+
 export const newsIndexQuery = groq`{
   "hero": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] { ${cardProjection}, synopsis },
   "grid": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...15] { ${cardListProjection} },
@@ -174,7 +177,7 @@ export const consolidatedHomepageQuery = groq`{
   "releases": *[_type == "gameRelease" && defined(releaseDate) && releaseDate >= "2023-01-01"] | order(releaseDate asc) { _id, legacyId, title, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, "game": game->{ "slug": slug.current }, "slug": game->slug.current }
 }`
 
-// --- Re-exported Filter Queries (Fixed) ---
+// --- Re-exported Filter Queries (Required for Actions) ---
 export const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category}`
 export const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}`
 export const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}`

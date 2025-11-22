@@ -1,6 +1,6 @@
 // app/articles/page.tsx
 import { client } from '@/lib/sanity.client';
-import { featuredShowcaseArticlesQuery, allArticlesListQuery, allGamesForStudioQuery, allGameTagsQuery, allArticleTypeTagsQuery } from '@/lib/sanity.queries';
+import { articlesIndexQuery } from '@/lib/sanity.queries';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import ArticlesPageClient from './ArticlesPageClient';
 import { Suspense } from 'react';
@@ -36,14 +36,16 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function ArticlesPage() {
-  // OPTIMIZATION: Use Promise.all for parallel fetching.
-  const [featuredArticlesRaw, initialGridArticlesRaw, allGames, allGameTagsRaw, allArticleTypeTagsRaw]: [SanityArticle[], SanityArticle[], SanityGame[], SanityTag[], SanityTag[]] = await Promise.all([
-    client.fetch(featuredShowcaseArticlesQuery),
-    client.fetch(allArticlesListQuery),
-    client.fetch(allGamesForStudioQuery),
-    client.fetch(allGameTagsQuery),
-    client.fetch(allArticleTypeTagsQuery),
-  ]);
+  // OPTIMIZATION: Fetch all data in a single batched request
+  const data = await client.fetch(articlesIndexQuery);
+  
+  const { 
+      featured: featuredArticlesRaw, 
+      grid: initialGridArticlesRaw, 
+      games: allGames, 
+      gameTags: allGameTagsRaw, 
+      typeTags: allArticleTypeTagsRaw 
+  } = data;
 
   const allGameTags = deduplicateTags(allGameTagsRaw);
   const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
