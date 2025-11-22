@@ -5,6 +5,7 @@ import { getAuthenticatedSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { sanityWriteClient } from '@/lib/sanity.server';
+import { client } from '@/lib/sanity.client'; // <-- IMPORTED CDN CLIENT
 import { groq } from 'next-sanity';
 import { slugify } from 'transliteration';
 import { tiptapToPortableText } from './utils/tiptapToPortableText';
@@ -226,7 +227,8 @@ export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' |
     const sanityTypeMap = { REVIEWER: 'reviewer', AUTHOR: 'author', REPORTER: 'reporter', DESIGNER: 'designer' };
     const sanityType = sanityTypeMap[roleName];
     const sanityQuery = `*[_type == $sanityType && prismaUserId in $prismaUserIds]{_id, name}`;
-    return await sanityWriteClient.fetch(sanityQuery, { sanityType, prismaUserIds }) as {_id: string, name: string}[];
+    // OPTIMIZATION: Use CDN client for search
+    return await client.fetch(sanityQuery, { sanityType, prismaUserIds }) as {_id: string, name: string}[];
 }
 
 export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
@@ -304,7 +306,8 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
 export async function searchGamesAction(query: string): Promise<{_id: string, title: string}[]> {
     if (query.length < 2) return [];
     try {
-        const results = await sanityWriteClient.fetch(
+        // OPTIMIZATION: Use CDN client for search
+        const results = await client.fetch(
             `*[_type == "game" && title match $searchTerm + "*"][0...10]{_id, title}`, 
             { searchTerm: query }
         ) as {_id: string, title: string}[];
@@ -325,7 +328,8 @@ export async function createGameAction(title: string): Promise<{_id: string, tit
 export async function searchTagsAction(query: string): Promise<{_id: string, title: string}[]> {
     if (query.length < 1) return [];
     try {
-        const results = await sanityWriteClient.fetch(
+        // OPTIMIZATION: Use CDN client for search
+        const results = await client.fetch(
             `*[_type == "tag" && title match $searchTerm + "*"][0...10]{_id, title}`, 
             { searchTerm: query }
         ) as {_id: string, title: string}[];
@@ -345,7 +349,8 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
 
 export async function getRecentTagsAction(): Promise<{_id: string, title: string}[]> {
     try {
-        const results = await sanityWriteClient.fetch(groq`*[_type == "tag"] | order(_createdAt desc)[0...50]{_id, title}`);
+        // OPTIMIZATION: Use CDN client for fetching recent tags
+        const results = await client.fetch(groq`*[_type == "tag"] | order(_createdAt desc)[0...50]{_id, title}`);
         return results;
     } catch (error) { console.error("أخفق جلب آخر الوسوم:", error); return []; }
 }
@@ -360,6 +365,7 @@ export async function validateSlugAction(slug: string, docId: string): Promise<{
     try {
         const publicId = docId.replace('drafts.', '');
         const draftId = `drafts.${publicId}`;
+        // Validation requires fresh data, keep using Write Client or use CDN with 0 ttl
         const isUnique = await sanityWriteClient.fetch(query, { slug, draftId, publicId });
         if (isUnique) return { isValid: true, message: 'المُعرِّفُ صالح.' };
         return { isValid: false, message: 'مُعرِّفٌ مُستعمل.' };

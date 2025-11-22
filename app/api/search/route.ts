@@ -12,12 +12,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await client.fetch<SanitySearchResult[]>(searchQuery, { searchTerm: query });
+    // OPTIMIZATION: Cache search results for 300 seconds
+    const results = await client.fetch<SanitySearchResult[]>(
+      searchQuery, 
+      { searchTerm: query },
+      { next: { revalidate: 300 } } 
+    );
     return NextResponse.json(results);
   } catch (error) {
     console.error('Sanity search failed:', error);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
 }
-
-

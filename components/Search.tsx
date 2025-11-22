@@ -21,7 +21,8 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SanitySearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const debouncedQuery = useDebounce(query, 250);
+    // OPTIMIZATION: Increased debounce from 250 to 600ms
+    const debouncedQuery = useDebounce(query, 600);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -111,5 +112,3 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
         </AnimatePresence>
     );
 }
-
-
