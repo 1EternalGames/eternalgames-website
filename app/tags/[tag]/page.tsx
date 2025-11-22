@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
 
-  // First Hit: Network fetch -> Memoized
+  // Request Memoization ensures this fetch is shared with the Page component
   const data = await getCachedTagPageData(tagSlug);
 
   if (!data?.tag) return {};
@@ -60,7 +60,7 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
-    // Second Hit: Instant from Memoization
+    // Returns result instantly from Metadata request cache
     const data = await getCachedTagPageData(tagSlug);
 
     if (!data?.tag) {

@@ -1,5 +1,6 @@
 // lib/sanity.fetch.ts
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache'; // Import Data Cache wrapper
 import { client } from './sanity.client';
 import { 
     reviewBySlugQuery, 
@@ -16,48 +17,68 @@ const queryMap: Record<string, string> = {
     news: newsBySlugQuery,
 };
 
-/**
- * Fetches the full document for a given slug and type.
- * Wrapped in React.cache to deduplicate requests within a single render pass (Metadata + Page).
- */
-export const getCachedDocument = cache(async (type: string, slug: string) => {
+// 1. Internal fetcher for documents to be used inside unstable_cache
+const fetchDocument = async (type: string, slug: string) => {
     const query = queryMap[type];
     if (!query) return null;
+    return client.fetch(query, { slug });
+};
 
-    // We pass 'next' options to leverage Vercel's Data Cache (persistence)
-    return await client.fetch(query, { slug }, {
-        next: { 
-            tags: [type, 'content', slug], // Allows manual revalidation
-            revalidate: 604800 // 1 week default (ISR)
+// 2. Internal fetcher for tags
+const fetchTagData = async (slug: string) => {
+    return client.fetch(tagPageDataQuery, { slug });
+};
+
+// 3. Internal fetcher for colors
+const fetchColors = async () => {
+    const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
+    return client.fetch(colorDictionaryQuery, {});
+};
+
+/**
+ * Fetches the full document for a given slug and type.
+ * Wrapped in React.cache (Request Memoization) AND unstable_cache (Data Cache).
+ */
+export const getCachedDocument = cache(async (type: string, slug: string) => {
+    const cachedFetcher = unstable_cache(
+        async () => fetchDocument(type, slug),
+        [`content-${type}-${slug}`], // Unique Cache Key
+        { 
+            tags: [type, 'content', slug], // Revalidation Tags
+            revalidate: 60 * 60 * 24 // Fallback revalidation (24 hours)
         }
-    });
+    );
+    return cachedFetcher();
 });
 
 /**
- * Fetches Tag metadata and all associated content in a SINGLE pass.
- * Wrapped in React.cache to deduplicate.
+ * Fetches Tag metadata and all associated content.
+ * Wrapped in React.cache AND unstable_cache.
  */
 export const getCachedTagPageData = cache(async (slug: string) => {
-    return await client.fetch(tagPageDataQuery, { slug }, {
-        next: { 
+    const cachedFetcher = unstable_cache(
+        async () => fetchTagData(slug),
+        [`tag-page-${slug}`],
+        { 
             tags: ['tag', slug],
-            revalidate: 3600 // 1 hour
+            revalidate: 60 * 60 // Revalidate tags every hour
         }
-    });
+    );
+    return cachedFetcher();
 });
 
 /**
  * Fetches the Color Dictionary singleton.
- * Wrapped in React.cache to deduplicate.
+ * Wrapped in React.cache AND unstable_cache.
  */
 export const getCachedColorDictionary = cache(async () => {
-    const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
-    
-    return await client.fetch(colorDictionaryQuery, {}, {
-        next: {
+    const cachedFetcher = unstable_cache(
+        async () => fetchColors(),
+        ['color-dictionary-singleton'],
+        { 
             tags: ['colorDictionary'],
-            // We rely on webhook revalidation for this, but set a long safety fallback
-            revalidate: 604800 
+            revalidate: 60 * 60 * 24 
         }
-    });
+    );
+    return cachedFetcher();
 });

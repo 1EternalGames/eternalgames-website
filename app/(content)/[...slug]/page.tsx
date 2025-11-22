@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // First Hit: Fetches from network (or Data Cache) and stores in Request Memoization
+    // Request Memoization ensures this fetch is shared with the Page component
     const item = await getCachedDocument(sanityType, slug);
 
     if (!item) return {};
@@ -75,7 +75,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // Second Hit: Retrieves INSTANTLY from Request Memoization (no network, no wait)
     const [item, colorDictionaryData] = await Promise.all([
         getCachedDocument(sanityType, slug),
         getCachedColorDictionary()
