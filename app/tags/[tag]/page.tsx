@@ -4,8 +4,8 @@ import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
-import { getCachedTagPageData } from '@/lib/sanity.fetch'; // Use cached fetcher
-import { client } from '@/lib/sanity.client'; // For static params only
+import { getCachedTagPageData } from '@/lib/sanity.fetch'; 
+import { client } from '@/lib/sanity.client'; 
 
 export const dynamicParams = true;
 
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
 
-  // Efficient: Reuses the exact same promise as the page component
+  // Efficient: Reuses the exact same cached data as the page component
   const data = await getCachedTagPageData(tagSlug);
 
   if (!data?.tag) return {};
@@ -62,7 +62,7 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
-    // Efficient: Reuses the exact same promise as metadata
+    // Efficient: Reuses the exact same cached data as metadata
     const data = await getCachedTagPageData(tagSlug);
 
     if (!data?.tag) {

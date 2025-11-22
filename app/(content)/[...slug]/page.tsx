@@ -7,9 +7,7 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import { groq } from 'next-sanity';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { getCachedDocument } from '@/lib/sanity.fetch'; // Use cached fetcher
-
-const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
+import { getCachedDocument, getCachedColorDictionary } from '@/lib/sanity.fetch'; 
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -25,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // Trigger the fetch. Result is memoized for the Page component.
+    // Trigger the fetch. Result is cached via unstable_cache for the Page component.
     const item = await getCachedDocument(sanityType, slug);
 
     if (!item) return {};
@@ -79,10 +77,10 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // Parallel execution: Retrieve memoized doc promise & fetch colors
+    // Parallel execution: Retrieve cached docs
     const [item, colorDictionaryData] = await Promise.all([
         getCachedDocument(sanityType, slug),
-        client.fetch(colorDictionaryQuery)
+        getCachedColorDictionary()
     ]);
     
     if (!item) notFound();
