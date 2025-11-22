@@ -35,7 +35,9 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 50 ? 50 : null);
+    
+    // FIX: Updated threshold to 20
+    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'viral'>('latest');

@@ -1,0 +1,58 @@
+/* components/skeletons/HeroSkeleton.module.css */
+@keyframes pulse-skeleton {
+    0%, 100% {
+        background-color: var(--border-color);
+        opacity: 0.5;
+    }
+    50% {
+        background-color: color-mix(in srgb, var(--border-color) 60%, var(--bg-secondary));
+        opacity: 0.8;
+    }
+}
+
+.heroSkeleton {
+    position: relative;
+    height: 55vh;
+    min-height: 400px;
+    width: 100%;
+    margin-bottom: -8rem;
+    padding-top: var(--nav-height-scrolled);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: var(--bg-secondary);
+}
+
+.heroContent {
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    z-index: 2;
+}
+
+.line {
+    height: 2rem;
+    border-radius: 4px;
+    background-color: var(--border-color);
+    animation: pulse-skeleton 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.line.category { width: 150px; height: 1.6rem; }
+.line.title { width: 70%; height: 5rem; margin-bottom: 1rem; }
+.line.meta { width: 40%; }
+.line.button { width: 160px; height: 48px; border-radius: 5px; margin-top: 1rem; }
+
+/* News Hero Variant (Align Right) */
+.heroSkeleton.news {
+    justify-content: flex-end;
+    padding-bottom: 4rem;
+}
+.heroSkeleton.news .heroContent {
+    align-items: flex-end; /* RTL: Right */
+    text-align: right;
+}

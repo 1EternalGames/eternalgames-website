@@ -1,11 +1,12 @@
 // app/reviews/page.tsx
 import { client } from '@/lib/sanity.client';
-import { reviewsIndexQuery } from '@/lib/sanity.queries';
+import { reviewsIndexQuery } from '@/lib/sanity.queries'; 
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
+import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 
 export const metadata: Metadata = {
   title: 'المراجعات',
@@ -23,30 +24,15 @@ export const metadata: Metadata = {
   }
 };
 
-// Helper function to remove duplicates based on title
-const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
-    if (!tags) return [];
-    const uniqueMap = new Map<string, SanityTag>();
-    tags.forEach(tag => {
-        if (tag && tag.title && !uniqueMap.has(tag.title)) {
-            uniqueMap.set(tag.title, tag);
-        }
-    });
-    return Array.from(uniqueMap.values());
-};
-
 export default async function ReviewsPage() {
-  // OPTIMIZATION: Fetch all data in a single batched request
   const data = await client.fetch(reviewsIndexQuery);
 
   const {
       hero: heroReviewRaw,
       grid: initialGridReviewsRaw,
       games: allGames,
-      tags: allTagsRaw
+      tags: allTags
   } = data;
-  
-  const allTags = deduplicateTags(allTagsRaw);
 
   if (!heroReviewRaw) {
     return (
@@ -57,7 +43,6 @@ export default async function ReviewsPage() {
     );
   }
 
-  // Enrich data with usernames server-side to prevent client-side waterfalls
   const heroReview = {
       ...heroReviewRaw,
       authors: await enrichCreators(heroReviewRaw.authors),
@@ -68,7 +53,7 @@ export default async function ReviewsPage() {
   const gridReviews = (initialGridReviews || []).filter(review => review._id !== heroReview._id);
 
   return (
-    <Suspense fallback={<div className="spinner page-container" style={{margin: 'auto'}} />}>
+    <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
       <ReviewsPageClient 
         heroReview={heroReview} 
         initialGridReviews={gridReviews}

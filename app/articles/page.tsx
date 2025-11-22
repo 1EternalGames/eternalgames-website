@@ -6,6 +6,7 @@ import ArticlesPageClient from './ArticlesPageClient';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
+import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 
 export const metadata: Metadata = {
   title: 'المقالات',
@@ -23,7 +24,6 @@ export const metadata: Metadata = {
   }
 };
 
-// Helper function to remove duplicates based on title
 const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     if (!tags) return [];
     const uniqueMap = new Map<string, SanityTag>();
@@ -36,7 +36,6 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function ArticlesPage() {
-  // OPTIMIZATION: Fetch all data in a single batched request
   const data = await client.fetch(articlesIndexQuery);
   
   const { 
@@ -59,18 +58,11 @@ export default async function ArticlesPage() {
     );
   }
 
-  // Enrich data with usernames server-side
   const featuredArticles = (await enrichContentList(featuredArticlesRaw)) as SanityArticle[];
   const initialGridArticles = (await enrichContentList(initialGridArticlesRaw)) as SanityArticle[];
 
-  const ArticlesPageFallback = () => (
-    <div className="container page-container" style={{display: 'flex', alignItems:'center', justifyContent: 'center'}}>
-      <div className="spinner" />
-    </div>
-  );
-
   return (
-    <Suspense fallback={<ArticlesPageFallback />}>
+    <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
       <ArticlesPageClient
         featuredArticles={featuredArticles}
         initialGridArticles={initialGridArticles}

@@ -8,7 +8,6 @@ import HorizontalShowcase from '@/components/HorizontalShowcase';
 import ArticleFilters from '@/components/filters/ArticleFilters';
 import ArticleCard from '@/components/ArticleCard';
 import Image from 'next/image';
-import Link from 'next/link';
 import AnimatedGridBackground from '@/components/AnimatedGridBackground';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
@@ -23,7 +22,7 @@ const fetchArticles = async (params: URLSearchParams) => {
     if (!res.ok) throw new Error('Failed to fetch articles');
     return res.json();
 };
-// ... ArrowIcon and MobileShowcase (unchanged, omitting for brevity as they are purely visual/local)
+
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
     <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points={direction === 'right' ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
@@ -87,7 +86,9 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);
+    
+    // FIX: Updated threshold to 20
+    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
     
     useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener('resize', checkMobile); return () => window.removeEventListener('resize', checkMobile); }, []);
 

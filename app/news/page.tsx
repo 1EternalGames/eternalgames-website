@@ -6,6 +6,7 @@ import NewsPageClient from './NewsPageClient';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
+import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 
 export const metadata: Metadata = {
   title: 'الأخبار',
@@ -23,7 +24,6 @@ export const metadata: Metadata = {
   }
 };
 
-// Helper function to remove duplicates based on title
 const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     if (!tags) return [];
     const uniqueMap = new Map<string, SanityTag>();
@@ -36,7 +36,6 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function NewsPage() {
-  // OPTIMIZATION: Fetch all data in a single batched request
   const data = await client.fetch(newsIndexQuery);
 
   const {
@@ -57,18 +56,11 @@ export default async function NewsPage() {
     );
   }
 
-  // Enrich data with usernames server-side
   const heroArticles = (await enrichContentList(heroNewsRaw)) as SanityNews[];
   const initialGridArticles = (await enrichContentList(initialGridNewsRaw)) as SanityNews[];
 
-  const NewsPageFallback = () => (
-    <div className="container page-container" style={{display: 'flex', alignItems:'center', justifyContent: 'center', minHeight: '80vh'}}>
-      <div className="spinner" />
-    </div>
-  );
-
   return (
-    <Suspense fallback={<NewsPageFallback />}>
+    <Suspense fallback={<IndexPageSkeleton heroVariant="news" />}>
       <NewsPageClient
         heroArticles={heroArticles}
         initialGridArticles={initialGridArticles}

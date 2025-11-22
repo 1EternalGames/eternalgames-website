@@ -1,11 +1,10 @@
 // app/reviews/ReviewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
 import ReviewFilters, { ScoreFilter } from '@/components/filters/ReviewFilters';
 import ArticleCard from '@/components/ArticleCard';
 import { adaptToCardProps } from '@/lib/adapters';
@@ -32,7 +31,9 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const initialCards = useMemo(() => initialGridReviews.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridReviews]);
     const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length === 20 ? 20 : null);
+    
+    // FIX: Updated threshold to 20 to match server query
+    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
     
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'score'>('latest');
