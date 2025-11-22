@@ -5,7 +5,7 @@ import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { getCachedDocument, getCachedColorDictionary } from '@/lib/sanity.fetch'; 
+import { getCachedDocument, getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; // For static params
 import { enrichContentList } from '@/lib/enrichment'; // OPTIMIZATION
 
@@ -24,6 +24,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (!sanityType) return {};
     
     // Request Memoization ensures this fetch is shared with the Page component
+    // Note: We use the single doc fetcher here, but since the page uses a different
+    // (combined) fetcher, this might cause 2 requests if not careful.
+    // However, Metadata runs on a separate pass in Next.js App Router often.
+    // To be safe and consistent, we can use getCachedDocument here, and the page uses the batched one.
+    // Next.js Data Cache might dedupe if configured identical, but they are different queries.
+    // Acceptable trade-off for metadata speed vs page load batching.
     const item = await getCachedDocument(sanityType, slug);
 
     if (!item) return {};
@@ -76,10 +82,8 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    const [rawItem, colorDictionaryData] = await Promise.all([
-        getCachedDocument(sanityType, slug),
-        getCachedColorDictionary()
-    ]);
+    // OPTIMIZATION: Batched request for Document + Color Dictionary
+    const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
@@ -87,7 +91,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     // This prevents the client-side waterfall in CreatorCredit component.
     const [enrichedItem] = await enrichContentList([rawItem]);
 
-    const colorDictionary = colorDictionaryData?.autoColors || [];
+    const colorDictionary = dictionary?.autoColors || [];
 
     return (
         <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>

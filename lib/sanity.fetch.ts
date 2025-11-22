@@ -6,7 +6,8 @@ import {
     articleBySlugQuery, 
     newsBySlugQuery,
     tagPageDataQuery,
-    gamePageDataQuery
+    gamePageDataQuery,
+    colorDictionaryQuery
 } from './sanity.queries';
 import { groq } from 'next-sanity';
 
@@ -40,9 +41,24 @@ export const getCachedGamePageData = cache(async (slug: string) => {
 });
 
 export const getCachedColorDictionary = cache(async () => {
-    const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
-    
     return await client.fetch(colorDictionaryQuery, {}, {
         next: { tags: ['colorDictionary'] }
+    });
+});
+
+// NEW: Batched fetcher for content + dictionary
+export const getCachedContentAndDictionary = cache(async (type: string, slug: string) => {
+    const docQuery = queryMap[type];
+    if (!docQuery) return { item: null, dictionary: null };
+
+    // Combine the specific document query and the global color dictionary query
+    const combinedQuery = groq`{
+        "item": ${docQuery},
+        "dictionary": ${colorDictionaryQuery}
+    }`;
+
+    return await client.fetch(combinedQuery, { slug }, {
+        // Revalidate if the specific doc changes OR if the dictionary changes
+        next: { tags: [type, 'content', slug, 'colorDictionary'] }
     });
 });
