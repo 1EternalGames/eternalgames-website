@@ -21,7 +21,7 @@ export const getCachedEnrichedCreators = unstable_cache(
             return [];
         }
     },
-    ['enriched-creators-batch'],
+    ['enriched-creators-batch'], // Key prefix
     { tags: ['enriched-creators'] }
 );
 
@@ -49,7 +49,10 @@ export async function enrichContentList(items: any[]) {
         return items;
     }
 
-    const uniqueIdsArray = Array.from(allUserIds);
+    // OPTIMIZATION: Sort IDs to ensure consistent Cache Keys.
+    // ['a', 'b'] and ['b', 'a'] should hit the same cache entry.
+    const uniqueIdsArray = Array.from(allUserIds).sort();
+    
     const usernameEntries = await getCachedEnrichedCreators(uniqueIdsArray);
     const usernameMap = new Map(usernameEntries);
 
@@ -64,9 +67,10 @@ export async function enrichContentList(items: any[]) {
 
 export async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
     if (!creators || creators.length === 0) return [];
-    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
     
-    // OPTIMIZATION: Early exit
+    // OPTIMIZATION: Sort IDs for stable caching
+    const userIds = creators.map(c => c.prismaUserId).filter(Boolean).sort();
+    
     if (userIds.length === 0) return creators;
     
     const usernameArray = await getCachedEnrichedCreators(userIds);
