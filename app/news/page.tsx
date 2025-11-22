@@ -1,6 +1,6 @@
 // app/news/page.tsx
 import { client } from '@/lib/sanity.client';
-import { newsIndexQuery } from '@/lib/sanity.queries'; // Batched query
+import { newsHeroQuery, newsGridInitialQuery, allGamesForStudioQuery, allNewsTagsQuery } from '@/lib/sanity.queries';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import NewsPageClient from './NewsPageClient';
 import { Suspense } from 'react';
@@ -36,15 +36,13 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function NewsPage() {
-  // OPTIMIZATION: Fetch all data in a single batched request
-  const data = await client.fetch(newsIndexQuery);
-
-  const {
-      hero: heroNewsRaw,
-      grid: initialGridNewsRaw,
-      games: allGames,
-      tags: allTagsRaw
-  } = data;
+  // OPTIMIZATION: Use Promise.all for parallel fetching.
+  const [heroNewsRaw, initialGridNewsRaw, allGames, allTagsRaw]: [SanityNews[], SanityNews[], SanityGame[], SanityTag[]] = await Promise.all([
+    client.fetch(newsHeroQuery),
+    client.fetch(newsGridInitialQuery),
+    client.fetch(allGamesForStudioQuery),
+    client.fetch(allNewsTagsQuery),
+  ]);
 
   const allTags = deduplicateTags(allTagsRaw);
 

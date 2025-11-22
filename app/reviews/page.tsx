@@ -1,6 +1,6 @@
 // app/reviews/page.tsx
 import { client } from '@/lib/sanity.client';
-import { reviewsIndexQuery } from '@/lib/sanity.queries'; // Batched query
+import { featuredHeroReviewQuery, allReviewsListQuery, allGamesForStudioQuery, allGameTagsQuery } from '@/lib/sanity.queries'; // Updated imports
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
 import { Suspense } from 'react';
@@ -23,16 +23,30 @@ export const metadata: Metadata = {
   }
 };
 
-export default async function ReviewsPage() {
-  // OPTIMIZATION: Fetch all data in a single batched request
-  const data = await client.fetch(reviewsIndexQuery);
+// Helper function to remove duplicates based on title
+const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
+    if (!tags) return [];
+    const uniqueMap = new Map<string, SanityTag>();
+    tags.forEach(tag => {
+        if (tag && tag.title && !uniqueMap.has(tag.title)) {
+            uniqueMap.set(tag.title, tag);
+        }
+    });
+    return Array.from(uniqueMap.values());
+};
 
-  const {
-      hero: heroReviewRaw,
-      grid: initialGridReviewsRaw,
-      games: allGames,
-      tags: allTags
-  } = data;
+export default async function ReviewsPage() {
+  // OPTIMIZATION: Use Promise.all to fetch data in parallel.
+  // This allows Sanity to potentially serve cached results for games/tags faster,
+  // and ensures content fetching doesn't block filters or vice versa.
+  const [heroReviewRaw, initialGridReviewsRaw, allGames, allTagsRaw]: [SanityReview, SanityReview[], SanityGame[], SanityTag[]] = await Promise.all([
+    client.fetch(featuredHeroReviewQuery),
+    client.fetch(allReviewsListQuery),
+    client.fetch(allGamesForStudioQuery),
+    client.fetch(allGameTagsQuery),
+  ]);
+
+  const allTags = deduplicateTags(allTagsRaw);
 
   if (!heroReviewRaw) {
     return (
