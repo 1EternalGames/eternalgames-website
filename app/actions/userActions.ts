@@ -9,7 +9,6 @@ import { getAuthenticatedSession } from '@/lib/auth';
 import { sanityWriteClient } from '@/lib/sanity.server';
 import { groq } from 'next-sanity';
 
-// ... (syncUserToSanity function remains unchanged) ...
 async function syncUserToSanity(userId: string) {
     try {
         const user = await prisma.user.findUnique({
@@ -82,8 +81,8 @@ export async function updateUserProfile(formData: FormData) {
         
         await syncUserToSanity(session.user.id);
 
-        // OPTIMIZATION: Invalidate the specific user session cache
-        revalidateTag(`user-session-${session.user.id}`);
+        // THE FIX: Added 'max' profile argument
+        revalidateTag(`user-session-${session.user.id}`, 'max');
         
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
@@ -117,8 +116,8 @@ export async function completeOnboardingAction(formData: FormData) {
             data: { name: fullName, username: username, age: ageStr ? parseInt(ageStr, 10) : null, country: country || null },
         });
 
-        // OPTIMIZATION: Invalidate session cache
-        revalidateTag(`user-session-${session.user.id}`);
+        // THE FIX: Added 'max' profile argument
+        revalidateTag(`user-session-${session.user.id}`, 'max');
 
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
@@ -127,9 +126,6 @@ export async function completeOnboardingAction(formData: FormData) {
         return { success: true };
     } catch (error: any) { return { success: false, message: error.message || 'طرأ خطبٌ عند التهيئة.' }; }
 }
-
-// ... (changePasswordAction, validateUsername, checkUsernameAvailability, signUp, setUsernameAction) ...
-// [Included for file completeness but unchanged logic except for validation]
 
 export async function changePasswordAction(formData: FormData) {
     try {
@@ -190,8 +186,8 @@ export async function setUsernameAction(username: string) {
         if (!validation.available) return { success: false, message: validation.message };
         await prisma.user.update({ where: { id: session.user.id }, data: { username: cleanUsername } });
         revalidatePath('/profile');
-        // OPTIMIZATION: Invalidate session cache
-        revalidateTag(`user-session-${session.user.id}`);
+        // THE FIX: Added 'max' profile argument
+        revalidateTag(`user-session-${session.user.id}`, 'max');
         return { success: true };
     } catch (error: any) { return { success: false, message: error.message || 'أخفق تحديث الاسم.' }; }
 }
@@ -208,8 +204,8 @@ export async function updateUserAvatar(formData: FormData) {
         revalidatePath('/profile');
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
-        // OPTIMIZATION: Invalidate session cache
-        revalidateTag(`user-session-${session.user.id}`);
+        // THE FIX: Added 'max' profile argument
+        revalidateTag(`user-session-${session.user.id}`, 'max');
         return { success: true, message: 'تجدَّدت الصورة الرمزية.' };
     } catch (error: any) { return { success: false, message: error.message || 'أخفق الرفع.' }; }
 }

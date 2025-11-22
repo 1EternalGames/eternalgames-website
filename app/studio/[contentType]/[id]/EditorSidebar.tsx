@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo, useTransition, useCallback } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import ButtonLoader from '@/components/ui/ButtonLoader';
 import { ProsConsInput } from './metadata/ProsConsInput';
 import { GameInput } from './metadata/GameInput';
@@ -15,17 +15,16 @@ import ColorDictionaryManager from './metadata/color-dictionary/ColorDictionaryM
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './Editor.module.css';
 
-type Tag = { _id: string; title: string; category: 'Game' | 'Article' | 'News' };
-
 const sidebarVariants = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 40 } }, exit: { opacity: 0, x: 50, transition: { duration: 0.2, ease: 'easeInOut' as const } } };
 const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
 const ToggleSwitch = ({ checked, onChange, name }: { checked: boolean, onChange: (checked: boolean) => void, name?: string }) => ( <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`toggle ${checked ? 'active' : ''}`}> <motion.div className="toggle-handle" layout transition={{ type: 'spring' as const, stiffness: 700, damping: 30 }} /> {name && <input type="checkbox" name={name} checked={checked} readOnly style={{ display: 'none' }} />} </button> );
 
+// REMOVED: allGames, allTags, allCreators props
 export function EditorSidebar({ 
     document, isOpen, documentState, dispatch, onSave, hasChanges, onPublish, 
     slugValidationStatus, slugValidationMessage, isDocumentValid, 
     mainImageUploadQuality, onMainImageUploadQualityChange,
-    allGames, allTags, allCreators, colorDictionary
+    colorDictionary
 }: any) {
     const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
@@ -41,28 +40,16 @@ export function EditorSidebar({
     const isRelease = document._type === 'gameRelease';
 
     const primaryCreatorConfig = useMemo(() => {
-        if (isReview) return { label: 'المراجعون', sanityType: 'reviewer', field: 'authors' };
-        if (isArticle) return { label: 'الكتّاب', sanityType: 'author', field: 'authors' };
-        if (isNews) return { label: 'المراسلون', sanityType: 'reporter', field: 'reporters' };
-        return { label: 'المنشئون', sanityType: 'author', field: 'authors' };
+        if (isReview) return { label: 'المراجعون', sanityType: 'REVIEWER', field: 'authors' };
+        if (isArticle) return { label: 'الكتّاب', sanityType: 'AUTHOR', field: 'authors' };
+        if (isNews) return { label: 'المراسلون', sanityType: 'REPORTER', field: 'reporters' };
+        return { label: 'المنشئون', sanityType: 'AUTHOR', field: 'authors' };
     }, [isReview, isArticle, isNews]);
-
-    const getUniqueTagsByCategory = useCallback((categoryToFilter: 'Game' | 'Article' | 'News'): Tag[] => {
-        if (!allTags) return [];
-        const filtered = allTags.filter((t: any) => t && t.category === categoryToFilter);
-        const uniqueMap = new Map<string, Tag>(filtered.map((item: any) => [item.title, item]));
-        return Array.from(uniqueMap.values());
-    }, [allTags]);
-
-    const uniqueNewsCategories = useMemo(() => getUniqueTagsByCategory('News'), [getUniqueTagsByCategory]);
-    const uniqueArticleCategories = useMemo(() => getUniqueTagsByCategory('Article'), [getUniqueTagsByCategory]);
-    const uniqueGameTags = useMemo(() => getUniqueTagsByCategory('Game'), [getUniqueTagsByCategory]);
 
     const handleSave = () => { startSaveTransition(async () => { setSaveStatus('saving'); const success = await onSave(); setSaveStatus(success ? 'success' : 'idle'); if(success) setTimeout(() => setSaveStatus('idle'), 2000); }); };
     
     const isPublished = useMemo(() => publishedAt && new Date(publishedAt) <= new Date(), [publishedAt]);
     const isScheduled = useMemo(() => publishedAt && new Date(publishedAt) > new Date(), [publishedAt]);
-
     const isSlugValid = slugValidationStatus === 'valid';
     const isSlugPending = slugValidationStatus === 'pending';
 
@@ -78,11 +65,7 @@ export function EditorSidebar({
             } else { 
                 success = await onPublish(publishDate); 
             } 
-            
-            // THE FIX: Clear schedule input if publish was successful
-            if (success) {
-                setScheduledDateTime('');
-            }
+            if (success) { setScheduledDateTime(''); }
         }); 
     };
     
@@ -94,39 +77,18 @@ export function EditorSidebar({
     }, [isRelease, isPublished, scheduledDateTime, hasChanges]);
 
     const canPerformPublishAction = useMemo(() => {
-        // 1. If there are unsaved changes, action is always allowed (Save & Publish/Update)
         if (hasChanges) return true;
-        
-        // 2. If it's a Game Release with no changes, disable update
         if (isRelease) return false;
-
-        // 3. If it's a Draft (never published), always allow Publish
         if (!publishedAt) return true;
-
-        // 4. If Scheduled (future date)
-        if (isScheduled) {
-            // Always allow action on scheduled items (e.g., "Publish Now" to override schedule)
-            return true;
-        }
-
-        // 5. If Live (Published)
-        if (isPublished) {
-            // Only allow if setting a NEW schedule (Re-schedule)
-            if (scheduledDateTime) return true;
-            // Otherwise, if live and no changes, disable to prevent redundant updates
-            return false;
-        }
-        
+        if (isScheduled) return true;
+        if (isPublished) { if (scheduledDateTime) return true; return false; }
         return true;
     }, [hasChanges, isRelease, publishedAt, isScheduled, isPublished, scheduledDateTime]);
 
     const isSaveDisabled = isSaving || !hasChanges || !isSlugValid || isSlugPending || isPublishing;
-    
     const isPublishDisabled = isPublishing || !isDocumentValid || !isSlugValid || isSlugPending || isSaving || !canPerformPublishAction;
-    
     const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending || isSaving;
     const handleFieldChange = (field: string, value: any) => { dispatch({ type: 'UPDATE_FIELD', payload: { field, value } }); };
-    const creatorsForRole = (sanityType: string) => allCreators.filter((c: any) => c._type === sanityType);
 
     return (
         <AnimatePresence>
@@ -172,22 +134,21 @@ export function EditorSidebar({
                         )}
                         
                         {isRelease ? ( <> 
-                            <motion.div variants={itemVariants}><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></motion.div>
+                            <motion.div variants={itemVariants}><GameInput selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></motion.div>
                             <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>تاريخ الإصدار</label> <input type="date" value={releaseDate} onChange={(e) => handleFieldChange('releaseDate', e.target.value)} className={styles.sidebarInput} /> </motion.div> 
                             <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div>
-                             <motion.div variants={itemVariants}><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." allTags={uniqueGameTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></motion.div>
-                            <motion.div variants={itemVariants}><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></motion.div>
+                             <motion.div variants={itemVariants}><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></motion.div>
+                            <motion.div variants={itemVariants}><CreatorInput role="DESIGNER" label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></motion.div>
                             <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> 
                         </> ) : ( <> 
-                            <div><CreatorInput allCreators={creatorsForRole(primaryCreatorConfig.sanityType)} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> 
-                            <div><GameInput allGames={allGames} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> 
+                            <div><CreatorInput role={primaryCreatorConfig.sanityType as any} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> 
+                            <div><GameInput selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> 
                             
                             {isNews && (
                                 <motion.div variants={itemVariants}>
                                     <TagInput
                                         label="التصنيف"
                                         placeholder="اختر تصنيف الخبر..."
-                                        allTags={uniqueNewsCategories}
                                         selectedTags={category ? [category] : []}
                                         onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)}
                                         singleSelection={true}
@@ -198,16 +159,16 @@ export function EditorSidebar({
 
                             {isArticle && (
                                 <>
-                                    <div><TagInput label="نوع المقال" placeholder="اختر نوع المقال..." allTags={uniqueArticleCategories} selectedTags={category ? [category] : []} onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)} singleSelection={true} categoryForCreation="Article" /></div>
-                                    <div><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." allTags={uniqueGameTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></div>
+                                    <div><TagInput label="نوع المقال" placeholder="اختر نوع المقال..." selectedTags={category ? [category] : []} onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)} singleSelection={true} categoryForCreation="Article" /></div>
+                                    <div><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></div>
                                 </>
                             )}
 
                             {isReview && (
-                                <div><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." allTags={uniqueGameTags} selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game"/></div>
+                                <div><TagInput label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game"/></div>
                             )}
 
-                            <div><CreatorInput allCreators={creatorsForRole('designer')} label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
+                            <div><CreatorInput role="DESIGNER" label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
                         </> )}
                         
                         {isReview && (<> <motion.hr variants={itemVariants} style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} /> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>التقييم (0-10) {score <= 0 && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}</label> <input type="number" value={score} onChange={(e) => handleFieldChange('score', parseFloat(e.target.value) || 0)} className={styles.sidebarInput} min="0" max="10" step="0.1" /> </motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>الخلاصة {!verdict.trim() && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}</label> <textarea value={verdict} onChange={(e) => handleFieldChange('verdict', e.target.value)} className={styles.sidebarInput} rows={3} /> </motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المحاسن" items={pros} setItems={(p: any) => handleFieldChange('pros', p)} /></motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المساوئ" items={cons} setItems={(c: any) => handleFieldChange('cons', c)} /></motion.div> </>)}

@@ -1,6 +1,6 @@
 // app/studio/[contentType]/[id]/page.tsx
 import { sanityWriteClient } from '@/lib/sanity.server';
-import { editorDocumentQuery, allGamesForStudioQuery, allTagsForStudioQuery, allCreatorsForStudioQuery } from '@/lib/sanity.queries';
+import { editorDocumentQuery } from '@/lib/sanity.queries'; // Removed other queries
 import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
@@ -9,7 +9,6 @@ import { groq } from 'next-sanity';
 
 export const runtime = 'nodejs';
 
-// ADDED: Query to fetch the color dictionary
 const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
 export default async function EditorPage({ params: paramsPromise }: { params: Promise<{ contentType: string; id: string }> }) {
@@ -23,12 +22,11 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
     const publicId = params.id.replace('drafts.', '');
     
     try {
-        const [document, allGames, allTags, allCreators, colorDictionary] = await Promise.all([
+        // OPTIMIZATION: Only fetch the document and color dictionary.
+        // Lists are now fetched on demand via async search actions.
+        const [document, colorDictionary] = await Promise.all([
             sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }),
-            sanityWriteClient.fetch(allGamesForStudioQuery),
-            sanityWriteClient.fetch(allTagsForStudioQuery),
-            sanityWriteClient.fetch(allCreatorsForStudioQuery),
-            sanityWriteClient.fetch(colorDictionaryQuery), // ADDED: Fetch call
+            sanityWriteClient.fetch(colorDictionaryQuery),
         ]);
         
         if (!document) {
@@ -45,10 +43,7 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
         return (
             <EditorClient 
                 document={documentWithTiptapContent} 
-                allGames={allGames}
-                allTags={allTags}
-                allCreators={allCreators}
-                colorDictionary={colorDictionary?.autoColors || []} // ADDED: Pass data to client
+                colorDictionary={colorDictionary?.autoColors || []} 
             />
         );
     } catch (err: any) {

@@ -168,7 +168,8 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 };
 
 
-export function EditorClient({ document: initialDocument, allGames, allTags, allCreators, colorDictionary: initialColorDictionary }: { document: EditorDocument, allGames: any[], allTags: any[], allCreators: any[], colorDictionary: ColorMapping[] }) {
+// REMOVED: allGames, allTags, allCreators props
+export function EditorClient({ document: initialDocument, colorDictionary: initialColorDictionary }: { document: EditorDocument, colorDictionary: ColorMapping[] }) {
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, getInitialEditorState(initialDocument));
     const { title, slug, isSlugManual } = state;
@@ -190,13 +191,11 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
     const [colorDictionary, setColorDictionary] = useState<ColorMapping[]>(initialColorDictionary);
     
-    // Auto-Save State
     const [clientSaveStatus, setClientSaveStatus] = useState<SaveStatus>('saved');
     const [serverSaveStatus, setServerSaveStatus] = useState<SaveStatus>('saved');
     const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
 
-    // References for the interval to access current data without stale closures
     const stateRef = useRef(state);
     const contentJsonRef = useRef(editorContentJson);
     const needsClientSaveRef = useRef(false);
@@ -239,7 +238,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
 
     useEffect(() => { const handleResize = () => { const mobile = window.innerWidth <= 1024; setIsMobile(mobile); if (!mobile) setIsSidebarOpen(true); }; handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize); }, []);
     
-    // Hydrate from localStorage on mount (or when editor becomes available)
     useEffect(() => {
         if (!editorInstance || hasHydratedFromLocal) return;
 
@@ -269,25 +267,21 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
 
-    // --- CONSTANT CLIENT AUTO-SAVE LOGIC ---
-    // 1. Update refs and dirty flag on change
     useEffect(() => {
         stateRef.current = state;
         contentJsonRef.current = editorContentJson;
         
         if (hasChanges) {
             needsClientSaveRef.current = true;
-            setClientSaveStatus('saving'); // Immediate visual feedback
-            setServerSaveStatus('pending'); // Server waiting
+            setClientSaveStatus('saving'); 
+            setServerSaveStatus('pending'); 
         } else {
-            // If no changes (e.g. after manual save), visually reset
             needsClientSaveRef.current = false;
             setClientSaveStatus('saved');
             setServerSaveStatus('saved');
         }
     }, [state, editorContentJson, hasChanges]);
 
-    // 2. Interval to check and save to LS every 300ms
     useEffect(() => {
         const intervalId = setInterval(() => {
             if (needsClientSaveRef.current) {
@@ -307,33 +301,26 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
         return () => clearInterval(intervalId);
     }, [sourceOfTruth._id]);
 
-    // 3. Server Save Logic (Debounced 10s)
     useEffect(() => {
         if (hasChanges) {
-            // Clear existing timeout to debounce
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
 
-            // Set new timeout
             serverSaveTimeoutRef.current = setTimeout(async () => {
                 setServerSaveStatus('saving');
                 const success = await saveWorkingCopy();
                 if (success) {
                     setServerSaveStatus('saved');
                 } else {
-                    setServerSaveStatus('saved'); // Reset visual state, error toast handles alert
+                    setServerSaveStatus('saved'); 
                 }
             }, 10000);
         }
-        // No cleanup function here to clear timeout on unmount/change, 
-        // because we want the debounce logic to persist across renders.
-        // The timer is cleared explicitly above when hasChanges is detected.
-    }, [hasChanges]); // Depend only on hasChanges state flip
+    }, [hasChanges]); 
 
 
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => { 
-        // Sync state when Server Data updates (e.g. after a manual save)
         if (sourceOfTruth._id !== state._id || sourceOfTruth._updatedAt !== state._updatedAt) {
             const newState = getInitialEditorState(sourceOfTruth);
             dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
@@ -478,9 +465,6 @@ export function EditorClient({ document: initialDocument, allGames, allTags, all
                         isDocumentValid={isDocumentValid} 
                         mainImageUploadQuality={mainImageUploadQuality} 
                         onMainImageUploadQualityChange={setMainImageUploadQuality} 
-                        allGames={allGames} 
-                        allTags={allTags} 
-                        allCreators={allCreators} 
                         colorDictionary={colorDictionary}
                         onColorDictionaryUpdate={setColorDictionary}
                     />

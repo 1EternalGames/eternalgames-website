@@ -4,7 +4,7 @@
 import prisma from '@/lib/prisma';
 import { getAuthenticatedSession } from '@/lib/auth';
 import { EngagementType } from '@/lib/generated/client';
-import { revalidateTag } from 'next/cache'; // <-- ADDED
+import { revalidateTag } from 'next/cache';
 
 async function setEngagement(userId: string, contentId: number, contentType: string, engagementType: EngagementType, isEngaged: boolean) {
     const whereClause = {
@@ -41,9 +41,8 @@ export async function setLikeAction(contentId: number, contentType: string, cont
         const session = await getAuthenticatedSession();
         await setEngagement(session.user.id, contentId, contentType, 'LIKE', isLiked);
         
-        // THE FIX: Invalidate the viral score cache immediately.
-        // This ensures the next fetch of the "Viral" tab includes this new like.
-        revalidateTag('engagement-scores');
+        // THE FIX: Added 'max' profile argument
+        revalidateTag('engagement-scores', 'max');
         
         return { success: true };
     } catch (error: any) {
@@ -61,8 +60,8 @@ export async function recordShareAction(contentId: number, contentType: string, 
             data: { userId, contentId, contentType },
         });
 
-        // THE FIX: Invalidate the viral score cache immediately.
-        revalidateTag('engagement-scores');
+        // THE FIX: Added 'max' profile argument
+        revalidateTag('engagement-scores', 'max');
         
         const updatedShares = await prisma.share.findMany({
             where: { userId },

@@ -12,6 +12,9 @@ import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import type { Metadata } from 'next';
+import { getServerSession } from 'next-auth/next'; // <-- FIXED IMPORT
+import { authOptions } from '@/app/lib/authOptions';
+import prisma from '@/lib/prisma';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -61,7 +64,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode; }) {
+export default async function RootLayout({ children }: { children: React.ReactNode; }) {
+  const session = await getServerSession(authOptions);
+  
+  let userRoles: string[] = [];
+  if (session?.user?.id) {
+      const user = await prisma.user.findUnique({ 
+          where: { id: session.user.id },
+          select: { roles: { select: { name: true } } }
+      });
+      userRoles = user?.roles.map((r: any) => r.name) || [];
+  }
+
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
@@ -78,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         />
       </head>
       <body>
-        <NextAuthProvider>
+        <NextAuthProvider session={session}>
           <UserStoreHydration />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
@@ -91,7 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 </PageTransitionWrapper>
               </main>
               <Footer />
-              <StudioBar />
+              <StudioBar serverRoles={userRoles} />
               <ScrollToTopButton />
             </div>
           </ThemeProvider>
