@@ -1,7 +1,6 @@
 // app/articles/page.tsx
 import { client } from '@/lib/sanity.client';
-import { featuredShowcaseArticlesQuery, allArticlesListQuery } from '@/lib/sanity.queries';
-import { groq } from 'next-sanity';
+import { articlesIndexQuery } from '@/lib/sanity.queries'; // Batched query
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import ArticlesPageClient from './ArticlesPageClient';
 import { Suspense } from 'react';
@@ -24,10 +23,6 @@ export const metadata: Metadata = {
   }
 };
 
-const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
-const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category}`;
-const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}`;
-
 // Helper function to remove duplicates based on title
 const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     if (!tags) return [];
@@ -41,13 +36,16 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function ArticlesPage() {
-  const [featuredArticlesRaw, initialGridArticlesRaw, allGames, allGameTagsRaw, allArticleTypeTagsRaw]: [SanityArticle[], SanityArticle[], SanityGame[], SanityTag[], SanityTag[]] = await Promise.all([
-    client.fetch(featuredShowcaseArticlesQuery),
-    client.fetch(allArticlesListQuery),
-    client.fetch(allGamesQuery),
-    client.fetch(allGameTagsQuery),
-    client.fetch(allArticleTypeTagsQuery),
-  ]);
+  // OPTIMIZATION: Fetch all data in a single batched request
+  const data = await client.fetch(articlesIndexQuery);
+  
+  const { 
+      featured: featuredArticlesRaw, 
+      grid: initialGridArticlesRaw, 
+      games: allGames, 
+      gameTags: allGameTagsRaw, 
+      typeTags: allArticleTypeTagsRaw 
+  } = data;
 
   const allGameTags = deduplicateTags(allGameTagsRaw);
   const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
@@ -61,7 +59,7 @@ export default async function ArticlesPage() {
     );
   }
 
-  // Enrich data with usernames server-side
+  // Enrich data with usernames server-side (also batched)
   const featuredArticles = (await enrichContentList(featuredArticlesRaw)) as SanityArticle[];
   const initialGridArticles = (await enrichContentList(initialGridArticlesRaw)) as SanityArticle[];
 

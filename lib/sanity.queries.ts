@@ -40,7 +40,6 @@ export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] { ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}}, "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "category": category->{_id, title, "slug": slug.current}, "relatedNews": coalesce(relatedNews[${publishedFilter}]->${relatedContentProjection}, *[_type == "news" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}), ${contentProjection} }`
 
 // --- OPTIMIZED QUERIES ---
-// Optimization: Added [0...24] limit to prevent massive payloads on heavy tags/games
 export const tagPageDataQuery = groq`
   *[_type == "tag" && slug.current == $slug][0] {
     _id, title,
@@ -48,7 +47,6 @@ export const tagPageDataQuery = groq`
   }
 `
 
-// Optimization: Added [0...24] limit
 export const gamePageDataQuery = groq`
   *[_type == "game" && slug.current == $slug][0] {
     _id, title, "mainImage": mainImage{${mainImageFields}},
@@ -56,7 +54,6 @@ export const gamePageDataQuery = groq`
   }
 `
 
-// Added: Exported dictionary query for batching
 export const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`
 
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest') => {
@@ -113,4 +110,27 @@ export const consolidatedHomepageQuery = groq`{
   "reviews": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] { ${cardProjection} },
   "articles": *[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} },
   "news": *[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }
+}`
+
+// --- NEW: Consolidated Batched Queries for Index Pages ---
+export const newsIndexQuery = groq`{
+  "hero": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] { ${cardProjection}, synopsis },
+  "grid": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...50] { ${cardListProjection} },
+  "games": *[_type == "game"] | order(title asc) {_id, title, "slug": slug.current},
+  "tags": *[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}
+}`
+
+export const reviewsIndexQuery = groq`{
+  "hero": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} },
+  "grid": *[_type == "review" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} },
+  "games": *[_type == "game"] | order(title asc) {_id, title, "slug": slug.current},
+  "tags": *[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}
+}`
+
+export const articlesIndexQuery = groq`{
+  "featured": *[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...7] { ${cardProjection} },
+  "grid": *[_type == "article" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} },
+  "games": *[_type == "game"] | order(title asc) {_id, title, "slug": slug.current},
+  "gameTags": *[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category},
+  "typeTags": *[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}
 }`

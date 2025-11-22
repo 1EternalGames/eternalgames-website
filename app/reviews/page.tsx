@@ -1,7 +1,6 @@
 // app/reviews/page.tsx
 import { client } from '@/lib/sanity.client';
-import { featuredHeroReviewQuery, allReviewsListQuery } from '@/lib/sanity.queries';
-import { groq } from 'next-sanity';
+import { reviewsIndexQuery } from '@/lib/sanity.queries'; // Batched query
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
 import { Suspense } from 'react';
@@ -24,16 +23,16 @@ export const metadata: Metadata = {
   }
 };
 
-const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
-const allTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current}`;
-
 export default async function ReviewsPage() {
-  const [heroReviewRaw, initialGridReviewsRaw, allGames, allTags]: [SanityReview, SanityReview[], SanityGame[], SanityTag[]] = await Promise.all([
-    client.fetch(featuredHeroReviewQuery),
-    client.fetch(allReviewsListQuery),
-    client.fetch(allGamesQuery),
-    client.fetch(allTagsQuery),
-  ]);
+  // OPTIMIZATION: Fetch all data in a single batched request
+  const data = await client.fetch(reviewsIndexQuery);
+
+  const {
+      hero: heroReviewRaw,
+      grid: initialGridReviewsRaw,
+      games: allGames,
+      tags: allTags
+  } = data;
 
   if (!heroReviewRaw) {
     return (

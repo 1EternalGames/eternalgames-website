@@ -1,7 +1,6 @@
 // app/news/page.tsx
 import { client } from '@/lib/sanity.client';
-import { newsHeroQuery, newsGridInitialQuery } from '@/lib/sanity.queries';
-import { groq } from 'next-sanity';
+import { newsIndexQuery } from '@/lib/sanity.queries'; // Batched query
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import NewsPageClient from './NewsPageClient';
 import { Suspense } from 'react';
@@ -24,9 +23,6 @@ export const metadata: Metadata = {
   }
 };
 
-const allGamesQuery = groq`*[_type == "game"] | order(title asc) {_id, title, "slug": slug.current}`;
-const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}`;
-
 // Helper function to remove duplicates based on title
 const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     if (!tags) return [];
@@ -40,12 +36,15 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
 };
 
 export default async function NewsPage() {
-  const [heroNewsRaw, initialGridNewsRaw, allGames, allTagsRaw]: [SanityNews[], SanityNews[], SanityGame[], SanityTag[]] = await Promise.all([
-    client.fetch(newsHeroQuery),
-    client.fetch(newsGridInitialQuery),
-    client.fetch(allGamesQuery),
-    client.fetch(allNewsTagsQuery),
-  ]);
+  // OPTIMIZATION: Fetch all data in a single batched request
+  const data = await client.fetch(newsIndexQuery);
+
+  const {
+      hero: heroNewsRaw,
+      grid: initialGridNewsRaw,
+      games: allGames,
+      tags: allTagsRaw
+  } = data;
 
   const allTags = deduplicateTags(allTagsRaw);
 
