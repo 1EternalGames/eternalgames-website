@@ -1,5 +1,5 @@
 // lib/sanity.fetch.ts
-import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import { client } from './sanity.client';
 import { 
     reviewBySlugQuery, 
@@ -18,61 +18,46 @@ const queryMap: Record<string, string> = {
 
 /**
  * Fetches the full document for a given slug and type.
- * Wrapped in unstable_cache to persist data across requests on Vercel.
+ * Wrapped in React.cache to deduplicate requests within a single render pass (Metadata + Page).
  */
-export const getCachedDocument = async (type: string, slug: string) => {
+export const getCachedDocument = cache(async (type: string, slug: string) => {
     const query = queryMap[type];
     if (!query) return null;
 
-    const getDocument = unstable_cache(
-        async () => {
-            return await client.fetch(query, { slug });
-        },
-        [`content-${type}-${slug}`], // Cache key
-        { 
-            tags: [type, 'content', slug], // Revalidation tags
-            revalidate: 604800 // 1 week (revalidated via webhooks/ISR)
+    // We pass 'next' options to leverage Vercel's Data Cache (persistence)
+    return await client.fetch(query, { slug }, {
+        next: { 
+            tags: [type, 'content', slug], // Allows manual revalidation
+            revalidate: 604800 // 1 week default (ISR)
         }
-    );
-
-    return getDocument();
-};
+    });
+});
 
 /**
  * Fetches Tag metadata and all associated content in a SINGLE pass.
- * Wrapped in unstable_cache.
+ * Wrapped in React.cache to deduplicate.
  */
-export const getCachedTagPageData = async (slug: string) => {
-    const getTagData = unstable_cache(
-        async () => {
-            return await client.fetch(tagPageDataQuery, { slug });
-        },
-        [`tag-page-${slug}`], 
-        { 
+export const getCachedTagPageData = cache(async (slug: string) => {
+    return await client.fetch(tagPageDataQuery, { slug }, {
+        next: { 
             tags: ['tag', slug],
-            revalidate: 3600 // Revalidate every hour just in case
+            revalidate: 3600 // 1 hour
         }
-    );
-
-    return getTagData();
-};
+    });
+});
 
 /**
  * Fetches the Color Dictionary singleton.
+ * Wrapped in React.cache to deduplicate.
  */
-export const getCachedColorDictionary = async () => {
+export const getCachedColorDictionary = cache(async () => {
     const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
     
-    const getColors = unstable_cache(
-        async () => {
-            return await client.fetch(colorDictionaryQuery);
-        },
-        ['color-dictionary'],
-        {
+    return await client.fetch(colorDictionaryQuery, {}, {
+        next: {
             tags: ['colorDictionary'],
-            revalidate: false // Never expire automatically, relies on webhook/revalidateTag
+            // We rely on webhook revalidation for this, but set a long safety fallback
+            revalidate: 604800 
         }
-    );
-
-    return getColors();
-}
+    });
+});

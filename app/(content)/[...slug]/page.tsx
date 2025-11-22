@@ -1,13 +1,12 @@
 // app/(content)/[...slug]/page.tsx
-import { client } from '@/lib/sanity.client';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
-import { groq } from 'next-sanity';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { getCachedDocument, getCachedColorDictionary } from '@/lib/sanity.fetch'; 
+import { client } from '@/lib/sanity.client'; // For static params
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -23,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // Trigger the fetch. Result is cached via unstable_cache for the Page component.
+    // First Hit: Fetches from network (or Data Cache) and stores in Request Memoization
     const item = await getCachedDocument(sanityType, slug);
 
     if (!item) return {};
@@ -56,7 +55,6 @@ async function CommentsLoader({ slug, contentType }: { slug: string, contentType
 export async function generateStaticParams() {
     try {
         // Limit static generation to recent items to keep build times reasonable. 
-        // Older items will be ISR'd on first request.
         const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...50]{ "slug": slug.current, _type }`);
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
@@ -77,7 +75,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // Parallel execution: Retrieve cached docs
+    // Second Hit: Retrieves INSTANTLY from Request Memoization (no network, no wait)
     const [item, colorDictionaryData] = await Promise.all([
         getCachedDocument(sanityType, slug),
         getCachedColorDictionary()

@@ -4,7 +4,7 @@ import HubPageClient from '@/components/HubPageClient';
 import { translateTag } from '@/lib/translations';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
-import { getCachedTagPageData } from '@/lib/sanity.fetch'; 
+import { getCachedTagPageData } from '@/lib/sanity.fetch';
 import { client } from '@/lib/sanity.client'; 
 
 export const dynamicParams = true;
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
 
-  // Efficient: Reuses the exact same cached data as the page component
+  // First Hit: Network fetch -> Memoized
   const data = await getCachedTagPageData(tagSlug);
 
   if (!data?.tag) return {};
@@ -27,7 +27,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `وسم: ${translatedTitle}`;
   const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
   
-  // Find the latest image from the items list
   const latestItem = data.items && data.items.length > 0 ? data.items[0] : null;
   const ogImageUrl = latestItem?.mainImageRef
     ? urlFor(latestItem.mainImageRef).width(1200).height(630).fit('crop').format('jpg').url()
@@ -48,7 +47,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export async function generateStaticParams() {
     try {
-        // Only fetch the slugs to build static paths
         const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
         return slugs.map((slug) => ({
             tag: slug,
@@ -62,7 +60,7 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
-    // Efficient: Reuses the exact same cached data as metadata
+    // Second Hit: Instant from Memoization
     const data = await getCachedTagPageData(tagSlug);
 
     if (!data?.tag) {
