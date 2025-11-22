@@ -19,13 +19,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Request Memoization ensures this fetch is shared with the Page component
   const data = await getCachedGamePageData(gameSlug);
 
-  if (!data?.game) return {};
+  if (!data) return {}; // Data is the game object itself now
   
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-  const title = `محور لعبة: ${data.game.title}`;
-  const description = `استكشف كل المحتوى المتعلق بلعبة ${data.game.title} على EternalGames.`;
-  const ogImageUrl = data.game.mainImage 
-    ? urlFor(data.game.mainImage).width(1200).height(630).fit('crop').format('jpg').url()
+  const title = `محور لعبة: ${data.title}`;
+  const description = `استكشف كل المحتوى المتعلق بلعبة ${data.title} على EternalGames.`;
+  const ogImageUrl = data.mainImage 
+    ? urlFor(data.mainImage).width(1200).height(630).fit('crop').format('jpg').url()
     : `${siteUrl}/og.png`;
 
   return {
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url: `${siteUrl}/games/${gameSlug}`,
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: data.game.title }],
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: data.title }],
       type: 'website',
     },
   };
@@ -59,18 +59,16 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
     // Returns result instantly from Metadata request cache
     const data = await getCachedGamePageData(gameSlug);
 
-    if (!data?.game) {
+    if (!data) {
         notFound();
     }
 
-    const { game: gameMeta, items: allItems } = data;
+    const { title: gameTitle, items: allItems } = data;
 
-    // PERFORMANCE FIX: Removed `enrichContentList` to maintain speed.
-    
     if (!allItems || allItems.length === 0) {
         return (
              <div className="container page-container">
-                <h1 className="page-title">محور لعبة:&quot;{gameMeta.title}&quot;</h1>
+                <h1 className="page-title">محور لعبة:&quot;{gameTitle}&quot;</h1>
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)', fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto'}}>
                     لم يُخطَّ حرفٌ بعدُ عن هذه اللعبة. الأرشيفُ يترقب.
                 </p>
@@ -81,7 +79,7 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
     return (
         <HubPageClient
             initialItems={allItems}
-            hubTitle={gameMeta.title}
+            hubTitle={gameTitle}
             hubType="اللعبة"
         />
     );

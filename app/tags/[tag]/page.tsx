@@ -20,10 +20,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Request Memoization ensures this fetch is shared with the Page component
   const data = await getCachedTagPageData(tagSlug);
 
-  if (!data?.tag) return {};
+  if (!data) return {};
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-  const translatedTitle = translateTag(data.tag.title);
+  const translatedTitle = translateTag(data.title); // 'title' is directly on 'data' now
   const title = `وسم: ${translatedTitle}`;
   const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
   
@@ -63,16 +63,16 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     // Returns result instantly from Metadata request cache
     const data = await getCachedTagPageData(tagSlug);
 
-    if (!data?.tag) {
+    if (!data) {
         notFound();
     }
 
-    const { tag: tagMeta, items: allItems } = data;
+    const { title: tagTitle, items: allItems } = data;
 
     if (!allItems || allItems.length === 0) {
         return (
             <div className="container page-container">
-                <h1 className="page-title">وسم: &quot;{translateTag(tagMeta.title)}&quot;</h1>
+                <h1 className="page-title">وسم: &quot;{translateTag(tagTitle)}&quot;</h1>
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُنشر عملٌ بهذا الوسم بعد.</p>
             </div>
         );
@@ -81,7 +81,7 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     return (
          <HubPageClient
             initialItems={allItems}
-            hubTitle={translateTag(tagMeta.title)}
+            hubTitle={translateTag(tagTitle)}
             hubType="وسم"
         />
     );

@@ -78,20 +78,25 @@ export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug &
 
 // --- OPTIMIZED SINGLE-PASS QUERIES ---
 
-// Resolves the Tag ID from the slug AND finds all referencing content in one go.
-export const tagPageDataQuery = groq`{
-  "tag": *[_type == "tag" && slug.current == $slug][0]{_id, title},
-  "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && (
-    references(*[_type == "tag" && slug.current == $slug][0]._id) || 
-    category->slug.current == $slug
-  )] | order(publishedAt desc) { ${cardListProjection} }
-}`
+// Optimized: Fetches Tag first, then finds items using direct ID reference (^._id)
+// This avoids the slow sub-query and join in the filter.
+export const tagPageDataQuery = groq`
+  *[_type == "tag" && slug.current == $slug][0] {
+    _id, 
+    title,
+    "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && (references(^._id) || category._ref == ^._id)] | order(publishedAt desc) { ${cardListProjection} }
+  }
+`
 
-// Fetch Game details + content in one pass
-export const gamePageDataQuery = groq`{
-  "game": *[_type == "game" && slug.current == $slug][0]{_id, title, "mainImage": mainImage{${mainImageFields}}},
-  "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }
-}`
+// Optimized: Fetches Game first, then finds items using direct reference (game._ref == ^._id)
+export const gamePageDataQuery = groq`
+  *[_type == "game" && slug.current == $slug][0] {
+    _id, 
+    title, 
+    "mainImage": mainImage{${mainImageFields}},
+    "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && game._ref == ^._id] | order(publishedAt desc) { ${cardListProjection} }
+  }
+`
 
 // ... Existing queries ...
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest') => {
