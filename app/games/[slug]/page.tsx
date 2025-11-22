@@ -5,6 +5,8 @@ import HubPageClient from '@/components/HubPageClient';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
 import { getCachedGamePageData } from '@/lib/sanity.fetch';
+import { enrichContentList } from '@/lib/enrichment'; // OPTIMIZATION
+import { unstable_cache } from 'next/cache';
 
 export const dynamicParams = true;
 
@@ -12,14 +14,28 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
+// Optimized cache wrapper that includes enrichment to avoid waterfall
+const getEnrichedGameData = unstable_cache(
+    async (slug: string) => {
+        const data = await getCachedGamePageData(slug); // This hits Sanity via cache
+        if (!data) return null;
+        
+        // Enrich the items list inside this cached function
+        const enrichedItems = await enrichContentList(data.items || []);
+        return { ...data, items: enrichedItems };
+    },
+    ['enriched-game-data'],
+    { tags: ['game', 'content'] }
+);
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const gameSlug = decodeURIComponent(slug);
 
   // Request Memoization ensures this fetch is shared with the Page component
-  const data = await getCachedGamePageData(gameSlug);
+  const data = await getEnrichedGameData(gameSlug);
 
-  if (!data) return {}; // Data is the game object itself now
+  if (!data) return {}; 
   
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   const title = `محور لعبة: ${data.title}`;
@@ -56,8 +72,8 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
     const { slug } = await params;
     const gameSlug = decodeURIComponent(slug);
 
-    // Returns result instantly from Metadata request cache
-    const data = await getCachedGamePageData(gameSlug);
+    // Returns result instantly from Metadata request cache (and internal cache)
+    const data = await getEnrichedGameData(gameSlug);
 
     if (!data) {
         notFound();

@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
+import { unstable_cache } from 'next/cache';
 
 export const metadata: Metadata = {
   title: 'المقالات',
@@ -35,12 +36,34 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     return Array.from(uniqueMap.values());
 };
 
+// OPTIMIZATION: Cache the entire articles page data fetch + enrichment
+const getCachedArticlesPageData = unstable_cache(
+  async () => {
+    const data = await client.fetch(articlesIndexQuery);
+    const { featured: featuredArticlesRaw, grid: initialGridArticlesRaw } = data;
+
+    const featuredArticles = await enrichContentList(featuredArticlesRaw);
+    const initialGridArticles = await enrichContentList(initialGridArticlesRaw);
+
+    return {
+      ...data,
+      featured: featuredArticles,
+      grid: initialGridArticles
+    };
+  },
+  ['articles-page-index'],
+  { 
+    revalidate: false, 
+    tags: ['article', 'content'] 
+  }
+);
+
 export default async function ArticlesPage() {
-  const data = await client.fetch(articlesIndexQuery);
+  const data = await getCachedArticlesPageData();
   
   const { 
-      featured: featuredArticlesRaw, 
-      grid: initialGridArticlesRaw, 
+      featured: featuredArticles, 
+      grid: initialGridArticles, 
       games: allGames, 
       gameTags: allGameTagsRaw, 
       typeTags: allArticleTypeTagsRaw 
@@ -49,7 +72,7 @@ export default async function ArticlesPage() {
   const allGameTags = deduplicateTags(allGameTagsRaw);
   const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
 
-  if (!featuredArticlesRaw || featuredArticlesRaw.length === 0) {
+  if (!featuredArticles || featuredArticles.length === 0) {
     return (
         <div className="container page-container">
             <h1 className="page-title">أحدث المقالات</h1>
@@ -58,14 +81,11 @@ export default async function ArticlesPage() {
     );
   }
 
-  const featuredArticles = (await enrichContentList(featuredArticlesRaw)) as SanityArticle[];
-  const initialGridArticles = (await enrichContentList(initialGridArticlesRaw)) as SanityArticle[];
-
   return (
     <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
       <ArticlesPageClient
-        featuredArticles={featuredArticles}
-        initialGridArticles={initialGridArticles}
+        featuredArticles={featuredArticles as SanityArticle[]}
+        initialGridArticles={initialGridArticles as SanityArticle[]}
         allGames={allGames}
         allGameTags={allGameTags}
         allArticleTypeTags={allArticleTypeTags}

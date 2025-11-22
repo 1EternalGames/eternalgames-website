@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
+import { unstable_cache } from 'next/cache';
 
 export const metadata: Metadata = {
   title: 'الأخبار',
@@ -35,19 +36,41 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     return Array.from(uniqueMap.values());
 };
 
+// OPTIMIZATION: Cache the entire news page data fetch + enrichment
+const getCachedNewsPageData = unstable_cache(
+  async () => {
+    const data = await client.fetch(newsIndexQuery);
+    const { hero: heroNewsRaw, grid: initialGridNewsRaw } = data;
+
+    const heroArticles = await enrichContentList(heroNewsRaw);
+    const initialGridArticles = await enrichContentList(initialGridNewsRaw);
+
+    return {
+      ...data,
+      hero: heroArticles,
+      grid: initialGridArticles
+    };
+  },
+  ['news-page-index'],
+  { 
+    revalidate: false, 
+    tags: ['news', 'content'] 
+  }
+);
+
 export default async function NewsPage() {
-  const data = await client.fetch(newsIndexQuery);
+  const data = await getCachedNewsPageData();
 
   const {
-      hero: heroNewsRaw,
-      grid: initialGridNewsRaw,
+      hero: heroArticles,
+      grid: initialGridArticles,
       games: allGames,
       tags: allTagsRaw
   } = data;
 
   const allTags = deduplicateTags(allTagsRaw);
 
-  if (!heroNewsRaw || heroNewsRaw.length === 0) {
+  if (!heroArticles || heroArticles.length === 0) {
     return (
         <div className="container page-container">
             <h1 className="page-title">موجز الأنباء</h1>
@@ -56,14 +79,11 @@ export default async function NewsPage() {
     );
   }
 
-  const heroArticles = (await enrichContentList(heroNewsRaw)) as SanityNews[];
-  const initialGridArticles = (await enrichContentList(initialGridNewsRaw)) as SanityNews[];
-
   return (
     <Suspense fallback={<IndexPageSkeleton heroVariant="news" />}>
       <NewsPageClient
-        heroArticles={heroArticles}
-        initialGridArticles={initialGridArticles}
+        heroArticles={heroArticles as SanityNews[]}
+        initialGridArticles={initialGridArticles as SanityNews[]}
         allGames={allGames || []}
         allTags={allTags || []}
       />

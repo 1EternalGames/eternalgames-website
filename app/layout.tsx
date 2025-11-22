@@ -12,9 +12,10 @@ import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth/next'; // <-- FIXED IMPORT
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import prisma from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -64,16 +65,27 @@ export const metadata: Metadata = {
   },
 };
 
+// OPTIMIZATION: Cache the role lookup.
+// This removes the DB blocking on every page navigation for logged-in users.
+const getCachedUserRoles = unstable_cache(
+  async (userId: string) => {
+    const user = await prisma.user.findUnique({ 
+        where: { id: userId },
+        select: { roles: { select: { name: true } } }
+    });
+    return user?.roles.map((r: any) => r.name) || [];
+  },
+  ['user-roles-layout'], // Key
+  { tags: ['user-roles'] } // Revalidation tag
+);
+
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
   const session = await getServerSession(authOptions);
   
   let userRoles: string[] = [];
   if (session?.user?.id) {
-      const user = await prisma.user.findUnique({ 
-          where: { id: session.user.id },
-          select: { roles: { select: { name: true } } }
-      });
-      userRoles = user?.roles.map((r: any) => r.name) || [];
+      // Use the cached function instead of direct Prisma call
+      userRoles = await getCachedUserRoles(session.user.id);
   }
 
   return (

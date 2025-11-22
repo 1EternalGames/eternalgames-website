@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
+import { unstable_cache } from 'next/cache';
 
 export const metadata: Metadata = {
   title: 'المراجعات',
@@ -24,17 +25,49 @@ export const metadata: Metadata = {
   }
 };
 
+// OPTIMIZATION: Cache the entire reviews page data fetch + enrichment
+// This ensures we don't hit Sanity OR the Database on every request.
+const getCachedReviewsPageData = unstable_cache(
+  async () => {
+    const data = await client.fetch(reviewsIndexQuery);
+    const { hero: heroReviewRaw, grid: initialGridReviewsRaw } = data;
+
+    // Enrich data inside the cache
+    let heroReview = null;
+    if (heroReviewRaw) {
+        heroReview = {
+            ...heroReviewRaw,
+            authors: await enrichCreators(heroReviewRaw.authors),
+            designers: await enrichCreators(heroReviewRaw.designers)
+        };
+    }
+
+    const initialGridReviews = await enrichContentList(initialGridReviewsRaw) as SanityReview[];
+
+    return {
+      ...data,
+      hero: heroReview,
+      grid: initialGridReviews
+    };
+  },
+  ['reviews-page-index'],
+  { 
+    revalidate: false, // Cache indefinitely
+    tags: ['review', 'content'] // Revalidate when reviews are published/edited
+  }
+);
+
 export default async function ReviewsPage() {
-  const data = await client.fetch(reviewsIndexQuery);
+  const data = await getCachedReviewsPageData();
 
   const {
-      hero: heroReviewRaw,
-      grid: initialGridReviewsRaw,
+      hero: heroReview,
+      grid: initialGridReviews,
       games: allGames,
       tags: allTags
   } = data;
 
-  if (!heroReviewRaw) {
+  if (!heroReview) {
     return (
       <div className="container page-container">
         <h1 className="page-title">المراجعات</h1>
@@ -42,15 +75,9 @@ export default async function ReviewsPage() {
       </div>
     );
   }
-
-  const heroReview = {
-      ...heroReviewRaw,
-      authors: await enrichCreators(heroReviewRaw.authors),
-      designers: await enrichCreators(heroReviewRaw.designers)
-  };
   
-  const initialGridReviews = (await enrichContentList(initialGridReviewsRaw)) as SanityReview[];
-  const gridReviews = (initialGridReviews || []).filter(review => review._id !== heroReview._id);
+  // FIX: Explicitly type 'review' as SanityReview to satisfy TypeScript
+  const gridReviews = (initialGridReviews || []).filter((review: SanityReview) => review._id !== heroReview._id);
 
   return (
     <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
