@@ -10,7 +10,7 @@
     flex-direction: column;
     gap: 1.25rem;
     box-shadow: 0 5px 25px rgba(0,0,0,0.15);
-    width: 300px; /* Adjusted width for the new layout */
+    width: 320px; /* FIXED: Increased from 300px to prevent grid overlap */
 }
 
 .categoryGrid {
