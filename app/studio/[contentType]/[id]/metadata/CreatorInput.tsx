@@ -1,21 +1,18 @@
 // app/studio/[contentType]/[id]/metadata/CreatorInput.tsx
 'use client';
 
-import { useState, useEffect, useRef, useTransition } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
 import filterStyles from '@/components/filters/Filters.module.css';
-import { searchCreatorsAction } from '../../../actions';
-import { useDebounce } from '@/hooks/useDebounce';
 
-type Creator = { _id: string; name: string };
+type Creator = { _id: string; name: string, _type?: string };
 interface CreatorInputProps { 
     label: string; 
-    // Removed allCreators prop
+    allCreators: Creator[]; // ADDED: Pass full list
     selectedCreators: Creator[]; 
     onCreatorsChange: (creators: Creator[]) => void; 
-    // Need to know which role to search for
     role: 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER';
 }
 
@@ -34,30 +31,31 @@ const CreatorChip = ({ creator, onRemove }: { creator: Creator, onRemove: (creat
     );
 };
 
-export function CreatorInput({ label, selectedCreators = [], onCreatorsChange, role }: CreatorInputProps) {
+export function CreatorInput({ label, allCreators, selectedCreators = [], onCreatorsChange, role }: CreatorInputProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState<Creator[]>([]);
-    const [isSearching, startSearchTransition] = useTransition();
     
-    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const validSelectedCreators = (selectedCreators || []).filter(Boolean);
 
-    useEffect(() => {
-        if (debouncedSearchTerm.trim().length < 1) {
-            setResults([]);
-            return;
-        }
-        startSearchTransition(async () => {
-            const foundCreators = await searchCreatorsAction(debouncedSearchTerm, role);
-            setResults(foundCreators.filter(c => !validSelectedCreators.some(sel => sel._id === c._id)));
-        });
-    }, [debouncedSearchTerm, role, validSelectedCreators]);
+    const roleMap = { 'REVIEWER': 'reviewer', 'AUTHOR': 'author', 'REPORTER': 'reporter', 'DESIGNER': 'designer' };
+    const sanityType = roleMap[role];
+
+    const filteredCreators = useMemo(() => {
+        // 1. Filter by Role
+        let relevant = allCreators.filter(c => c._type === sanityType);
+        // 2. Filter out already selected
+        relevant = relevant.filter(c => !validSelectedCreators.some(sel => sel._id === c._id));
+
+        if (!searchTerm) return relevant;
+        
+        const lowerSearch = searchTerm.toLowerCase();
+        return relevant.filter(c => c.name.toLowerCase().includes(lowerSearch));
+    }, [allCreators, searchTerm, sanityType, validSelectedCreators]);
     
-    useEffect(() => { if (isPopoverOpen) { setTimeout(() => inputRef.current?.focus(), 100); } else { setSearchTerm(''); setResults([]); } }, [isPopoverOpen]);
+    useEffect(() => { if (isPopoverOpen) { setTimeout(() => inputRef.current?.focus(), 100); } else { setSearchTerm(''); } }, [isPopoverOpen]);
 
     const addCreator = (creator: Creator) => {
         if (!validSelectedCreators.some(c => c._id === creator._id)) {
@@ -106,9 +104,8 @@ export function CreatorInput({ label, selectedCreators = [], onCreatorsChange, r
                             >
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={`ابحث بالاسم...`} className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {isSearching ? <div style={{padding: '0.5rem'}}>...</div> :
-                                     results.length > 0 ? (
-                                        results.map(creator => ( <button type="button" key={creator._id} onClick={() => addCreator(creator)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {creator.name} </button> ))
+                                    {filteredCreators.length > 0 ? (
+                                        filteredCreators.map(creator => ( <button type="button" key={creator._id} onClick={() => addCreator(creator)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {creator.name} </button> ))
                                     ) : (
                                         <div style={{padding: '1rem', color: 'var(--text-secondary)'}}>لا يوجد نتائج.</div>
                                     )}

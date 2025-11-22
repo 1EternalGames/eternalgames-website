@@ -1,20 +1,19 @@
 // app/studio/[contentType]/[id]/metadata/TagInput.tsx
 'use client';
 
-import { useState, useEffect, useRef, useTransition } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createTagAction, searchTagsAction } from '../../../actions';
+import { createTagAction } from '../../../actions'; // CORRECTED IMPORT PATH
 import { AddTagModal } from './AddTagModal';
 import ActionButton from '@/components/ActionButton';
 import { translateTag } from '@/lib/translations';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
-import { useDebounce } from '@/hooks/useDebounce';
 
-type Tag = { _id: string; title: string };
+type Tag = { _id: string; title: string, category?: string };
 interface TagInputProps { 
     label: string; 
-    // Removed allTags prop
+    allTags: Tag[]; 
     selectedTags: Tag[]; 
     onTagsChange: (tags: any) => void;
     placeholder?: string;
@@ -47,30 +46,33 @@ const AnimatedTag = ({ tag, onRemove }: { tag: Tag, onRemove: (tagId: string) =>
     );
 };
 
-export function TagInput({ label, selectedTags = [], onTagsChange, placeholder = "ابحث...", singleSelection = false, categoryForCreation }: TagInputProps) {
+export function TagInput({ label, allTags, selectedTags = [], onTagsChange, placeholder = "ابحث...", singleSelection = false, categoryForCreation }: TagInputProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState<Tag[]>([]);
-    const [isSearching, startSearchTransition] = useTransition();
     
-    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const safeSelectedTags = (selectedTags || []).filter(Boolean);
 
-    useEffect(() => {
-        if (debouncedSearchTerm.trim().length < 1) {
-            setResults([]);
-            return;
+    // Filter based on category (if applicable) and search term
+    const filteredTags = useMemo(() => {
+        let available = allTags.filter(t => !safeSelectedTags.some(st => st._id === t._id));
+        
+        if (categoryForCreation) {
+            available = available.filter(t => t.category === categoryForCreation);
         }
-        startSearchTransition(async () => {
-            const foundTags = await searchTagsAction(debouncedSearchTerm);
-            // Filter out already selected
-            setResults(foundTags.filter(t => !safeSelectedTags.some(st => st._id === t._id)));
-        });
-    }, [debouncedSearchTerm, safeSelectedTags]);
+
+        if (!searchTerm) return available;
+        
+        const lowerSearch = searchTerm.toLowerCase();
+        return available.filter(t => 
+            t.title.toLowerCase().includes(lowerSearch) || 
+            translateTag(t.title).toLowerCase().includes(lowerSearch)
+        );
+    }, [allTags, safeSelectedTags, searchTerm, categoryForCreation]);
+
     
     useEffect(() => { 
         const handleClickOutside = (event: MouseEvent) => { 
@@ -82,7 +84,7 @@ export function TagInput({ label, selectedTags = [], onTagsChange, placeholder =
     
     useEffect(() => { 
         if (isPopoverOpen) { setTimeout(() => inputRef.current?.focus(), 100); } 
-        else { setSearchTerm(''); setResults([]); } 
+        else { setSearchTerm(''); } 
     }, [isPopoverOpen]);
 
     const handleSelectTag = (tag: Tag) => {
@@ -155,12 +157,11 @@ export function TagInput({ label, selectedTags = [], onTagsChange, placeholder =
                             >
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {isSearching ? <div style={{padding:'0.5rem'}}>...</div> : 
-                                     results.length > 0 ? results.map(tag => ( <button type="button" key={tag._id} onClick={() => handleSelectTag(tag)} style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {translateTag(tag.title)} </button> ))
+                                    {filteredTags.length > 0 ? filteredTags.map(tag => ( <button type="button" key={tag._id} onClick={() => handleSelectTag(tag)} style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {translateTag(tag.title)} </button> ))
                                      : <div style={{padding:'0.5rem'}}>لا نتائج.</div>
                                     }
                                     
-                                    {!isSearching && searchTerm.length > 1 && (
+                                    {searchTerm.length > 1 && (
                                         <button type="button" onClick={handleOpenModal} style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }} className={styles.popoverItemButton}>
                                             + إنشاء جديد: "{searchTerm.trim()}"
                                         </button>

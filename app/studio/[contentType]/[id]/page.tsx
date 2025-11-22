@@ -1,10 +1,11 @@
 // app/studio/[contentType]/[id]/page.tsx
 import { sanityWriteClient } from '@/lib/sanity.server';
-import { editorDataQuery } from '@/lib/sanity.queries'; // Updated to combined query
+import { editorDataQuery } from '@/lib/sanity.queries'; 
 import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
+import { getStudioMetadataAction } from '../../actions'; // We'll use the action if needed, but the direct query is cleaner here
 
 export const runtime = 'nodejs';
 
@@ -19,8 +20,8 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
     const publicId = params.id.replace('drafts.', '');
     
     try {
-        // OPTIMIZATION: Single batched request for document and dictionary
-        const { document, dictionary } = await sanityWriteClient.fetch(editorDataQuery, { id: publicId });
+        // OPTIMIZATION: Single batched request for document, dictionary AND studio metadata
+        const { document, dictionary, metadata } = await sanityWriteClient.fetch(editorDataQuery, { id: publicId });
         
         if (!document) {
             notFound();
@@ -36,7 +37,8 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
         return (
             <EditorClient 
                 document={documentWithTiptapContent} 
-                colorDictionary={dictionary?.autoColors || []} 
+                colorDictionary={dictionary?.autoColors || []}
+                studioMetadata={metadata} // Pass down the cached metadata
             />
         );
     } catch (err: any) {

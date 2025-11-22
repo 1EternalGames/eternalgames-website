@@ -3,14 +3,14 @@
 
 import { getAuthenticatedSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { sanityWriteClient } from '@/lib/sanity.server';
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 import { slugify } from 'transliteration';
 import { tiptapToPortableText } from './utils/tiptapToPortableText';
 import { portableTextToTiptap } from './utils/portableTextToTiptap';
-import { editorDocumentQuery } from '@/lib/sanity.queries'; // <-- THIS EXPORT MUST EXIST
+import { editorDocumentQuery, studioMetadataQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -38,6 +38,14 @@ function revalidateContentPaths(docType: string, slug?: string) {
     revalidateTag(docType, 'max');
     revalidateTag('layout', 'max');
 }
+
+export const getStudioMetadataAction = unstable_cache(
+  async () => {
+    return await client.fetch(studioMetadataQuery);
+  },
+  ['studio-metadata-full'],
+  { tags: ['studio-metadata'], revalidate: 3600 } 
+);
 
 export async function translateTitleToAction(title: string): Promise<string> {
     const session = await getAuthenticatedSession();
@@ -203,28 +211,26 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
     } catch (error) { console.error('Failed to publish/unpublish document:', error); return { success: false, message: 'أخفق تنفيذ حالة النشر.' }; }
 }
 
-export async function searchGamesAction(query: string): Promise<{_id: string, title: string}[]> {
-    if (query.length < 2) return [];
-    try { return await client.fetch(`*[_type == "game" && title match $searchTerm + "*"][0...10]{_id, title}`, { searchTerm: query }) as {_id: string, title: string}[]; } catch (error) { console.error("أخفق البحث عن اللعبة:", error); return []; }
-}
 export async function createGameAction(title: string): Promise<{_id: string, title: string} | null> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
-    try { const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); return { _id: newGame._id, title: newGame.title }; } catch (error) { console.error("أخفق إنشاء اللعبة:", error); return null; }
+    try { 
+        const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
+        revalidateTag('studio-metadata', 'max'); // <-- FIXED: Added profile argument
+        return { _id: newGame._id, title: newGame.title }; 
+    } catch (error) { console.error("أخفق إنشاء اللعبة:", error); return null; }
 }
-export async function searchTagsAction(query: string): Promise<{_id: string, title: string}[]> {
-    if (query.length < 1) return [];
-    try { return await client.fetch(`*[_type == "tag" && title match $searchTerm + "*"][0...10]{_id, title}`, { searchTerm: query }) as {_id: string, title: string}[]; } catch (error) { console.error("أخفق البحث عن الوسم:", error); return []; }
-}
+
 export async function createTagAction(title: string, category: 'Game' | 'Article' | 'News'): Promise<{_id: string, title: string} | null> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
-    try { const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } }); return { _id: newTag._id, title: newTag.title }; } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
-}
-export async function getRecentTagsAction(): Promise<{_id: string, title: string}[]> {
-    try { return await client.fetch(groq`*[_type == "tag"] | order(_createdAt desc)[0...50]{_id, title}`); } catch (error) { console.error("أخفق جلب آخر الوسوم:", error); return []; }
+    try { 
+        const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } }); 
+        revalidateTag('studio-metadata', 'max'); // <-- FIXED: Added profile argument
+        return { _id: newTag._id, title: newTag.title }; 
+    } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
 
 export async function validateSlugAction(slug: string, docId: string): Promise<{ isValid: boolean; message: string }> {

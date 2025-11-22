@@ -33,7 +33,6 @@ type ColorMapping = {
 
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 
-// Helper to generate state from a document (used for initialization and resets)
 const getInitialEditorState = (doc: EditorDocument) => {
     const currentSlug = doc.slug?.current ?? '';
     return {
@@ -72,7 +71,6 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
     }
 }
 
-// Helper to strip keys and normalize markDefs for accurate comparison
 const stripKeysAndNormalize = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(stripKeysAndNormalize);
@@ -167,9 +165,15 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     return patch;
 };
 
-
-// REMOVED: allGames, allTags, allCreators props
-export function EditorClient({ document: initialDocument, colorDictionary: initialColorDictionary }: { document: EditorDocument, colorDictionary: ColorMapping[] }) {
+export function EditorClient({ 
+    document: initialDocument, 
+    colorDictionary: initialColorDictionary,
+    studioMetadata // Receive the full metadata dump here
+}: { 
+    document: EditorDocument, 
+    colorDictionary: ColorMapping[],
+    studioMetadata: any 
+}) {
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, getInitialEditorState(initialDocument));
     const { title, slug, isSlugManual } = state;
@@ -467,6 +471,7 @@ export function EditorClient({ document: initialDocument, colorDictionary: initi
                         onMainImageUploadQualityChange={setMainImageUploadQuality} 
                         colorDictionary={colorDictionary}
                         onColorDictionaryUpdate={setColorDictionary}
+                        studioMetadata={studioMetadata} // Passed down for inputs
                     />
                 </motion.div>
                 <motion.div

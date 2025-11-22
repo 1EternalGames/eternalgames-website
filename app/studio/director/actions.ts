@@ -54,8 +54,6 @@ async function findOrCreateSanityCreator(userId: string, sanityType: string) {
 export async function updateUserRolesAction(userId: string, roleIds: number[]) {
     const session = await getServerSession(authOptions);
     
-    // Use safe access or DB verification here if strict security is needed, 
-    // but for the action message itself:
     if (!session?.user?.roles.includes('DIRECTOR')) {
         return { success: false, message: "غير مُصرَّح لك بهذا الإجراء." };
     }
@@ -82,6 +80,7 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
         
         revalidateTag('enriched-creators', 'max');
         revalidateTag('enriched-creator-details', 'max');
+        revalidateTag('studio-metadata', 'max'); // <-- REVALIDATE METADATA
 
         revalidatePath('/studio/director');
         revalidatePath(`/profile/${userId}`);
