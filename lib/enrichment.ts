@@ -24,7 +24,6 @@ export const getCachedEnrichedCreators = unstable_cache(
     ['enriched-creators'], // Cache Key
     { 
         tags: ['enriched-creators'], // Revalidation Tag
-        revalidate: 60 * 60 * 24 // Cache for 24 hours (usernames rarely change)
     }
 );
 
