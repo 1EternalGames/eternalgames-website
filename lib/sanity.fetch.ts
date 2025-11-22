@@ -18,47 +18,63 @@ const queryMap: Record<string, string> = {
     news: newsBySlugQuery,
 };
 
+// OPTIMIZATION: Added 'revalidate: 3600' (1 hour).
+// This allows Next.js to serve 'stale' content instantly while updating in the background,
+// preventing the user from waiting on the Sanity API response.
+// The 'tags' allow us to force-update immediately when you click 'Publish' in Studio.
+
 export const getCachedDocument = cache(async (type: string, slug: string) => {
     const query = queryMap[type];
     if (!query) return null;
 
     return await client.fetch(query, { slug }, {
-        // We pass 'tags' to allow on-demand revalidation via API routes
-        next: { tags: [type, 'content', slug] } 
+        next: { 
+            tags: [type, 'content', slug],
+            revalidate: 3600 // 1 hour background revalidation
+        } 
     });
 });
 
 export const getCachedTagPageData = cache(async (slug: string) => {
     return await client.fetch(tagPageDataQuery, { slug }, {
-        next: { tags: ['tag', slug] }
+        next: { 
+            tags: ['tag', slug],
+            revalidate: 3600
+        }
     });
 });
 
 export const getCachedGamePageData = cache(async (slug: string) => {
     return await client.fetch(gamePageDataQuery, { slug }, {
-        next: { tags: ['game', slug] }
+        next: { 
+            tags: ['game', slug],
+            revalidate: 3600
+        }
     });
 });
 
 export const getCachedColorDictionary = cache(async () => {
     return await client.fetch(colorDictionaryQuery, {}, {
-        next: { tags: ['colorDictionary'] }
+        next: { 
+            tags: ['colorDictionary'],
+            revalidate: 86400 // 24 hours (rarely changes)
+        }
     });
 });
 
-// NEW: Batched fetcher for content + dictionary
 export const getCachedContentAndDictionary = cache(async (type: string, slug: string) => {
     const docQuery = queryMap[type];
     if (!docQuery) return { item: null, dictionary: null };
 
-    // Combine the specific document query and the global color dictionary query
     const combinedQuery = groq`{
         "item": ${docQuery},
         "dictionary": ${colorDictionaryQuery}
     }`;
 
     return await client.fetch(combinedQuery, { slug }, {
-        // Revalidate if the specific doc changes OR if the dictionary changes
-        next: { tags: [type, 'content', slug, 'colorDictionary'] }
+        next: { 
+            tags: [type, 'content', slug, 'colorDictionary'],
+            revalidate: 3600 
+        }
     });
 });
