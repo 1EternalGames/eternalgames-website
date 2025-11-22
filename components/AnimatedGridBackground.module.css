@@ -1,0 +1,24 @@
+/* components/AnimatedGridBackground.module.css */
+@keyframes gridScroll {
+  from { background-position: 0 0; }
+  to { background-position: 60px 60px; } /* Matches grid size */
+}
+
+.animatedGrid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  --grid-size: 60px;
+  --grid-color: rgba(125, 128, 140, 0.1);
+  background-image:
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  animation: gridScroll 10s linear infinite;
+  /* Optimization: Use GPU */
+  will-change: background-position;
+  transform: translateZ(0); 
+}
