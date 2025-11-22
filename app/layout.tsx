@@ -12,10 +12,6 @@ import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/authOptions';
-import prisma from '@/lib/prisma';
-import { unstable_cache } from 'next/cache';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -65,29 +61,8 @@ export const metadata: Metadata = {
   },
 };
 
-// OPTIMIZATION: Cache the role lookup.
-// This removes the DB blocking on every page navigation for logged-in users.
-const getCachedUserRoles = unstable_cache(
-  async (userId: string) => {
-    const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        select: { roles: { select: { name: true } } }
-    });
-    return user?.roles.map((r: any) => r.name) || [];
-  },
-  ['user-roles-layout'], // Key
-  { tags: ['user-roles'] } // Revalidation tag
-);
-
-export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  const session = await getServerSession(authOptions);
-  
-  let userRoles: string[] = [];
-  if (session?.user?.id) {
-      // Use the cached function instead of direct Prisma call
-      userRoles = await getCachedUserRoles(session.user.id);
-  }
-
+// FIX: Removed async, getServerSession, and Prisma. This layout is now STATIC.
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
@@ -104,7 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <NextAuthProvider session={session}>
+        <NextAuthProvider>
           <UserStoreHydration />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
@@ -117,7 +92,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </PageTransitionWrapper>
               </main>
               <Footer />
-              <StudioBar serverRoles={userRoles} />
+              <StudioBar />
               <ScrollToTopButton />
             </div>
           </ThemeProvider>

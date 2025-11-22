@@ -6,6 +6,8 @@ import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
 import { getCachedTagPageData } from '@/lib/sanity.fetch';
 import { client } from '@/lib/sanity.client'; 
+import { enrichContentList } from '@/lib/enrichment'; // FIX: Enrich server side
+import { unstable_cache } from 'next/cache';
 
 export const dynamicParams = true;
 
@@ -13,19 +15,30 @@ type Props = {
   params: Promise<{ tag: string }>;
 };
 
+// FIX: Memoized fetcher for tag data + enrichment
+const getEnrichedTagData = unstable_cache(
+    async (tagSlug: string) => {
+        const data = await getCachedTagPageData(tagSlug);
+        if (!data) return null;
+        const enrichedItems = await enrichContentList(data.items || []);
+        return { ...data, items: enrichedItems };
+    },
+    ['enriched-tag-data'],
+    { tags: ['tag', 'content'] }
+);
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
 
-  // Request Memoization ensures this fetch is shared with the Page component
-  const data = await getCachedTagPageData(tagSlug);
+  const data = await getEnrichedTagData(tagSlug);
 
   if (!data) return {};
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-  const translatedTitle = translateTag(data.title); // 'title' is directly on 'data' now
+  const translatedTitle = translateTag(data.title);
   const title = `وسم: ${translatedTitle}`;
-  const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
+  const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames.`;
   
   const latestItem = data.items && data.items.length > 0 ? data.items[0] : null;
   const ogImageUrl = latestItem?.mainImageRef
@@ -40,7 +53,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: `${siteUrl}/tags/${tagSlug}`,
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
-      type: 'website',
     },
   };
 }
@@ -60,8 +72,7 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     const { tag } = await params;
     const tagSlug = decodeURIComponent(tag);
 
-    // Returns result instantly from Metadata request cache
-    const data = await getCachedTagPageData(tagSlug);
+    const data = await getEnrichedTagData(tagSlug);
 
     if (!data) {
         notFound();

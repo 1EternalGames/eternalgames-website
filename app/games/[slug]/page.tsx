@@ -5,7 +5,7 @@ import HubPageClient from '@/components/HubPageClient';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
 import { getCachedGamePageData } from '@/lib/sanity.fetch';
-import { enrichContentList } from '@/lib/enrichment'; // OPTIMIZATION
+import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
 
 export const dynamicParams = true;
@@ -14,13 +14,12 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// Optimized cache wrapper that includes enrichment to avoid waterfall
+// FIX: Memoized fetcher for game data + enrichment
 const getEnrichedGameData = unstable_cache(
     async (slug: string) => {
-        const data = await getCachedGamePageData(slug); // This hits Sanity via cache
+        const data = await getCachedGamePageData(slug);
         if (!data) return null;
         
-        // Enrich the items list inside this cached function
         const enrichedItems = await enrichContentList(data.items || []);
         return { ...data, items: enrichedItems };
     },
@@ -32,7 +31,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const gameSlug = decodeURIComponent(slug);
 
-  // Request Memoization ensures this fetch is shared with the Page component
   const data = await getEnrichedGameData(gameSlug);
 
   if (!data) return {}; 
@@ -52,7 +50,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: `${siteUrl}/games/${gameSlug}`,
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: data.title }],
-      type: 'website',
     },
   };
 }
@@ -72,7 +69,6 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
     const { slug } = await params;
     const gameSlug = decodeURIComponent(slug);
 
-    // Returns result instantly from Metadata request cache (and internal cache)
     const data = await getEnrichedGameData(gameSlug);
 
     if (!data) {

@@ -5,9 +5,9 @@ import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { getCachedDocument, getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
-import { client } from '@/lib/sanity.client'; // For static params
-import { enrichContentList } from '@/lib/enrichment'; // OPTIMIZATION
+import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
+import { client } from '@/lib/sanity.client'; 
+import { enrichContentList } from '@/lib/enrichment'; 
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -23,14 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // Request Memoization ensures this fetch is shared with the Page component
-    // Note: We use the single doc fetcher here, but since the page uses a different
-    // (combined) fetcher, this might cause 2 requests if not careful.
-    // However, Metadata runs on a separate pass in Next.js App Router often.
-    // To be safe and consistent, we can use getCachedDocument here, and the page uses the batched one.
-    // Next.js Data Cache might dedupe if configured identical, but they are different queries.
-    // Acceptable trade-off for metadata speed vs page load batching.
-    const item = await getCachedDocument(sanityType, slug);
+    // OPTIMIZATION: Use same cache key as page
+    const { item } = await getCachedContentAndDictionary(sanityType, slug);
 
     if (!item) return {};
     return { 
@@ -39,7 +33,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
 }
 
-// --- ASYNC COMMENT LOADER ---
 async function CommentsLoader({ slug, contentType }: { slug: string, contentType: string }) {
     try {
         const comments = await prisma.comment.findMany({
@@ -61,7 +54,6 @@ async function CommentsLoader({ slug, contentType }: { slug: string, contentType
 
 export async function generateStaticParams() {
     try {
-        // Limit static generation to recent items to keep build times reasonable. 
         const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...50]{ "slug": slug.current, _type }`);
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
@@ -82,13 +74,11 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // OPTIMIZATION: Batched request for Document + Color Dictionary
+    // OPTIMIZATION: Batched cached request
     const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
-    // OPTIMIZATION: Enrich authors/reporters explicitly here on the server.
-    // This prevents the client-side waterfall in CreatorCredit component.
     const [enrichedItem] = await enrichContentList([rawItem]);
 
     const colorDictionary = dictionary?.autoColors || [];
