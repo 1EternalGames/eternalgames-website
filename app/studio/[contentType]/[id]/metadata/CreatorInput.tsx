@@ -54,7 +54,6 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
         if (isPopoverOpen) { setTimeout(() => inputRef.current?.focus(), 100); } else { setSearchTerm(''); } 
     }, [isPopoverOpen]);
 
-    // Use standard click-outside logic instead of a backdrop to avoid z-index conflicts
     useEffect(() => { 
         const handleClickOutside = (event: MouseEvent) => { 
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) { setIsPopoverOpen(false); } 
@@ -68,8 +67,6 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
             onCreatorsChange([...validSelectedCreators, creator]);
         }
         setSearchTerm('');
-        // Keep it open for multiple selections if needed, or close it:
-        // setIsPopoverOpen(false); // Optional: uncomment to close after select
         inputRef.current?.focus();
     };
     
@@ -115,8 +112,9 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                                         <button 
                                             type="button" 
                                             key={creator._id} 
-                                            // FIX: Use onMouseDown to trigger before blur/focus loss
-                                            onMouseDown={(e) => { e.preventDefault(); addCreator(creator); }} 
+                                            // FIX: onMouseDown strictly prevents focus loss; onClick handles logic
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => addCreator(creator)}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
                                             className={styles.popoverItemButton}
                                         > 

@@ -160,8 +160,9 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                                         <button 
                                             type="button" 
                                             key={tag._id} 
-                                            // FIX: Use onMouseDown
-                                            onMouseDown={(e) => { e.preventDefault(); handleSelectTag(tag); }} 
+                                            // FIX: Split logic
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => handleSelectTag(tag)} 
                                             style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
                                             className={styles.popoverItemButton}
                                         > 
@@ -174,7 +175,9 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                                     {searchTerm.length > 1 && (
                                         <button 
                                             type="button" 
-                                            onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }}
+                                            // FIX: Split logic
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={handleOpenModal}
                                             style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }} 
                                             className={styles.popoverItemButton}
                                         >

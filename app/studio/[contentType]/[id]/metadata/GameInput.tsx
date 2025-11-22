@@ -96,8 +96,9 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                         <button 
                                             type="button" 
                                             key={game._id} 
-                                            // FIX: Use onMouseDown
-                                            onMouseDown={(e) => { e.preventDefault(); handleSelect(game); }}
+                                            // FIX: Split logic
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => handleSelect(game)}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
                                             className={styles.popoverItemButton}
                                         >
@@ -110,7 +111,9 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                     {searchTerm.length > 1 && (
                                         <button 
                                             type="button" 
-                                            onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }}
+                                            // FIX: Split logic
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={handleOpenModal}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }}
                                         >
                                             + إنشاء جديد: "{searchTerm.trim()}"
