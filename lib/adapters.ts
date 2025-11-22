@@ -22,7 +22,9 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     if (imageAsset) {
         // THE FIX: Request the specific dimension from Sanity CDN
         imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
-        blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url();
+        
+        // OPTIMIZATION: Significantly reduced LQIP width from 20 to 8px to reduce HTML payload size
+        blurDataURL = urlFor(imageAsset).width(8).blur(10).auto('format').url();
     }
 
     if (!imageUrl) return null;

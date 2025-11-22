@@ -3,12 +3,11 @@ import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 
-// OPTIMIZATION: Cache is now indefinite (no time limit).
-// It only recalculates when revalidateTag('engagement-scores') is called.
 const getCachedScores = unstable_cache(
     async () => {
         const contentTypes = ['review', 'article', 'news'];
         
+        // OPTIMIZATION: Minimal selection to reduce DB load
         const contentIdsQuery = await prisma.engagement.findMany({
             where: { contentType: { in: contentTypes }, type: 'LIKE' },
             select: { contentId: true },
@@ -18,6 +17,7 @@ const getCachedScores = unstable_cache(
 
         if (ids.length === 0) return [];
 
+        // OPTIMIZATION: Run groupBys in parallel
         const [likes, shares] = await Promise.all([
             prisma.engagement.groupBy({
                 by: ['contentId'],
@@ -42,7 +42,7 @@ const getCachedScores = unstable_cache(
     },
     ['global-engagement-scores'], 
     { 
-        tags: ['engagement-scores'] // Only update when this tag is invalidated
+        tags: ['engagement-scores'] 
     } 
 );
 

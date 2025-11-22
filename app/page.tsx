@@ -2,7 +2,7 @@
 import { unstable_cache } from 'next/cache';
 import React from 'react';
 import { client } from '@/lib/sanity.client';
-import { allReleasesQuery, vanguardReviewsQuery, homepageArticlesQuery, homepageNewsQuery } from '@/lib/sanity.queries';
+import { allReleasesQuery, consolidatedHomepageQuery } from '@/lib/sanity.queries';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
@@ -13,16 +13,20 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList } from '@/lib/enrichment';
 
+// OPTIMIZED: Cache now returns array directly without intermediate Map logic overhead on every call
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
         try {
             const contentTypes = ['review', 'article', 'news'];
+            // Optimization: Select ONLY contentId to minimize data transfer
             const contentIdsQuery = await prisma.engagement.findMany({
                 where: { contentType: { in: contentTypes }, type: 'LIKE' },
                 select: { contentId: true },
                 distinct: ['contentId']
             });
             const ids = contentIdsQuery.map((i: any) => i.contentId);
+
+            if (ids.length === 0) return [];
 
             const [likes, shares] = await Promise.all([
                 prisma.engagement.groupBy({ by: ['contentId'], where: { contentId: { in: ids }, type: 'LIKE' }, _count: { userId: true } }),
@@ -47,6 +51,7 @@ const getCachedEngagementScoresMap = unstable_cache(
 
 
 async function ReleasesSection() {
+    // Releases are distinct because they use a different query/sort logic and are lighter
     const releases = await client.fetch(allReleasesQuery);
     const sanitizedReleases = (releases || []).filter((item: any) => 
         item?.mainImage?.url && item.releaseDate && item.title && item.slug
@@ -55,21 +60,23 @@ async function ReleasesSection() {
 }
 
 export default async function HomePage() {
+    // OPTIMIZATION: Collapsed 3 Sanity requests into 1 using consolidatedHomepageQuery
     const [
-        reviewsRaw, 
-        homepageArticlesRaw, 
-        homepageNewsRaw, 
+        consolidatedData, 
         scoresArray
     ] = await Promise.all([
-        client.fetch(vanguardReviewsQuery),
-        client.fetch(homepageArticlesQuery),
-        client.fetch(homepageNewsQuery),
+        client.fetch(consolidatedHomepageQuery),
         getCachedEngagementScoresMap()
     ]);
 
-    const reviews = (await enrichContentList(reviewsRaw)) as SanityReview[];
-    const homepageArticles = await enrichContentList(homepageArticlesRaw);
-    const homepageNews = await enrichContentList(homepageNewsRaw);
+    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw } = consolidatedData;
+
+    // Enrich all lists in parallel
+    const [reviews, homepageArticles, homepageNews] = await Promise.all([
+        enrichContentList(reviewsRaw),
+        enrichContentList(homepageArticlesRaw),
+        enrichContentList(homepageNewsRaw)
+    ]) as [SanityReview[], any[], any[]];
 
     if (reviews.length > 0) {
         const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
@@ -93,26 +100,24 @@ export default async function HomePage() {
     const sortedArticlesByScore = sortItemsByScore(homepageArticles);
     const topArticlesRaw = sortedArticlesByScore.slice(0, 2);
     const topArticleIds = new Set(topArticlesRaw.map((a: any) => a._id));
-    // OPTIMIZATION: Request 800px for top cards
+    
     const topArticles = topArticlesRaw.map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[];
 
     const latestArticles = homepageArticles
         .filter((a: any) => !topArticleIds.has(a._id))
         .slice(0, 10)
-        // OPTIMIZATION: Request 400px for list items
         .map(item => adaptToCardProps(item, { width: 400 }))
         .filter(Boolean) as CardProps[];
     
     const sortedNewsByScore = sortItemsByScore(homepageNews);
     const topNewsRaw = sortedNewsByScore.slice(0, 3);
     const topNewsIds = new Set(topNewsRaw.map((n: any) => n._id));
-    // OPTIMIZATION: 600px for spotlight
+    
     const pinnedNews = topNewsRaw.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[];
 
     const newsList = homepageNews
         .filter((n: any) => !topNewsIds.has(n._id))
         .slice(0, 15)
-        // OPTIMIZATION: 300px for stream
         .map(item => adaptToCardProps(item, { width: 300 }))
         .filter(Boolean) as CardProps[];
 

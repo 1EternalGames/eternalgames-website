@@ -46,10 +46,15 @@ export async function GET(req: NextRequest) {
             sort
         );
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             data,
             nextOffset: data.length === limit ? offset + limit : null,
         });
+
+        // OPTIMIZATION: Edge Caching for listing pages
+        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+        return response;
 
     } catch (error) {
         console.error('Error fetching paginated articles:', error);

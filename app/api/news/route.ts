@@ -48,10 +48,16 @@ export async function GET(req: NextRequest) {
             sort
         );
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             data,
             nextOffset: data.length === limit ? offset + limit : null,
         });
+        
+        // OPTIMIZATION: Edge Caching for listing pages
+        // Cache for 60 seconds (fresh), allow serving stale data for up to 5 minutes while revalidating
+        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+        return response;
 
     } catch (error) {
         console.error('Error fetching paginated news:', error);

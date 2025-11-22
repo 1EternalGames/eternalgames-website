@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { getCachedDocument, getCachedColorDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; // For static params
+import { enrichContentList } from '@/lib/enrichment'; // OPTIMIZATION
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -75,17 +76,21 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    const [item, colorDictionaryData] = await Promise.all([
+    const [rawItem, colorDictionaryData] = await Promise.all([
         getCachedDocument(sanityType, slug),
         getCachedColorDictionary()
     ]);
     
-    if (!item) notFound();
+    if (!rawItem) notFound();
+
+    // OPTIMIZATION: Enrich authors/reporters explicitly here on the server.
+    // This prevents the client-side waterfall in CreatorCredit component.
+    const [enrichedItem] = await enrichContentList([rawItem]);
 
     const colorDictionary = colorDictionaryData?.autoColors || [];
 
     return (
-        <ContentPageClient item={item} type={section as any} colorDictionary={colorDictionary}>
+        <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
             <Suspense fallback={<div className="spinner" style={{margin: '4rem auto'}}></div>}>
                 <CommentsLoader slug={slug} contentType={section} />
             </Suspense>
