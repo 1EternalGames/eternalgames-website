@@ -4,12 +4,12 @@ import { SanityAuthor } from '@/types/sanity';
 import { unstable_cache } from 'next/cache';
 
 // 1. Cache the Database Lookup
-// This ensures we don't open a slow DB connection every time a user views a page.
 export const getCachedEnrichedCreators = unstable_cache(
     async (creatorIds: string[]): Promise<[string, string | null][]> => {
         if (creatorIds.length === 0) return [];
         
         try {
+            // Batch fetch all requested users in one query
             const users = await prisma.user.findMany({
                 where: { id: { in: creatorIds } },
                 select: { id: true, username: true },
@@ -17,44 +17,56 @@ export const getCachedEnrichedCreators = unstable_cache(
             
             return users.map((u: any) => [u.id, u.username || null]);
         } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment. Skipping. Error:`, error);
+            console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment.`, error);
             return [];
         }
     },
-    ['enriched-creators'], // Cache Key
-    { 
-        tags: ['enriched-creators'], // Revalidation Tag
-    }
+    ['enriched-creators-batch'],
+    { tags: ['enriched-creators'] }
 );
 
-export async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
+// New Helper: Process a single item's creators using a pre-fetched map
+function enrichItemCreators(creators: SanityAuthor[] | undefined, usernameMap: Map<string, string | null>): SanityAuthor[] {
     if (!creators || creators.length === 0) return [];
-    
-    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
-    if (userIds.length === 0) return creators;
-
-    // Use the cached function instead of direct prisma call
-    const usernameArray = await getCachedEnrichedCreators(userIds);
-    const usernameMap = new Map(usernameArray);
-
     return creators.map(creator => ({
         ...creator,
-        username: usernameMap.get(creator.prismaUserId) || creator.username || null,
+        username: (creator.prismaUserId && usernameMap.get(creator.prismaUserId)) || creator.username || null,
     }));
 }
 
 export async function enrichContentList(items: any[]) {
     if (!items || items.length === 0) return [];
     
-    // Process enrichment in parallel
-    return Promise.all(items.map(async (item) => {
+    // 1. Collect ALL unique Prisma User IDs from ALL items
+    const allUserIds = new Set<string>();
+    
+    items.forEach(item => {
+        item.authors?.forEach((c: any) => c.prismaUserId && allUserIds.add(c.prismaUserId));
+        item.reporters?.forEach((c: any) => c.prismaUserId && allUserIds.add(c.prismaUserId));
+        item.designers?.forEach((c: any) => c.prismaUserId && allUserIds.add(c.prismaUserId));
+    });
+
+    // 2. Fetch them all in ONE go (cached)
+    const uniqueIdsArray = Array.from(allUserIds);
+    const usernameEntries = await getCachedEnrichedCreators(uniqueIdsArray);
+    const usernameMap = new Map(usernameEntries);
+
+    // 3. Map back to items synchronously (CPU only, no more DB calls)
+    return items.map(item => {
         const newItem = { ...item };
-        
-        // Enrich Authors/Reporters using the cached function
-        if (newItem.authors) newItem.authors = await enrichCreators(newItem.authors);
-        if (newItem.reporters) newItem.reporters = await enrichCreators(newItem.reporters);
-        if (newItem.designers) newItem.designers = await enrichCreators(newItem.designers);
-        
+        if (newItem.authors) newItem.authors = enrichItemCreators(newItem.authors, usernameMap);
+        if (newItem.reporters) newItem.reporters = enrichItemCreators(newItem.reporters, usernameMap);
+        if (newItem.designers) newItem.designers = enrichItemCreators(newItem.designers, usernameMap);
         return newItem;
-    }));
+    });
+}
+
+// Keep this for single-item pages (like Review Page) which doesn't have a list
+export async function enrichCreators(creators: SanityAuthor[] | undefined): Promise<SanityAuthor[]> {
+    if (!creators || creators.length === 0) return [];
+    const userIds = creators.map(c => c.prismaUserId).filter(Boolean);
+    if (userIds.length === 0) return creators;
+    const usernameArray = await getCachedEnrichedCreators(userIds);
+    const usernameMap = new Map(usernameArray);
+    return enrichItemCreators(creators, usernameMap);
 }

@@ -5,38 +5,57 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import { Session } from 'next-auth';
 import prisma from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 
-/**
- * A server-side helper to get the authenticated user's session with FRESH roles from the database.
- * Throws an error if the user is not authenticated.
- * @returns {Promise<Session>} The user's session object with up-to-date roles.
- * @throws {Error} If the user is not signed in.
- */
+// Cache the heavy DB lookup for the user session
+// This key is unique per user ID.
+const getCachedUser = unstable_cache(
+    async (userId: string) => {
+        return await prisma.user.findUnique({
+            where: { id: userId },
+            select: { 
+                roles: { select: { name: true } }, 
+                username: true, 
+                name: true, 
+                image: true, 
+                email: true 
+            }
+        });
+    },
+    ['session-user-data'], // Key prefix
+    { tags: ['session-user'] } // We will append the ID dynamically in usage or just use a broad tag if granular isn't needed, but let's rely on the key.
+);
+
 export async function getAuthenticatedSession(): Promise<Session> {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.id) {
         throw new Error('Authentication required. Please sign in.');
     }
 
-    // THE DEFINITIVE FIX:
-    // Fetch fresh roles from the database to ensure immediate access control changes apply
-    // without requiring a re-login. We bypass the potentially stale JWT roles here.
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { 
-            roles: { select: { name: true } }, 
-            username: true, 
-            name: true, 
-            image: true, 
-            email: true 
-        }
-    });
+    const cachedUserLookup = unstable_cache(
+        async (uid: string) => {
+            return await prisma.user.findUnique({
+                where: { id: uid },
+                select: { 
+                    roles: { select: { name: true } }, 
+                    username: true, 
+                    name: true, 
+                    image: true, 
+                    email: true 
+                }
+            });
+        },
+        ['session-user-lookup'],
+        { tags: [`user-session-${session.user.id}`] } // Unique tag for invalidation
+    );
+
+    const user = await cachedUserLookup(session.user.id);
 
     if (!user) {
         throw new Error('User record not found.');
     }
 
-    // Overwrite session data with fresh DB data
+    // Overwrite session data with cached DB data
     session.user.roles = user.roles.map((r: any) => r.name);
     session.user.username = user.username;
     session.user.name = user.name;
