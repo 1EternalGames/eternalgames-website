@@ -12,7 +12,6 @@ export async function POST(request: Request) {
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json([]);
     }
-
     const content = await client.fetch(contentByIdsQuery, { ids });
 
     return NextResponse.json(content);

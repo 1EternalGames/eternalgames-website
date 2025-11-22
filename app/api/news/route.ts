@@ -19,12 +19,14 @@ const getCachedPaginatedNews = unstable_cache(
         const query = paginatedNewsQuery(gameSlug, tags, searchTerm, offset, limit, sort);
         const sanityData = await client.fetch(query);
         const enrichedData = await enrichContentList(sanityData);
-        // OPTIMIZATION: 600px width for grid items
         const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
         return data;
     },
-    ['paginated-news'],
-    { tags: ['news'] }
+    ['paginated-news-list'],
+    { 
+        revalidate: false, // Infinite cache
+        tags: ['news', 'content'] // Revalidated on publish/edit
+    }
 );
 
 export async function GET(req: NextRequest) {
@@ -53,9 +55,8 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
         
-        // OPTIMIZATION: Edge Caching for listing pages
-        // Cache for 60 seconds (fresh), allow serving stale data for up to 5 minutes while revalidating
-        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        // OPTIMIZATION: Infinite CDN Cache (1 Year).
+        response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
 
         return response;
 

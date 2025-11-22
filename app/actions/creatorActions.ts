@@ -2,6 +2,9 @@
 
 import prisma from '@/lib/prisma';
 
+// BATCH ACTION:
+// Accepts an array of IDs and returns a Map.
+// This allows client components to gather all missing IDs and resolve them in one go.
 export async function getCreatorUsernames(creatorIds: string[]) {
     if (!creatorIds || creatorIds.length === 0) {
         return {};
@@ -32,5 +35,3 @@ export async function getCreatorUsernames(creatorIds: string[]) {
         return {};
     }
 }
-
-

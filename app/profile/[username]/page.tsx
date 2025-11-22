@@ -36,6 +36,7 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
     
     if (commentSlugs.length > 0) {
         // 2. Fetch the titles for these slugs from Sanity.
+        // BATCH REQUEST: Instead of fetching one by one, we fetch all matching slugs in one go.
         contentTitles = await client.fetch(
             groq`*[_type in ["review", "article", "news"] && slug.current in $slugs]{ "slug": slug.current, title }`,
             { slugs: commentSlugs }
@@ -81,6 +82,7 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
                         {user.comments.length > 0 ? (
                             <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '2rem'}}>
                                 {user.comments.map((comment: any) => {
+                                    // Use the Map to get the title instantly without extra requests
                                     const contentTitle = titleMap.get(comment.contentSlug) || 'تعليقٌ لم يعد متاحًا';
                                     const path = comment.contentSlug.startsWith('review-') ? 'reviews' : comment.contentSlug.startsWith('article-') ? 'articles' : 'news';
                                     const linkHref = `/${path}/${comment.contentSlug}`;

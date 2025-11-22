@@ -20,11 +20,13 @@ const getCachedPaginatedReviews = unstable_cache(
         const query = paginatedReviewsQuery(gameSlug, tagSlugs, searchTerm, scoreRange, offset, limit, sort);
         const sanityData = await client.fetch(query);
         const enrichedData = await enrichContentList(sanityData);
-        // OPTIMIZATION: 600px width for grid items
         return enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
     },
-    ['paginated-reviews'],
-    { tags: ['review'] }
+    ['paginated-reviews-list'], 
+    { 
+        revalidate: false, // Infinite cache
+        tags: ['review', 'content'] // Revalidated on publish/edit
+    }
 );
 
 export async function GET(req: NextRequest) {
@@ -55,8 +57,7 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        // OPTIMIZATION: Edge Caching for listing pages
-        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
         
         return response;
 

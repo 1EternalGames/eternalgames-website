@@ -13,12 +13,13 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList } from '@/lib/enrichment';
 
-// OPTIMIZED: Cache now returns array directly without intermediate Map logic overhead on every call
+// OPTIMIZATION: Infinite cache for engagement scores. 
+// This is revalidated via 'engagement-scores' tag whenever a user Likes/Shares.
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
         try {
             const contentTypes = ['review', 'article', 'news'];
-            // Optimization: Select ONLY contentId to minimize data transfer
+            
             const contentIdsQuery = await prisma.engagement.findMany({
                 where: { contentType: { in: contentTypes }, type: 'LIKE' },
                 select: { contentId: true },
@@ -46,13 +47,27 @@ const getCachedEngagementScoresMap = unstable_cache(
         }
     },
     ['homepage-engagement-scores'],
-    { tags: ['engagement-scores'] }
+    { 
+        revalidate: false, // Infinite cache
+        tags: ['engagement-scores'] 
+    }
 );
 
+// OPTIMIZATION: Infinite cache for Homepage content.
+// Revalidated when Sanity publishes any content via webhook.
+const getCachedHomepageContent = unstable_cache(
+    async () => {
+        return await client.fetch(consolidatedHomepageQuery);
+    },
+    ['homepage-content-consolidated'],
+    {
+        revalidate: false, // Infinite cache
+        tags: ['review', 'article', 'news', 'content']
+    }
+);
 
 async function ReleasesSection() {
-    // Releases are distinct because they use a different query/sort logic and are lighter
-    const releases = await client.fetch(allReleasesQuery);
+    const releases = await client.fetch(allReleasesQuery, {}, { next: { tags: ['gameRelease', 'releases'], revalidate: false } });
     const sanitizedReleases = (releases || []).filter((item: any) => 
         item?.mainImage?.url && item.releaseDate && item.title && item.slug
     );
@@ -60,18 +75,16 @@ async function ReleasesSection() {
 }
 
 export default async function HomePage() {
-    // OPTIMIZATION: Collapsed 3 Sanity requests into 1 using consolidatedHomepageQuery
     const [
         consolidatedData, 
         scoresArray
     ] = await Promise.all([
-        client.fetch(consolidatedHomepageQuery),
+        getCachedHomepageContent(),
         getCachedEngagementScoresMap()
     ]);
 
     const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw } = consolidatedData;
 
-    // Enrich all lists in parallel
     const [reviews, homepageArticles, homepageNews] = await Promise.all([
         enrichContentList(reviewsRaw),
         enrichContentList(homepageArticlesRaw),
