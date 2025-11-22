@@ -23,7 +23,6 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-// MODIFIED: Removed initialComments prop requirement. Added client-side fetching.
 export default function CommentSection({ slug, contentType, initialComments = [] }: { slug: string; contentType: string; initialComments?: any[] }) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
@@ -32,7 +31,6 @@ export default function CommentSection({ slug, contentType, initialComments = []
     const [loading, setLoading] = useState(initialComments.length === 0);
     const currentPath = `/${contentType}/${slug}`;
 
-    // FETCH: Client-side fetch to keep the page static
     useEffect(() => {
         const fetchComments = async () => {
             try {
@@ -48,7 +46,6 @@ export default function CommentSection({ slug, contentType, initialComments = []
             }
         };
 
-        // Only fetch if we didn't receive initial data
         if (initialComments.length === 0) {
             fetchComments();
         } else {
@@ -97,17 +94,44 @@ export default function CommentSection({ slug, contentType, initialComments = []
         }
     };
     
-    // (Vote/Delete handlers kept same as before, omitted for brevity but assume present...)
     const handleVoteUpdate = (commentId: string, newVotes: any[]) => {
-        setComments(prev => prev.map(c => c.id === commentId ? { ...c, votes: newVotes } : c));
+        const updateVotesRecursive = (commentsList: any[]): any[] => {
+            return commentsList.map(comment => {
+                if (comment.id === commentId) return { ...comment, votes: newVotes };
+                if (comment.replies) return { ...comment, replies: updateVotesRecursive(comment.replies) };
+                return comment;
+            });
+        };
+        setComments(prevComments => updateVotesRecursive(prevComments));
     };
 
     const handleDeleteSuccess = (deletedId: string, wasDeleted: boolean, updatedComment?: any) => {
-         setComments(prev => wasDeleted ? prev.filter(c => c.id !== deletedId) : prev.map(c => c.id === deletedId ? updatedComment : c));
+        const removeOrUpdateRecursive = (commentsList: any[]): any[] => {
+            if (wasDeleted) {
+                return commentsList.filter(c => {
+                    if (c.replies) c.replies = removeOrUpdateRecursive(c.replies);
+                    return c.id !== deletedId;
+                });
+            } else {
+                return commentsList.map(c => {
+                    if (c.id === deletedId) return updatedComment;
+                    if (c.replies) return { ...c, replies: removeOrUpdateRecursive(c.replies) };
+                    return c;
+                });
+            }
+        };
+        setComments(prevComments => removeOrUpdateRecursive(prevComments));
     };
 
     const handleUpdateSuccess = (updatedComment: any) => {
-        setComments(prev => prev.map(c => c.id === updatedComment.id ? updatedComment : c));
+        const updateRecursive = (commentsList: any[]): any[] => {
+            return commentsList.map(c => {
+                if (c.id === updatedComment.id) return updatedComment;
+                if (c.replies) return { ...c, replies: updateRecursive(c.replies) };
+                return c;
+            });
+        };
+        setComments(prevComments => updateRecursive(prevComments));
     };
 
     return (

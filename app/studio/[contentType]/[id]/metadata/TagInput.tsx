@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createTagAction } from '../../../actions'; // CORRECTED IMPORT PATH
+import { createTagAction } from '../../../actions';
 import { AddTagModal } from './AddTagModal';
 import ActionButton from '@/components/ActionButton';
 import { translateTag } from '@/lib/translations';
@@ -56,7 +56,6 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
 
     const safeSelectedTags = (selectedTags || []).filter(Boolean);
 
-    // Filter based on category (if applicable) and search term
     const filteredTags = useMemo(() => {
         let available = allTags.filter(t => !safeSelectedTags.some(st => st._id === t._id));
         
@@ -151,18 +150,34 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                                     position: 'absolute', top: '100%', left: 0, 
                                     width: '100%',
                                     background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
-                                    borderRadius: '6px', zIndex: 10, 
-                                    padding: '0.5rem', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', marginTop: '0.5rem'
+                                    borderRadius: '6px', zIndex: 100, 
+                                    padding: '0.5rem', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', marginTop: '0.5rem'
                                 }}
                             >
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {filteredTags.length > 0 ? filteredTags.map(tag => ( <button type="button" key={tag._id} onClick={() => handleSelectTag(tag)} style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {translateTag(tag.title)} </button> ))
+                                    {filteredTags.length > 0 ? filteredTags.map(tag => ( 
+                                        <button 
+                                            type="button" 
+                                            key={tag._id} 
+                                            // FIX: Use onMouseDown
+                                            onMouseDown={(e) => { e.preventDefault(); handleSelectTag(tag); }} 
+                                            style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
+                                            className={styles.popoverItemButton}
+                                        > 
+                                            {translateTag(tag.title)} 
+                                        </button> 
+                                    ))
                                      : <div style={{padding:'0.5rem'}}>لا نتائج.</div>
                                     }
                                     
                                     {searchTerm.length > 1 && (
-                                        <button type="button" onClick={handleOpenModal} style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }} className={styles.popoverItemButton}>
+                                        <button 
+                                            type="button" 
+                                            onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }}
+                                            style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }} 
+                                            className={styles.popoverItemButton}
+                                        >
                                             + إنشاء جديد: "{searchTerm.trim()}"
                                         </button>
                                     )}

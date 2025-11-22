@@ -5,12 +5,11 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
-import filterStyles from '@/components/filters/Filters.module.css';
 
 type Creator = { _id: string; name: string, _type?: string };
 interface CreatorInputProps { 
     label: string; 
-    allCreators: Creator[]; // ADDED: Pass full list
+    allCreators: Creator[]; 
     selectedCreators: Creator[]; 
     onCreatorsChange: (creators: Creator[]) => void; 
     role: 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER';
@@ -44,24 +43,33 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
     const sanityType = roleMap[role];
 
     const filteredCreators = useMemo(() => {
-        // 1. Filter by Role
         let relevant = allCreators.filter(c => c._type === sanityType);
-        // 2. Filter out already selected
         relevant = relevant.filter(c => !validSelectedCreators.some(sel => sel._id === c._id));
-
         if (!searchTerm) return relevant;
-        
         const lowerSearch = searchTerm.toLowerCase();
         return relevant.filter(c => c.name.toLowerCase().includes(lowerSearch));
     }, [allCreators, searchTerm, sanityType, validSelectedCreators]);
     
-    useEffect(() => { if (isPopoverOpen) { setTimeout(() => inputRef.current?.focus(), 100); } else { setSearchTerm(''); } }, [isPopoverOpen]);
+    useEffect(() => { 
+        if (isPopoverOpen) { setTimeout(() => inputRef.current?.focus(), 100); } else { setSearchTerm(''); } 
+    }, [isPopoverOpen]);
+
+    // Use standard click-outside logic instead of a backdrop to avoid z-index conflicts
+    useEffect(() => { 
+        const handleClickOutside = (event: MouseEvent) => { 
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) { setIsPopoverOpen(false); } 
+        }; 
+        document.addEventListener('mousedown', handleClickOutside); 
+        return () => document.removeEventListener('mousedown', handleClickOutside); 
+    }, []);
 
     const addCreator = (creator: Creator) => {
         if (!validSelectedCreators.some(c => c._id === creator._id)) {
             onCreatorsChange([...validSelectedCreators, creator]);
         }
         setSearchTerm('');
+        // Keep it open for multiple selections if needed, or close it:
+        // setIsPopoverOpen(false); // Optional: uncomment to close after select
         inputRef.current?.focus();
     };
     
@@ -89,29 +97,37 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                 
                 <AnimatePresence>
                     {isPopoverOpen && (
-                        <>
-                            <div className={filterStyles.popoverBackdrop} onClick={() => setIsPopoverOpen(false)}></div>
-                            <motion.div 
-                                onClick={(e) => e.stopPropagation()} 
-                                variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
-                                style={{ 
-                                    position: 'absolute', top: '100%', left: 0, 
-                                    width: '100%',
-                                    background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
-                                    borderRadius: '6px', zIndex: 10, 
-                                    padding: '0.5rem', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', marginTop: '0.5rem'
-                                }}
-                            >
-                                <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={`ابحث بالاسم...`} className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
-                                <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {filteredCreators.length > 0 ? (
-                                        filteredCreators.map(creator => ( <button type="button" key={creator._id} onClick={() => addCreator(creator)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} className={styles.popoverItemButton}> {creator.name} </button> ))
-                                    ) : (
-                                        <div style={{padding: '1rem', color: 'var(--text-secondary)'}}>لا يوجد نتائج.</div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        </>
+                        <motion.div 
+                            onClick={(e) => e.stopPropagation()} 
+                            variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
+                            style={{ 
+                                position: 'absolute', top: '100%', left: 0, 
+                                width: '100%',
+                                background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                                borderRadius: '6px', zIndex: 100, 
+                                padding: '0.5rem', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', marginTop: '0.5rem'
+                            }}
+                        >
+                            <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={`ابحث بالاسم...`} className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
+                            <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                                {filteredCreators.length > 0 ? (
+                                    filteredCreators.map(creator => ( 
+                                        <button 
+                                            type="button" 
+                                            key={creator._id} 
+                                            // FIX: Use onMouseDown to trigger before blur/focus loss
+                                            onMouseDown={(e) => { e.preventDefault(); addCreator(creator); }} 
+                                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
+                                            className={styles.popoverItemButton}
+                                        > 
+                                            {creator.name} 
+                                        </button> 
+                                    ))
+                                ) : (
+                                    <div style={{padding: '1rem', color: 'var(--text-secondary)'}}>لا يوجد نتائج.</div>
+                                )}
+                            </div>
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>

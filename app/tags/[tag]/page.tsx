@@ -1,138 +1,101 @@
-// components/comments/CommentSection.tsx
-'use client';
+// app/tags/[tag]/page.tsx
+import { notFound } from 'next/navigation';
+import HubPageClient from '@/components/HubPageClient';
+import { translateTag } from '@/lib/translations';
+import type { Metadata } from 'next';
+import { urlFor } from '@/sanity/lib/image';
+import { getCachedTagPageData } from '@/lib/sanity.fetch';
+import { client } from '@/lib/sanity.client'; 
+import { enrichContentList } from '@/lib/enrichment'; 
+import { unstable_cache } from 'next/cache';
 
-import { useState, useOptimistic, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import type { Session } from 'next-auth';
-import { postReplyOrComment } from '@/app/actions/commentActions';
-import CommentForm from './CommentForm';
-import SignInPrompt from './SignInPrompt';
-import CommentList from './CommentList';
-import styles from './Comments.module.css';
+export const dynamicParams = true;
 
-const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
-    return comments.map(comment => {
-        if (comment.id === parentId) {
-            const updatedReplies = comment.replies ? [...comment.replies, reply] : [reply];
-            return { ...comment, replies: updatedReplies, _count: { replies: (comment._count?.replies || 0) + 1 } };
-        }
-        if (comment.replies && comment.replies.length > 0) {
-            return { ...comment, replies: addReplyToState(comment.replies, parentId, reply) };
-        }
-        return comment;
-    });
+type Props = {
+  params: Promise<{ tag: string }>;
 };
 
-// MODIFIED: Removed initialComments prop requirement. Added client-side fetching.
-export default function CommentSection({ slug, contentType, initialComments = [] }: { slug: string; contentType: string; initialComments?: any[] }) {
-    const { data: session } = useSession();
-    const typedSession = session as unknown as Session | null;
+// Cache the tag data fetch + enrichment
+const getEnrichedTagData = unstable_cache(
+    async (slug: string) => {
+        const data = await getCachedTagPageData(slug);
+        if (!data) return null;
+        
+        const enrichedItems = await enrichContentList(data.items || []);
+        return { ...data, items: enrichedItems };
+    },
+    ['enriched-tag-data'], 
+    { tags: ['tag', 'content'] }
+);
 
-    const [comments, setComments] = useState<any[]>(initialComments);
-    const [loading, setLoading] = useState(initialComments.length === 0);
-    const currentPath = `/${contentType}/${slug}`;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { tag } = await params;
+  const tagSlug = decodeURIComponent(tag);
 
-    // FETCH: Client-side fetch to keep the page static
-    useEffect(() => {
-        const fetchComments = async () => {
-            try {
-                const res = await fetch(`/api/comments/${slug}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setComments(data);
-                }
-            } catch (error) {
-                console.error("Failed to load comments", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+  const data = await getEnrichedTagData(tagSlug);
 
-        // Only fetch if we didn't receive initial data
-        if (initialComments.length === 0) {
-            fetchComments();
-        } else {
-            setLoading(false);
-        }
-    }, [slug, initialComments]);
+  if (!data) return {};
 
-    const [optimisticComments, addOptimisticComment] = useOptimistic(
-        comments,
-        (state, { newComment, parentId }) => {
-            if (parentId) {
-                return addReplyToState(state, parentId, newComment);
-            }
-            return [newComment, ...state];
-        }
-    );
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const translatedTitle = translateTag(data.title); 
+  const title = `وسم: ${translatedTitle}`;
+  const description = `تصفح كل المحتوى الموسوم بـ "${translatedTitle}" على EternalGames واكتشف أحدث المقالات والمراجعات.`;
+  
+  const latestItem = data.items && data.items.length > 0 ? data.items[0] : null;
+  const ogImageUrl = latestItem?.mainImageRef
+    ? urlFor(latestItem.mainImageRef).width(1200).height(630).fit('crop').format('jpg').url()
+    : `${siteUrl}/og.png`;
 
-    const handlePostComment = async (content: string, parentId?: string) => {
-        if (!typedSession?.user?.id) return;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/tags/${tagSlug}`,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+      type: 'website',
+    },
+  };
+}
 
-        const optimisticComment = {
-            id: crypto.randomUUID(),
-            content,
-            parentId,
-            createdAt: new Date().toISOString(),
-            author: typedSession.user,
-            authorId: typedSession.user.id,
-            votes: [],
-            replies: [],
-            _count: { replies: 0 },
-            isOptimistic: true,
-        };
+export async function generateStaticParams() {
+    try {
+        const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
+        return slugs.map((slug) => ({
+            tag: slug,
+        }));
+    } catch (error) {
+        return [];
+    }
+}
 
-        addOptimisticComment({ newComment: optimisticComment, parentId });
+export default async function TagPage({ params }: { params: Promise<{ tag: string }> }) {
+    const { tag } = await params;
+    const tagSlug = decodeURIComponent(tag);
 
-        const result = await postReplyOrComment(slug, content, currentPath, parentId);
+    const data = await getEnrichedTagData(tagSlug);
 
-        if (result.success && result.comment) {
-            setComments(currentComments => {
-                if (parentId) {
-                     return addReplyToState(currentComments, parentId, result.comment)
-                        .filter(c => c.id !== optimisticComment.id);
-                }
-                return [result.comment, ...currentComments.filter(c => c.id !== optimisticComment.id)];
-            });
-        }
-    };
-    
-    // (Vote/Delete handlers kept same as before, omitted for brevity but assume present...)
-    const handleVoteUpdate = (commentId: string, newVotes: any[]) => {
-        setComments(prev => prev.map(c => c.id === commentId ? { ...c, votes: newVotes } : c));
-    };
+    if (!data) {
+        notFound();
+    }
 
-    const handleDeleteSuccess = (deletedId: string, wasDeleted: boolean, updatedComment?: any) => {
-         setComments(prev => wasDeleted ? prev.filter(c => c.id !== deletedId) : prev.map(c => c.id === deletedId ? updatedComment : c));
-    };
+    const { title: tagTitle, items: allItems } = data;
 
-    const handleUpdateSuccess = (updatedComment: any) => {
-        setComments(prev => prev.map(c => c.id === updatedComment.id ? updatedComment : c));
-    };
-
-    return (
-        <div className={styles.commentsSection}>
-            {typedSession?.user ? (
-                <CommentForm slug={slug} session={typedSession} onPostComment={handlePostComment} />
-            ) : (
-                <SignInPrompt />
-            )}
-            
-            <div style={{ minHeight: '200px' }}>
-                {loading ? (
-                    <div className="spinner" style={{ margin: '4rem auto' }} />
-                ) : (
-                    <CommentList
-                        comments={optimisticComments}
-                        session={typedSession}
-                        slug={slug}
-                        onVoteUpdate={handleVoteUpdate}
-                        onPostReply={handlePostComment}
-                        onDeleteSuccess={handleDeleteSuccess}
-                        onUpdateSuccess={handleUpdateSuccess}
-                    />
-                )}
+    if (!allItems || allItems.length === 0) {
+        return (
+            <div className="container page-container">
+                <h1 className="page-title">وسم: &quot;{translateTag(tagTitle)}&quot;</h1>
+                <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُنشر عملٌ بهذا الوسم بعد.</p>
             </div>
-        </div>
+        );
+    }
+    
+    return (
+         <HubPageClient
+            initialItems={allItems}
+            hubTitle={translateTag(tagTitle)}
+            hubType="وسم"
+        />
     );
 }

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createGameAction } from '../../../actions'; // CORRECTED IMPORT PATH
+import { createGameAction } from '../../../actions';
 import { AddGameModal } from './AddGameModal';
 import ActionButton from '@/components/ActionButton';
 import styles from '../Editor.module.css';
@@ -17,7 +17,6 @@ interface GameInputProps {
 }
 
 const popoverVariants = { hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 }, };
-const itemVariants = { hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 }, };
 
 export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -27,7 +26,6 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Local Filtering
     const filteredGames = useMemo(() => {
         if (!searchTerm) return allGames;
         const lowerSearch = searchTerm.toLowerCase();
@@ -88,20 +86,35 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                 style={{ 
                                     position: 'absolute', top: '100%', left: 0, right: 0,
                                     background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
-                                    borderRadius: '6px', zIndex: 10, marginTop: '0.5rem',
-                                    padding: '0.5rem', boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+                                    borderRadius: '6px', zIndex: 100, marginTop: '0.5rem',
+                                    padding: '0.5rem', boxShadow: '0 5px 15px rgba(0,0,0,0.2)'
                                 }}
                             >
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ابحث..." className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                                    {filteredGames.length > 0 ? filteredGames.map(game => (<motion.button type="button" key={game._id} variants={itemVariants} onClick={() => handleSelect(game)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} whileHover={{ backgroundColor: 'var(--bg-primary)' }}>{game.title}</motion.button>))
+                                    {filteredGames.length > 0 ? filteredGames.map(game => (
+                                        <button 
+                                            type="button" 
+                                            key={game._id} 
+                                            // FIX: Use onMouseDown
+                                            onMouseDown={(e) => { e.preventDefault(); handleSelect(game); }}
+                                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
+                                            className={styles.popoverItemButton}
+                                        >
+                                            {game.title}
+                                        </button>
+                                    ))
                                      : searchTerm.length > 1 && <p style={{padding:'0.5rem', color:'var(--text-secondary)'}}>لا نتائج.</p>
                                     }
                                     
                                     {searchTerm.length > 1 && (
-                                        <motion.button type="button" variants={itemVariants} onClick={handleOpenModal} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }} whileHover={{ backgroundColor: 'var(--bg-primary)' }}>
+                                        <button 
+                                            type="button" 
+                                            onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }}
+                                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }}
+                                        >
                                             + إنشاء جديد: "{searchTerm.trim()}"
-                                        </motion.button>
+                                        </button>
                                     )}
                                 </div>
                             </motion.div>
