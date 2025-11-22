@@ -3,24 +3,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { EngagementScore } from '@/types'; // Import from global types
+import type { EngagementScore } from '@/types';
 
-// Define the API error response structure
 type EngagementErrorResponse = {
     error: string;
 };
 
 type EngagementApiResponse = EngagementScore[] | EngagementErrorResponse;
 
-// Type guard to check if the response is an error object
 function isEngagementErrorResponse(response: EngagementApiResponse): response is EngagementErrorResponse {
     return (response as EngagementErrorResponse).error !== undefined;
 }
 
-/**
- * Fetches and maintains viral engagement scores (likes + shares) for all content types.
- * Returns an array of { id: legacyId, engagementScore: number }.
- */
 export const useEngagementScores = () => {
     const [scores, setScores] = useState<EngagementScore[]>([]);
     
@@ -28,13 +22,10 @@ export const useEngagementScores = () => {
         const fetchScores = async () => {
             try {
                 const res = await fetch('/api/engagement-scores');
+                if (!res.ok) return;
                 const data: EngagementApiResponse = await res.json();
                 
-                // Use the type guard to handle the error case
-                if (isEngagementErrorResponse(data)) {
-                    console.error("Engagement fetch error:", data.error);
-                } else {
-                    // Data is guaranteed to be EngagementScore[] here
+                if (!isEngagementErrorResponse(data)) {
                     setScores(data);
                 }
             } catch (e) {
@@ -43,12 +34,13 @@ export const useEngagementScores = () => {
         };
         
         fetchScores();
-        // Set up polling for real-time scores updates
-        const intervalId = setInterval(fetchScores, 60000); 
+        
+        // OPTIMIZATION: Increased polling to 5 minutes (300,000ms)
+        // Real-time updates for likes are handled optimistically in UI,
+        // we only need this for the "Viral" sorting order.
+        const intervalId = setInterval(fetchScores, 300000); 
         return () => clearInterval(intervalId);
 
     }, []);
     return scores;
 }
-
-
