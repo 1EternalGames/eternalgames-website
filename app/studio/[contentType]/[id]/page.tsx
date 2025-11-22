@@ -1,15 +1,12 @@
 // app/studio/[contentType]/[id]/page.tsx
 import { sanityWriteClient } from '@/lib/sanity.server';
-import { editorDocumentQuery } from '@/lib/sanity.queries'; // Removed other queries
+import { editorDataQuery } from '@/lib/sanity.queries'; // Updated to combined query
 import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
-import { groq } from 'next-sanity';
 
 export const runtime = 'nodejs';
-
-const colorDictionaryQuery = groq`*[_type == "colorDictionary" && _id == "colorDictionary"][0]{ autoColors }`;
 
 export default async function EditorPage({ params: paramsPromise }: { params: Promise<{ contentType: string; id: string }> }) {
     noStore();
@@ -22,12 +19,8 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
     const publicId = params.id.replace('drafts.', '');
     
     try {
-        // OPTIMIZATION: Only fetch the document and color dictionary.
-        // Lists are now fetched on demand via async search actions.
-        const [document, colorDictionary] = await Promise.all([
-            sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }),
-            sanityWriteClient.fetch(colorDictionaryQuery),
-        ]);
+        // OPTIMIZATION: Single batched request for document and dictionary
+        const { document, dictionary } = await sanityWriteClient.fetch(editorDataQuery, { id: publicId });
         
         if (!document) {
             notFound();
@@ -43,7 +36,7 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
         return (
             <EditorClient 
                 document={documentWithTiptapContent} 
-                colorDictionary={colorDictionary?.autoColors || []} 
+                colorDictionary={dictionary?.autoColors || []} 
             />
         );
     } catch (err: any) {

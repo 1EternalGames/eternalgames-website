@@ -10,14 +10,9 @@ import { groq } from 'next-sanity';
 import { slugify } from 'transliteration';
 import { tiptapToPortableText } from './utils/tiptapToPortableText';
 import { portableTextToTiptap } from './utils/portableTextToTiptap';
-import { editorDocumentQuery } from '@/lib/sanity.queries';
+import { editorDocumentQuery } from '@/lib/sanity.queries'; // <-- THIS EXPORT MUST EXIST
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
-
-// ... (Keep revalidateContentPaths, translateTitleToAction, createDraftAction, updateDocumentAction, deleteDocumentAction, searchCreatorsAction, publishDocumentAction, searchGamesAction, createGameAction, searchTagsAction, createTagAction, getRecentTagsAction SAME AS BEFORE) ...
-// Just replace validateSlugAction:
-
-// ... [Assuming other functions are unchanged from previous step, focusing on validateSlugAction] ...
 
 function revalidateContentPaths(docType: string, slug?: string) {
     console.log(`[CACHE] Aggressive revalidation triggered for type: ${docType}, slug: ${slug}`);
@@ -43,9 +38,6 @@ function revalidateContentPaths(docType: string, slug?: string) {
     revalidateTag(docType, 'max');
     revalidateTag('layout', 'max');
 }
-
-// ... (Copy translateTitleToAction, createDraftAction, updateDocumentAction, deleteDocumentAction from previous file state) ...
-// For brevity in this optimization step, I am including the whole file content below with the specific fix applied to validateSlugAction.
 
 export async function translateTitleToAction(title: string): Promise<string> {
     const session = await getAuthenticatedSession();
@@ -235,7 +227,6 @@ export async function getRecentTagsAction(): Promise<{_id: string, title: string
     try { return await client.fetch(groq`*[_type == "tag"] | order(_createdAt desc)[0...50]{_id, title}`); } catch (error) { console.error("أخفق جلب آخر الوسوم:", error); return []; }
 }
 
-// OPTIMIZATION: Use CDN client for check. Risk: slightly stale (seconds), but worth the save in API costs for a simple check.
 export async function validateSlugAction(slug: string, docId: string): Promise<{ isValid: boolean; message: string }> {
     if (!docId) return { isValid: false, message: 'بانتظار مُعرِّف الوثيقة...' };
     if (!slug || slug.trim() === '') return { isValid: false, message: 'لا يكُن المُعرِّفُ خاويًا.' };
@@ -245,7 +236,7 @@ export async function validateSlugAction(slug: string, docId: string): Promise<{
     try {
         const publicId = docId.replace('drafts.', '');
         const draftId = `drafts.${publicId}`;
-        const isUnique = await client.fetch(query, { slug, draftId, publicId }); // Use CDN client
+        const isUnique = await client.fetch(query, { slug, draftId, publicId });
         if (isUnique) return { isValid: true, message: 'المُعرِّفُ صالح.' };
         return { isValid: false, message: 'مُعرِّفٌ مُستعمل.' };
     } catch (error) { console.error('Sanity slug validation failed:', error); return { isValid: false, message: 'أخفق التحقق لخطبٍ في الخادم.' }; }

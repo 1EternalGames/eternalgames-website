@@ -2,9 +2,8 @@
 import { unstable_cache } from 'next/cache';
 import React from 'react';
 import { client } from '@/lib/sanity.client';
-import { allReleasesQuery, consolidatedHomepageQuery } from '@/lib/sanity.queries';
+import { consolidatedHomepageQuery } from '@/lib/sanity.queries';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
-import { Suspense } from 'react';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import prisma from '@/lib/prisma';
 import { SanityReview } from '@/types/sanity';
@@ -55,6 +54,7 @@ const getCachedEngagementScoresMap = unstable_cache(
 
 // OPTIMIZATION: Infinite cache for Homepage content.
 // Revalidated when Sanity publishes any content via webhook.
+// Added 'gameRelease' tag so it updates when a release is modified.
 const getCachedHomepageContent = unstable_cache(
     async () => {
         return await client.fetch(consolidatedHomepageQuery);
@@ -62,12 +62,12 @@ const getCachedHomepageContent = unstable_cache(
     ['homepage-content-consolidated'],
     {
         revalidate: false, // Infinite cache
-        tags: ['review', 'article', 'news', 'content']
+        tags: ['review', 'article', 'news', 'content', 'gameRelease', 'releases']
     }
 );
 
-async function ReleasesSection() {
-    const releases = await client.fetch(allReleasesQuery, {}, { next: { tags: ['gameRelease', 'releases'], revalidate: false } });
+// OPTIMIZATION: Releases are now passed in, no internal fetch.
+function ReleasesSection({ releases }: { releases: any[] }) {
     const sanitizedReleases = (releases || []).filter((item: any) => 
         item?.mainImage?.url && item.releaseDate && item.title && item.slug
     );
@@ -83,7 +83,7 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
-    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw } = consolidatedData;
+    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw, releases: releasesRaw } = consolidatedData;
 
     const [reviews, homepageArticles, homepageNews] = await Promise.all([
         enrichContentList(reviewsRaw),
@@ -143,7 +143,8 @@ export default async function HomePage() {
         />
     );
 
-    const releasesSection = <ReleasesSection />;
+    // OPTIMIZATION: Pass raw releases to component
+    const releasesSection = <ReleasesSection releases={releasesRaw} />;
 
     return (
         <DigitalAtriumHomePage 

@@ -1,13 +1,13 @@
 // app/creators/[username]/page.tsx
 import { client } from '@/lib/sanity.client';
-import { allContentByCreatorListQuery } from '@/lib/sanity.queries';
+import { creatorContentQuery } from '@/lib/sanity.queries'; // Using the new optimized query
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import HubPageClient from '@/components/HubPageClient';
 import Link from 'next/link';
 import { cache } from 'react';
 import type { Metadata } from 'next';
-import { enrichContentList } from '@/lib/enrichment'; // <-- ADDED
+import { enrichContentList } from '@/lib/enrichment'; 
 
 export const dynamicParams = true;
 
@@ -91,12 +91,10 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
         notFound();
     }
 
-    const creatorDocs = await client.fetch< { _id: string }[] >(
-        `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id}`,
-        { prismaUserId: user.id }
-    );
+    // OPTIMIZATION: Use a single query that joins via Prisma User ID
+    const allItemsRaw = await client.fetch(creatorContentQuery, { prismaUserId: user.id });
 
-    if (!creatorDocs || creatorDocs.length === 0) {
+    if (!allItemsRaw || allItemsRaw.length === 0) {
         return (
              <div className="container page-container">
                 <h1 className="page-title">{user.name || 'Creator'}</h1>
@@ -108,9 +106,7 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
         );
     }
     
-    const creatorIds = creatorDocs.map(doc => doc._id);
-    const allItemsRaw = await client.fetch(allContentByCreatorListQuery, { creatorIds });
-    // THE FIX: Enrich with usernames server-side
+    // Enrich with usernames server-side
     const allItems = await enrichContentList(allItemsRaw);
 
     return (
