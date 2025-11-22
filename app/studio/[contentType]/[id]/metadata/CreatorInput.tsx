@@ -23,7 +23,22 @@ const popoverVariants = {
 
 const CreatorChip = ({ creator, onRemove }: { creator: Creator, onRemove: (creatorId: string) => void }) => {
     return (
-        <motion.div onClick={(e) => { e.stopPropagation(); onRemove(creator._id); }} layout variants={{ initial: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 }, exiting: { opacity: 0, scale: 0.6 } }} initial="initial" animate="visible" exit="exiting" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem 0.75rem', borderRadius: '4px', zIndex: 1, cursor: 'pointer' }} title={`Click to remove "${creator.name}"`} whileHover={{ backgroundColor: 'color-mix(in srgb, #DC2626 15%, transparent)' }}>
+        <motion.div 
+            // FIX: Use onMouseDown to ensure it fires before any focus change/blur
+            onMouseDown={(e) => { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                onRemove(creator._id); 
+            }} 
+            layout 
+            variants={{ initial: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1 }, exiting: { opacity: 0, scale: 0.6 } }} 
+            initial="initial" 
+            animate="visible" 
+            exit="exiting" 
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem 0.75rem', borderRadius: '4px', zIndex: 2, cursor: 'pointer' }} 
+            title={`Click to remove "${creator.name}"`} 
+            whileHover={{ backgroundColor: 'color-mix(in srgb, #DC2626 15%, transparent)' }}
+        >
             <span>{creator.name}</span>
             <svg width="12" height="12" viewBox="0 0 24" style={{ flexShrink: 0 }}><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </motion.div>
@@ -58,17 +73,16 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
         const handleClickOutside = (event: MouseEvent) => { 
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) { setIsPopoverOpen(false); } 
         }; 
+        // Use 'mousedown' to capture the start of the click action outside
         document.addEventListener('mousedown', handleClickOutside); 
         return () => document.removeEventListener('mousedown', handleClickOutside); 
     }, []);
 
     const addCreator = (creator: Creator) => {
-        // Immediate state update
         if (!validSelectedCreators.some(c => c._id === creator._id)) {
             onCreatorsChange([...validSelectedCreators, creator]);
         }
         setSearchTerm('');
-        // Keep focus on input to allow rapid selection
         setTimeout(() => inputRef.current?.focus(), 0);
     };
     
@@ -83,7 +97,10 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                 <div 
                     className={styles.sidebarInput} 
                     style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', minHeight: '42px', height: 'auto', padding: '0.5rem', cursor: 'text' }} 
-                    onClick={() => setIsPopoverOpen(true)}
+                    onClick={() => {
+                        // Only open if we aren't clicking a chip (handled by stopPropagation, but good to be safe)
+                        setIsPopoverOpen(true);
+                    }}
                 >
                     <AnimatePresence>
                         {validSelectedCreators.map(creator => (<CreatorChip key={creator._id} creator={creator} onRemove={removeCreator} />))}
@@ -97,7 +114,8 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                 <AnimatePresence>
                     {isPopoverOpen && (
                         <motion.div 
-                            onClick={(e) => e.stopPropagation()} 
+                            // Prevent clicks inside the popover from bubbling up and toggling anything
+                            onMouseDown={(e) => e.stopPropagation()}
                             variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
                             style={{ 
                                 position: 'absolute', top: '100%', left: 0, 
@@ -114,10 +132,12 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                                         <button 
                                             type="button" 
                                             key={creator._id} 
-                                            // FIX: Execute logic immediately on MouseDown.
-                                            // preventDefault() stops the input from blurring.
-                                            // addCreator() runs the logic instantly.
-                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); addCreator(creator); }}
+                                            // FIX: Robust Event Handling
+                                            onMouseDown={(e) => { 
+                                                e.preventDefault(); // Prevent focus loss
+                                                e.stopPropagation(); // Prevent bubbling
+                                                addCreator(creator); // Execute logic
+                                            }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
                                             className={styles.popoverItemButton}
                                         > 
