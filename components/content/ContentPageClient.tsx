@@ -43,9 +43,14 @@ type ColorMapping = {
   color: string;
 }
 
-// Keep the delayed fade-in for text content
 const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.8 } } };
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
+
+const typeLabelMap: Record<string, string> = {
+    'official': 'رسمي',
+    'rumor': 'إشاعة',
+    'leak': 'تسريب'
+};
 
 export default function ContentPageClient({ item, type, children, colorDictionary }: {
     item: ContentItem;
@@ -132,9 +137,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    // This scroll reset is now SAFE because the template freezes the background.
-    // It ensures the "Target" hero image is at the top of the viewport where it belongs,
-    // allowing Framer Motion to interpolate correctly from the "Source" card.
     useIsomorphicLayoutEffect(() => {
         window.scrollTo(0, 0);
     }, []);
@@ -176,6 +178,8 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
     const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
+    
+    const newsType = (item as any).newsType || 'official';
 
     return (
         <>
@@ -219,7 +223,14 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                         <div className={styles.contentLayout}>
                             <main ref={scrollTrackerRef}>
                                 <div className={styles.titleWrapper}>
-                                    {isNews && <p className="news-card-category" style={{ textAlign: 'right', margin: '0 0 1rem 0' }}>{translateTag((item as any).category?.title)}</p>}
+                                    {isNews && (
+                                        <div className={styles.headerBadges}>
+                                            <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span>
+                                            <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}>
+                                                {typeLabelMap[newsType]}
+                                            </span>
+                                        </div>
+                                    )}
                                     <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: 0 }} transition={springTransition}>{item.title}</motion.h1>
                                 </div>
                                 
@@ -232,8 +243,8 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                         <CreatorCredit label="بقلم" creators={primaryCreators} />
                                         <CreatorCredit label="تصميم" creators={item.designers} />
                                         <div className={styles.dateContainer}>
-                                            <Calendar03Icon className={styles.metadataIcon} />
-                                            <p className={styles.dateText}>نُشر في {formattedDate}</p>
+                                             <p className={styles.dateText} style={{marginRight: '1rem'}}>{formattedDate}</p>
+                                             <Calendar03Icon className={styles.metadataIcon} />
                                         </div>
                                     </div>
                                 </div>

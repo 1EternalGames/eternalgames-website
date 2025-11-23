@@ -23,6 +23,7 @@ import type { SaveStatus } from './SaveStatusIcons';
 
 type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
+    newsType?: 'official' | 'rumor' | 'leak'; // Added
 };
 
 type ColorMapping = {
@@ -60,6 +61,7 @@ const getInitialEditorState = (doc: EditorDocument) => {
         platforms: doc.platforms || [],
         synopsis: doc.synopsis || '',
         category: doc.category || null,
+        newsType: doc.newsType || 'official', // Added
     };
 };
 
@@ -142,6 +144,11 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (normalize(currentState.category?._id, null) !== normalize(sourceOfTruth.category?._id, null)) {
         patch.category = currentState.category ? { _type: 'reference', _ref: currentState.category._id } : undefined;
     }
+    // New Check for NewsType
+    if (sourceOfTruth._type === 'news' && normalize(currentState.newsType, 'official') !== normalize(sourceOfTruth.newsType, 'official')) {
+        patch.newsType = currentState.newsType;
+    }
+
     if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
     if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
     if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
@@ -356,7 +363,6 @@ export function EditorClient({
 
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
-    // FIX: Memoized save function to prevent stale closures in auto-save timer
     const saveWorkingCopy = useCallback(async (): Promise<boolean> => { 
         const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
         const currentHasChanges = Object.keys(currentPatch).length > 0;
@@ -385,6 +391,7 @@ export function EditorClient({
             platforms: state.platforms,
             synopsis: state.synopsis,
             category: state.category,
+            newsType: state.newsType, // Added
             content: tiptapToPortableText(JSON.parse(editorContentJson)),
             _updatedAt: new Date().toISOString(),
         };
@@ -408,7 +415,6 @@ export function EditorClient({
         } 
     }, [state, sourceOfTruth, editorContentJson, slugValidationStatus, toast]);
     
-    // FIX: Added saveWorkingCopy to dependency array to update the closure used by setTimeout
     useEffect(() => {
         if (hasChanges) {
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);

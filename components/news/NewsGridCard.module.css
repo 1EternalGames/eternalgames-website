@@ -58,14 +58,38 @@
     transform: scale(1.05);
 }
 
+/* --- NEW: Image Overlay Badge for Classification --- */
+.imageBadge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem; /* RTL: Actually appears on the right side of image */
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.imageBadge.official {
+    background-color: color-mix(in srgb, var(--accent) 90%, black);
+}
+.imageBadge.rumor {
+    background-color: rgba(245, 158, 11, 0.9); /* Amber */
+}
+.imageBadge.leak {
+    background-color: rgba(220, 38, 38, 0.9); /* Red */
+}
+
 .cardInfo {
     text-align: right;
     transform: translateZ(20px);
-    /* NEW: Prevent child from overflowing */
     overflow: hidden;
 }
 
-/* ENHANCEMENT: Styles for Tactile Tag Interaction */
 .cardCategory {
     position: relative;
     display: inline-block;
@@ -102,9 +126,8 @@
     font-weight: 600;
     margin: 0;
     position: relative;
-    /* display: inline-block; <-- REMOVED: This was causing the overflow issue. */
     transition: color 0.2s ease;
-    overflow-wrap: break-word; /* ADDED: Ensures long strings without spaces can wrap. */
+    overflow-wrap: break-word;
 }
 
 .cardTitle::after {

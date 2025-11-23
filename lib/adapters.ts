@@ -4,7 +4,6 @@ import { CardProps } from '@/types';
 
 const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
-// THE OPTIMIZATION: Added `options` parameter with `width`
 export const adaptToCardProps = (item: any, options: { width?: number } = {}): CardProps | null => {
     if (!item || item.legacyId === null || item.legacyId === undefined) {
         return null;
@@ -14,16 +13,11 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     let imageUrl = null;
     let blurDataURL: string = '';
     
-    // Default to 1200 if not specified (safe default), but pages will now override this
     const targetWidth = options.width || 1200;
-    // Calculate height based on 16:9 aspect ratio approximation for efficiency
     const targetHeight = Math.round(targetWidth * 0.5625);
 
     if (imageAsset) {
-        // THE FIX: Request the specific dimension from Sanity CDN
         imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
-        
-        // OPTIMIZATION: Significantly reduced LQIP width from 20 to 8px to reduce HTML payload size
         blurDataURL = urlFor(imageAsset).width(8).blur(10).auto('format').url();
     }
 
@@ -69,6 +63,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
         category: item.category?.title,
+        newsType: item.newsType || 'official', // Pass newsType
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],

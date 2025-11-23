@@ -69,7 +69,7 @@ export interface SanityArticle {
     authors: SanityAuthor[];
     designers?: SanityAuthor[];
     game: { title: string };
-    mainImage: SanityImage; // THE FIX
+    mainImage: SanityImage;
     content?: PortableTextBlock[];
     tags: { _id: string, title: string }[];
     publishedAt: string; 
@@ -82,9 +82,10 @@ export interface SanityNews {
     legacyId: number;
     title: string;
     slug: string;
+    newsType: 'official' | 'rumor' | 'leak'; // Added Field
     reporters: SanityAuthor[];
     designers?: SanityAuthor[];
-    mainImage: SanityImage; // THE FIX
+    mainImage: SanityImage;
     category: string;
     tags: { _id: string, title: string }[];
     publishedAt: string; 
@@ -97,10 +98,9 @@ export interface SanityGameRelease {
     title: string;
     slug: string;
     releaseDate: string;
-    // THE DEFINITIVE FIX: Include the legacy 'PlayStation 5' value to make the type check pass.
     platforms: ('PC' | 'PlayStation' | 'PlayStation 5' | 'Xbox' | 'Switch')[];
     synopsis: string;
-    mainImage: SanityImage; // THE FIX
+    mainImage: SanityImage;
 }
 
 export interface SanitySearchResult {

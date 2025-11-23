@@ -11,6 +11,7 @@ import { MainImageInput } from './metadata/MainImageInput';
 import { CreatorInput } from './metadata/CreatorInput';
 import { PlatformInput } from './metadata/PlatformInput';
 import { SlugInput } from './metadata/SlugInput';
+import { NewsTypeInput } from './metadata/NewsTypeInput'; // Added
 import ColorDictionaryManager from './metadata/color-dictionary/ColorDictionaryManager';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './Editor.module.css';
@@ -26,7 +27,7 @@ export function EditorSidebar({
     colorDictionary,
     studioMetadata // Recieved from EditorClient
 }: any) {
-    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual } = documentState;
+    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual, newsType } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
     const [isSaving, startSaveTransition] = useTransition();
     const [isPublishing, startPublishTransition] = useTransition();
@@ -145,17 +146,23 @@ export function EditorSidebar({
                             <div><GameInput allGames={studioMetadata?.games || []} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> 
                             
                             {isNews && (
-                                <motion.div variants={itemVariants}>
-                                    <TagInput
-                                        allTags={studioMetadata?.tags || []}
-                                        label="التصنيف"
-                                        placeholder="اختر تصنيف الخبر..."
-                                        selectedTags={category ? [category] : []}
-                                        onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)}
-                                        singleSelection={true}
-                                        categoryForCreation="News"
-                                    />
-                                </motion.div>
+                                <>
+                                    <motion.div variants={itemVariants}>
+                                        <TagInput
+                                            allTags={studioMetadata?.tags || []}
+                                            label="التصنيف"
+                                            placeholder="اختر تصنيف الخبر..."
+                                            selectedTags={category ? [category] : []}
+                                            onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)}
+                                            singleSelection={true}
+                                            categoryForCreation="News"
+                                        />
+                                    </motion.div>
+                                    {/* Added News Type Input */}
+                                    <motion.div variants={itemVariants}>
+                                        <NewsTypeInput value={newsType || 'official'} onChange={(val) => handleFieldChange('newsType', val)} />
+                                    </motion.div>
+                                </>
                             )}
 
                             {isArticle && (

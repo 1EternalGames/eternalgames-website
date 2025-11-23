@@ -7,9 +7,25 @@ export default defineType({
     fields: [
         defineField({name: 'title', title: 'Title', type: 'string', validation: (Rule) => Rule.required()}),
         defineField({name: 'slug', title: 'Slug', type: 'slug', options: {source: 'title', maxLength: 96}, validation: (Rule) => Rule.required()}),
+        // NEW FIELD: Classification
+        defineField({
+            name: 'newsType',
+            title: 'Classification',
+            type: 'string',
+            options: {
+                list: [
+                    { title: 'Official', value: 'official' },
+                    { title: 'Rumor', value: 'rumor' },
+                    { title: 'Leak', value: 'leak' }
+                ],
+                layout: 'radio',
+                direction: 'horizontal'
+            },
+            initialValue: 'official',
+            validation: (Rule) => Rule.required()
+        }),
         defineField({name: 'reporters', title: 'Reporters', type: 'array', of: [{type: 'reference', to: {type: 'reporter'}}], validation: (Rule) => Rule.required().min(1)}),
         defineField({name: 'designers', title: 'Designers (Optional)', type: 'array', of: [{type: 'reference', to: {type: 'designer'}}]}),
-        // THE DEFINITIVE FIX: Changed from a static string list to a single reference to a categorized tag.
         defineField({
             name: 'category',
             title: 'Category',

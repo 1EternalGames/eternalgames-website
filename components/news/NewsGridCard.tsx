@@ -20,6 +20,12 @@ type NewsGridCardProps = {
     layoutIdPrefix: string;
 };
 
+const typeLabelMap: Record<string, string> = {
+    'official': 'رسمي',
+    'rumor': 'إشاعة',
+    'leak': 'تسريب'
+};
+
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: NewsGridCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
@@ -42,6 +48,8 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
 
     const imageSource = item.imageUrl;
     if (!imageSource) return null;
+    
+    const newsType = item.newsType || 'official';
 
     return (
         <motion.div
@@ -70,6 +78,11 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                             className={styles.imageContainer} 
                             layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`}
                         >
+                            {/* Classification Badge on Image */}
+                            <span className={`${styles.imageBadge} ${styles[newsType]}`}>
+                                {typeLabelMap[newsType]}
+                            </span>
+                            
                             <Image 
                                 loader={sanityLoader}
                                 src={imageSource}

@@ -17,9 +17,10 @@ export type CardProps = {
     imageUrl: string;
     mainImageRef?: any; // For components needing custom aspect ratios
     score?: number;
-    tags: { title: string, slug: string }[]; // Changed to object array
+    tags: { title: string, slug: string }[];
     blurDataURL: string;
-    category?: string; // ADDED: For news/article categories
+    category?: string; 
+    newsType?: 'official' | 'rumor' | 'leak'; // Added Field
     verdict?: string;
     pros?: any[];
     cons?: any[];
@@ -28,5 +29,4 @@ export type CardProps = {
     synopsis?: string;
 };
 
-// Global type for engagement scores (Note: id should match CardProps.legacyId, which is number for viral score lookups)
 export type EngagementScore = { id: number; engagementScore: number };

@@ -32,6 +32,13 @@ export default function CommentSection({ slug, contentType, initialComments = []
     const currentPath = `/${contentType}/${slug}`;
 
     useEffect(() => {
+        // If initialComments were provided (server-side), we don't need to fetch immediately.
+        // We check the prop value captured in the closure.
+        if (initialComments.length > 0) {
+            setLoading(false);
+            return;
+        }
+
         const fetchComments = async () => {
             try {
                 const res = await fetch(`/api/comments/${slug}`);
@@ -46,12 +53,10 @@ export default function CommentSection({ slug, contentType, initialComments = []
             }
         };
 
-        if (initialComments.length === 0) {
-            fetchComments();
-        } else {
-            setLoading(false);
-        }
-    }, [slug, initialComments]);
+        fetchComments();
+        // FIX: Removed initialComments from dependency array to prevent infinite loops
+        // caused by the default value [] being a new reference on every render.
+    }, [slug]);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
@@ -159,4 +164,4 @@ export default function CommentSection({ slug, contentType, initialComments = []
             </div>
         </div>
     );
-} 
+}

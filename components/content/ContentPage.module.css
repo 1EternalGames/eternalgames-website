@@ -40,6 +40,42 @@
     min-width: 0;
 }
 
+/* NEW: Header Badges Container */
+.headerBadges {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start; /* RTL: Aligns to the right */
+    margin-bottom: 1.5rem;
+}
+
+/* Refined Page Badge Style */
+.pageClassificationBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    font-weight: 700;
+    padding: 0.4rem 1.2rem;
+    border-radius: 999px;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.pageClassificationBadge.official {
+    background-color: var(--accent);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.pageClassificationBadge.rumor {
+    background-color: #F59E0B;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+}
+.pageClassificationBadge.leak {
+    background-color: #DC2626;
+    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.3);
+}
+
 .metaContainer {
     display: flex;
     justify-content: space-between;
@@ -52,14 +88,14 @@
 .metaBlockLeft {
     display: flex;
     flex-direction: column;
-    align-items: center; /* MODIFIED: Aligns items to the left */
+    align-items: center;
     gap: 1rem;
 }
 
 .metaBlockRight {
     display: flex;
     flex-direction: column;
-    align-items: right; /* MODIFIED: Aligns items to the right */
+    align-items: right;
     gap: 1rem;
     font-size: 1.5rem;
     text-align: right;
@@ -85,7 +121,6 @@
     margin: 0;
 }
 
-
 @media (max-width: 768px) {
     .heroImage {
         aspect-ratio: 3 / 1;
@@ -95,18 +130,17 @@
         margin-bottom: 2rem;
     }
 
-    /* THE DEFINITIVE FIX FOR MOBILE LAYOUT */
     .metaContainer {
-        flex-direction: row-reverse; /* Maintain two-column layout */
-        align-items: flex-end;      /* Align columns at the bottom */
-        gap: 1rem;                  /* Reduce gap for smaller screens */
+        flex-direction: row-reverse;
+        align-items: flex-end;
+        gap: 1rem;
     }
 
     .metaBlockLeft {
-      align-items: center; /* Keep items left-aligned */
+      align-items: center;
     }
 
     .metaBlockRight {
-      align-items: right;   /* Keep items right-aligned */
+      align-items: right;
     }
 }
