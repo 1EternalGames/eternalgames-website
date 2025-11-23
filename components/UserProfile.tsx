@@ -72,17 +72,17 @@ const UserProfile = () => {
                             <div className={styles.userDropdownDivider} />
                             
                             {(session.user as any).username && (
-                                <Link href={`/profile/${(session.user as any).username}`} className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)}>
+                                <Link href={`/profile/${(session.user as any).username}`} className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)} prefetch={false}>
                                     <UserCircleIcon className={styles.dropdownItemIcon} />
                                     <span>ملفك الشخصي</span>
                                 </Link>
                             )}
 
-                            <Link href="/profile" className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)}>
+                            <Link href="/profile" className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)} prefetch={false}>
                                 <UserSettings01Icon className={styles.dropdownItemIcon} />
                                 <span>الإعدادات</span>
                             </Link>
-                            <Link href="/profile/bookmarks" className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)}>
+                            <Link href="/profile/bookmarks" className={`${styles.userDropdownItem} no-underline`} onClick={() => setIsDropdownOpen(false)} prefetch={false}>
                                 <AllBookmarkIcon className={styles.dropdownItemIcon} />
                                 <span>المحفوظات</span>
                             </Link>

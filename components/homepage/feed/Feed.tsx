@@ -103,7 +103,7 @@ export default function Feed({
             </div>
             
             <motion.div variants={kineticCardVariant}>
-                <Link href={viewAllLink} className={`${styles.viewAllLink} no-underline`}>
+                <Link href={viewAllLink} className={`${styles.viewAllLink} no-underline`} prefetch={false}>
                     {/* THE FIX: Reordered the elements to put the icon first in LTR order (which translates to the left in RTL) */}
                     <ArrowIcon />
                     <span>{viewAllText}</span>

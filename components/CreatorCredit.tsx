@@ -71,6 +71,7 @@ const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableL
                     className="creator-credit-link no-underline"
                     onClick={(e) => e.stopPropagation()}
                     onTouchStart={handleTouch}
+                    prefetch={false}
                 >
                     {creator.name}
                 </Link>

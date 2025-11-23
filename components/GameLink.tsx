@@ -17,7 +17,7 @@ const GameLink = ({ gameName, gameSlug, className = '' }: GameLinkProps) => {
     const finalClassName = `${styles.kineticGameTag} ${className} no-underline`;
 
     return (
-        <Link href={`/games/${gameSlug}`} className={finalClassName}>
+        <Link href={`/games/${gameSlug}`} className={finalClassName} prefetch={false}>
             <span>{gameName}</span>
             <span className={styles.gameTagArrow}>→</span>
         </Link>

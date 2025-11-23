@@ -87,7 +87,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
             // Map container layoutId to the hub container target
             layoutId={`${layoutIdKey}-container`}
         >
-            <Link href={linkPath} className={`${styles.timelineCard} no-underline`} onClick={handleClick}>
+            <Link href={linkPath} className={`${styles.timelineCard} no-underline`} onClick={handleClick} prefetch={false}>
                 <motion.div
                     className={styles.livingCardGlare}
                     style={{ opacity: glareOpacity, '--mouse-x': glareX, '--mouse-y': glareY } as any}
