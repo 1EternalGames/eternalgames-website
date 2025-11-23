@@ -5,6 +5,9 @@ import { allReleasesQuery } from '@/lib/sanity.queries';
 import type { SanityGameRelease } from '@/types/sanity';
 import ReleasePageClient from './ReleasePageClient';
 
+// THE FIX: Enforce static generation for the releases index.
+export const dynamic = 'force-static';
+
 export default async function ReleasesPage() {
   const releases: SanityGameRelease[] = await client.fetch(allReleasesQuery);
 

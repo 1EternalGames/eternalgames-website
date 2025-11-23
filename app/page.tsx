@@ -12,6 +12,11 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList } from '@/lib/enrichment';
 
+// THE FIX: Enforce static generation.
+// This page will be built ONCE and cached forever until a revalidateTag triggers.
+// No more background time-based revalidation.
+export const dynamic = 'force-static';
+
 // OPTIMIZATION: Infinite cache for engagement scores. 
 // This is revalidated via 'engagement-scores' tag whenever a user Likes/Shares.
 const getCachedEngagementScoresMap = unstable_cache(

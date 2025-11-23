@@ -9,6 +9,9 @@ import { enrichContentList } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 import { unstable_cache } from 'next/cache';
 
+// THE FIX: Enforce static generation for the main news index.
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'الأخبار',
   description: 'تغطية شاملة وموجزة لآخر أخبار صناعة الألعاب. ابقَ على اطلاع دائم بكل ما هو جديد ومهم.',

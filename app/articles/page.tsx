@@ -9,6 +9,9 @@ import { enrichContentList } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 import { unstable_cache } from 'next/cache';
 
+// THE FIX: Enforce static generation for the main articles index.
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'المقالات',
   description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة لأحدث الظواهر في عالم الألعاب من خبراء EternalGames.',

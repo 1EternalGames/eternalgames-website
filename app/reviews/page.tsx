@@ -9,6 +9,9 @@ import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 import { unstable_cache } from 'next/cache';
 
+// THE FIX: Enforce static generation for the main reviews index.
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'المراجعات',
   description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames. تقييمات شاملة، تحليلات دقيقة، وحكم نهائي.',
@@ -26,7 +29,6 @@ export const metadata: Metadata = {
 };
 
 // OPTIMIZATION: Cache the entire reviews page data fetch + enrichment
-// This ensures we don't hit Sanity OR the Database on every request.
 const getCachedReviewsPageData = unstable_cache(
   async () => {
     const data = await client.fetch(reviewsIndexQuery);
@@ -76,7 +78,6 @@ export default async function ReviewsPage() {
     );
   }
   
-  // FIX: Explicitly type 'review' as SanityReview to satisfy TypeScript
   const gridReviews = (initialGridReviews || []).filter((review: SanityReview) => review._id !== heroReview._id);
 
   return (
