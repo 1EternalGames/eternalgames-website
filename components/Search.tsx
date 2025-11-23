@@ -86,7 +86,8 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
                                     <motion.ul key="results" variants={listVariants} initial="hidden" animate="visible" exit="hidden" >
                                         {results.map(result => (
                                             <motion.li key={result._id} variants={resultItemVariants}>
-                                                <Link href={getLinkPath(result)} onClick={onClose} className={`${styles.searchResultLink} no-underline`}>
+                                                {/* THE FIX: Added prefetch={false} here as well */}
+                                                <Link href={getLinkPath(result)} onClick={onClose} className={`${styles.searchResultLink} no-underline`} prefetch={false}>
                                                     <motion.div className={styles.searchResultThumbnail}>
                                                         {result.imageUrl ? (<Image src={result.imageUrl} alt={result.title} width={100} height={60} className={styles.searchResultImage} sizes="100px" />) : (<div className={styles.searchResultImageFallback} />)}
                                                     </motion.div>

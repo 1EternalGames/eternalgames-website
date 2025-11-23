@@ -51,7 +51,8 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     return (
         <motion.div variants={creatorBubbleItemVariants}>
             {hasPublicProfile ? (
-                <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline">
+                // THE FIX: Added prefetch={false} to prevent automatic fetching of creator pages
+                <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline" prefetch={false}>
                     {bubbleContent}
                 </Link>
             ) : (

@@ -10,7 +10,13 @@ type Props = {
 };
 
 export default function NextAuthProvider({ children, session }: Props) {
-  // THE FIX: Cast session to any to definitively resolve the TS2322 error
-  // caused by module augmentation mismatches.
-  return <SessionProvider session={session as any}>{children}</SessionProvider>;
+  // THE FIX: Disable automatic refetching on window focus to reduce API calls.
+  return (
+    <SessionProvider 
+      session={session as any} 
+      refetchOnWindowFocus={false}
+    >
+      {children}
+    </SessionProvider>
+  );
 }
