@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useScrollStore } from '@/lib/scrollStore'; // <-- IMPORTED
+import { useScrollStore } from '@/lib/scrollStore';
 import CreatorCredit from './CreatorCredit';
 import { CardProps } from '@/types';
 import { sanityLoader } from '@/lib/sanity.loader';
@@ -25,7 +25,7 @@ type ArticleCardProps = {
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false }: ArticleCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
-    const setScrollPos = useScrollStore((state) => state.setScrollPos); // <-- USE STORE
+    const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const { livingCardRef, livingCardAnimation } = useLivingCard();
 
     const type = article.type;
@@ -47,20 +47,13 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         }
         e.preventDefault();
         
-        // 1. Capture current scroll position before navigation
         setScrollPos(window.scrollY);
-        
-        // 2. Set layout prefix
         setPrefix(layoutIdPrefix);
-        
-        // 3. Navigate with scroll: false to prevent default browser jump behavior,
-        //    allowing our Template to handle the visual freeze/reset.
         router.push(linkPath, { scroll: false });
     };
 
-    const handleMouseEnter = () => {
-        router.prefetch(linkPath);
-    };
+    // REMOVED: handleMouseEnter to prevent prefetching spam
+    // const handleMouseEnter = () => { router.prefetch(linkPath); };
 
     const hasScore = type === 'review' && typeof article.score === 'number';
     const imageSource = article.imageUrl;
@@ -71,7 +64,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const wrapperProps = disableLivingEffect ? {} : {
         ref: livingCardRef,
         onMouseMove: livingCardAnimation.onMouseMove,
-        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); handleMouseEnter(); },
+        // Updated: No longer calling handleMouseEnter for prefetch
+        onMouseEnter: livingCardAnimation.onMouseEnter,
         onMouseLeave: livingCardAnimation.onMouseLeave,
         onTouchStart: livingCardAnimation.onTouchStart,
         onTouchEnd: livingCardAnimation.onTouchEnd,
