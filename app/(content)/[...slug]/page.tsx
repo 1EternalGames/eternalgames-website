@@ -7,7 +7,12 @@ import { getCachedContentAndDictionary } from '@/lib/sanity.fetch';
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 
+// THE FIX: 
+// 1. 'force-static' ensures the page is built at build time (or on first request).
+// 2. No 'revalidate' export means it defaults to "false" (Infinite Cache).
+//    It will ONLY update when the Sanity Webhook triggers a revalidateTag.
 export const dynamic = 'force-static';
+// export const revalidate = 60; // REMOVED COMPLETELY
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -54,19 +59,18 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
+    // 1. Fetch Only Sanity Content
     const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
+    // 2. Server-Side Enrichment
     const [enrichedItem] = await enrichContentList([rawItem]);
     
     const colorDictionary = dictionary?.autoColors || [];
 
     return (
         <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
-             {/* 3. Client-Side Comments
-                 We do NOT pass initialComments. This forces CommentSection to fetch
-                 on the client, ensuring the initial HTML response is instant and static. */}
              <CommentSection 
                 slug={slug} 
                 contentType={section} 

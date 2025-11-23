@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, animate, PanInfo } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from 'next/link'; // Ensure Link is imported
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useVanguardCarousel } from '@/hooks/useVanguardCarousel';
@@ -14,6 +14,7 @@ import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
 
+// ... (Keep Icons and Helper Components: ArrowIcon, CreatorBubble, creatorBubbleVariants) ...
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
@@ -51,7 +52,6 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     return (
         <motion.div variants={creatorBubbleItemVariants}>
             {hasPublicProfile ? (
-                // THE FIX: Added prefetch={false} to prevent automatic fetching of creator pages
                 <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline" prefetch={false}>
                     {bubbleContent}
                 </Link>
@@ -81,14 +81,17 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     const linkPath = `/reviews/${review.slug}`;
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        if (e.ctrlKey || e.metaKey) return; // Allow opening in new tab
+        // Note: With Link, we might not need manual push, but we need to set layoutId prefix.
+        // Using onClick with Link is valid.
+        if (e.ctrlKey || e.metaKey) return; 
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) {
             e.stopPropagation();
             return;
         }
-        e.preventDefault();
+        // IMPORTANT: We let the Link handle navigation, we just set the state.
+        // Removing e.preventDefault() allows Link to do its job.
+        // BUT wait, we want { scroll: false }. Next.js Link has a scroll prop!
         setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
     };
     
     const imageUrl = review.mainImageRef 
@@ -99,7 +102,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     
     const livingCardHandlers = isInteractive ? {
         onMouseMove: livingCardAnimation.onMouseMove,
-        onTouchMove: livingCardAnimation.onTouchMove, // ADDED: Touch move handler
+        onTouchMove: livingCardAnimation.onTouchMove,
         onMouseEnter: livingCardAnimation.onMouseEnter,
         onMouseLeave: livingCardAnimation.onMouseLeave,
         onTouchStart: livingCardAnimation.onTouchStart,
@@ -109,11 +112,14 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     return (
         <div className={styles.cardWrapper}>
-            <a 
+            {/* THE FIX: Replaced <a> with <Link> and removed manual router.push to rely on standard Next.js behavior, ensuring single request */}
+            <Link 
                 href={linkPath}
                 onClick={handleClick}
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
+                prefetch={false}
+                scroll={false} // This replaces the router.push option
             >
                 <motion.div
                     ref={livingCardRef}
@@ -156,12 +162,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
                     </motion.div>
                 </motion.div>
-            </a>
+            </Link>
         </div>
     );
 });
 VanguardCard.displayName = "VanguardCard";
 
+// ... (Keep KineticNavigator and VanguardReviews export) ...
 const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews: CardProps[], currentIndex: number, navigateToIndex: (index: number) => void }) => {
     const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
     useEffect(() => { const activeItem = itemRefs.current[currentIndex]; if (activeItem) { activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [currentIndex]);

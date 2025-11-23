@@ -23,39 +23,39 @@ import { useLayoutIdStore } from "@/lib/layoutIdStore";
 // --- Specific Card Renderers ---
 
 const TopArticleCard = memo(({ article }: { article: CardProps }) => {
-    // THE FIX: Explicitly typed for HTMLAnchorElement
-    const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLAnchorElement>();
+    // THE FIX: Changed type from HTMLAnchorElement to HTMLDivElement
+    // The ref is attached to the motion.div, not the Link (anchor)
+    const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const [isHovered, setIsHovered] = useState(false);
-    const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-top-articles";
     const linkPath = `/articles/${article.slug}`;
 
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
-        if (e.ctrlKey || e.metaKey) return; // Allow new tab
-        e.preventDefault();
         setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.a
+        <Link
             href={linkPath}
-            layout
-            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
-            ref={livingCardRef} 
-            style={{...livingCardAnimation.style, height: '100%', cursor: 'pointer', display: 'block' }} 
-            className="no-underline"
-            onMouseMove={livingCardAnimation.onMouseMove} 
-            onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }} 
-            onMouseLeave={() => { livingCardAnimation.onMouseLeave(); setIsHovered(false); }}
-            onTouchStart={livingCardAnimation.onTouchStart}
-            onTouchEnd={livingCardAnimation.onTouchEnd}
-            onTouchCancel={livingCardAnimation.onTouchCancel}
+            prefetch={false}
+            scroll={false}
             onClick={handleClick}
+            className="no-underline"
+            style={{ display: 'block', height: '100%' }}
         >
-            <div
+            <motion.div
+                layout
+                layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
+                ref={livingCardRef} 
+                style={{...livingCardAnimation.style, height: '100%', cursor: 'pointer' }} 
+                onMouseMove={livingCardAnimation.onMouseMove} 
+                onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }} 
+                onMouseLeave={() => { livingCardAnimation.onMouseLeave(); setIsHovered(false); }}
+                onTouchStart={livingCardAnimation.onTouchStart}
+                onTouchEnd={livingCardAnimation.onTouchEnd}
+                onTouchCancel={livingCardAnimation.onTouchCancel}
                 className={feedStyles.topArticleCard}
             >
                 <AnimatePresence>{isHovered && <KineticGlyphs />}</AnimatePresence>
@@ -71,8 +71,8 @@ const TopArticleCard = memo(({ article }: { article: CardProps }) => {
                         <div className={feedStyles.topArticleMeta}><CreatorCredit label="بقلم" creators={article.authors} small /></div>
                     </div>
                 </div>
-            </div>
-        </motion.a>
+            </motion.div>
+        </Link>
     );
 });
 TopArticleCard.displayName = "TopArticleCard";
