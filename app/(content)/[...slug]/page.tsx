@@ -5,7 +5,7 @@ import CommentSection from '@/components/comments/CommentSection';
 import type { Metadata } from 'next';
 import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; 
-import { enrichContentList } from '@/lib/enrichment';
+// REMOVED: import { enrichContentList } from '@/lib/enrichment'; <-- This was the bottleneck
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -32,7 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        // OPTIMIZATION: Pre-build the first 100 articles for instant cache hits
         const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100]{ "slug": slug.current, _type }`);
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
@@ -53,21 +52,25 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
+    // 1. Fetch ONLY Sanity content.
+    // This is cached on the Edge/CDN. It does NOT touch the database.
     const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
-    // This uses the unstable_cache which is fast, but does not block the main thread like a fresh DB call.
-    const [enrichedItem] = await enrichContentList([rawItem]);
+    // REMOVED: await enrichContentList([rawItem]);
+    // We pass rawItem directly. It has 'prismaUserId'.
+    // The client-side <CreatorCredit> component will see the missing username 
+    // and fetch it asynchronously without blocking the page load.
 
     const colorDictionary = dictionary?.autoColors || [];
 
     return (
-        <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
-             {/* Pass ONLY the slug. The component will fetch comments client-side. */}
+        <ContentPageClient item={rawItem} type={section as any} colorDictionary={colorDictionary}>
              <CommentSection 
                 slug={slug} 
                 contentType={section} 
+                // No initialComments passed, forcing client-side fetch
              />
         </ContentPageClient>
     );
