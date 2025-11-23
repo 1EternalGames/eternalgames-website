@@ -4,7 +4,6 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import type { Metadata } from 'next';
 import { client } from '@/lib/sanity.client';
-// REMOVED: getCachedContentAndDictionary (The wrapper causing the issue)
 import { 
     reviewBySlugQuery, 
     articleBySlugQuery, 
@@ -37,7 +36,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    // Direct fetch for metadata (Fast)
     const query = queryMap[sanityType];
     if (!query) return {};
 
@@ -53,7 +51,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export async function generateStaticParams() {
     try {
         // OPTIMIZATION: Fetch ALL content to ensure 100% Cache Hit Ratio (Instant Load)
-        // Removed the [0...100] limit.
         const query = `*[_type in ["review", "article", "news"]] { "slug": slug.current, _type }`;
         const allContent = await client.fetch<any[]>(query);
         
@@ -82,6 +79,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const docQuery = queryMap[sanityType];
     if (!docQuery) notFound();
 
+    // Use the optimized public client (CDN enabled)
     const combinedQuery = groq`{
         "item": ${docQuery},
         "dictionary": ${colorDictionaryQuery}
