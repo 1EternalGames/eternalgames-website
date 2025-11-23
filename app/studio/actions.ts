@@ -14,11 +14,11 @@ import { editorDocumentQuery, studioMetadataQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
-// This function nukes the cache. We must use it CAREFULLY.
 function revalidateContentPaths(docType: string, slug?: string) {
-    console.log(`[CACHE] Revalidating public paths for type: ${docType}, slug: ${slug}`);
+    console.log(`[CACHE] Aggressive revalidation triggered for type: ${docType}, slug: ${slug}`);
     
-    revalidatePath('/studio', 'layout'); // Update Studio lists
+    revalidatePath('/studio', 'layout');
+    revalidatePath('/', 'layout');
 
     let sectionPath = '';
     switch (docType) {
@@ -29,17 +29,14 @@ function revalidateContentPaths(docType: string, slug?: string) {
     }
 
     if (sectionPath) {
-        revalidatePath(sectionPath); // Revalidate the list page
+        revalidatePath(sectionPath, 'layout'); 
         if (slug) {
-            revalidatePath(`${sectionPath}/${slug}`); // Revalidate the specific item page
+            revalidatePath(`${sectionPath}/${slug}`, 'layout'); 
         }
     }
 
-    // These tags are used by the main site queries.
-    // Only invalidate them on PUBLISH, not draft save.
-    // FIX: Added 'max' profile argument to satisfy Next.js 16 type requirements
-    revalidateTag(docType, 'max'); 
-    revalidateTag('content', 'max');
+    revalidateTag(docType, 'max');
+    revalidateTag('layout', 'max');
 }
 
 export const getStudioMetadataAction = unstable_cache(
@@ -131,10 +128,7 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
-        
-        // Only revalidate the Studio page so the editor sees updates
-        revalidatePath('/studio'); 
-
+        revalidateContentPaths(finalDoc._type, finalDoc.slug?.current);
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         return { success: true, updatedDocument: docWithTiptap };
     } catch (error: any) { console.error("Error during document update:", error); return { success: false, message: error.message || "أصابنا خطبٌ أثناء الحفظ." }; }
@@ -156,10 +150,7 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
         tx.delete(baseId);
         tx.delete(draftId);
         await tx.commit();
-        
-        // Deleting DOES need to update the public site.
         revalidateContentPaths(docType, docToDelete.slug);
-        
         return { success: true };
     } catch (error) { console.error("Delete failed:", error); return { success: false, message: 'تأبى الحذف.' }; }
 }
@@ -191,10 +182,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.delete(publicId);
             tx.patch(draftId, (p) => p.unset(['publishedAt']));
             await tx.commit({ returnDocuments: false });
-            
-            // Unpublishing needs to remove it from public site
             revalidateContentPaths(docType, doc.slug);
-            
             const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
             if (!finalDoc) throw new Error("Document not found after unpublish.");
             const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
@@ -214,10 +202,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.delete(draftId);
             await tx.commit({ returnDocuments: false });
         } else if (docType !== 'gameRelease') { await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit(); }
-        
-        // Publishing MUST invalidate the cache to show new content
         revalidateContentPaths(docType, doc.slug);
-        
         if (docType === 'gameRelease') { revalidatePath('/celestial-almanac', 'layout'); }
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
@@ -232,8 +217,7 @@ export async function createGameAction(title: string): Promise<{_id: string, tit
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try { 
         const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
-        // FIX: Added 'max' profile argument
-        revalidateTag('studio-metadata', 'max');
+        revalidateTag('studio-metadata', 'max'); // <-- FIXED: Added profile argument
         return { _id: newGame._id, title: newGame.title }; 
     } catch (error) { console.error("أخفق إنشاء اللعبة:", error); return null; }
 }
@@ -244,8 +228,7 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try { 
         const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } }); 
-        // FIX: Added 'max' profile argument
-        revalidateTag('studio-metadata', 'max');
+        revalidateTag('studio-metadata', 'max'); // <-- FIXED: Added profile argument
         return { _id: newTag._id, title: newTag.title }; 
     } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
@@ -267,32 +250,16 @@ export async function validateSlugAction(slug: string, docId: string): Promise<{
 
 export async function uploadSanityAssetAction(formData: FormData): Promise<{ success: boolean; asset?: { _id: string; url: string }; error?: string }> {
     const session = await getAuthenticatedSession();
-    const userRoles = session?.user?.roles || [];
-    const isCreatorOrAdmin = userRoles.some((role: string) =>
-      ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
-    );
-
-    if (!session?.user?.id || !isCreatorOrAdmin) {
-        return { success: false, error: 'Unauthorized' };
-    }
-
+    const userRoles = session.user.roles;
+    const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
+    if (!isCreatorOrAdmin) return { success: false, error: 'غير مُصرَّح به' };
     const file = formData.get('file') as File | null;
-    if (!file) {
-        return { success: false, error: 'No file provided' };
-    }
-
+    if (!file) return { success: false, error: 'لم يُقدَّم ملف.' };
     try {
-        const asset = await sanityWriteClient.assets.upload('image', file, {
-            filename: file.name,
-            contentType: file.type,
-        });
+        const asset = await sanityWriteClient.assets.upload('image', file, { filename: file.name, contentType: file.type });
         return { success: true, asset: { _id: asset._id, url: asset.url } };
-    } catch (error: any) {
-        console.error("Sanity asset upload failed:", error);
-        return { success: false, error: 'Failed to upload asset to Sanity.' };
-    }
+    } catch (error: any) { console.error("Sanity asset upload failed:", error); return { success: false, error: 'أخفق رفع الملف.' }; }
 }
-
 export async function addOrUpdateColorDictionaryAction(newMapping: { word: string; color: string }) {
   try {
     await getAuthenticatedSession();

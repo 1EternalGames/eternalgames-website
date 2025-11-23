@@ -85,7 +85,7 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
             transition={itemTransition}
             className={styles.orbitalItemWrapper}
         >
-            <Link href={item.href} onClick={onClick} className="no-underline">
+            <Link href={item.href} onClick={onClick} className="no-underline" prefetch={false}>
                 <motion.div className={`${styles.orbitalOrb} ${isActive ? styles.active : ''}`} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
                     <item.Icon />
                 </motion.div>
@@ -136,6 +136,7 @@ const EditorPreviewButton = () => {
             animate="rest"
             variants={linkVariants}
             transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+            prefetch={false}
         >
             <AnimatedPreviewIcon />
         </MotionLink>
@@ -174,13 +175,13 @@ const Navbar = () => {
             <header className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
                 <div className={`container ${styles.navContainer}`}>
                     <div className={styles.desktopView}>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll} prefetch={false}>
                             <EternalGamesIcon style={{ width: '30px', height: '30px' }} />
                         </Link>
                         <nav>
                             <ul className={styles.navLinks}>
                                 {navItems.map(item => (
-                                    <li key={item.href}><Link href={item.href}>{item.label}</Link></li>
+                                    <li key={item.href}><Link href={item.href} prefetch={false}>{item.label}</Link></li>
                                 ))}
                             </ul>
                         </nav>
@@ -212,7 +213,7 @@ const Navbar = () => {
                                 <SearchIcon />
                             </button>
                         </div>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll}>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll} prefetch={false}>
                             <EternalGamesIcon style={{ width: '28px', height: '28px' }} />
                         </Link>
                         <div className={styles.mobileNavGroupRight}>
@@ -242,7 +243,7 @@ const Navbar = () => {
                             animate="visible"
                             exit="exit"
                         >
-                            <Link href="/" onClick={closeAll} className={`${styles.orbitalCenter} no-underline ${pathname === '/' ? styles.active : ''}`}>
+                            <Link href="/" onClick={closeAll} className={`${styles.orbitalCenter} no-underline ${pathname === '/' ? styles.active : ''}`} prefetch={false}>
                                 <EternalGamesIcon style={{ width: '48px', height: '48px' }} />
                             </Link>
                             {navItems.map((item, i) => {

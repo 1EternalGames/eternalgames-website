@@ -34,13 +34,13 @@ export default function StudioBar() {
                 transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
             >
                 <div className={styles.studioBarContent}>
-                    <Link href="/studio" className={`${styles.studioBarButton} ${styles.brand}`}>
+                    <Link href="/studio" className={`${styles.studioBarButton} ${styles.brand}`} prefetch={false}>
                         <StudioIcon height={20} width={20} />
                         <span>الديوان</span>
                     </Link>
 
                     {editPath && (
-                        <Link href={editPath} className={styles.studioBarButton}>
+                        <Link href={editPath} className={styles.studioBarButton} prefetch={false}>
                             <EditIcon />
                             <span>تعديل الصفحة</span>
                         </Link>
