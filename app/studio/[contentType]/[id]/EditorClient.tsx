@@ -38,6 +38,7 @@ const getInitialEditorState = (doc: EditorDocument) => {
     return {
         _id: doc._id,
         _type: doc._type,
+        _updatedAt: doc._updatedAt,
         title: doc.title ?? '',
         slug: currentSlug,
         isSlugManual: !!currentSlug,
@@ -168,7 +169,7 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 export function EditorClient({ 
     document: initialDocument, 
     colorDictionary: initialColorDictionary,
-    studioMetadata // Receive the full metadata dump here
+    studioMetadata 
 }: { 
     document: EditorDocument, 
     colorDictionary: ColorMapping[],
@@ -305,23 +306,6 @@ export function EditorClient({
         return () => clearInterval(intervalId);
     }, [sourceOfTruth._id]);
 
-    useEffect(() => {
-        if (hasChanges) {
-            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
-
-            serverSaveTimeoutRef.current = setTimeout(async () => {
-                setServerSaveStatus('saving');
-                const success = await saveWorkingCopy();
-                if (success) {
-                    setServerSaveStatus('saved');
-                } else {
-                    setServerSaveStatus('saved'); 
-                }
-            }, 10000);
-        }
-    }, [hasChanges]); 
-
-
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => { 
@@ -372,7 +356,8 @@ export function EditorClient({
 
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
-    const saveWorkingCopy = async (): Promise<boolean> => { 
+    // FIX: Memoized save function to prevent stale closures in auto-save timer
+    const saveWorkingCopy = useCallback(async (): Promise<boolean> => { 
         const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
         const currentHasChanges = Object.keys(currentPatch).length > 0;
 
@@ -421,8 +406,25 @@ export function EditorClient({
             toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); 
             return false; 
         } 
-    };
+    }, [state, sourceOfTruth, editorContentJson, slugValidationStatus, toast]);
     
+    // FIX: Added saveWorkingCopy to dependency array to update the closure used by setTimeout
+    useEffect(() => {
+        if (hasChanges) {
+            if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
+
+            serverSaveTimeoutRef.current = setTimeout(async () => {
+                setServerSaveStatus('saving');
+                const success = await saveWorkingCopy();
+                if (success) {
+                    setServerSaveStatus('saved');
+                } else {
+                    setServerSaveStatus('saved'); 
+                }
+            }, 10000);
+        }
+    }, [hasChanges, saveWorkingCopy]); 
+
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => { 
         const didSave = await saveWorkingCopy(); 
         if (!didSave) { 

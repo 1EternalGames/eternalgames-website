@@ -35,7 +35,7 @@ const AnimatedTag = ({ tag, onRemove }: { tag: Tag, onRemove: (tagId: string) =>
             initial={{ opacity: 0, scale: 0.5 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.6 }} 
-            // FIX: Use onMouseDown for reliable removal
+            // FIX: Use onMouseDown for chip removal
             onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(tag._id); }} 
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem 0.75rem', borderRadius: '4px', zIndex: 1, cursor: 'pointer' }} 
             title={`Click to remove "${translateTag(tag.title)}"`} 
@@ -58,19 +58,42 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
     const safeSelectedTags = (selectedTags || []).filter(Boolean);
 
     const filteredTags = useMemo(() => {
-        let available = allTags.filter(t => !safeSelectedTags.some(st => st._id === t._id));
+        // 1. Filter out tags that are already selected
+        // We use a relaxed check to handle 'drafts.' prefixes (e.g. id 'drafts.123' vs '123')
+        let available = allTags.filter(t => {
+            const cleanId = t._id.replace('drafts.', '');
+            return !safeSelectedTags.some(st => st._id.replace('drafts.', '') === cleanId);
+        });
         
+        // 2. Filter by Category
         if (categoryForCreation) {
             available = available.filter(t => t.category === categoryForCreation);
         }
 
-        if (!searchTerm) return available;
-        
-        const lowerSearch = searchTerm.toLowerCase();
-        return available.filter(t => 
-            t.title.toLowerCase().includes(lowerSearch) || 
-            translateTag(t.title).toLowerCase().includes(lowerSearch)
-        );
+        // 3. Filter by Search Term
+        if (searchTerm) {
+            const lowerSearch = searchTerm.toLowerCase();
+            available = available.filter(t => 
+                t.title.toLowerCase().includes(lowerSearch) || 
+                translateTag(t.title).toLowerCase().includes(lowerSearch)
+            );
+        }
+
+        // 4. Deduplicate by Display Name
+        // This prevents showing multiple tags that look identical in the UI
+        // (e.g. duplicates in DB, or draft+published versions of same tag)
+        const seenNames = new Set<string>();
+        const uniqueTags: Tag[] = [];
+
+        for (const tag of available) {
+            const displayName = translateTag(tag.title);
+            if (!seenNames.has(displayName)) {
+                seenNames.add(displayName);
+                uniqueTags.push(tag);
+            }
+        }
+
+        return uniqueTags;
     }, [allTags, safeSelectedTags, searchTerm, categoryForCreation]);
 
     
@@ -138,7 +161,7 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                             <span style={{ color: 'var(--text-secondary)', position: 'absolute', right: '1rem', left: 'auto', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>{placeholder}</span>
                         )}
                     </div>
-                     <ActionButton type="button" onClick={(e) => { e.preventDefault(); handleOpenModal(); }} aria-label="Add new tag or category">
+                     <ActionButton type="button" onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }} aria-label="Add new tag or category">
                         <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                     </ActionButton>
                     
