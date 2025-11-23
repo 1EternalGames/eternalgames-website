@@ -48,12 +48,40 @@ async function syncUserToSanity(userId: string) {
 export async function getUserState() {
     try {
         const session = await getAuthenticatedSession();
+        
         const [engagements, shares] = await Promise.all([
-            prisma.engagement.findMany({ where: { userId: session.user.id }, select: { contentId: true, contentType: true, type: true } }),
-            prisma.share.findMany({ where: { userId: session.user.id }, select: { contentId: true, contentType: true } }),
+            prisma.engagement.findMany({ 
+                where: { userId: session.user.id }, 
+                select: { contentId: true, contentType: true, type: true } 
+            }),
+            prisma.share.findMany({ 
+                where: { userId: session.user.id }, 
+                select: { contentId: true, contentType: true } 
+            }),
         ]);
-        return { success: true, data: { engagements, shares } };
-    } catch (error) { return { success: false, data: null }; }
+
+        // OPTIMIZATION: Perform the transformation on the server before returning
+        const likes: string[] = [];
+        const bookmarks: string[] = [];
+        const shareKeys: string[] = [];
+
+        engagements.forEach(e => {
+            const key = `${e.contentType}-${e.contentId}`;
+            if (e.type === 'LIKE') likes.push(key);
+            else if (e.type === 'BOOKMARK') bookmarks.push(key);
+        });
+
+        shares.forEach(s => {
+            shareKeys.push(`${s.contentType}-${s.contentId}`);
+        });
+
+        return { 
+            success: true, 
+            data: { likes, bookmarks, shares: shareKeys } 
+        };
+    } catch (error) { 
+        return { success: false, data: null }; 
+    }
 }
 
 export async function updateUserProfile(formData: FormData) {

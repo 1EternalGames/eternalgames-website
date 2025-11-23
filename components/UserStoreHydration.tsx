@@ -6,10 +6,11 @@ import { useSession } from 'next-auth/react';
 import { useUserStore } from '@/lib/store';
 import { useRouter, usePathname } from 'next/navigation';
 
-// Define the type for the passed state
+// UPDATED: Type reflects the new optimized structure
 type InitialUserState = {
-    engagements: { contentId: number; contentType: string; type: 'LIKE' | 'BOOKMARK' }[];
-    shares: { contentId: number; contentType: string }[];
+    likes: string[];
+    bookmarks: string[];
+    shares: string[];
 } | null;
 
 function UserStoreHydration({ initialUserState }: { initialUserState?: InitialUserState }) {
@@ -34,7 +35,7 @@ function UserStoreHydration({ initialUserState }: { initialUserState?: InitialUs
         if (status === 'authenticated') {
             const currentUserId = (session?.user as any)?.id;
             
-            // If we have initial server data, use it immediately
+            // Use initial server data immediately if available
             if (initialUserState && (!isSyncedWithDb || lastSyncedUserId.current !== currentUserId)) {
                 syncWithDb(initialUserState);
                 setIsSyncedWithDb(true);
@@ -45,11 +46,11 @@ function UserStoreHydration({ initialUserState }: { initialUserState?: InitialUs
             const needsSync = !isSyncedWithDb || (currentUserId && lastSyncedUserId.current !== currentUserId);
 
             if (needsSync && currentUserId) {
-                // THE FIX: Use GET request instead of Server Action (POST)
                 fetch('/api/user/state')
                     .then(res => res.json())
                     .then(result => {
                         if (result.success && result.data) {
+                            // data now matches { likes: string[], bookmarks: string[], ... }
                             syncWithDb(result.data);
                             setIsSyncedWithDb(true);
                             lastSyncedUserId.current = currentUserId;

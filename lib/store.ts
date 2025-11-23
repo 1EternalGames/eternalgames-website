@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { setBookmarkAction, setLikeAction, recordShareAction } from '@/app/actions/contentActions';
-import useToastStore from './toastStore'; // <-- THE FIX: Import the raw store, not the hook
+import useToastStore from './toastStore';
 
 const createContentKey = (id: number, type: string) => `${type}-${id}`;
 
@@ -25,8 +25,9 @@ type UserActions = {
     toggleLike: (contentId: number, contentType: string, contentSlug: string) => void;
     addShare: (contentId: number, contentType: string, contentSlug: string) => void;
     syncWithDb: (dbData: { 
-        engagements: { contentId: number, contentType: string, type: 'LIKE' | 'BOOKMARK' }[],
-        shares: { contentId: number, contentType: string }[]
+        likes: string[],
+        bookmarks: string[],
+        shares: string[]
     }) => void;
     setIsSyncedWithDb: (isSynced: boolean) => void;
     reset: () => void;
@@ -53,7 +54,6 @@ export const useUserStore = create<UserState & UserActions>()(
                         const result = await setBookmarkAction(contentId, contentType, finalState);
                         if (!result.success) throw new Error(result.error);
                     } catch (error) {
-                        // THE FIX: Call the raw store's action directly
                         useToastStore.getState().addToast('فشل الحفظ.', 'error');
                         set({ bookmarks: originalBookmarks });
                     }
@@ -77,7 +77,6 @@ export const useUserStore = create<UserState & UserActions>()(
                         const result = await setLikeAction(contentId, contentType, contentSlug, finalState);
                         if (!result.success) throw new Error(result.error);
                     } catch (error) {
-                        // THE FIX: Call the raw store's action directly
                         useToastStore.getState().addToast('أخفق تسجيل الإعجاب.', 'error');
                         set({ likes: originalLikes });
                     }
@@ -94,16 +93,13 @@ export const useUserStore = create<UserState & UserActions>()(
                 }
             },
 
+            // OPTIMIZED: Directly accept arrays of string keys
             syncWithDb: (dbData) => {
-                const dbLikes: string[] = [];
-                const dbBookmarks: string[] = [];
-                (dbData.engagements || []).forEach(engagement => {
-                    const key = createContentKey(engagement.contentId, engagement.contentType);
-                    if (engagement.type === 'LIKE') dbLikes.push(key);
-                    else if (engagement.type === 'BOOKMARK') dbBookmarks.push(key);
+                set({ 
+                    likes: dbData.likes, 
+                    bookmarks: dbData.bookmarks, 
+                    shares: dbData.shares 
                 });
-                const dbShares = (dbData.shares || []).map(s => createContentKey(s.contentId, s.contentType));
-                set({ likes: dbLikes, bookmarks: dbBookmarks, shares: dbShares });
             },
 
             setIsSyncedWithDb: (isSynced: boolean) => set({ isSyncedWithDb: isSynced }),
@@ -120,5 +116,3 @@ export const useUserStore = create<UserState & UserActions>()(
         }
     )
 );
-
-
