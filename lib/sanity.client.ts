@@ -3,13 +3,13 @@
 import { createClient, type SanityClient } from 'next-sanity'
 import { apiVersion, dataset, projectId } from '@/lib/sanity.env'
 
-// This client is for PUBLIC, read-only access.
-// It uses the CDN and no token to ensure aggressive caching and static generation.
+// FIX: Removed 'token'.
+// Even with useCdn: true, providing a token forces the client to skip the CDN.
+// We remove it to allow public, anonymous, cached access (Instant Speed).
 export const client = createClient({
     projectId,
     dataset,
     apiVersion,
-    useCdn: true, // Enable CDN caching (Vital for speed)
-    // token: undefined, // Explicitly NO token for public fetch
+    useCdn: true, 
     perspective: 'published',
-});
+})

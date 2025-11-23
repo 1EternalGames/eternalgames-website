@@ -12,9 +12,10 @@ import {
 } from '@/lib/sanity.queries';
 import { groq } from 'next-sanity';
 
-// Force static generation for "Instant" speed
+// Force static behavior. 
+// This tells Vercel: "Build this HTML once. Do not run Node.js on every click."
 export const dynamic = 'force-static';
-export const revalidate = 60; // Revalidate every 60 seconds (ISR)
+export const revalidate = 60; 
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -39,6 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const query = queryMap[sanityType];
     if (!query) return {};
 
+    // This fetch will now hit the CDN because 'client' has no token.
     const item = await client.fetch(query, { slug });
 
     if (!item) return {};
@@ -50,7 +52,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        // OPTIMIZATION: Fetch ALL content to ensure 100% Cache Hit Ratio (Instant Load)
         const query = `*[_type in ["review", "article", "news"]] { "slug": slug.current, _type }`;
         const allContent = await client.fetch<any[]>(query);
         
@@ -79,12 +80,13 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const docQuery = queryMap[sanityType];
     if (!docQuery) notFound();
 
-    // Use the optimized public client (CDN enabled)
     const combinedQuery = groq`{
         "item": ${docQuery},
         "dictionary": ${colorDictionaryQuery}
     }`;
 
+    // This is the critical fetch. 
+    // Without the token in client.ts, this hits the Vercel Data Cache / Sanity CDN.
     const { item: rawItem, dictionary } = await client.fetch(combinedQuery, { slug });
     
     if (!rawItem) notFound();
