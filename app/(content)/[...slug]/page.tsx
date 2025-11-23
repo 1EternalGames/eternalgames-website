@@ -5,13 +5,9 @@ import CommentSection from '@/components/comments/CommentSection';
 import type { Metadata } from 'next';
 import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; 
-// REMOVED: import { enrichContentList } from '@/lib/enrichment'; 
-// REMOVED: import prisma ...
+import { enrichContentList } from '@/lib/enrichment'; 
 
-// THE FIX: Force this page to be Static. 
-// This replicates the "Instant" behavior of 27e26af.
 export const dynamic = 'force-static';
-export const revalidate = 60; // Update static cache every 60 seconds
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -58,22 +54,19 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // 1. Fetch Only Sanity Content (Static Compatible)
     const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
-    // 2. REMOVED DB ENRICHMENT
-    // We pass the raw item. The client component (CreatorCredit) will handle 
-    // fetching usernames lazily if they are missing.
+    const [enrichedItem] = await enrichContentList([rawItem]);
     
     const colorDictionary = dictionary?.autoColors || [];
 
     return (
-        <ContentPageClient item={rawItem} type={section as any} colorDictionary={colorDictionary}>
+        <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
              {/* 3. Client-Side Comments
                  We do NOT pass initialComments. This forces CommentSection to fetch
-                 on the client, ensuring the initial HTML response is instant. */}
+                 on the client, ensuring the initial HTML response is instant and static. */}
              <CommentSection 
                 slug={slug} 
                 contentType={section} 
