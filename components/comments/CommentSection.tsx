@@ -1,7 +1,7 @@
 // components/comments/CommentSection.tsx
 'use client';
 
-import { useState, useOptimistic } from 'react'; // Removed useEffect
+import { useState, useOptimistic, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { postReplyOrComment } from '@/app/actions/commentActions';
@@ -9,6 +9,7 @@ import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
 import CommentList from './CommentList';
 import styles from './Comments.module.css';
+import CommentListSkeleton from '@/components/skeletons/CommentListSkeleton'; // Assuming you have this, or we use a spinner
 
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
     return comments.map(comment => {
@@ -26,19 +27,43 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
 export default function CommentSection({ 
     slug, 
     contentType, 
-    initialComments = [] // Default to empty, but it will always be populated by the server now
+    initialComments 
 }: { 
     slug: string; 
     contentType: string; 
-    initialComments?: any[];
+    initialComments?: any[]; 
 }) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    // We initialize state directly from the server props. 
-    // No useEffect fetching is needed anymore.
-    const [comments, setComments] = useState<any[]>(initialComments);
+    // If initialComments is undefined, we are in "Client Fetch" mode (The Fast Mode)
+    // If it is an array (even empty), we are in "Server Mode" (The Slow Mode)
+    const shouldFetch = !initialComments;
+
+    const [comments, setComments] = useState<any[]>(initialComments || []);
+    const [loading, setLoading] = useState(shouldFetch);
     const currentPath = `/${contentType}/${slug}`;
+
+    useEffect(() => {
+        if (!shouldFetch) return;
+
+        const fetchComments = async () => {
+            try {
+                // This fetch happens AFTER the page is already visible to the user.
+                const res = await fetch(`/api/comments/${slug}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setComments(data);
+                }
+            } catch (error) {
+                console.error("Failed to load comments", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchComments();
+    }, [slug, shouldFetch]);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
@@ -81,6 +106,7 @@ export default function CommentSection({
         }
     };
     
+    // Handlers for voting, deleting, updating remain the same...
     const handleVoteUpdate = (commentId: string, newVotes: any[]) => {
         const updateVotesRecursive = (commentsList: any[]): any[] => {
             return commentsList.map(comment => {
@@ -130,15 +156,19 @@ export default function CommentSection({
             )}
             
             <div style={{ minHeight: '200px' }}>
-                <CommentList
-                    comments={optimisticComments}
-                    session={typedSession}
-                    slug={slug}
-                    onVoteUpdate={handleVoteUpdate}
-                    onPostReply={handlePostComment}
-                    onDeleteSuccess={handleDeleteSuccess}
-                    onUpdateSuccess={handleUpdateSuccess}
-                />
+                {loading ? (
+                    <div className="spinner" style={{ margin: '4rem auto' }} />
+                ) : (
+                    <CommentList
+                        comments={optimisticComments}
+                        session={typedSession}
+                        slug={slug}
+                        onVoteUpdate={handleVoteUpdate}
+                        onPostReply={handlePostComment}
+                        onDeleteSuccess={handleDeleteSuccess}
+                        onUpdateSuccess={handleUpdateSuccess}
+                    />
+                )}
             </div>
         </div>
     );
