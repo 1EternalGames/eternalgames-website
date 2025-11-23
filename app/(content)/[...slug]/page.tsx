@@ -3,30 +3,20 @@ import { notFound } from 'next/navigation';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import type { Metadata } from 'next';
-import { client } from '@/lib/sanity.client';
-import { 
-    reviewBySlugQuery, 
-    articleBySlugQuery, 
-    newsBySlugQuery,
-    colorDictionaryQuery
-} from '@/lib/sanity.queries';
-import { groq } from 'next-sanity';
+import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
+import { client } from '@/lib/sanity.client'; 
+// REMOVED: import { enrichContentList } from '@/lib/enrichment'; 
+// REMOVED: import prisma ...
 
-// Force static behavior. 
-// This tells Vercel: "Build this HTML once. Do not run Node.js on every click."
+// THE FIX: Force this page to be Static. 
+// This replicates the "Instant" behavior of 27e26af.
 export const dynamic = 'force-static';
-export const revalidate = 60; 
+export const revalidate = 60; // Update static cache every 60 seconds
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
     articles: 'article',
     news: 'news',
-};
-
-const queryMap: Record<string, string> = {
-    review: reviewBySlugQuery,
-    article: articleBySlugQuery,
-    news: newsBySlugQuery,
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
@@ -37,11 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    const query = queryMap[sanityType];
-    if (!query) return {};
-
-    // This fetch will now hit the CDN because 'client' has no token.
-    const item = await client.fetch(query, { slug });
+    const { item } = await getCachedContentAndDictionary(sanityType, slug);
 
     if (!item) return {};
     return { 
@@ -52,17 +38,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        const query = `*[_type in ["review", "article", "news"]] { "slug": slug.current, _type }`;
-        const allContent = await client.fetch<any[]>(query);
-        
-        return allContent
-            .filter(c => c.slug)
-            .map(c => {
-                const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
-                return { slug: [type, c.slug] };
-            });
+        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100]{ "slug": slug.current, _type }`);
+        return allContent.filter(c => c.slug).map(c => {
+            const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
+            return { slug: [type, c.slug] };
+        });
     } catch (error) {
-        console.error("GenerateStaticParams Error:", error);
         return [];
     }
 }
@@ -77,24 +58,22 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    const docQuery = queryMap[sanityType];
-    if (!docQuery) notFound();
-
-    const combinedQuery = groq`{
-        "item": ${docQuery},
-        "dictionary": ${colorDictionaryQuery}
-    }`;
-
-    // This is the critical fetch. 
-    // Without the token in client.ts, this hits the Vercel Data Cache / Sanity CDN.
-    const { item: rawItem, dictionary } = await client.fetch(combinedQuery, { slug });
+    // 1. Fetch Only Sanity Content (Static Compatible)
+    const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
+    // 2. REMOVED DB ENRICHMENT
+    // We pass the raw item. The client component (CreatorCredit) will handle 
+    // fetching usernames lazily if they are missing.
+    
     const colorDictionary = dictionary?.autoColors || [];
 
     return (
         <ContentPageClient item={rawItem} type={section as any} colorDictionary={colorDictionary}>
+             {/* 3. Client-Side Comments
+                 We do NOT pass initialComments. This forces CommentSection to fetch
+                 on the client, ensuring the initial HTML response is instant. */}
              <CommentSection 
                 slug={slug} 
                 contentType={section} 
