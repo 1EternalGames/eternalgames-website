@@ -7,12 +7,7 @@ import { getCachedContentAndDictionary } from '@/lib/sanity.fetch';
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 
-// THE FIX: 
-// 1. 'force-static' ensures the page is built at build time (or on first request).
-// 2. No 'revalidate' export means it defaults to "false" (Infinite Cache).
-//    It will ONLY update when the Sanity Webhook triggers a revalidateTag.
 export const dynamic = 'force-static';
-// export const revalidate = 60; // REMOVED COMPLETELY
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -39,7 +34,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100]{ "slug": slug.current, _type }`);
+
+        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc){ "slug": slug.current, _type }`);
+        
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
             return { slug: [type, c.slug] };
@@ -59,12 +56,11 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // 1. Fetch Only Sanity Content
+    // This will now hit the cache 100% of the time after build
     const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
-    // 2. Server-Side Enrichment
     const [enrichedItem] = await enrichContentList([rawItem]);
     
     const colorDictionary = dictionary?.autoColors || [];

@@ -25,27 +25,32 @@ export const getCachedDocument = cache(async (type: string, slug: string) => {
     return await client.fetch(query, { slug }, {
         next: { 
             tags: [type, 'content', slug],
-            // Use a shorter revalidation time to ensure freshness without breaking static
-            revalidate: 60 
         } 
     });
 });
 
 export const getCachedTagPageData = cache(async (slug: string) => {
     return await client.fetch(tagPageDataQuery, { slug }, {
-        next: { tags: ['tag', slug], revalidate: 60 }
+        next: { 
+            tags: ['tag', slug], 
+            // THE FIX: Removed 'revalidate: 60'.
+        }
     });
 });
 
 export const getCachedGamePageData = cache(async (slug: string) => {
     return await client.fetch(gamePageDataQuery, { slug }, {
-        next: { tags: ['game', slug], revalidate: 60 }
+        next: { 
+            tags: ['game', slug], 
+            // THE FIX: Removed 'revalidate: 60'.
+        }
     });
 });
 
 export const getCachedColorDictionary = cache(async () => {
     return await client.fetch(colorDictionaryQuery, {}, {
-        next: { tags: ['colorDictionary'], revalidate: 86400 }
+        // Dictionary is rarely updated, infinite cache is perfect here.
+        next: { tags: ['colorDictionary'] }
     });
 });
 
@@ -59,6 +64,6 @@ export const getCachedContentAndDictionary = cache(async (type: string, slug: st
     }`;
 
     return await client.fetch(combinedQuery, { slug }, {
-        next: { tags: [type, 'content', slug, 'colorDictionary'], revalidate: 60 }
+        next: { tags: [type, 'content', slug, 'colorDictionary'] }
     });
 });
