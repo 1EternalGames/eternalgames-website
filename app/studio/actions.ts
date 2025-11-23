@@ -126,9 +126,14 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
             }
         }
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
+        
+        // FIX: Do NOT revalidate content paths here. 
+        // Updating a draft should not trigger a rebuild of the public site.
+        // revalidateContentPaths(finalDoc._type, finalDoc.slug?.current); 
+
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
-        revalidateContentPaths(finalDoc._type, finalDoc.slug?.current);
+        
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         return { success: true, updatedDocument: docWithTiptap };
     } catch (error: any) { console.error("Error during document update:", error); return { success: false, message: error.message || "أصابنا خطبٌ أثناء الحفظ." }; }
@@ -150,7 +155,10 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
         tx.delete(baseId);
         tx.delete(draftId);
         await tx.commit();
+        
+        // Revalidate IS needed on delete
         revalidateContentPaths(docType, docToDelete.slug);
+        
         return { success: true };
     } catch (error) { console.error("Delete failed:", error); return { success: false, message: 'تأبى الحذف.' }; }
 }
@@ -182,7 +190,10 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.delete(publicId);
             tx.patch(draftId, (p) => p.unset(['publishedAt']));
             await tx.commit({ returnDocuments: false });
+            
+            // Unpublishing requires revalidation
             revalidateContentPaths(docType, doc.slug);
+            
             const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
             if (!finalDoc) throw new Error("Document not found after unpublish.");
             const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
@@ -202,7 +213,10 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             tx.delete(draftId);
             await tx.commit({ returnDocuments: false });
         } else if (docType !== 'gameRelease') { await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit(); }
+        
+        // Publishing requires revalidation
         revalidateContentPaths(docType, doc.slug);
+        
         if (docType === 'gameRelease') { revalidatePath('/celestial-almanac', 'layout'); }
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
