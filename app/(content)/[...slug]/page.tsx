@@ -6,7 +6,6 @@ import type { Metadata } from 'next';
 import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment';
-import prisma from '@/lib/prisma'; // Import Prisma
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -53,36 +52,10 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // 1. Parallelize the Sanity fetch and the Prisma DB fetch
-    const contentPromise = getCachedContentAndDictionary(sanityType, slug);
-    
-    const commentsPromise = prisma.comment.findMany({
-        where: { contentSlug: slug, parentId: null },
-        include: { 
-            author: { select: { id: true, name: true, image: true, username: true } }, 
-            votes: true, 
-            _count: { select: { replies: true } }, 
-            replies: { 
-                take: 2, 
-                include: { 
-                    author: { select: { id: true, name: true, image: true, username: true } }, 
-                    votes: true, 
-                    _count: { select: { replies: true } } 
-                }, 
-                orderBy: { createdAt: 'asc' } 
-            } 
-        },
-        orderBy: { createdAt: 'desc' },
-    });
-
-    const [{ item: rawItem, dictionary }, initialComments] = await Promise.all([
-        contentPromise,
-        commentsPromise
-    ]);
+    const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
-    // Enrich authors using cached Prisma calls
     const [enrichedItem] = await enrichContentList([rawItem]);
 
     const colorDictionary = dictionary?.autoColors || [];
@@ -92,7 +65,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
              <CommentSection 
                 slug={slug} 
                 contentType={section} 
-                initialComments={initialComments} // Pass the server-fetched comments
+                // initialComments is omitted, triggering the client-side fetch in CommentSection
              />
         </ContentPageClient>
     );
