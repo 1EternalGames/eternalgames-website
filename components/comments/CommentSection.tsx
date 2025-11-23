@@ -1,7 +1,7 @@
 // components/comments/CommentSection.tsx
 'use client';
 
-import { useState, useOptimistic, useEffect } from 'react';
+import { useState, useOptimistic } from 'react'; // Removed useEffect
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { postReplyOrComment } from '@/app/actions/commentActions';
@@ -26,47 +26,19 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
 export default function CommentSection({ 
     slug, 
     contentType, 
-    initialComments 
+    initialComments = [] // Default to empty, but it will always be populated by the server now
 }: { 
     slug: string; 
     contentType: string; 
-    // Change type to allow undefined/null to distinguish "not passed" from "passed empty"
-    initialComments?: any[] | null 
+    initialComments?: any[];
 }) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    // Determine if we have server-provided data (even if it's an empty array)
-    const hasServerData = Array.isArray(initialComments);
-
-    const [comments, setComments] = useState<any[]>(hasServerData ? initialComments! : []);
-    const [loading, setLoading] = useState(!hasServerData);
+    // We initialize state directly from the server props. 
+    // No useEffect fetching is needed anymore.
+    const [comments, setComments] = useState<any[]>(initialComments);
     const currentPath = `/${contentType}/${slug}`;
-
-    useEffect(() => {
-        // THE FIX: If data was provided by the server (even if empty []), 
-        // strictly skip the client-side fetch.
-        if (hasServerData) {
-            setLoading(false);
-            return;
-        }
-
-        const fetchComments = async () => {
-            try {
-                const res = await fetch(`/api/comments/${slug}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setComments(data);
-                }
-            } catch (error) {
-                console.error("Failed to load comments", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchComments();
-    }, [slug, hasServerData]);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
@@ -158,19 +130,15 @@ export default function CommentSection({
             )}
             
             <div style={{ minHeight: '200px' }}>
-                {loading ? (
-                    <div className="spinner" style={{ margin: '4rem auto' }} />
-                ) : (
-                    <CommentList
-                        comments={optimisticComments}
-                        session={typedSession}
-                        slug={slug}
-                        onVoteUpdate={handleVoteUpdate}
-                        onPostReply={handlePostComment}
-                        onDeleteSuccess={handleDeleteSuccess}
-                        onUpdateSuccess={handleUpdateSuccess}
-                    />
-                )}
+                <CommentList
+                    comments={optimisticComments}
+                    session={typedSession}
+                    slug={slug}
+                    onVoteUpdate={handleVoteUpdate}
+                    onPostReply={handlePostComment}
+                    onDeleteSuccess={handleDeleteSuccess}
+                    onUpdateSuccess={handleUpdateSuccess}
+                />
             </div>
         </div>
     );

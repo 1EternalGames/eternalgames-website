@@ -1,11 +1,12 @@
 // app/(content)/[...slug]/page.tsx
 import { notFound } from 'next/navigation';
-import CommentSection from '@/components/comments/CommentSection';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import type { Metadata } from 'next';
 import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment';
+import { Suspense } from 'react'; // Import Suspense
+import CommentsFetcher from '@/components/comments/CommentsFetcher'; // Import the new Fetcher
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -52,21 +53,23 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
+    // 1. Fetch ONLY the main content first (Cached & Fast)
     const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
     
     if (!rawItem) notFound();
 
+    // 2. Enrich content (Fast - Cached DB calls)
     const [enrichedItem] = await enrichContentList([rawItem]);
 
     const colorDictionary = dictionary?.autoColors || [];
 
     return (
         <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
-             <CommentSection 
-                slug={slug} 
-                contentType={section} 
-                // initialComments is omitted, triggering the client-side fetch in CommentSection
-             />
+             {/* 3. Streaming: Wrap the slow DB fetch in Suspense.
+                 The page shell loads instantly, and comments stream in when ready. */}
+             <Suspense fallback={<div className="spinner" style={{ margin: '4rem auto' }} />}>
+                <CommentsFetcher slug={slug} contentType={section} />
+             </Suspense>
         </ContentPageClient>
     );
 }
