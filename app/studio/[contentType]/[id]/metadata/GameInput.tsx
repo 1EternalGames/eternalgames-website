@@ -73,11 +73,11 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                     </div>
                     
                     {selectedGame ? (
-                        <ActionButton type="button" onMouseDown={(e) => { e.preventDefault(); onGameSelect(null); }} aria-label="Remove selected game">
+                        <ActionButton type="button" onClick={(e) => { e.preventDefault(); onGameSelect(null); }} aria-label="Remove selected game">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </ActionButton>
                     ) : (
-                        <ActionButton type="button" onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }} aria-label="إضافة لعبة جديدة">
+                        <ActionButton type="button" onClick={(e) => { e.preventDefault(); handleOpenModal(); }} aria-label="إضافة لعبة جديدة">
                              <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                         </ActionButton>
                     )}
@@ -85,7 +85,7 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                     <AnimatePresence>
                         {isPopoverOpen && !selectedGame && (
                             <motion.div 
-                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
                                 variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
                                 style={{ 
                                     position: 'absolute', top: '100%', left: 0, right: 0,
@@ -100,8 +100,8 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                         <button 
                                             type="button" 
                                             key={game._id} 
-                                            // FIX: Robust Event Handling
-                                            onMouseDown={(e) => { 
+                                            // FIX: Use onClick for reliable selection
+                                            onClick={(e) => { 
                                                 e.preventDefault(); 
                                                 e.stopPropagation();
                                                 handleSelect(game); 
@@ -118,7 +118,7 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                     {searchTerm.length > 1 && (
                                         <button 
                                             type="button" 
-                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }}
                                         >
                                             + إنشاء جديد: "{searchTerm.trim()}"

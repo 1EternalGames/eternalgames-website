@@ -24,8 +24,8 @@ const popoverVariants = {
 const CreatorChip = ({ creator, onRemove }: { creator: Creator, onRemove: (creatorId: string) => void }) => {
     return (
         <motion.div 
-            // FIX: Use onMouseDown to ensure it fires before any focus change/blur
-            onMouseDown={(e) => { 
+            // FIX: Use onClick instead of onMouseDown for reliable firing
+            onClick={(e) => { 
                 e.preventDefault(); 
                 e.stopPropagation(); 
                 onRemove(creator._id); 
@@ -73,7 +73,6 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
         const handleClickOutside = (event: MouseEvent) => { 
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) { setIsPopoverOpen(false); } 
         }; 
-        // Use 'mousedown' to capture the start of the click action outside
         document.addEventListener('mousedown', handleClickOutside); 
         return () => document.removeEventListener('mousedown', handleClickOutside); 
     }, []);
@@ -83,6 +82,7 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
             onCreatorsChange([...validSelectedCreators, creator]);
         }
         setSearchTerm('');
+        // Re-focus input after selection to keep typing flow
         setTimeout(() => inputRef.current?.focus(), 0);
     };
     
@@ -98,7 +98,6 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                     className={styles.sidebarInput} 
                     style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', minHeight: '42px', height: 'auto', padding: '0.5rem', cursor: 'text' }} 
                     onClick={() => {
-                        // Only open if we aren't clicking a chip (handled by stopPropagation, but good to be safe)
                         setIsPopoverOpen(true);
                     }}
                 >
@@ -114,8 +113,8 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                 <AnimatePresence>
                     {isPopoverOpen && (
                         <motion.div 
-                            // Prevent clicks inside the popover from bubbling up and toggling anything
-                            onMouseDown={(e) => e.stopPropagation()}
+                            // Stop clicks from bubbling to the parent div which toggles open
+                            onClick={(e) => e.stopPropagation()}
                             variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
                             style={{ 
                                 position: 'absolute', top: '100%', left: 0, 
@@ -132,11 +131,11 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                                         <button 
                                             type="button" 
                                             key={creator._id} 
-                                            // FIX: Robust Event Handling
-                                            onMouseDown={(e) => { 
-                                                e.preventDefault(); // Prevent focus loss
-                                                e.stopPropagation(); // Prevent bubbling
-                                                addCreator(creator); // Execute logic
+                                            // FIX: Use onClick for reliable event handling
+                                            onClick={(e) => { 
+                                                e.preventDefault(); 
+                                                e.stopPropagation(); 
+                                                addCreator(creator); 
                                             }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
                                             className={styles.popoverItemButton}

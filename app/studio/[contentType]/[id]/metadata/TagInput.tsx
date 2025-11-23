@@ -35,8 +35,8 @@ const AnimatedTag = ({ tag, onRemove }: { tag: Tag, onRemove: (tagId: string) =>
             initial={{ opacity: 0, scale: 0.5 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.6 }} 
-            // FIX: Use onMouseDown for chip removal
-            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(tag._id); }} 
+            // FIX: Use onClick for reliable interaction
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(tag._id); }} 
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem 0.75rem', borderRadius: '4px', zIndex: 1, cursor: 'pointer' }} 
             title={`Click to remove "${translateTag(tag.title)}"`} 
             whileHover={{ backgroundColor: 'color-mix(in srgb, #DC2626 15%, transparent)' }}
@@ -73,7 +73,6 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
         );
     }, [allTags, safeSelectedTags, searchTerm, categoryForCreation]);
 
-    
     useEffect(() => { 
         const handleClickOutside = (event: MouseEvent) => { 
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) { setIsPopoverOpen(false); } 
@@ -138,14 +137,14 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                             <span style={{ color: 'var(--text-secondary)', position: 'absolute', right: '1rem', left: 'auto', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>{placeholder}</span>
                         )}
                     </div>
-                     <ActionButton type="button" onMouseDown={(e) => { e.preventDefault(); handleOpenModal(); }} aria-label="Add new tag or category">
+                     <ActionButton type="button" onClick={(e) => { e.preventDefault(); handleOpenModal(); }} aria-label="Add new tag or category">
                         <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                     </ActionButton>
                     
                     <AnimatePresence>
                         {isPopoverOpen && (
                             <motion.div 
-                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
                                 variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
                                 style={{ 
                                     position: 'absolute', top: '100%', left: 0, 
@@ -161,8 +160,8 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                                         <button 
                                             type="button" 
                                             key={tag._id} 
-                                            // FIX: Robust Event Handling
-                                            onMouseDown={(e) => { 
+                                            // FIX: Use onClick for reliable selection
+                                            onClick={(e) => { 
                                                 e.preventDefault(); 
                                                 e.stopPropagation();
                                                 handleSelectTag(tag); 
@@ -179,7 +178,7 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                                     {searchTerm.length > 1 && (
                                         <button 
                                             type="button" 
-                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
                                             style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }} 
                                             className={styles.popoverItemButton}
                                         >
