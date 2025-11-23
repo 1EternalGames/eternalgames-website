@@ -5,7 +5,8 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import type { Metadata } from 'next';
 import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
 import { client } from '@/lib/sanity.client'; 
-import { enrichContentList } from '@/lib/enrichment'; 
+import { enrichContentList } from '@/lib/enrichment';
+import prisma from '@/lib/prisma'; // Import Prisma
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -32,7 +33,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        // Increased static generation limit to cover more content initially
         const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100]{ "slug": slug.current, _type }`);
         return allContent.filter(c => c.slug).map(c => {
             const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
@@ -53,8 +53,32 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     
     if (!sanityType) notFound();
 
-    // Batched request. This is pure Sanity/Cache (Fast).
-    const { item: rawItem, dictionary } = await getCachedContentAndDictionary(sanityType, slug);
+    // 1. Parallelize the Sanity fetch and the Prisma DB fetch
+    const contentPromise = getCachedContentAndDictionary(sanityType, slug);
+    
+    const commentsPromise = prisma.comment.findMany({
+        where: { contentSlug: slug, parentId: null },
+        include: { 
+            author: { select: { id: true, name: true, image: true, username: true } }, 
+            votes: true, 
+            _count: { select: { replies: true } }, 
+            replies: { 
+                take: 2, 
+                include: { 
+                    author: { select: { id: true, name: true, image: true, username: true } }, 
+                    votes: true, 
+                    _count: { select: { replies: true } } 
+                }, 
+                orderBy: { createdAt: 'asc' } 
+            } 
+        },
+        orderBy: { createdAt: 'desc' },
+    });
+
+    const [{ item: rawItem, dictionary }, initialComments] = await Promise.all([
+        contentPromise,
+        commentsPromise
+    ]);
     
     if (!rawItem) notFound();
 
@@ -63,13 +87,13 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
 
     const colorDictionary = dictionary?.autoColors || [];
 
-    // FIX: We removed the server-side CommentsLoader.
-    // We pass the slug to ContentPageClient -> CommentSection.
-    // CommentSection will fetch comments on the client side.
-    
     return (
         <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
-             <CommentSection slug={slug} contentType={section} />
+             <CommentSection 
+                slug={slug} 
+                contentType={section} 
+                initialComments={initialComments} // Pass the server-fetched comments
+             />
         </ContentPageClient>
     );
 }

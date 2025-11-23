@@ -23,18 +23,30 @@ const addReplyToState = (comments: any[], parentId: string, reply: any): any[] =
     });
 };
 
-export default function CommentSection({ slug, contentType, initialComments = [] }: { slug: string; contentType: string; initialComments?: any[] }) {
+export default function CommentSection({ 
+    slug, 
+    contentType, 
+    initialComments 
+}: { 
+    slug: string; 
+    contentType: string; 
+    // Change type to allow undefined/null to distinguish "not passed" from "passed empty"
+    initialComments?: any[] | null 
+}) {
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    const [comments, setComments] = useState<any[]>(initialComments);
-    const [loading, setLoading] = useState(initialComments.length === 0);
+    // Determine if we have server-provided data (even if it's an empty array)
+    const hasServerData = Array.isArray(initialComments);
+
+    const [comments, setComments] = useState<any[]>(hasServerData ? initialComments! : []);
+    const [loading, setLoading] = useState(!hasServerData);
     const currentPath = `/${contentType}/${slug}`;
 
     useEffect(() => {
-        // If initialComments were provided (server-side), we don't need to fetch immediately.
-        // We check the prop value captured in the closure.
-        if (initialComments.length > 0) {
+        // THE FIX: If data was provided by the server (even if empty []), 
+        // strictly skip the client-side fetch.
+        if (hasServerData) {
             setLoading(false);
             return;
         }
@@ -54,9 +66,7 @@ export default function CommentSection({ slug, contentType, initialComments = []
         };
 
         fetchComments();
-        // FIX: Removed initialComments from dependency array to prevent infinite loops
-        // caused by the default value [] being a new reference on every render.
-    }, [slug]);
+    }, [slug, hasServerData]);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,

@@ -4,7 +4,6 @@
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserStore } from '@/lib/store';
-import { getUserState } from '@/app/actions/userActions';
 import { useRouter, usePathname } from 'next/navigation';
 
 // Define the type for the passed state
@@ -35,24 +34,28 @@ function UserStoreHydration({ initialUserState }: { initialUserState?: InitialUs
         if (status === 'authenticated') {
             const currentUserId = (session?.user as any)?.id;
             
-            // THE FIX: If we have initial server data, use it immediately
+            // If we have initial server data, use it immediately
             if (initialUserState && (!isSyncedWithDb || lastSyncedUserId.current !== currentUserId)) {
                 syncWithDb(initialUserState);
                 setIsSyncedWithDb(true);
                 lastSyncedUserId.current = currentUserId;
-                return; // Skip the fetch logic below
+                return; 
             }
 
             const needsSync = !isSyncedWithDb || (currentUserId && lastSyncedUserId.current !== currentUserId);
 
             if (needsSync && currentUserId) {
-                getUserState().then(result => {
-                    if (result.success && result.data) {
-                        syncWithDb(result.data);
-                        setIsSyncedWithDb(true);
-                        lastSyncedUserId.current = currentUserId;
-                    }
-                });
+                // THE FIX: Use GET request instead of Server Action (POST)
+                fetch('/api/user/state')
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success && result.data) {
+                            syncWithDb(result.data);
+                            setIsSyncedWithDb(true);
+                            lastSyncedUserId.current = currentUserId;
+                        }
+                    })
+                    .catch(err => console.error("Failed to hydrate user state:", err));
             }
         } 
         else if (status === 'unauthenticated') {

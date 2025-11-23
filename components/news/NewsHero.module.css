@@ -41,25 +41,69 @@
     max-width: 650px;
     padding: 0 2rem;
     text-align: right;
-    margin-right: auto; /* RTL alignment */
-    margin-left: 0;
+    margin-left: auto; 
+    margin-right: 0;
     position: relative;
 }
 
 .textContent {
     position: relative; 
+    cursor: pointer;
 }
 
+/* --- Ribbon Styling --- */
 .storyCategory {
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 1.5px;
-    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+    /* Lifted up away from title */
+    margin-bottom: 1.5rem; 
+    padding: 0.4rem 1.2rem;
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+    border-radius: 4px;
+    transition: color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* Ribbon Background Element */
+.storyCategory::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    z-index: -1;
+    transform: scaleX(0);
+    transform-origin: right; /* RTL expansion */
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Hover Effects - Triggered by the parent container */
+.textContent:hover .storyCategory {
+    color: #fff !important; /* Force white text on hover for contrast */
+    transform: translateY(-3px); /* Lift effect */
+    text-shadow: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.textContent:hover .storyCategory::before {
+    transform: scaleX(1);
+}
+
+/* Color Variations */
+/* Base Text Colors */
+.storyCategory.official { color: var(--accent); }
+.storyCategory.rumor { color: #F59E0B; }
+.storyCategory.leak { color: #DC2626; }
+
+/* Ribbon Background Colors */
+.storyCategory.official::before { background-color: var(--accent); }
+.storyCategory.rumor::before { background-color: #F59E0B; }
+.storyCategory.leak::before { background-color: #DC2626; }
+
+
 .storyTitle {
-    font-size: clamp(2.8rem, 4.5vw, 4.5rem); /* MODIFIED: Reduced font size */
+    font-size: clamp(2.8rem, 4.5vw, 4.5rem);
     line-height: 1.25;
     margin: 0 0 1.5rem 0;
     text-shadow: 0 2px 15px rgba(0,0,0,0.5);
@@ -71,7 +115,7 @@
     font-size: 1.5rem;
     color: var(--text-secondary);
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     align-items: center;
     gap: 1.5rem;
     flex-wrap: wrap;
@@ -84,7 +128,7 @@
     transition: color 0.2s ease;
 }
 
-.storyLink:hover {
+.textContent:hover .storyLink {
     color: var(--accent);
 }
 
@@ -131,12 +175,12 @@
         min-height: 450px;
     }
     .storyTitle {
-        font-size: clamp(2.4rem, 6vw, 3.6rem); /* MODIFIED: Reduced font size */
+        font-size: clamp(2.4rem, 6vw, 3.6rem);
     }
     .controlsContainer {
         flex-direction: row;
         left: 50%;
-        right: auto; /* Reset right positioning for mobile */
+        right: auto; 
         transform: translateX(-50%);
         bottom: 2rem;
         top: auto;

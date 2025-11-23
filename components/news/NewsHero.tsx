@@ -9,7 +9,6 @@ import { CardProps } from '@/types';
 import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
-import { translateTag } from '@/lib/translations';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useRouter } from 'next/navigation';
 
@@ -24,8 +23,17 @@ const wordVariants = {
     animate: { opacity: 1, y: 0, transition: { ...transition, duration: 0.8 } },
 };
 
+const typeLabelMap: Record<string, string> = {
+    'official': 'رسمي',
+    'rumor': 'إشاعة',
+    'leak': 'تسريب'
+};
+
 const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProps; isActive: boolean, layoutIdPrefix: string }) => {
-    const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
+    // THE FIX: Use newsType for the label instead of the generic tag
+    const newsType = item.newsType || 'official';
+    const label = typeLabelMap[newsType] || 'أخبار';
+
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
 
@@ -47,7 +55,10 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                     transition={{ duration: 0.5 }}
                 >
                     <div className={styles.textContent}>
-                        <p className={styles.storyCategory}>{primaryTag}</p>
+                        {/* Applied dynamic class based on newsType */}
+                        <p className={`${styles.storyCategory} ${styles[newsType]}`}>
+                            {label}
+                        </p>
                         <a 
                             href={`/news/${item.slug}`}
                             onClick={handleClick}
