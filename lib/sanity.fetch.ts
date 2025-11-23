@@ -7,7 +7,8 @@ import {
     newsBySlugQuery,
     tagPageDataQuery,
     gamePageDataQuery,
-    colorDictionaryQuery
+    colorDictionaryQuery,
+    minimalMetadataQuery // <-- IMPORT NEW QUERY
 } from './sanity.queries';
 import { groq } from 'next-sanity';
 
@@ -18,6 +19,13 @@ const queryMap: Record<string, string> = {
     news: newsBySlugQuery,
 };
 
+// NEW: Lightweight Fetcher for Metadata
+export const getCachedMetadata = cache(async (slug: string) => {
+    return await client.fetch(minimalMetadataQuery, { slug }, {
+        next: { tags: ['content', slug] } // Use consistent tag for invalidation
+    });
+});
+
 export const getCachedDocument = cache(async (type: string, slug: string) => {
     const query = queryMap[type];
     if (!query) return null;
@@ -25,6 +33,8 @@ export const getCachedDocument = cache(async (type: string, slug: string) => {
     return await client.fetch(query, { slug }, {
         next: { 
             tags: [type, 'content', slug],
+            // THE FIX: Removed 'revalidate: 60'. 
+            // Defaulting to infinite cache. Only updates via Webhook.
         } 
     });
 });
@@ -64,6 +74,8 @@ export const getCachedContentAndDictionary = cache(async (type: string, slug: st
     }`;
 
     return await client.fetch(combinedQuery, { slug }, {
+        // THE FIX: Removed 'revalidate: 60'. 
+        // Now this data is cached forever until you edit it in the Studio.
         next: { tags: [type, 'content', slug, 'colorDictionary'] }
     });
 });

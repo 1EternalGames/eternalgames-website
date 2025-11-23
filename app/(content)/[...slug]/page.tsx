@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import type { Metadata } from 'next';
-import { getCachedContentAndDictionary } from '@/lib/sanity.fetch'; 
+import { getCachedContentAndDictionary, getCachedMetadata } from '@/lib/sanity.fetch'; // <-- IMPORT NEW FETCHER
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 
@@ -23,9 +23,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const sanityType = typeMap[section];
     if (!sanityType) return {};
     
-    const { item } = await getCachedContentAndDictionary(sanityType, slug);
+    // OPTIMIZATION: Use the lightweight fetcher for SEO tags
+    const item = await getCachedMetadata(slug);
 
     if (!item) return {};
+    
     return { 
         title: item.title, 
         description: item.synopsis || `Read the full ${sanityType} on EternalGames.` 

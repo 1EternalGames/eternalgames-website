@@ -40,6 +40,15 @@ export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] { ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}}, "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "category": category->{_id, title, "slug": slug.current}, "relatedNews": coalesce(relatedNews[${publishedFilter}]->${relatedContentProjection}, *[_type == "news" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}), ${contentProjection} }`
 
 // --- OPTIMIZED QUERIES ---
+// NEW: Lightweight metadata query to avoid fetching 10MB content bodies just for SEO tags
+export const minimalMetadataQuery = groq`
+  *[_type in ["review", "article", "news"] && slug.current == $slug][0] {
+    title,
+    synopsis,
+    "mainImage": mainImage.asset->{ url }
+  }
+`
+
 export const tagPageDataQuery = groq`
   *[_type == "tag" && slug.current == $slug][0] {
     _id, title,
