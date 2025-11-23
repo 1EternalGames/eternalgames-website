@@ -24,8 +24,8 @@ const popoverVariants = {
 const CreatorChip = ({ creator, onRemove }: { creator: Creator, onRemove: (creatorId: string) => void }) => {
     return (
         <motion.div 
-            // FIX: Use onClick instead of onMouseDown for reliable firing
-            onClick={(e) => { 
+            // FIX: Use onMouseDown instead of onClick to fire before blur/unmount logic
+            onMouseDown={(e) => { 
                 e.preventDefault(); 
                 e.stopPropagation(); 
                 onRemove(creator._id); 
@@ -98,6 +98,7 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                     className={styles.sidebarInput} 
                     style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', minHeight: '42px', height: 'auto', padding: '0.5rem', cursor: 'text' }} 
                     onClick={() => {
+                        // Only open if we aren't clicking a chip (handled by stopPropagation)
                         setIsPopoverOpen(true);
                     }}
                 >
@@ -113,7 +114,7 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                 <AnimatePresence>
                     {isPopoverOpen && (
                         <motion.div 
-                            // Stop clicks from bubbling to the parent div which toggles open
+                            // Prevent clicks inside the popover from bubbling up and toggling anything
                             onClick={(e) => e.stopPropagation()}
                             variants={popoverVariants} initial="hidden" animate="visible" exit="exit" 
                             style={{ 
@@ -131,8 +132,8 @@ export function CreatorInput({ label, allCreators, selectedCreators = [], onCrea
                                         <button 
                                             type="button" 
                                             key={creator._id} 
-                                            // FIX: Use onClick for reliable event handling
-                                            onClick={(e) => { 
+                                            // FIX: Use onMouseDown for reliable event handling
+                                            onMouseDown={(e) => { 
                                                 e.preventDefault(); 
                                                 e.stopPropagation(); 
                                                 addCreator(creator); 

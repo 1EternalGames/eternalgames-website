@@ -100,8 +100,8 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                         <button 
                                             type="button" 
                                             key={game._id} 
-                                            // FIX: Use onClick for reliable selection
-                                            onClick={(e) => { 
+                                            // FIX: Use onMouseDown for reliable selection
+                                            onMouseDown={(e) => { 
                                                 e.preventDefault(); 
                                                 e.stopPropagation();
                                                 handleSelect(game); 
@@ -118,7 +118,8 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                     {searchTerm.length > 1 && (
                                         <button 
                                             type="button" 
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
+                                            // FIX: Use onMouseDown here as well
+                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenModal(); }}
                                             style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontStyle: 'italic', borderTop: '1px solid var(--border-color)' }}
                                         >
                                             + إنشاء جديد: "{searchTerm.trim()}"
