@@ -14,11 +14,15 @@ import { editorDocumentQuery, studioMetadataQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
 
+// HELPER: Targeted Revalidation
 function revalidateContentPaths(docType: string, slug?: string) {
-    console.log(`[CACHE] Aggressive revalidation triggered for type: ${docType}, slug: ${slug}`);
+    console.log(`[CACHE] Targeted revalidation for type: ${docType}, slug: ${slug}`);
     
-    revalidatePath('/studio', 'layout');
-    revalidatePath('/', 'layout');
+    // 1. Always revalidate the specific tag for data fetching
+    revalidateTag(docType, 'max'); 
+    
+    // 2. Only revalidate specific paths
+    revalidatePath('/'); // Revalidate home page content only
 
     let sectionPath = '';
     switch (docType) {
@@ -29,14 +33,11 @@ function revalidateContentPaths(docType: string, slug?: string) {
     }
 
     if (sectionPath) {
-        revalidatePath(sectionPath, 'layout'); 
+        revalidatePath(sectionPath); // Revalidate the index page (e.g. /reviews)
         if (slug) {
-            revalidatePath(`${sectionPath}/${slug}`, 'layout'); 
+            revalidatePath(`${sectionPath}/${slug}`); // Revalidate the specific item
         }
     }
-
-    revalidateTag(docType, 'max');
-    revalidateTag('layout', 'max');
 }
 
 export const getStudioMetadataAction = unstable_cache(
@@ -74,6 +75,7 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     const lastId = await sanityWriteClient.fetch<number>(highestIdQuery, {}, { perspective: 'previewDrafts' });
     const newLegacyId = (lastId || 0) + 1;
     let doc: any = { _type: contentType, title: `Untitled ${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`, legacyId: newLegacyId };
+    
     if (contentType === 'review' || contentType === 'article' || contentType === 'news') {
         let sanityCreator;
         const creatorTypeMap: Record<string, string> = { 'review': 'reviewer', 'article': 'author', 'news': 'reporter' };
@@ -98,8 +100,8 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
     }
     if (contentType === 'review') { doc.score = 0; doc.verdict = '...'; doc.pros = []; doc.cons = []; }
     if (contentType === 'gameRelease') { doc.releaseDate = new Date().toISOString().split('T')[0]; doc.synopsis = '...'; doc.platforms = []; }
+    
     const result = await sanityWriteClient.create(doc, { autoGenerateArrayKeys: true });
-    revalidatePath('/studio', 'layout');
     return { _id: result._id, _type: result._type };
 }
 
@@ -127,10 +129,6 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
         }
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
         
-        // FIX: Do NOT revalidate content paths here. 
-        // Updating a draft should not trigger a rebuild of the public site.
-        // revalidateContentPaths(finalDoc._type, finalDoc.slug?.current); 
-
         const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
         if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
         
@@ -146,21 +144,75 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
     const draftId = `drafts.${baseId}`;
     const docToDelete = await sanityWriteClient.fetch(groq`*[_id in [$baseId, $draftId]][0]{_type, "slug": slug.current}`, { baseId, draftId });
     if (!docToDelete) return { success: false, message: 'الوثيقةُ مفقودة.' };
+    
     const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
     const docType = docToDelete._type;
     const canDelete = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER'));
     if (!canDelete) return { success: false, message: 'أذوناتٌ قاصرة.' };
+
     try {
         const tx = sanityWriteClient.transaction();
         tx.delete(baseId);
         tx.delete(draftId);
         await tx.commit();
         
-        // Revalidate IS needed on delete
         revalidateContentPaths(docType, docToDelete.slug);
         
         return { success: true };
     } catch (error) { console.error("Delete failed:", error); return { success: false, message: 'تأبى الحذف.' }; }
+}
+
+export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
+    const session = await getAuthenticatedSession();
+    const userRoles = session.user.roles;
+    const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+    const doc = await sanityWriteClient.fetch(groq`*[_id == $docId || _id == 'drafts.' + $docId] | order(_updatedAt desc)[0]{_id, _type, "slug": slug.current}`, { docId });
+    if (!doc) return { success: false, message: 'الوثيقةُ مفقودة.' };
+    const docType = doc._type;
+    const canPublish = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER')) || (docType === 'gameRelease' && isAdminOrDirector);
+    if (!canPublish) return { success: false, message: 'صلاحياتٌ قاصرة.' };
+
+    try {
+        const publicId = docId.replace('drafts.', '');
+        const draftId = `drafts.${publicId}`;
+        
+        if (publishTime === null) {
+             const tx = sanityWriteClient.transaction();
+            tx.delete(publicId);
+            tx.patch(draftId, (p) => p.unset(['publishedAt']));
+            await tx.commit({ returnDocuments: false });
+            
+            revalidateContentPaths(docType, doc.slug);
+            
+            const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+             const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
+            return { success: true, updatedDocument: docWithTiptap, message: 'أُلغيَ نشرُ الوثيقة.' };
+        }
+
+        const draft = await sanityWriteClient.getDocument(draftId);
+        let finalTime = publishTime || new Date().toISOString();
+        if (docType !== 'gameRelease') {
+             const publishedDocForDateCheck = await sanityWriteClient.fetch(groq`*[_id == $id][0]{publishedAt}`, { id: publicId });
+             if (publishTime) { finalTime = publishTime; } else if (publishedDocForDateCheck?.publishedAt) { finalTime = publishedDocForDateCheck.publishedAt; }
+        }
+
+        if (draft) {
+            const publishedDocPayload: IdentifiedSanityDocumentStub = { ...draft, _id: publicId };
+            if (docType !== 'gameRelease') { publishedDocPayload.publishedAt = finalTime; }
+            const tx = sanityWriteClient.transaction();
+            tx.createOrReplace(publishedDocPayload);
+            tx.delete(draftId);
+            await tx.commit({ returnDocuments: false });
+        } else if (docType !== 'gameRelease') { await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit(); }
+        
+        revalidateContentPaths(docType, doc.slug);
+        
+        if (docType === 'gameRelease') { revalidatePath('/celestial-almanac'); }
+        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+        const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
+        const message = docType === 'gameRelease' ? 'نُشِرَ الإصدار.' : (publishTime ? 'جُدولت الوثيقة.' : 'نُشِرت الوثيقة.');
+        return { success: true, updatedDocument: docWithTiptap, message: message };
+    } catch (error) { console.error('Failed to publish/unpublish document:', error); return { success: false, message: 'أخفق تنفيذ حالة النشر.' }; }
 }
 
 export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' | 'AUTHOR' | 'REPORTER' | 'DESIGNER'): Promise<{ _id: string; name: string }[]> {
@@ -173,65 +225,13 @@ export async function searchCreatorsAction(query: string, roleName: 'REVIEWER' |
     return await client.fetch(sanityQuery, { sanityType, prismaUserIds }) as {_id: string, name: string}[];
 }
 
-export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
-    const session = await getAuthenticatedSession();
-    const userRoles = session.user.roles;
-    const isAdminOrDirector = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
-    const doc = await sanityWriteClient.fetch(groq`*[_id == $docId || _id == 'drafts.' + $docId] | order(_updatedAt desc)[0]{_id, _type, "slug": slug.current}`, { docId });
-    if (!doc) return { success: false, message: 'الوثيقةُ مفقودة.' };
-    const docType = doc._type;
-    const canPublish = isAdminOrDirector || (docType === 'review' && userRoles.includes('REVIEWER')) || (docType === 'article' && userRoles.includes('AUTHOR')) || (docType === 'news' && userRoles.includes('REPORTER')) || (docType === 'gameRelease' && isAdminOrDirector);
-    if (!canPublish) return { success: false, message: 'صلاحياتٌ قاصرة.' };
-    try {
-        const publicId = docId.replace('drafts.', '');
-        const draftId = `drafts.${publicId}`;
-        if (publishTime === null) {
-            const tx = sanityWriteClient.transaction();
-            tx.delete(publicId);
-            tx.patch(draftId, (p) => p.unset(['publishedAt']));
-            await tx.commit({ returnDocuments: false });
-            
-            // Unpublishing requires revalidation
-            revalidateContentPaths(docType, doc.slug);
-            
-            const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
-            if (!finalDoc) throw new Error("Document not found after unpublish.");
-            const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-            return { success: true, updatedDocument: docWithTiptap, message: 'أُلغيَ نشرُ الوثيقة.' };
-        }
-        const draft = await sanityWriteClient.getDocument(draftId);
-        let finalTime = publishTime || new Date().toISOString();
-        if (docType !== 'gameRelease') {
-            const publishedDocForDateCheck = await sanityWriteClient.fetch(groq`*[_id == $id][0]{publishedAt}`, { id: publicId });
-            if (publishTime) { finalTime = publishTime; } else if (publishedDocForDateCheck?.publishedAt) { finalTime = publishedDocForDateCheck.publishedAt; }
-        }
-        if (draft) {
-            const publishedDocPayload: IdentifiedSanityDocumentStub = { ...draft, _id: publicId };
-            if (docType !== 'gameRelease') { publishedDocPayload.publishedAt = finalTime; }
-            const tx = sanityWriteClient.transaction();
-            tx.createOrReplace(publishedDocPayload);
-            tx.delete(draftId);
-            await tx.commit({ returnDocuments: false });
-        } else if (docType !== 'gameRelease') { await sanityWriteClient.patch(publicId).set({ publishedAt: finalTime }).commit(); }
-        
-        // Publishing requires revalidation
-        revalidateContentPaths(docType, doc.slug);
-        
-        if (docType === 'gameRelease') { revalidatePath('/celestial-almanac', 'layout'); }
-        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
-        const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
-        const message = docType === 'gameRelease' ? 'نُشِرَ الإصدار.' : (publishTime ? 'جُدولت الوثيقة.' : 'نُشِرت الوثيقة.');
-        return { success: true, updatedDocument: docWithTiptap, message: message };
-    } catch (error) { console.error('Failed to publish/unpublish document:', error); return { success: false, message: 'أخفق تنفيذ حالة النشر.' }; }
-}
-
 export async function createGameAction(title: string): Promise<{_id: string, title: string} | null> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try { 
         const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
-        revalidateTag('studio-metadata', 'max'); // <-- FIXED: Added profile argument
+        revalidateTag('studio-metadata', 'max'); 
         return { _id: newGame._id, title: newGame.title }; 
     } catch (error) { console.error("أخفق إنشاء اللعبة:", error); return null; }
 }
@@ -242,7 +242,7 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try { 
         const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } }); 
-        revalidateTag('studio-metadata', 'max'); // <-- FIXED: Added profile argument
+        revalidateTag('studio-metadata', 'max');
         return { _id: newTag._id, title: newTag.title }; 
     } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
@@ -274,6 +274,7 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
         return { success: true, asset: { _id: asset._id, url: asset.url } };
     } catch (error: any) { console.error("Sanity asset upload failed:", error); return { success: false, error: 'أخفق رفع الملف.' }; }
 }
+
 export async function addOrUpdateColorDictionaryAction(newMapping: { word: string; color: string }) {
   try {
     await getAuthenticatedSession();
