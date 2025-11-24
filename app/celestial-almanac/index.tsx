@@ -62,7 +62,15 @@ const ComingSoonOverlay = () => {
 
 export default function CelestialAlmanac({ releases }: { releases: SanityGameRelease[] }) {
   const [isHydrated, setIsHydrated] = useState(false);
-  useEffect(() => { setIsHydrated(true); }, []);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => { 
+      setIsHydrated(true); 
+      const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -116,10 +124,9 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
   
   const orbitalData = useMemo(() => {
     if (!isHydrated) return [];
-    // MODIFIED: Added a placeholder for legacyId in the generated objects
     const releasesToUse = releases.length > 0 ? releases : Array.from({ length: 30 }).map((_, i) => ({
         _id: `placeholder-${i}`,
-        legacyId: 9000 + i, // Added placeholder legacyId
+        legacyId: 9000 + i, 
         title: `Upcoming Game ${i + 1}`,
         releaseDate: new Date(2025, Math.floor(i / 3), (i % 28) + 1).toISOString(),
         slug: `upcoming-game-${i+1}`,
@@ -165,6 +172,9 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
 
   if (!isHydrated) { return <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', width: '100%' }} />; }
 
+  // OPTIMIZATION: Strict type casting for Three.js DPR prop
+  const dpr: [number, number] = isMobile ? [1, 1] : [1, 2];
+
   return (
     <>
       {isFeatureLive && (
@@ -184,7 +194,10 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
                 <CelestialGearIcon />
             </motion.button>
         )}
-        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
+        <Canvas 
+            camera={{ position: [0, 0, 8], fov: 60 }}
+            dpr={dpr} // Now correctly typed
+        >
           <Scene settings={settings} orbitalData={orbitalData} themeColors={themeColors} setActiveStar={handleSetActiveBody} isFeatureLive={isFeatureLive} />
         </Canvas>
 

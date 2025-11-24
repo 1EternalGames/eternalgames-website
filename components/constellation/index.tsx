@@ -46,7 +46,6 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
     }, []);
     
     const { resolvedTheme } = useTheme();
-    // Still hook into store, but we might ignore it if initialData is present
     const { bookmarks, likes, shares } = useUserStore();
     
     const [userContent, setUserContent] = useState<SanityContentObject[]>(initialData?.userContent || []);
@@ -57,16 +56,13 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
 
     useBodyClass('editor-active', isPanelOpen);
 
-    // THE FIX: Only fetch client-side if NO initial server data is provided (Guest Mode)
     useEffect(() => {
         if (!isHydrated) return;
         
-        // If we have server data, we don't need to fetch anything.
         if (initialData && !initialData.isGuest) {
             return;
         }
 
-        // --- Guest / Fallback Logic ---
         getCommentedContentIds().then(slugs => { setCommentedContentSlugs(slugs); });
 
         const safeBookmarks = (bookmarks || []).map(k => Number(k.split('-')[1]));
@@ -139,16 +135,6 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
     const chronologicalStars = useMemo(() => {
         if (!isHydrated || userContent.length === 0) return [];
         
-        // If we have server data, use the IDs from the content itself.
-        // Otherwise, fallback to store (though store should match content).
-        
-        // We need to reconstruct the 'actions' for the stars.
-        // If server data is present, we can infer actions if we passed them, 
-        // BUT for simplicity, we can still use the client store 'bookmarks/likes' arrays 
-        // to determine the *type* of the star, since hydration syncs those quickly.
-        // OR we can rely on the fact that if it's in `userContent`, the user engaged with it.
-        
-        // Let's rely on the Store for the *Action Types* (bookmarks/likes) as that's the source of truth for UI state.
         const safeBookmarks = (bookmarks || []).map(k => Number(k.split('-')[1]));
         const safeLikes = (likes || []).map(k => Number(k.split('-')[1]));
         const safeShares = (shares || []).map(k => Number(k.split('-')[1]));
@@ -160,17 +146,12 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
             let type: "history" | "like" | "comment" | "share" = 'history'; 
             const actions: ("bookmark" | "like" | "comment" | "share")[] = [];
 
-            // Check Store + Server Comment Data
             if (safeLikes.includes(id)) { actions.push('like'); }
             if (safeShares.includes(id)) { actions.push('share'); }
             if (commentedContentSlugs.includes(content.slug)) { actions.push('comment'); }
             if (safeBookmarks.includes(id)) { actions.push('bookmark'); }
 
-            // Fallback: If store hasn't hydrated yet but we have content (server mode), assume simple 'like' or 'history'
-            // to ensure stars appear immediately.
             if (initialData && !initialData.isGuest && actions.length === 0) {
-                // If it's in userContent but not in store yet, it's likely a like or bookmark.
-                // We can default to 'like' visually until store hydrates fully.
                 actions.push('like');
             }
 
@@ -214,6 +195,9 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
 
     if (!isHydrated) { return <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', width: '100%' }} />; }
 
+    // OPTIMIZATION: Strict type casting for Three.js DPR prop
+    const dpr: [number, number] = isMobile ? [1, 1] : [1, 2];
+
     return (
         <>
             <AnimatePresence>
@@ -224,7 +208,10 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
                 <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الكوكبة" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
                     <CelestialGearIcon />
                 </motion.button>
-                <Canvas camera={{ position: [0, 0, isMobile ? 10 : 7], fov: 60 }}>
+                <Canvas 
+                    camera={{ position: [0, 0, isMobile ? 10 : 7], fov: 60 }}
+                    dpr={dpr} // Now correctly typed
+                >
                     <Scene 
                         settings={settings} 
                         chronologicalStars={chronologicalStars} 

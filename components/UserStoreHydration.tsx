@@ -4,10 +4,9 @@
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserStore } from '@/lib/store';
-import { useNotificationStore } from '@/lib/notificationStore'; // Import Notification Store
+import { useNotificationStore } from '@/lib/notificationStore';
 import { useRouter, usePathname } from 'next/navigation';
 
-// Updated Type Definition
 type InitialUserState = {
     likes: string[];
     bookmarks: string[];
@@ -19,27 +18,31 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
     const router = useRouter();
     const pathname = usePathname();
     
-    // Stores
     const { syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb } = useUserStore();
     const { setNotifications, setUnreadCount } = useNotificationStore();
     
     const lastSyncedUserId = useRef<string | null>(null);
+    // ADDED: Track if we have already handled onboarding redirect for this session
+    const hasHandledOnboarding = useRef(false);
 
     useEffect(() => {
-        // 1. Handle Onboarding Redirect
-        if (status === 'authenticated' && (session as any)?.needsOnboarding && pathname !== '/welcome') {
-            const callbackUrl = pathname !== '/' ? `?callbackUrl=${encodeURIComponent(pathname)}` : '';
-            router.push(`/welcome${callbackUrl}`);
+        // 1. Handle Onboarding Redirect (Run once per session load)
+        if (status === 'authenticated' && (session as any)?.needsOnboarding && !hasHandledOnboarding.current) {
+            if (pathname !== '/welcome') {
+                hasHandledOnboarding.current = true;
+                const callbackUrl = pathname !== '/' ? `?callbackUrl=${encodeURIComponent(pathname)}` : '';
+                router.push(`/welcome${callbackUrl}`);
+            }
             return; 
         }
 
         if (status === 'loading') return;
 
-        // 2. Handle Data Hydration (Batch Fetch)
+        // 2. Handle Data Hydration
         if (status === 'authenticated') {
             const currentUserId = (session?.user as any)?.id;
             
-            // Prevent duplicate fetching if already synced for this user
+            // Check if we have synced for THIS user ID specifically
             const needsSync = !isSyncedWithDb || (currentUserId && lastSyncedUserId.current !== currentUserId);
 
             if (needsSync && currentUserId) {
@@ -47,13 +50,11 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
                     .then(res => res.json())
                     .then(result => {
                         if (result.success) {
-                            // A. Hydrate User State (Likes/Bookmarks)
                             if (result.userState) {
                                 syncWithDb(result.userState);
                                 setIsSyncedWithDb(true);
                             }
                             
-                            // B. Hydrate Notifications
                             if (result.notifications) {
                                 setNotifications(result.notifications.items || []);
                                 setUnreadCount(result.notifications.unreadCount || 0);
@@ -66,17 +67,16 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
             }
         } 
         else if (status === 'unauthenticated') {
-            if (_hasHydrated) {
+            if (_hasHydrated && lastSyncedUserId.current !== null) {
                 reset();
-                // Also reset notifications? Typically yes, but store doesn't have a reset. 
-                // We can manually clear.
                 setNotifications([]);
                 setUnreadCount(0);
                 lastSyncedUserId.current = null;
+                setIsSyncedWithDb(false); // Reset sync flag
             }
         }
 
-    }, [status, session, pathname, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, initialUserState]);
+    }, [status, session, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, initialUserState, pathname]); // Note: pathname dependency is needed for onboarding check, but the logic above prevents loop
 
     return null;
 }
