@@ -35,23 +35,16 @@ export default function NotificationBell() {
         setNotifications 
     } = useNotificationStore();
 
-    const userId = (session?.user as any)?.id;
+    // REMOVED: The useEffect that automatically fetched on mount.
+    // Data is now pre-loaded by UserStoreHydration via /api/user/init.
 
-    // 1. Initial Load: Smart Fetch (Cached)
-    // This will NOT fetch if data exists in localStorage and is fresh.
-    useEffect(() => {
-        if (userId) {
-            fetchNotifications(false);
-        }
-    }, [userId, fetchNotifications]);
-
-    // 2. On Click: Force Fetch (Live)
+    // Manual refresh when opening the panel
     const handleToggle = () => {
         const nextState = !isOpen;
         setIsOpen(nextState);
         
         if (nextState) {
-            // When opening, force a refresh to get the latest updates
+            // Force a fresh fetch only when explicitly interacting
             fetchNotifications(true);
         }
     };

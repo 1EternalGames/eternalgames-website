@@ -1,4 +1,4 @@
-// app/api/user/state/route.ts
+// app/api/user/init/route.ts
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
@@ -14,19 +14,36 @@ export async function GET() {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
-        const [engagements, shares] = await Promise.all([
+        const userId = session.user.id;
+
+        // BATCH QUERY: Execute all independent DB operations in parallel
+        const [engagements, shares, notifications, unreadCount] = await Promise.all([
+            // 1. Engagements
             prisma.engagement.findMany({ 
-                where: { userId: session.user.id }, 
+                where: { userId }, 
                 select: { contentId: true, contentType: true, type: true } 
             }),
+            // 2. Shares
             prisma.share.findMany({ 
-                where: { userId: session.user.id }, 
+                where: { userId }, 
                 select: { contentId: true, contentType: true } 
             }),
+            // 3. Notifications List
+            prisma.notification.findMany({
+                where: { userId },
+                include: {
+                    sender: { select: { name: true, image: true, username: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 20
+            }),
+            // 4. Unread Count
+            prisma.notification.count({
+                where: { userId, read: false }
+            })
         ]);
 
-        // OPTIMIZATION: Transform raw DB data into compact string arrays
-        // Format: "contentType-contentId" (e.g., "review-105")
+        // Process User State
         const likes: string[] = [];
         const bookmarks: string[] = [];
         const shareKeys: string[] = [];
@@ -43,15 +60,19 @@ export async function GET() {
 
         return NextResponse.json({ 
             success: true, 
-            data: { 
+            userState: { 
                 likes, 
                 bookmarks, 
                 shares: shareKeys 
-            } 
+            },
+            notifications: {
+                items: notifications,
+                unreadCount
+            }
         });
 
     } catch (error) {
-        console.error('Error fetching user state:', error);
-        return NextResponse.json({ success: false, data: null }, { status: 500 });
+        console.error('Error in /api/user/init:', error);
+        return NextResponse.json({ success: false, error: 'Initialization failed' }, { status: 500 });
     }
 }
