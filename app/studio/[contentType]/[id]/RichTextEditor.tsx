@@ -40,8 +40,9 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import {TableComponent} from './editor-components/TableComponent'
 import {AutoColorExtension} from './extensions/AutoColorExtension'
+import {AutoBoldEnglishExtension} from './extensions/AutoBoldEnglishExtension' // <-- IMPORT ADDED
 import {YoutubeNode} from './extensions/YoutubeNode'
-import { DeactivateMarksExtension } from './extensions/DeactivateMarksExtension'; // <-- IMPORT THE NEW EXTENSION
+import { DeactivateMarksExtension } from './extensions/DeactivateMarksExtension'; 
 import styles from './Editor.module.css'
 
 const DragIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -323,7 +324,8 @@ export default function RichTextEditor({
         AutoColorExtension.configure({
           colorMappings: colorDictionary,
         }),
-        DeactivateMarksExtension, // <-- USE THE NEW, CORRECT EXTENSION
+        AutoBoldEnglishExtension, // <-- ENABLE EXTENSION
+        DeactivateMarksExtension, 
         Bold.extend({
           addInputRules() {
             return [
