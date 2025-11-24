@@ -3,12 +3,15 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/client"
+  // REMOVED: previewFeatures = ["driverAdapters"] 
+  // Removing this allows us to put 'url' back in the datasource block, 
+  // resolving the build error, while we can still manually inject the adapter in lib/prisma.ts code.
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // Pooled connection for runtime
-  directUrl = env("BUILD_DATABASE_URL") // Direct connection for migrations
+  url      = env("DATABASE_URL")
+  directUrl = env("BUILD_DATABASE_URL")
 }
 
 model Role {
