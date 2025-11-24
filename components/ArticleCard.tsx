@@ -52,9 +52,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         router.push(linkPath, { scroll: false });
     };
 
-    // REMOVED: handleMouseEnter to prevent prefetching spam
-    // const handleMouseEnter = () => { router.prefetch(linkPath); };
-
     const hasScore = type === 'review' && typeof article.score === 'number';
     const imageSource = article.imageUrl;
     if (!imageSource) return null;
@@ -64,7 +61,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const wrapperProps = disableLivingEffect ? {} : {
         ref: livingCardRef,
         onMouseMove: livingCardAnimation.onMouseMove,
-        // Updated: No longer calling handleMouseEnter for prefetch
         onMouseEnter: livingCardAnimation.onMouseEnter,
         onMouseLeave: livingCardAnimation.onMouseLeave,
         onTouchStart: livingCardAnimation.onTouchStart,
@@ -93,7 +89,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                 >
                     {hasScore && ( <motion.div className={styles.score}>{article.score!.toFixed(1)}</motion.div> )}
                     <Image 
-                        loader={sanityLoader}
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={imageSource}
                         alt={article.title}
                         width={800}

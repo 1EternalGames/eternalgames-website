@@ -11,6 +11,7 @@ import { urlFor } from '@/sanity/lib/image';
 import styles from './HubPage.module.css';
 import { CardProps, EngagementScore } from '@/types';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 interface HubPageClientProps {
     initialItems: any[];
@@ -117,6 +118,7 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                         style={{ position: 'absolute', inset: 0, zIndex: -2 }}
                     >
                         <Image 
+                            loader={sanityLoader} // <-- LOADER ADDED
                             src={heroImageUrl} 
                             alt={`Background for ${hubTitle}`} 
                             fill 
@@ -134,7 +136,6 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', zIndex: 5 }}
                 initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}
             >
-                {/* Render the header action (e.g. Profile Link) here */}
                 {headerAction}
                 <motion.h1 
                     className={`${styles.heroTitle} page-title`} 
@@ -186,8 +187,6 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                                     <ArticleCard
                                         article={item}
                                         layoutIdPrefix={listLayoutIdPrefix}
-                                        // FIX: Explicitly disable living effect if needed, though ArticleCard handles prefetch internally.
-                                        // We rely on ArticleCard's internal Link prefetch={false} update.
                                     />
                                 </motion.div>
                             ))

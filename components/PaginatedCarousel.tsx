@@ -11,6 +11,7 @@ import styles from './PaginatedCarousel.module.css';
 import feedStyles from './homepage/feed/Feed.module.css';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
     const router = useRouter();
@@ -32,10 +33,11 @@ const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
             onClick={handleClick}
             layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
             className={`${feedStyles.latestArticleItem} no-underline`}
-            style={{ display: 'grid' }} // Re-apply grid here to ensure motion doesn't break layout
+            style={{ display: 'grid' }} 
         >
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
                 <Image 
+                    loader={sanityLoader} // <-- LOADER ADDED
                     src={article.imageUrl} 
                     alt={article.title} 
                     fill 

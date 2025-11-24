@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { urlFor } from '@/sanity/lib/image';
 import { SanityContentObject, StarData, ScreenPosition } from './config';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 interface StarPreviewCardProps {
     starData: StarData;
@@ -91,6 +92,7 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${content.legacyId}`} style={{ position: 'relative', width: '100%', height: isMobile ? '130px' : '150px' }}>
                 {imageUrl ? ( 
                     <Image 
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={imageUrl} alt={content.title} fill sizes="300px"
                         style={{ objectFit: 'cover' }} 
                         placeholder={blurDataURL ? 'blur' : 'empty'}

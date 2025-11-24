@@ -10,6 +10,7 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { urlFor } from '@/sanity/lib/image';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 import styles from './TimelineCard.module.css';
 
 import PCIcon from '@/components/icons/platforms/PCIcon';
@@ -65,13 +66,10 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     const linkPath = release.game?.slug ? `/games/${release.game.slug}` : '/';
     const gameTitle = release.game?.title || release.title;
     
-    // Generate a stable layout ID key based on the game title for the hub transition
     const layoutIdKey = `hub-game-${gameTitle.replace(/\s+/g, '-')}`;
 
     const handleClick = (e: React.MouseEvent) => {
         if (!release.game?.slug) return;
-        // We don't prevent default here to let Link handle the navigation wrapper
-        // We just set the layout prefix for the transition
         setPrefix(layoutIdKey);
     };
 
@@ -83,14 +81,13 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
             onMouseLeave={handleMouseLeave}
             className={styles.livingCardWrapper} 
             style={livingCardAnimation.style}
-            // Map container layoutId to the hub container target
             layoutId={`${layoutIdKey}-container`}
         >
             <Link 
                 href={linkPath} 
                 className={`${styles.timelineCard} no-underline`} 
                 onClick={handleClick} 
-                prefetch={false} // FIX: Disable auto-prefetch on viewport entry
+                prefetch={false}
                 scroll={false}
             >
                 <motion.div
@@ -100,10 +97,10 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                 
                 <motion.div 
                     className={styles.imageContainer}
-                    // Map image layoutId to the hub hero image target
                     layoutId={`${layoutIdKey}-image`}
                 >
                     <Image
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={urlFor(release.mainImage).width(800).height(450).fit('crop').auto('format').url()}
                         alt={release.title}
                         fill
@@ -116,7 +113,6 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                 </motion.div>
                 <div className={styles.cardContent}>
                     <div className={styles.cardHeader}>
-                        {/* Map title layoutId to the hub hero title target */}
                         <motion.h4 layoutId={`${layoutIdKey}-title`}>{release.title}</motion.h4>
                         <p>{formattedDate}</p>
                     </div>

@@ -10,6 +10,7 @@ import type { SanityAuthor } from '@/types/sanity';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 import { urlFor } from '@/sanity/lib/image';
 import styles from './CreatorCredit.module.css';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const hoverCardVariants = {
     hidden: { opacity: 0, y: 10, scale: 0.95 },
@@ -17,17 +18,12 @@ const hoverCardVariants = {
     exit: { opacity: 0, y: 10, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' as const } }
 };
 
-// --- GLOBAL CACHE ---
-// Stores resolved usernames: prismaUserId -> username
 const usernameCache: Record<string, string | null> = {};
-// Stores pending promises to dedup simultaneous requests
 let pendingRequest: Promise<Record<string, string>> | null = null;
 let pendingIds: Set<string> = new Set();
 let debounceTimer: NodeJS.Timeout | null = null;
 
-// Helper to fetch with batching
 const batchFetchUsernames = (ids: string[]): Promise<Record<string, string>> => {
-    // Add new IDs to the pending set
     ids.forEach(id => {
         if (!usernameCache.hasOwnProperty(id)) {
             pendingIds.add(id);
@@ -38,12 +34,10 @@ const batchFetchUsernames = (ids: string[]): Promise<Record<string, string>> => 
         return Promise.resolve({});
     }
 
-    // Return existing promise if we are waiting for the debounce
     if (pendingRequest && debounceTimer) {
         return pendingRequest;
     }
 
-    // Create a new promise that will resolve when the debounce fires
     pendingRequest = new Promise((resolve) => {
         if (debounceTimer) clearTimeout(debounceTimer);
         
@@ -54,11 +48,9 @@ const batchFetchUsernames = (ids: string[]): Promise<Record<string, string>> => 
             debounceTimer = null;
 
             getCreatorUsernames(idsToFetch).then((results) => {
-                // Update cache
                 Object.entries(results).forEach(([id, username]) => {
                     usernameCache[id] = username as string;
                 });
-                // Mark missing ones as null to avoid refetching
                 idsToFetch.forEach(id => {
                     if (!usernameCache.hasOwnProperty(id)) {
                         usernameCache[id] = null;
@@ -66,7 +58,7 @@ const batchFetchUsernames = (ids: string[]): Promise<Record<string, string>> => 
                 });
                 resolve(results as Record<string, string>);
             });
-        }, 50); // 50ms debounce window to collect all components mounting at once
+        }, 50); 
     });
 
     return pendingRequest;
@@ -74,11 +66,14 @@ const batchFetchUsernames = (ids: string[]): Promise<Record<string, string>> => 
 
 const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
     let imageUrl = '/default-avatar.svg';
+    let isSanityImage = false;
+
     if (creator.image) {
         if (typeof creator.image === 'string') {
-            imageUrl = creator.image;
+            imageUrl = creator.image; // Auth/Blob URL
         } else if (typeof creator.image === 'object' && (creator.image as any).asset) {
             imageUrl = urlFor(creator.image as any).width(96).height(96).fit('crop').url();
+            isSanityImage = true;
         }
     }
 
@@ -86,6 +81,7 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
         <motion.div className={styles.hoverCard} variants={hoverCardVariants} initial="hidden" animate="visible" exit="exit">
             <div className={styles.cardHeader}>
                 <Image 
+                    loader={isSanityImage ? sanityLoader : undefined} // <-- CONDITIONAL LOADER
                     src={imageUrl} 
                     alt={creator.name}
                     width={48}
@@ -125,7 +121,7 @@ const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableL
                     className="creator-credit-link no-underline"
                     onClick={(e) => e.stopPropagation()}
                     onTouchStart={handleTouch}
-                    prefetch={false} // FIX: Disable prefetch to prevent loading all creator pages
+                    prefetch={false} 
                 >
                     {creator.name}
                 </Link>
@@ -149,10 +145,8 @@ export default function CreatorCredit({ label, creators, small = false, disableL
         mounted.current = true;
         const idsToFetch: string[] = [];
         
-        // Check which creators need enrichment
         const needsUpdate = (creators || []).some(c => c && c.prismaUserId && !c.username && !usernameCache[c.prismaUserId]);
         
-        // If we have cached values, apply them immediately
         const initialEnriched = (creators || []).map(creator => {
             if (creator.prismaUserId && usernameCache[creator.prismaUserId]) {
                 return { ...creator, username: usernameCache[creator.prismaUserId] };
@@ -165,11 +159,9 @@ export default function CreatorCredit({ label, creators, small = false, disableL
 
         setEnrichedCreators(initialEnriched);
 
-        // If we gathered IDs that are missing from cache, fetch them
         if (idsToFetch.length > 0) {
             batchFetchUsernames(idsToFetch).then(() => {
                 if (!mounted.current) return;
-                // Re-map with new cached values
                 setEnrichedCreators(prev => prev.map(creator => {
                     if (creator.prismaUserId && usernameCache[creator.prismaUserId]) {
                         return { ...creator, username: usernameCache[creator.prismaUserId] };

@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
-import { sanityLoader } from '@/lib/sanity.loader';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 import { Calendar03Icon } from '@/components/icons';
 import styles from './NewsGridCard.module.css';
 import CreatorCredit from '../CreatorCredit';
@@ -28,13 +28,11 @@ const typeLabelMap: Record<string, string> = {
 
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
-    // THE FIX: Typed as HTMLDivElement since the ref is on the wrapper div
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
 
     const linkPath = `/news/${item.slug}`;
     
     const handleClick = (e: React.MouseEvent) => {
-        // Allow default Link behavior (navigation), just set the layout prefix
         setPrefix(layoutIdPrefix);
     };
 
@@ -67,20 +65,19 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                     href={linkPath} 
                     className={`${styles.cardLink} no-underline`}
                     onClick={handleClick}
-                    prefetch={false} // THE FIX: Disable prefetch to prevent request spam
+                    prefetch={false} 
                 >
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
                             className={styles.imageContainer} 
                             layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`}
                         >
-                            {/* Classification Badge on Image */}
                             <span className={`${styles.imageBadge} ${styles[newsType]}`}>
                                 {typeLabelMap[newsType]}
                             </span>
                             
                             <Image 
-                                loader={sanityLoader}
+                                loader={sanityLoader} // <-- LOADER ADDED
                                 src={imageSource}
                                 alt={item.title}
                                 width={300}

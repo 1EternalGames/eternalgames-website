@@ -10,6 +10,7 @@ import { translateTag } from '@/lib/translations';
 import feedStyles from '../feed/Feed.module.css';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import Image from 'next/image';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
     const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
@@ -25,7 +26,7 @@ const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
         <Link
             href={linkPath}
             onClick={handleClick}
-            prefetch={false} // THE FIX: Disable prefetch
+            prefetch={false}
             className="no-underline"
             style={{ display: 'block' }}
         >
@@ -35,6 +36,7 @@ const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
             >
                 <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
                     <Image 
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={item.imageUrl} 
                         alt={item.title} 
                         fill 

@@ -73,12 +73,12 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick }: {
             >
                 {imageUrlWithBuster ? (
                     <Image 
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={imageUrlWithBuster} 
                         alt={item.title} 
                         fill
                         sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 350px"
                         style={{ objectFit: 'cover' }}
-                        loader={sanityLoader}
                     />
                 ) : (<span style={{color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600}}>بلا صورة</span>)}
             </motion.div>

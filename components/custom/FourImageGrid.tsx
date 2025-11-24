@@ -4,6 +4,7 @@
 import Image from 'next/image';
 import { urlFor } from '@/sanity/lib/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 import styles from './FourImageGrid.module.css';
 
 export default function FourImageGrid({ value }: { value: any }) {
@@ -24,6 +25,7 @@ export default function FourImageGrid({ value }: { value: any }) {
                     onClick={() => openLightbox(imageUrls, index)}
                 >
                     <Image
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={urlFor(image.asset).width(800).auto('format').url()}
                         alt={image.alt || `Grid Image ${index + 1}`}
                         fill
@@ -36,5 +38,3 @@ export default function FourImageGrid({ value }: { value: any }) {
         </div>
     );
 }
-
-

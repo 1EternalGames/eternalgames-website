@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ArticleIcon } from '@/components/icons';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const fetchArticles = async (params: URLSearchParams) => {
     const res = await fetch(`/api/articles?${params.toString()}`);
@@ -63,7 +64,17 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
                         onClick={handleClick}
                         className={`no-underline ${styles.showcaseCardLink}`}
                     >
-                        <motion.div layoutId={`${layoutIdPrefix}-card-image-${activeArticle.legacyId}`} className={styles.showcaseCardImageWrapper}><Image src={activeArticle.imageUrl} alt={activeArticle.title} fill sizes="80vw" style={{ objectFit: 'cover' }} className={styles.showcaseCardImage}/></motion.div>
+                        <motion.div layoutId={`${layoutIdPrefix}-card-image-${activeArticle.legacyId}`} className={styles.showcaseCardImageWrapper}>
+                            <Image 
+                                loader={sanityLoader} // <-- LOADER ADDED
+                                src={activeArticle.imageUrl} 
+                                alt={activeArticle.title} 
+                                fill 
+                                sizes="80vw" 
+                                style={{ objectFit: 'cover' }} 
+                                className={styles.showcaseCardImage}
+                            />
+                        </motion.div>
                         <div className={styles.showcaseCardContent}><motion.h3 layoutId={`${layoutIdPrefix}-card-title-${activeArticle.legacyId}`} className={styles.showcaseCardTitle}>{activeArticle.title}</motion.h3><p className={styles.showcaseCardGame}>{activeArticle.game}</p></div>
                     </motion.div>
                 </motion.div>
@@ -142,7 +153,20 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         <React.Fragment>
             <AnimatedGridBackground />
             <div className={styles.articlesPageContainer}>
-                <AnimatePresence>{activeBackgroundUrl && (<motion.div key={activeBackgroundUrl} className={styles.articlesPageBg} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Image src={activeBackgroundUrl} alt="Dynamic background" fill style={{ objectFit: 'cover' }} /><div className={styles.articlesPageBgOverlay} /></motion.div>)}</AnimatePresence>
+                <AnimatePresence>
+                    {activeBackgroundUrl && (
+                        <motion.div key={activeBackgroundUrl} className={styles.articlesPageBg} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            <Image 
+                                loader={sanityLoader} // <-- LOADER ADDED
+                                src={activeBackgroundUrl} 
+                                alt="Dynamic background" 
+                                fill 
+                                style={{ objectFit: 'cover' }} 
+                            />
+                            <div className={styles.articlesPageBgOverlay} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 <div className="container" style={{ paddingTop: '4rem', paddingBottom: '6rem', minHeight: '80vh' }}>
                     <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>أحدث المقالات</h1>
                     <div className={styles.showcaseSection}>{isMobile ? (<MobileShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />) : (<HorizontalShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />)}</div>

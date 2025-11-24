@@ -206,7 +206,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                     onClick={() => openLightbox([fullResImageUrl], 0)}
                 >
                     <Image 
-                        loader={sanityLoader} 
+                        loader={sanityLoader} // <-- LOADER ADDED
                         src={heroImageUrl} 
                         alt={item.title} 
                         fill 

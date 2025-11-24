@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
 import styles from './HorizontalShowcase.module.css';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -45,6 +46,7 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
       >
         <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={styles.showcaseCardImageWrapper}>
           <Image 
+            loader={sanityLoader} // <-- LOADER ADDED
             src={imageSource} alt={article.title} fill sizes="60vw"
             style={{ objectFit: 'cover' }} className={styles.showcaseCardImage}
             draggable="false"

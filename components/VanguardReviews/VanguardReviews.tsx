@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, animate, PanInfo } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link'; // Ensure Link is imported
+import Link from 'next/link';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useVanguardCarousel } from '@/hooks/useVanguardCarousel';
@@ -13,8 +13,8 @@ import { urlFor } from '@/sanity/lib/image';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
-// ... (Keep Icons and Helper Components: ArrowIcon, CreatorBubble, creatorBubbleVariants) ...
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
@@ -81,16 +81,11 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     const linkPath = `/reviews/${review.slug}`;
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        // Note: With Link, we might not need manual push, but we need to set layoutId prefix.
-        // Using onClick with Link is valid.
         if (e.ctrlKey || e.metaKey) return; 
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) {
             e.stopPropagation();
             return;
         }
-        // IMPORTANT: We let the Link handle navigation, we just set the state.
-        // Removing e.preventDefault() allows Link to do its job.
-        // BUT wait, we want { scroll: false }. Next.js Link has a scroll prop!
         setPrefix(layoutIdPrefix);
     };
     
@@ -112,14 +107,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     return (
         <div className={styles.cardWrapper}>
-            {/* THE FIX: Replaced <a> with <Link> and removed manual router.push to rely on standard Next.js behavior, ensuring single request */}
             <Link 
                 href={linkPath}
                 onClick={handleClick}
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
                 prefetch={false}
-                scroll={false} // This replaces the router.push option
+                scroll={false} 
             >
                 <motion.div
                     ref={livingCardRef}
@@ -147,6 +141,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
                         <Image 
+                            loader={sanityLoader} // <-- LOADER ADDED
                             src={imageUrl} 
                             alt={review.title} 
                             fill 
@@ -168,7 +163,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 });
 VanguardCard.displayName = "VanguardCard";
 
-// ... (Keep KineticNavigator and VanguardReviews export) ...
 const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews: CardProps[], currentIndex: number, navigateToIndex: (index: number) => void }) => {
     const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
     useEffect(() => { const activeItem = itemRefs.current[currentIndex]; if (activeItem) { activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [currentIndex]);
@@ -188,7 +182,15 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                             animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} 
                             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                         >
-                            <Image src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} alt={review.title} fill sizes="10vw" className={styles.navImage} unoptimized />
+                            <Image 
+                                loader={sanityLoader} // <-- LOADER ADDED
+                                src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} 
+                                alt={review.title} 
+                                fill 
+                                sizes="10vw" 
+                                className={styles.navImage} 
+                                unoptimized 
+                            />
                             <AnimatePresence>{isActive && <motion.div className={styles.navTitle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{review.title}</motion.div>}</AnimatePresence>
                         </motion.button>
                     );

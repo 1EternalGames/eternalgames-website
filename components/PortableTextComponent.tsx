@@ -15,6 +15,7 @@ import NextImage from 'next/image'
 import {useLightboxStore} from '@/lib/lightboxStore'
 import type {PortableTextBlock} from '@portabletext/types'
 import {useTheme} from 'next-themes'
+import {sanityLoader} from '@/lib/sanity.loader' // <-- IMPORT ADDED
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => (
@@ -50,7 +51,7 @@ const COLOR_PALETTE = [
   {
     title: 'Grays',
     colors: [
-      '#9CA3AF', // Middle Gray (Safe for both modes)
+      '#9CA3AF', 
     ],
   },
   {
@@ -165,36 +166,25 @@ type ColorMapping = {
   color: string
 }
 
-// --- THE DEFINITIVE FIX: Math-based Color Safety ---
-// This function checks if a color is basically a shade of gray (achromatic)
-// and if it's too close to pure black or pure white.
-// If so, we return TRUE to indicate it should be ignored (inherit theme color).
 const shouldIgnoreColor = (hex: string): boolean => {
   if (!hex || !hex.startsWith('#')) return true
 
-  // Parse Hex
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
 
   if (isNaN(r) || isNaN(g) || isNaN(b)) return true
 
-  // 1. Check Saturation/Difference
-  // If R, G, and B are very close to each other, it is a shade of gray.
   const maxDiff = Math.max(Math.abs(r - g), Math.abs(r - b), Math.abs(g - b))
-  const isGrayscale = maxDiff < 20 // Tolerance for "slightly tinted" grays
+  const isGrayscale = maxDiff < 20 
 
   if (isGrayscale) {
-    // 2. Check Brightness
-    // 0 = Black, 255 = White.
-    // If it's < 60 (Dark Gray/Black) OR > 190 (Light Gray/White), we ignore it.
-    // We only allow mid-tones (like #9CA3AF which is approx 160).
     if (r < 80 || r > 180) {
-      return true // Ignore this color, let CSS control it
+      return true 
     }
   }
 
-  return false // Color is vibrant or a safe mid-gray; allow it.
+  return false 
 }
 
 const ColorMark = ({
@@ -211,19 +201,12 @@ const ColorMark = ({
   const originalColor = value?.hex
 
   if (!mounted || !originalColor) {
-    // Server-side or hydration mismatch prevention: simpler rendering
     return <span style={{color: originalColor}}>{children}</span>
   }
 
-  // APPLY THE FIX:
-  // If the color detects as a dangerous near-black or near-white, discard the style.
   if (shouldIgnoreColor(originalColor)) {
     return <span>{children}</span>
   }
-
-  // --- EXISTING LOGIC for Adjusting Legibility of Colors ---
-  // If the color survived the filter (e.g. it's Red or Blue), we still
-  // check luminance to make sure it's readable against the current background theme.
 
   let finalColor = originalColor
 
@@ -239,10 +222,8 @@ const ColorMark = ({
   const luminance = getLuminance(finalColor)
 
   if (resolvedTheme === 'dark' && luminance < 60) {
-    // If dark mode and color is too dark, lighten it
     finalColor = `color-mix(in srgb, ${finalColor} 30%, white 70%)`
   } else if (resolvedTheme === 'light' && luminance > 200) {
-    // If light mode and color is too bright, darken it
     finalColor = `color-mix(in srgb, ${finalColor} 70%, black 30%)`
   }
 
@@ -265,6 +246,7 @@ const SanityImageComponent = ({value}: {value: any}) => {
     <div style={{margin: '4rem 0'}}>
       <div onClick={() => openLightbox([fullResSrc], 0)} className="image-lightbox-trigger">
         <NextImage
+          loader={sanityLoader} // <-- LOADER ADDED
           src={optimizedSrc}
           alt={alt || 'Content Image'}
           width={width}

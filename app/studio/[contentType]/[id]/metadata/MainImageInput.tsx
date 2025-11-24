@@ -8,6 +8,7 @@ import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
 import { uploadSanityAssetAction } from '../../../actions';
 import avatarStyles from '../../../../components/ProfileEditForm.module.css';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const UploadIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24"> <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /> </svg> );
 
@@ -109,7 +110,14 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
                 <AnimatePresence>
                     {previewUrl ? (
                         <motion.div key="image" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ width: '100%', height: '100%' }}>
-                            <Image src={previewUrl} alt="معاينة الصورة المصغرة" fill sizes="300px" style={{ objectFit: 'cover' }} />
+                            <Image 
+                                loader={sanityLoader} // <-- LOADER ADDED
+                                src={previewUrl} 
+                                alt="معاينة الصورة المصغرة" 
+                                fill 
+                                sizes="300px" 
+                                style={{ objectFit: 'cover' }} 
+                            />
                             {isUploading && <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ width: '30px', height: '30px' }}/></div>}
                         </motion.div>
                     ) : (

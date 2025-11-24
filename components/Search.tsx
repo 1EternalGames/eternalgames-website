@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { SanitySearchResult } from '@/types/sanity';
 import { useDebounce } from '@/hooks/useDebounce';
 import styles from './Search.module.css';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const CrossIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
@@ -21,7 +22,6 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SanitySearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    // OPTIMIZATION: Increased debounce from 250 to 600ms
     const debouncedQuery = useDebounce(query, 600);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -86,10 +86,19 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
                                     <motion.ul key="results" variants={listVariants} initial="hidden" animate="visible" exit="hidden" >
                                         {results.map(result => (
                                             <motion.li key={result._id} variants={resultItemVariants}>
-                                                {/* THE FIX: Added prefetch={false} here as well */}
                                                 <Link href={getLinkPath(result)} onClick={onClose} className={`${styles.searchResultLink} no-underline`} prefetch={false}>
                                                     <motion.div className={styles.searchResultThumbnail}>
-                                                        {result.imageUrl ? (<Image src={result.imageUrl} alt={result.title} width={100} height={60} className={styles.searchResultImage} sizes="100px" />) : (<div className={styles.searchResultImageFallback} />)}
+                                                        {result.imageUrl ? (
+                                                            <Image 
+                                                                loader={sanityLoader} // <-- LOADER ADDED
+                                                                src={result.imageUrl} 
+                                                                alt={result.title} 
+                                                                width={100} 
+                                                                height={60} 
+                                                                className={styles.searchResultImage} 
+                                                                sizes="100px" 
+                                                            />
+                                                        ) : (<div className={styles.searchResultImageFallback} />)}
                                                     </motion.div>
                                                     <div className={styles.searchResultDetails}>
                                                         <h4>{result.title}</h4>

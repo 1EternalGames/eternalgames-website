@@ -9,9 +9,10 @@ import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import styles from '../Editor.module.css';
 import compareStyles from '@/components/ImageCompare.module.css';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const UploadIcon = () => ( <svg className={compareStyles.uploadIcon} fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg> );
-const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -31,7 +32,15 @@ const Dropzone = ({ side, src, onUpload }: { side: number, src: string | null, o
     return (
         <div className={`${compareStyles.dropzone} ${isDragging ? compareStyles.active : ''}`} onDrop={handleDrop} onDragEnter={(e) => handleDrag(e, true)} onDragOver={(e) => handleDrag(e, true)} onDragLeave={(e) => handleDrag(e, false)} onClick={() => inputRef.current?.click()}>
             <input ref={inputRef} type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => handleFile(e.target.files?.[0])} />
-            {src && <Image src={src} alt={`Image ${side}`} fill className={compareStyles.imagePreview} />}
+            {src && (
+                <Image 
+                    loader={sanityLoader} // <-- LOADER ADDED
+                    src={src} 
+                    alt={`Image ${side}`} 
+                    fill 
+                    className={compareStyles.imagePreview} 
+                />
+            )}
             <div className={compareStyles.dropzoneContent} style={{fontSize: '1.4rem'}}>
                 <UploadIcon />
                 <span>{src ? `تغيير الصورة ${side}` : `أفلت صورةً أو انقر للرفع`}</span>

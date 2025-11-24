@@ -10,6 +10,7 @@ import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
@@ -56,7 +57,7 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                         <Link 
                             href={`/news/${item.slug}`}
                             onClick={handleClick}
-                            prefetch={false} // THE FIX: Disable prefetch
+                            prefetch={false} 
                             className={`${styles.storyLink} no-underline`}
                         >
                             <motion.h1 
@@ -111,6 +112,7 @@ const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix
                 layoutId={`${layoutIdPrefix}-card-image-${legacyId}`} 
              >
                 <Image
+                    loader={sanityLoader} // <-- LOADER ADDED
                     src={imageUrl}
                     alt={alt}
                     fill

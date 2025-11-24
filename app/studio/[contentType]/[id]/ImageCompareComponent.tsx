@@ -10,6 +10,7 @@ import { useToast } from '@/lib/toastStore';
 import styles from '@/components/ImageCompare.module.css';
 import editorStyles from './Editor.module.css';
 import Image from 'next/image';
+import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
 
 const UploadIcon = () => <svg className={styles.uploadIcon} fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M17.25 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>;
 const DeleteIcon = () => <svg width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
@@ -31,7 +32,25 @@ const Dropzone = ({ side, src, onUpload }: { side: 'left' | 'right', src: string
     const handleFile = (file: File | null | undefined) => { if (file) { onUpload(file); } }; 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); handleFile(e.dataTransfer.files?.[0]); }; 
     const handleDrag = (e: React.DragEvent<HTMLDivElement>, isActive: boolean) => { e.preventDefault(); e.stopPropagation(); setIsDragging(isActive); }; 
-    return ( <div className={`${styles.dropzone} ${isDragging ? styles.active : ''}`} onDrop={handleDrop} onDragEnter={(e) => handleDrag(e, true)} onDragOver={(e) => handleDrag(e, true)} onDragLeave={(e) => handleDrag(e, false)} onClick={() => inputRef.current?.click()}> <input ref={inputRef} type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => handleFile(e.target.files?.[0])} /> {src && <Image src={src} alt={`Image ${side}`} fill className={styles.imagePreview} />} <div className={styles.dropzoneContent}> <UploadIcon /> <span>{src ? `تغيير الصورة ${side === 'left' ? 1 : 2}` : `أفلت صورةً أو انقر للرفع`}</span> </div> </div> ); 
+    
+    return ( 
+        <div className={`${styles.dropzone} ${isDragging ? styles.active : ''}`} onDrop={handleDrop} onDragEnter={(e) => handleDrag(e, true)} onDragOver={(e) => handleDrag(e, true)} onDragLeave={(e) => handleDrag(e, false)} onClick={() => inputRef.current?.click()}> 
+            <input ref={inputRef} type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => handleFile(e.target.files?.[0])} /> 
+            {src && (
+                <Image 
+                    loader={sanityLoader} // <-- LOADER ADDED (Safely handles blob URLs too)
+                    src={src} 
+                    alt={`Image ${side}`} 
+                    fill 
+                    className={styles.imagePreview} 
+                />
+            )} 
+            <div className={styles.dropzoneContent}> 
+                <UploadIcon /> 
+                <span>{src ? `تغيير الصورة ${side === 'left' ? 1 : 2}` : `أفلت صورةً أو انقر للرفع`}</span> 
+            </div> 
+        </div> 
+    ); 
 };
 
 export const ImageCompareComponent = ({ node, updateAttributes, editor, getPos }: NodeViewProps) => {
