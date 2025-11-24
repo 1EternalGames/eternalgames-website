@@ -10,7 +10,7 @@ import type { SanityAuthor } from '@/types/sanity';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 import { urlFor } from '@/sanity/lib/image';
 import styles from './CreatorCredit.module.css';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
 
 const hoverCardVariants = {
     hidden: { opacity: 0, y: 10, scale: 0.95 },
@@ -70,7 +70,7 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
 
     if (creator.image) {
         if (typeof creator.image === 'string') {
-            imageUrl = creator.image; // Auth/Blob URL
+            imageUrl = creator.image; 
         } else if (typeof creator.image === 'object' && (creator.image as any).asset) {
             imageUrl = urlFor(creator.image as any).width(96).height(96).fit('crop').url();
             isSanityImage = true;
@@ -81,7 +81,7 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
         <motion.div className={styles.hoverCard} variants={hoverCardVariants} initial="hidden" animate="visible" exit="exit">
             <div className={styles.cardHeader}>
                 <Image 
-                    loader={isSanityImage ? sanityLoader : undefined} // <-- CONDITIONAL LOADER
+                    loader={isSanityImage ? sanityLoader : undefined} 
                     src={imageUrl} 
                     alt={creator.name}
                     width={48}
@@ -138,16 +138,21 @@ export default function CreatorCredit({ label, creators, small = false, disableL
     small?: boolean;
     disableLink?: boolean;
 }) {
-    const [enrichedCreators, setEnrichedCreators] = useState<SanityAuthor[]>(creators || []);
+    // --- DEFENSIVE CODING ---
+    // Fallback to empty array if creators is null/undefined/not array
+    const safeCreators = Array.isArray(creators) ? creators : [];
+    
+    const [enrichedCreators, setEnrichedCreators] = useState<SanityAuthor[]>(safeCreators);
     const mounted = useRef(false);
 
     useEffect(() => {
         mounted.current = true;
+        // Re-sync state if props change
+        setEnrichedCreators(safeCreators);
+        
         const idsToFetch: string[] = [];
         
-        const needsUpdate = (creators || []).some(c => c && c.prismaUserId && !c.username && !usernameCache[c.prismaUserId]);
-        
-        const initialEnriched = (creators || []).map(creator => {
+        const initialEnriched = safeCreators.map(creator => {
             if (creator.prismaUserId && usernameCache[creator.prismaUserId]) {
                 return { ...creator, username: usernameCache[creator.prismaUserId] };
             }
@@ -172,7 +177,7 @@ export default function CreatorCredit({ label, creators, small = false, disableL
         }
 
         return () => { mounted.current = false; };
-    }, [creators]);
+    }, [safeCreators]); // Depend on the Safe array
     
     const hasCreators = enrichedCreators && enrichedCreators.length > 0;
 

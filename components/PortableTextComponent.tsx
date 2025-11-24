@@ -89,13 +89,10 @@ const ColorMark = ({
   const originalColor = value?.hex
 
   if (!mounted || !originalColor) {
-    // Default server render or if no color provided
-    // We still apply bold if it was intended to be colored
     return <span style={{color: originalColor, fontWeight: '700'}}>{children}</span>
   }
 
   if (shouldIgnoreColor(originalColor)) {
-    // Even if color is ignored (too dark/light), we enforce bold
     return <span style={{fontWeight: '700'}}>{children}</span>
   }
 
@@ -118,7 +115,6 @@ const ColorMark = ({
     finalColor = `color-mix(in srgb, ${finalColor} 70%, black 30%)`
   }
 
-  // Apply both color and bold weight
   return <span style={{color: finalColor, fontWeight: '700'}}>{children}</span>
 }
 
@@ -200,19 +196,23 @@ const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock
 
 export default function PortableTextComponent({
   content,
-  colorDictionary = [],
+  colorDictionary, // Allow undefined
 }: {
   content: any[]
   colorDictionary?: ColorMapping[]
 }) {
   if (!content) return null
 
+  // --- DEFENSIVE CODING ---
+  // Ensure colorDictionary is an array to prevent .map crashes
+  const safeColorDictionary = Array.isArray(colorDictionary) ? colorDictionary : [];
+
   const components: PortableTextComponents = useMemo(() => {
-    const colorMap = new Map(colorDictionary.map((item) => [item.word.toLowerCase(), item.color]))
+    const colorMap = new Map(safeColorDictionary.map((item) => [item.word.toLowerCase(), item.color]))
     const colorRegex =
-      colorDictionary.length > 0
+      safeColorDictionary.length > 0
         ? new RegExp(
-            `\\b(${colorDictionary
+            `\\b(${safeColorDictionary
               .map((item) => item.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
               .join('|')})\\b`,
             'gi',
@@ -223,7 +223,6 @@ export default function PortableTextComponent({
       const parts = text.split(ENGLISH_REGEX)
       return parts.map((part, i) => {
         if (ENGLISH_REGEX.test(part)) {
-          // Double check if it contains actual latin letters
           if (/[a-zA-Z]/.test(part)) {
              return <strong key={`eng-${i}`} style={{ fontWeight: '700' }}>{part}</strong>
           }
@@ -240,25 +239,21 @@ export default function PortableTextComponent({
               return child
             }
 
-            // 1. Split by Color Dictionary first
             if (colorRegex) {
               const parts = child.split(colorRegex)
               return parts.map((part, i) => {
                 const lowerPart = part.toLowerCase()
                 if (colorMap.has(lowerPart)) {
-                  // Colored words from dictionary: Apply color + BOLD (700)
                   return (
                     <span key={i} style={{color: colorMap.get(lowerPart), fontWeight: '700'}}>
                       {part}
                     </span>
                   )
                 }
-                // 2. Process remaining parts for English bolding
                 return <React.Fragment key={i}>{processTextForEnglish(part)}</React.Fragment>
               })
             }
 
-            // No color regex, just process English
             return processTextForEnglish(child)
           })}
         </p>
@@ -283,7 +278,7 @@ export default function PortableTextComponent({
         normal: NormalBlockRenderer,
       },
       marks: {
-        color: ColorMark, // Use updated ColorMark
+        color: ColorMark,
         link: ({value, children}) => {
           const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined
           const isExternal = rel === 'noreferrer noopener'
@@ -295,7 +290,7 @@ export default function PortableTextComponent({
         },
       },
     }
-  }, [colorDictionary])
+  }, [safeColorDictionary])
 
   return (
     <div className="portable-text-content" style={{fontSize: '1.8rem', lineHeight: 1.8}}>

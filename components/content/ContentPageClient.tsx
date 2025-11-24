@@ -156,12 +156,31 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 
     if (!item) return null;
 
-    const relatedContent = (item as any).relatedReviews || (item as any).relatedArticles || (item as any).relatedNews || [];
-    const uniqueRelatedContent = relatedContent ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
+    // --- DEFENSIVE CODING START ---
+    const rawRelatedReviews = (item as any).relatedReviews;
+    const rawRelatedArticles = (item as any).relatedArticles;
+    const rawRelatedNews = (item as any).relatedNews;
     
-    const adaptedRelatedContent = (uniqueRelatedContent || [])
+    // Ensure we have arrays or default to empty
+    const relatedReviews = Array.isArray(rawRelatedReviews) ? rawRelatedReviews : [];
+    const relatedArticles = Array.isArray(rawRelatedArticles) ? rawRelatedArticles : [];
+    const relatedNews = Array.isArray(rawRelatedNews) ? rawRelatedNews : [];
+
+    const relatedContent = [...relatedReviews, ...relatedArticles, ...relatedNews];
+    
+    const uniqueRelatedContent = relatedContent.length > 0 
+        ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) 
+        : [];
+    
+    const adaptedRelatedContent = uniqueRelatedContent
         .map((related: any) => adaptToCardProps(related, { width: 600 }))
         .filter(Boolean) as CardProps[];
+
+    const safeTags = Array.isArray(item.tags) ? item.tags : [];
+    const safeAuthors = Array.isArray((item as any).authors) ? (item as any).authors : [];
+    const safeReporters = Array.isArray((item as any).reporters) ? (item as any).reporters : [];
+    const primaryCreators = [...safeAuthors, ...safeReporters];
+    // --- DEFENSIVE CODING END ---
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -171,7 +190,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const monthIndex = publishedDate.getMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
 
-    const primaryCreators = (item as any).authors || (item as any).reporters || [];
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
     const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
@@ -206,7 +224,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                     onClick={() => openLightbox([fullResImageUrl], 0)}
                 >
                     <Image 
-                        loader={sanityLoader} // <-- LOADER ADDED
+                        loader={sanityLoader} 
                         src={heroImageUrl} 
                         alt={item.title} 
                         fill 
@@ -241,7 +259,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                     </div>
                                     <div className={styles.metaBlockRight}>
                                         <CreatorCredit label="بقلم" creators={primaryCreators} />
-                                        <CreatorCredit label="تصميم" creators={item.designers} />
+                                        {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
                                         <div className={styles.dateContainer}>
                                              <p className={styles.dateText} style={{marginRight: '1rem'}}>{formattedDate}</p>
                                              <Calendar03Icon className={styles.metadataIcon} />
@@ -254,7 +272,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                     {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
                                 </div>
                                 <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                                    <TagLinks tags={(item.tags || []).map((t: any) => t.title)} />
+                                    <TagLinks tags={safeTags.map((t: any) => t.title)} />
                                 </div>
                             </main>
                             <aside className={styles.sidebar}>
