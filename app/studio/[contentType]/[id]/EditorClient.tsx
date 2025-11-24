@@ -74,25 +74,21 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
     }
 }
 
-// FIX: Aggressive recursive key stripper to prevent phantom diffs
 const stripKeysAndNormalize = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(stripKeysAndNormalize);
     } else if (obj !== null && typeof obj === 'object') {
         const newObj: any = {};
         for (const key in obj) {
-            // Ignore internal Sanity keys or Tiptap artifacts that cause diff noise
             if (key !== '_key' && key !== '_type' && key !== 'markDefs') {
                 const val = stripKeysAndNormalize(obj[key]);
                 if (val !== undefined && val !== null) {
                     newObj[key] = val;
                 }
             }
-            // Special handling for text nodes to ensure marks sort consistency
             if (key === 'marks' && Array.isArray(obj[key])) {
                 newObj[key] = [...obj[key]].sort();
             }
-            // If it's a block, we want to keep the _type for structure but ignore keys
             if (key === '_type') {
                 newObj[key] = obj[key];
             }
@@ -106,7 +102,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     const patch: Record<string, any> = {};
     const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
     
-    // Helper for ID arrays comparison
     const compareIds = (arr1: any[], arr2: any[]) => {
         const set1 = new Set(normalize(arr1, []).map((i: any) => i._id));
         const set2 = new Set(normalize(arr2, []).map((i: any) => i._id));
@@ -115,7 +110,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
         return true;
     };
 
-    // Fields
     if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
     if (sourceOfTruth._type !== 'gameRelease' && normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
     if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
@@ -129,12 +123,10 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
         patch.newsType = currentState.newsType;
     }
 
-    // Arrays
     if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
     if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
     if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
     
-    // References
     if (normalize(currentState.game?._id, null) !== normalize(sourceOfTruth.game?._id, null)) patch.game = currentState.game ? { _type: 'reference', _ref: currentState.game._id } : undefined;
     if (normalize(currentState.mainImage.assetId, null) !== normalize(sourceOfTruth.mainImage?._ref, null)) patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
     if (!compareIds(currentState.tags, sourceOfTruth.tags)) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
@@ -142,12 +134,10 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (!compareIds(currentState.reporters, sourceOfTruth.reporters)) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
     if (!compareIds(currentState.designers, sourceOfTruth.designers)) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
     
-    // Content (The crucial part)
     if (sourceOfTruth._type !== 'gameRelease') {
         const sourceContentSanity = sourceOfTruth.content || []; 
         const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
         
-        // FIX: Use the aggressive stripper to compare content without keys
         const cleanSource = JSON.stringify(stripKeysAndNormalize(sourceContentSanity));
         const cleanCurrent = JSON.stringify(stripKeysAndNormalize(currentContentSanity));
         
@@ -193,6 +183,9 @@ export function EditorClient({
     const [serverSaveStatus, setServerSaveStatus] = useState<SaveStatus>('saved');
     const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
+    
+    // NEW STATE: Auto Save Enabled (Default: false)
+    const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
 
     const stateRef = useRef(state);
     const contentJsonRef = useRef(editorContentJson);
@@ -313,7 +306,6 @@ export function EditorClient({
                 const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
                 const editorJSON = JSON.stringify(editorInstance.getJSON()); 
                 const sourceJSON = JSON.stringify(freshTiptapContent); 
-                // Only update editor content if it is meaningfully different
                 if (editorJSON !== sourceJSON && !hasChanges) { 
                     editorInstance.commands.setContent(freshTiptapContent, false); 
                 } 
@@ -386,9 +378,6 @@ export function EditorClient({
         const result = await updateDocumentAction(sourceOfTruth._id, currentPatch); 
         
         if (result.success && result.updatedDocument) { 
-            // CRITICAL FIX: Update Source of Truth with LOCAL state values for content.
-            // This ensures that even if the server's representation varies slightly,
-            // we treat our local version as the new truth, suppressing further diffs.
             setSourceOfTruth({ 
                 ...optimisticSOT, 
                 _updatedAt: result.updatedDocument._updatedAt 
@@ -409,7 +398,8 @@ export function EditorClient({
     }, [state, sourceOfTruth, editorContentJson, slugValidationStatus, toast]);
     
     useEffect(() => {
-        if (hasChanges) {
+        // UPDATED: Only trigger auto-save if hasChanges AND isAutoSaveEnabled
+        if (hasChanges && isAutoSaveEnabled) {
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
 
             serverSaveTimeoutRef.current = setTimeout(async () => {
@@ -420,9 +410,9 @@ export function EditorClient({
                 } else {
                     setServerSaveStatus('saved'); 
                 }
-            }, 30000); // FIX: Increased from 10s to 30s to reduce frequency while keeping auto-save
+            }, 30000); 
         }
-    }, [hasChanges, saveWorkingCopy]); 
+    }, [hasChanges, saveWorkingCopy, isAutoSaveEnabled]); // Added isAutoSaveEnabled dependency
 
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => { 
         const didSave = await saveWorkingCopy(); 
@@ -489,6 +479,9 @@ export function EditorClient({
                         colorDictionary={colorDictionary}
                         clientSaveStatus={clientSaveStatus}
                         serverSaveStatus={serverSaveStatus}
+                        // NEW PROPS
+                        isAutoSaveEnabled={isAutoSaveEnabled}
+                        onToggleAutoSave={() => setIsAutoSaveEnabled(prev => !prev)}
                     />
                 </motion.div>
             </div>

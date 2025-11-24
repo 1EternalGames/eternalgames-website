@@ -14,7 +14,19 @@
     justify-content: center;
     width: 30px;
     height: 30px;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, transform 0.2s ease;
+}
+
+/* New class for button reset */
+.iconButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.iconButton:hover {
+    transform: scale(1.1);
 }
 
 .iconWrapper svg {
@@ -32,10 +44,15 @@
     color: var(--text-secondary); /* Gray */
 }
 
+/* Paused State (Amber/Yellow) */
+.paused {
+    color: #F59E0B; 
+}
+
 /* Data Flow Animation (Bobbing Arrow) */
 @keyframes flow {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-1px); } /* Reduced from -3px */
+    50% { transform: translateY(-1px); }
 }
 
 .saving .arrow {

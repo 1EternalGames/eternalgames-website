@@ -25,6 +25,9 @@ interface EditorCanvasProps {
     colorDictionary: ColorMapping[];
     clientSaveStatus?: SaveStatus;
     serverSaveStatus?: SaveStatus;
+    // NEW PROPS
+    isAutoSaveEnabled: boolean;
+    onToggleAutoSave: () => void;
 }
 
 export function EditorCanvas({ 
@@ -35,24 +38,31 @@ export function EditorCanvas({
     editor, 
     colorDictionary,
     clientSaveStatus = 'saved',
-    serverSaveStatus = 'saved'
+    serverSaveStatus = 'saved',
+    isAutoSaveEnabled,
+    onToggleAutoSave
 }: EditorCanvasProps) {
     const isRelease = document._type === 'gameRelease';
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // Auto-resize the textarea height based on content
     useLayoutEffect(() => {
         const textarea = textareaRef.current;
         if (textarea) {
-            textarea.style.height = 'auto'; // Reset height
-            textarea.style.height = `${textarea.scrollHeight}px`; // Set to scroll height
+            textarea.style.height = 'auto'; 
+            textarea.style.height = `${textarea.scrollHeight}px`; 
         }
     }, [title]);
 
     return (
         <motion.div className={styles.sanctumCanvas} style={{position: 'relative'}} transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}>
             <div className={styles.canvasContent}>
-                <SaveStatusIcons clientState={clientSaveStatus} serverState={serverSaveStatus} />
+                {/* Passed new props to SaveStatusIcons */}
+                <SaveStatusIcons 
+                    clientState={clientSaveStatus} 
+                    serverState={serverSaveStatus} 
+                    isAutoSaveEnabled={isAutoSaveEnabled}
+                    onToggleAutoSave={onToggleAutoSave}
+                />
                 
                 <textarea
                     ref={textareaRef}
