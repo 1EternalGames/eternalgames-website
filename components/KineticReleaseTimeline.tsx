@@ -158,7 +158,11 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                         whileTap={{ scale: 0.95 }}
                         style={{ display: 'inline-block' }}
                     >
-                        <Link href="/releases" className={`${styles.timelineTerminusButton} no-underline`}>
+                        <Link 
+                            href="/releases" 
+                            className={`${styles.timelineTerminusButton} no-underline`}
+                            prefetch={false} // FIX: Disable auto-prefetch
+                        >
                             <ViewAllIcon className={styles.terminusIcon} />
                             <span>عرض كل الإصدارات</span>
                         </Link>

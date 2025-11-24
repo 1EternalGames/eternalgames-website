@@ -1,7 +1,7 @@
 // components/comments/CommentSection.tsx
 'use client';
 
-import { useState, useOptimistic, useEffect } from 'react';
+import { useState, useOptimistic, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { postReplyOrComment } from '@/app/actions/commentActions';
@@ -9,7 +9,7 @@ import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
 import CommentList from './CommentList';
 import styles from './Comments.module.css';
-import CommentListSkeleton from '@/components/skeletons/CommentListSkeleton'; // Assuming you have this, or we use a spinner
+import { useInView } from 'framer-motion'; // FIX: Import for lazy loading
 
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
     return comments.map(comment => {
@@ -36,20 +36,22 @@ export default function CommentSection({
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    // If initialComments is undefined, we are in "Client Fetch" mode (The Fast Mode)
-    // If it is an array (even empty), we are in "Server Mode" (The Slow Mode)
-    const shouldFetch = !initialComments;
+    // FIX: Lazy Load Logic
+    const containerRef = useRef(null);
+    // Trigger fetch when 10% of the comments section is visible once
+    const isInView = useInView(containerRef, { once: true, amount: 0.1 });
 
+    const shouldFetch = !initialComments;
     const [comments, setComments] = useState<any[]>(initialComments || []);
     const [loading, setLoading] = useState(shouldFetch);
     const currentPath = `/${contentType}/${slug}`;
 
     useEffect(() => {
-        if (!shouldFetch) return;
+        // FIX: Only fetch if needed AND the user has scrolled it into view
+        if (!shouldFetch || !isInView) return;
 
         const fetchComments = async () => {
             try {
-                // This fetch happens AFTER the page is already visible to the user.
                 const res = await fetch(`/api/comments/${slug}`);
                 if (res.ok) {
                     const data = await res.json();
@@ -63,7 +65,7 @@ export default function CommentSection({
         };
 
         fetchComments();
-    }, [slug, shouldFetch]);
+    }, [slug, shouldFetch, isInView]);
 
     const [optimisticComments, addOptimisticComment] = useOptimistic(
         comments,
@@ -106,7 +108,6 @@ export default function CommentSection({
         }
     };
     
-    // Handlers for voting, deleting, updating remain the same...
     const handleVoteUpdate = (commentId: string, newVotes: any[]) => {
         const updateVotesRecursive = (commentsList: any[]): any[] => {
             return commentsList.map(comment => {
@@ -148,7 +149,7 @@ export default function CommentSection({
     };
 
     return (
-        <div className={styles.commentsSection}>
+        <div ref={containerRef} className={styles.commentsSection}>
             {typedSession?.user ? (
                 <CommentForm slug={slug} session={typedSession} onPostComment={handlePostComment} />
             ) : (

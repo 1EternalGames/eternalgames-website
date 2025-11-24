@@ -28,7 +28,6 @@ const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
 const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clipRule="evenodd" /></svg> );
 
 const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { game?: { slug?: string, title?: string } } }) => {
-    // THE FIX: Explicitly typed for HTMLDivElement because we wrap the link
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
@@ -71,9 +70,9 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
 
     const handleClick = (e: React.MouseEvent) => {
         if (!release.game?.slug) return;
-        e.preventDefault();
+        // We don't prevent default here to let Link handle the navigation wrapper
+        // We just set the layout prefix for the transition
         setPrefix(layoutIdKey);
-        router.push(linkPath, { scroll: false });
     };
 
     return (
@@ -87,7 +86,13 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
             // Map container layoutId to the hub container target
             layoutId={`${layoutIdKey}-container`}
         >
-            <Link href={linkPath} className={`${styles.timelineCard} no-underline`} onClick={handleClick} prefetch={false}>
+            <Link 
+                href={linkPath} 
+                className={`${styles.timelineCard} no-underline`} 
+                onClick={handleClick} 
+                prefetch={false} // FIX: Disable auto-prefetch on viewport entry
+                scroll={false}
+            >
                 <motion.div
                     className={styles.livingCardGlare}
                     style={{ opacity: glareOpacity, '--mouse-x': glareX, '--mouse-y': glareY } as any}
