@@ -23,7 +23,7 @@ import type { SaveStatus } from './SaveStatusIcons';
 
 type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
-    newsType?: 'official' | 'rumor' | 'leak'; // Added
+    newsType?: 'official' | 'rumor' | 'leak';
 };
 
 type ColorMapping = {
@@ -61,7 +61,7 @@ const getInitialEditorState = (doc: EditorDocument) => {
         platforms: doc.platforms || [],
         synopsis: doc.synopsis || '',
         category: doc.category || null,
-        newsType: doc.newsType || 'official', // Added
+        newsType: doc.newsType || 'official',
     };
 };
 
@@ -74,55 +74,27 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
     }
 }
 
+// FIX: Aggressive recursive key stripper to prevent phantom diffs
 const stripKeysAndNormalize = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(stripKeysAndNormalize);
     } else if (obj !== null && typeof obj === 'object') {
-        if (obj._type === 'block') {
-            const keyMap: Record<string, string> = {};
-            let normalizedMarkDefs: any[] = [];
-            if (Array.isArray(obj.markDefs) && obj.markDefs.length > 0) {
-                normalizedMarkDefs = obj.markDefs.map((def: any, index: number) => {
-                    const newKey = `mark_def_${index}`;
-                    keyMap[def._key] = newKey;
-                    const { _key, ...rest } = def;
-                    return { _key: newKey, ...stripKeysAndNormalize(rest) };
-                });
-            }
-            let normalizedChildren = [];
-            if (Array.isArray(obj.children)) {
-                normalizedChildren = obj.children.map((child: any) => {
-                    const { _key, ...childRest } = child;
-                    const newChild = stripKeysAndNormalize(childRest);
-                    if (Array.isArray(newChild.marks)) {
-                        newChild.marks = newChild.marks.map((m: string) => keyMap[m] || m).sort();
-                        if (newChild.marks.length === 0) delete newChild.marks;
-                    }
-                    return newChild;
-                });
-            }
-            const newObj: any = { ...obj };
-            delete newObj._key;
-            if (normalizedMarkDefs.length > 0) {
-                newObj.markDefs = normalizedMarkDefs;
-            } else {
-                delete newObj.markDefs;
-            }
-            newObj.children = normalizedChildren;
-            for (const key in newObj) {
-                if (key !== 'markDefs' && key !== 'children' && key !== '_key') {
-                    newObj[key] = stripKeysAndNormalize(newObj[key]);
-                }
-            }
-            return newObj;
-        }
         const newObj: any = {};
         for (const key in obj) {
-            if (key !== '_key') {
+            // Ignore internal Sanity keys or Tiptap artifacts that cause diff noise
+            if (key !== '_key' && key !== '_type' && key !== 'markDefs') {
                 const val = stripKeysAndNormalize(obj[key]);
-                if (val !== undefined) {
+                if (val !== undefined && val !== null) {
                     newObj[key] = val;
                 }
+            }
+            // Special handling for text nodes to ensure marks sort consistency
+            if (key === 'marks' && Array.isArray(obj[key])) {
+                newObj[key] = [...obj[key]].sort();
+            }
+            // If it's a block, we want to keep the _type for structure but ignore keys
+            if (key === '_type') {
+                newObj[key] = obj[key];
             }
         }
         return newObj;
@@ -133,8 +105,17 @@ const stripKeysAndNormalize = (obj: any): any => {
 const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJson: string) => {
     const patch: Record<string, any> = {};
     const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
-    const compareIds = (arr1: any[], arr2: any[]) => JSON.stringify(normalize(arr1, []).map((i: any) => i._id).sort()) === JSON.stringify(normalize(arr2, []).map((i: any) => i._id).sort());
     
+    // Helper for ID arrays comparison
+    const compareIds = (arr1: any[], arr2: any[]) => {
+        const set1 = new Set(normalize(arr1, []).map((i: any) => i._id));
+        const set2 = new Set(normalize(arr2, []).map((i: any) => i._id));
+        if (set1.size !== set2.size) return false;
+        for (let a of set1) if (!set2.has(a)) return false;
+        return true;
+    };
+
+    // Fields
     if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
     if (sourceOfTruth._type !== 'gameRelease' && normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
     if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
@@ -144,27 +125,32 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (normalize(currentState.category?._id, null) !== normalize(sourceOfTruth.category?._id, null)) {
         patch.category = currentState.category ? { _type: 'reference', _ref: currentState.category._id } : undefined;
     }
-    // New Check for NewsType
     if (sourceOfTruth._type === 'news' && normalize(currentState.newsType, 'official') !== normalize(sourceOfTruth.newsType, 'official')) {
         patch.newsType = currentState.newsType;
     }
 
+    // Arrays
     if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
     if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
     if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
+    
+    // References
     if (normalize(currentState.game?._id, null) !== normalize(sourceOfTruth.game?._id, null)) patch.game = currentState.game ? { _type: 'reference', _ref: currentState.game._id } : undefined;
     if (normalize(currentState.mainImage.assetId, null) !== normalize(sourceOfTruth.mainImage?._ref, null)) patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
-    if (!compareIds(currentState.tags, (sourceOfTruth.tags || []).filter(Boolean))) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
-    if (!compareIds(currentState.authors, (sourceOfTruth.authors || []).filter(Boolean))) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
-    if (!compareIds(currentState.reporters, (sourceOfTruth.reporters || []).filter(Boolean))) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
-    if (!compareIds(currentState.designers, (sourceOfTruth.designers || []).filter(Boolean))) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
+    if (!compareIds(currentState.tags, sourceOfTruth.tags)) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
+    if (!compareIds(currentState.authors, sourceOfTruth.authors)) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
+    if (!compareIds(currentState.reporters, sourceOfTruth.reporters)) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
+    if (!compareIds(currentState.designers, sourceOfTruth.designers)) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
     
-    const sourceContentSanity = sourceOfTruth.content || []; 
-    const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
-    
+    // Content (The crucial part)
     if (sourceOfTruth._type !== 'gameRelease') {
+        const sourceContentSanity = sourceOfTruth.content || []; 
+        const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
+        
+        // FIX: Use the aggressive stripper to compare content without keys
         const cleanSource = JSON.stringify(stripKeysAndNormalize(sourceContentSanity));
         const cleanCurrent = JSON.stringify(stripKeysAndNormalize(currentContentSanity));
+        
         if (cleanSource !== cleanCurrent) {
             patch.content = currentContentSanity;
         }
@@ -327,6 +313,7 @@ export function EditorClient({
                 const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
                 const editorJSON = JSON.stringify(editorInstance.getJSON()); 
                 const sourceJSON = JSON.stringify(freshTiptapContent); 
+                // Only update editor content if it is meaningfully different
                 if (editorJSON !== sourceJSON && !hasChanges) { 
                     editorInstance.commands.setContent(freshTiptapContent, false); 
                 } 
@@ -391,7 +378,7 @@ export function EditorClient({
             platforms: state.platforms,
             synopsis: state.synopsis,
             category: state.category,
-            newsType: state.newsType, // Added
+            newsType: state.newsType,
             content: tiptapToPortableText(JSON.parse(editorContentJson)),
             _updatedAt: new Date().toISOString(),
         };
@@ -399,7 +386,13 @@ export function EditorClient({
         const result = await updateDocumentAction(sourceOfTruth._id, currentPatch); 
         
         if (result.success && result.updatedDocument) { 
-            setSourceOfTruth({ ...optimisticSOT, _updatedAt: result.updatedDocument._updatedAt });
+            // CRITICAL FIX: Update Source of Truth with LOCAL state values for content.
+            // This ensures that even if the server's representation varies slightly,
+            // we treat our local version as the new truth, suppressing further diffs.
+            setSourceOfTruth({ 
+                ...optimisticSOT, 
+                _updatedAt: result.updatedDocument._updatedAt 
+            });
             
             const key = `eternal-draft-${sourceOfTruth._id}`;
             localStorage.setItem(key, JSON.stringify({
@@ -427,7 +420,7 @@ export function EditorClient({
                 } else {
                     setServerSaveStatus('saved'); 
                 }
-            }, 10000);
+            }, 30000); // FIX: Increased from 10s to 30s to reduce frequency while keeping auto-save
         }
     }, [hasChanges, saveWorkingCopy]); 
 
@@ -479,7 +472,7 @@ export function EditorClient({
                         onMainImageUploadQualityChange={setMainImageUploadQuality} 
                         colorDictionary={colorDictionary}
                         onColorDictionaryUpdate={setColorDictionary}
-                        studioMetadata={studioMetadata} // Passed down for inputs
+                        studioMetadata={studioMetadata} 
                     />
                 </motion.div>
                 <motion.div
