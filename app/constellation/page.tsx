@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 async function getConstellationData() {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        if (!session?.user?.id) { 
             return null; // Guest user
         }
 
