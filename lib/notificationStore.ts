@@ -1,14 +1,13 @@
 // lib/notificationStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getNotifications } from '@/app/actions/notificationActions';
+// Removed import of getNotifications action
 
 interface NotificationState {
     notifications: any[];
     unreadCount: number;
     isFetching: boolean;
     lastFetched: number;
-    // Fetch now accepts a 'force' flag
     fetchNotifications: (force?: boolean) => Promise<void>;
     setUnreadCount: (count: number | ((prev: number) => number)) => void;
     setNotifications: (notifs: any[] | ((prev: any[]) => any[])) => void;
@@ -26,24 +25,20 @@ export const useNotificationStore = create<NotificationState>()(
                 const { isFetching, lastFetched, notifications } = get();
                 const now = Date.now();
                 
-                // DATA FRESHNESS POLICY:
-                // If we have data and it was fetched less than 15 minutes ago,
-                // we consider it "fresh" and DO NOT fetch again on page load/refresh.
+                // Cache policy: 15 minutes
                 const STALE_TIME = 15 * 60 * 1000; 
                 const isFresh = (now - lastFetched < STALE_TIME);
                 const hasData = notifications.length > 0;
 
-                // If a fetch is already in progress, abort.
                 if (isFetching) return;
-
-                // If NOT forced (e.g., page load), AND we have fresh data, abort.
-                if (!force && hasData && isFresh) {
-                    return;
-                }
+                if (!force && hasData && isFresh) return;
 
                 set({ isFetching: true });
                 try {
-                    const result = await getNotifications();
+                    // UPDATED: Fetch from dedicated API route instead of Server Action
+                    const res = await fetch('/api/notifications');
+                    const result = await res.json();
+                    
                     if (result.success) {
                         set({
                             notifications: result.notifications || [],
@@ -52,7 +47,7 @@ export const useNotificationStore = create<NotificationState>()(
                         });
                     }
                 } catch (error) {
-                    console.error("Store failed to fetch notifications:", error);
+                    console.error("Failed to fetch notifications");
                 } finally {
                     set({ isFetching: false });
                 }
@@ -66,8 +61,7 @@ export const useNotificationStore = create<NotificationState>()(
             }))
         }),
         {
-            name: 'eternalgames-notifications-v1', // LocalStorage key
-            // Only persist data, not the loading state
+            name: 'eternalgames-notifications-v1', 
             partialize: (state) => ({ 
                 notifications: state.notifications, 
                 unreadCount: state.unreadCount, 

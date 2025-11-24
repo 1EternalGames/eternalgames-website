@@ -11,8 +11,6 @@ export async function postReplyOrComment(contentSlug: string, content: string, p
         const session = await getAuthenticatedSession();
         if (!content || content.trim().length === 0) return { success: false, error: 'لا يمكن نشر تعليق فارغ.' };
 
-        console.log(`[COMMENT] User ${session.user.id} commenting on ${contentSlug}. ParentID: ${parentId || 'None'}`);
-
         const newComment = await prisma.comment.create({
             data: { contentSlug, content, authorId: session.user.id, parentId },
             include: {
@@ -24,37 +22,26 @@ export async function postReplyOrComment(contentSlug: string, content: string, p
 
         // --- NOTIFICATION LOGIC ---
         if (parentId) {
-            console.log(`[NOTIF] Processing reply notification for comment ${parentId}...`);
             try {
                 const parentComment = await prisma.comment.findUnique({
                     where: { id: parentId },
                     select: { authorId: true }
                 });
 
-                if (!parentComment) {
-                    console.warn(`[NOTIF] Parent comment ${parentId} not found.`);
-                } else {
-                    console.log(`[NOTIF] Parent author: ${parentComment.authorId}, Replier: ${session.user.id}`);
-                    
-                    if (parentComment.authorId !== session.user.id) {
-                        console.log(`[NOTIF] Creating notification record...`);
-                        const notif = await prisma.notification.create({
-                            data: {
-                                userId: parentComment.authorId, // Recipient
-                                senderId: session.user.id,      // Triggered by
-                                type: NotificationType.REPLY,
-                                resourceId: newComment.id,
-                                resourceSlug: contentSlug,
-                                link: `${path}#comment-${newComment.id}`
-                            }
-                        });
-                        console.log(`[NOTIF] SUCCESS! Created notification ID: ${notif.id}`);
-                    } else {
-                        console.log(`[NOTIF] Skipped: User replying to themselves.`);
-                    }
+                if (parentComment && parentComment.authorId !== session.user.id) {
+                    await prisma.notification.create({
+                        data: {
+                            userId: parentComment.authorId, // Recipient
+                            senderId: session.user.id,      // Triggered by
+                            type: NotificationType.REPLY,
+                            resourceId: newComment.id,
+                            resourceSlug: contentSlug,
+                            link: `${path}#comment-${newComment.id}`
+                        }
+                    });
                 }
             } catch (notifError) {
-                console.error("[NOTIF] CRITICAL FAILURE:", notifError);
+                // Silently fail notifications to not block comment
             }
         }
         // --------------------------
@@ -62,7 +49,6 @@ export async function postReplyOrComment(contentSlug: string, content: string, p
         revalidatePath(path);
         return { success: true, comment: newComment };
     } catch (error: any) {
-        console.error("[COMMENT] Creation failed:", error);
         return { success: false, error: error.message || "تعذر نشر التعليق." };
     }
 }

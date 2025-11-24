@@ -11,5 +11,4 @@ export const sanityWriteClient = createClient({
     apiVersion,
     useCdn: false,
     token: process.env.SANITY_API_WRITE_TOKEN!,
-    perspective: 'previewDrafts',
-});
+})

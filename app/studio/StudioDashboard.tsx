@@ -101,11 +101,18 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     const [isPending, startTransition] = useTransition();
     
     const { data: session, update: updateSession } = useSession();
+    
     useEffect(() => {
         const clientRoles = (session?.user as any)?.roles || [];
-        if (userRoles.length > 0 && JSON.stringify(userRoles.sort()) !== JSON.stringify(clientRoles.sort())) {
-            console.log("Syncing session roles with server...");
-            updateSession(); 
+        if (userRoles.length > 0) {
+            // FIX: Use spread syntax [...userRoles] to avoid mutating the original arrays with .sort()
+            const sortedServerRoles = [...userRoles].sort();
+            const sortedClientRoles = [...clientRoles].sort();
+            
+            if (JSON.stringify(sortedServerRoles) !== JSON.stringify(sortedClientRoles)) {
+                // console.log("Syncing session roles with server..."); // Removed log
+                updateSession(); 
+            }
         }
     }, [userRoles, session, updateSession]);
 
@@ -172,6 +179,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                     <Link 
                         href="/studio/director" 
                         className={`${styles.directorGateButton} no-underline`}
+                        prefetch={false} // FIX: Disable prefetch to avoid double requests
                     >
                          <span>بوابة الإدارة</span>
                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
