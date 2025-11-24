@@ -28,22 +28,17 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
 
     if (!user) { notFound(); }
     
-    // OPTIMIZED: Parallelize data processing
-    // FIX: Changed the query to fetch _type as well to correctly determine the URL structure
     let contentData: { slug: string, title: string, _type: string }[] = [];
     
-    // 1. Extract content slugs from the user's recent comments.
     const commentSlugs = user.comments.map((c: any) => c.contentSlug);
     
     if (commentSlugs.length > 0) {
-        // 2. Fetch the titles and types for these slugs from Sanity.
         contentData = await client.fetch(
             groq`*[_type in ["review", "article", "news"] && slug.current in $slugs]{ "slug": slug.current, title, _type }`,
             { slugs: commentSlugs }
         );
     }
     
-    // 3. Create a lookup map. Key: slug, Value: { title, type }
     const contentMap = new Map(contentData.map(item => [item.slug, { title: item.title, type: item._type }]));
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -68,7 +63,12 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
                     <p className={styles.profileMeta}>عضوٌ منذ {formattedJoinDate}</p>
                     
                     {user.username && hasCreatorRole(userRoles) && (
-                         <Link href={`/creators/${user.username}`} className="primary-button" style={{marginTop: '2rem', display: 'block', textAlign: 'center'}}>
+                         <Link 
+                            href={`/creators/${user.username}`} 
+                            className="primary-button" 
+                            style={{marginTop: '2rem', display: 'block', textAlign: 'center'}}
+                            prefetch={false} // FIX: Disable prefetch here as well
+                        >
                             عرض كل الأعمال
                         </Link>
                     )}
@@ -82,19 +82,15 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
                         {user.comments.length > 0 ? (
                             <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '2rem'}}>
                                 {user.comments.map((comment: any) => {
-                                    // Use the Map to get data instantly
                                     const contentInfo = contentMap.get(comment.contentSlug);
                                     const contentTitle = contentInfo?.title || 'تعليقٌ لم يعد متاحًا';
                                     
-                                    // FIX: Use the real _type from Sanity to build the URL path correctly.
-                                    // This prevents guessing "review-" prefix which causes 404s for news.
-                                    let pathSection = 'news'; // Fallback
+                                    let pathSection = 'news';
                                     if (contentInfo) {
                                         if (contentInfo.type === 'review') pathSection = 'reviews';
                                         else if (contentInfo.type === 'article') pathSection = 'articles';
                                         else if (contentInfo.type === 'news') pathSection = 'news';
                                     } else {
-                                        // Fallback logic only if Sanity lookup failed (deleted content?)
                                         if (comment.contentSlug.startsWith('review-')) pathSection = 'reviews';
                                         else if (comment.contentSlug.startsWith('article-')) pathSection = 'articles';
                                     }
@@ -105,7 +101,7 @@ export default async function PublicProfilePage({ params: paramsPromise }: { par
                                         <li key={comment.id}>
                                             <p style={{margin: '0 0 0.5rem 0'}}>
                                                 علّق على 
-                                                {/* FIX: Disable prefetch to avoid loading all commented pages */}
+                                                {/* FIX: Disable prefetch on content links in history */}
                                                 <Link href={linkHref} className="creator-credit-link" prefetch={false}>
                                                     {contentTitle}
                                                 </Link>

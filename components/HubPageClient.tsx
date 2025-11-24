@@ -20,11 +20,9 @@ interface HubPageClientProps {
 }
 
 export default function HubPageClient({ initialItems, hubTitle, hubType, headerAction }: HubPageClientProps) {
-    // Retrieve the layout prefix from the store to match the source card
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
     useEffect(() => {
-        // Reset prefix on unmount/navigation away
         return () => setPrefix('default');
     }, [setPrefix]);
 
@@ -35,6 +33,7 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)', fontSize: '1.8rem', maxWidth: '600px', margin: '0 auto'}}>
                     لم يُنشر أي محتوى يطابق هذا المحور بعد. الأرشيف يترقب المستجدات.
                 </p>
+                {headerAction && <div style={{marginTop: '2rem', textAlign: 'center'}}>{headerAction}</div>}
             </div>
         );
     }
@@ -100,8 +99,6 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
         ? urlFor(latestItem.mainImageRef).width(20).blur(10).auto('format').url()
         : null;
     
-    // Use a unique key for the hub if no specific prefix is set, otherwise use the prefix
-    // Note: For game hubs, we use the game title as a stable key if passed from TimelineCard
     const heroLayoutId = layoutIdPrefix === 'default' 
         ? `hub-hero-${hubTitle.replace(/\s+/g, '-')}` 
         : `${layoutIdPrefix}-image`;
@@ -137,6 +134,7 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', zIndex: 5 }}
                 initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}
             >
+                {/* Render the header action (e.g. Profile Link) here */}
                 {headerAction}
                 <motion.h1 
                     className={`${styles.heroTitle} page-title`} 
@@ -188,6 +186,8 @@ export default function HubPageClient({ initialItems, hubTitle, hubType, headerA
                                     <ArticleCard
                                         article={item}
                                         layoutIdPrefix={listLayoutIdPrefix}
+                                        // FIX: Explicitly disable living effect if needed, though ArticleCard handles prefetch internally.
+                                        // We rely on ArticleCard's internal Link prefetch={false} update.
                                     />
                                 </motion.div>
                             ))

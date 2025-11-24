@@ -122,7 +122,8 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
                 <h1 className="page-title">{user.name || 'Creator'}</h1>
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُرَ لهذا المستخدمِ أثرٌ بعد.</p>
                 <div style={{textAlign: 'center', marginTop: '2rem'}}>
-                    <Link href={`/profile/${user.username}`} className="primary-button">ملف المستخدم</Link>
+                    {/* FIX: Disable prefetch on the empty state button */}
+                    <Link href={`/profile/${user.username}`} className="primary-button" prefetch={false}>ملف المستخدم</Link>
                 </div>
             </div>
         );
@@ -134,7 +135,13 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
             hubTitle={user.name || 'Creator'}
             hubType="أعمال"
             headerAction={
-                <Link href={`/profile/${user.username}`} className="outline-button no-underline" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }}>
+                // FIX: Disable prefetch on the main header button
+                <Link 
+                    href={`/profile/${user.username}`} 
+                    className="outline-button no-underline" 
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }} 
+                    prefetch={false}
+                >
                     → الملف الشخصي
                 </Link>
             }
