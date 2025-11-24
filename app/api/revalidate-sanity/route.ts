@@ -1,4 +1,4 @@
-// app/api/revalidate/route.ts
+// app/api/revalidate-sanity/route.ts
 import { revalidateTag } from 'next/cache'
 import { type NextRequest, NextResponse } from 'next/server'
 import { parseBody } from 'next-sanity/webhook'
@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
       return new Response('Bad Request: Missing _type', { status: 400 })
     }
 
-    // Revalidate the specific content type (e.g. 'review', 'news')
+    // Revalidate the specific content type with 'max' profile
     revalidateTag(body._type, 'max')
     
-    // Also revalidate the global 'content' tag which caches aggregate lists
+    // Also revalidate the global 'content' tag
     revalidateTag('content', 'max')
     
     console.log(`[REVALIDATE] Tag: ${body._type} & content`);
@@ -52,7 +52,6 @@ export async function GET(req: NextRequest) {
     const secret = searchParams.get('secret');
     const tag = searchParams.get('tag');
 
-    // Security check is mandatory for GET too
     if (secret !== process.env.REVALIDATION_SECRET_TOKEN) {
         return new Response('Invalid token', { status: 401 });
     }
@@ -62,12 +61,13 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ revalidated: true, tag, now: Date.now() });
     }
     
-    // If no specific tag, revalidate everything important
+    // Fallback: Revalidate everything
     revalidateTag('content', 'max');
     revalidateTag('review', 'max');
     revalidateTag('article', 'max');
     revalidateTag('news', 'max');
     revalidateTag('gameRelease', 'max');
+    revalidateTag('studio-metadata', 'max');
 
     return NextResponse.json({ revalidated: true, message: 'Global content tags revalidated', now: Date.now() });
 }

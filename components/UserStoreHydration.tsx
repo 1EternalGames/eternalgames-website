@@ -22,11 +22,13 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
     const { setNotifications, setUnreadCount } = useNotificationStore();
     
     const lastSyncedUserId = useRef<string | null>(null);
-    // ADDED: Track if we have already handled onboarding redirect for this session
     const hasHandledOnboarding = useRef(false);
 
+    // Safe access to user ID for logic comparison
+    const currentUserId = (session?.user as any)?.id;
+
     useEffect(() => {
-        // 1. Handle Onboarding Redirect (Run once per session load)
+        // 1. Handle Onboarding Redirect
         if (status === 'authenticated' && (session as any)?.needsOnboarding && !hasHandledOnboarding.current) {
             if (pathname !== '/welcome') {
                 hasHandledOnboarding.current = true;
@@ -40,8 +42,6 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
 
         // 2. Handle Data Hydration
         if (status === 'authenticated') {
-            const currentUserId = (session?.user as any)?.id;
-            
             // Check if we have synced for THIS user ID specifically
             const needsSync = !isSyncedWithDb || (currentUserId && lastSyncedUserId.current !== currentUserId);
 
@@ -72,11 +72,13 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
                 setNotifications([]);
                 setUnreadCount(0);
                 lastSyncedUserId.current = null;
-                setIsSyncedWithDb(false); // Reset sync flag
+                setIsSyncedWithDb(false); 
             }
         }
 
-    }, [status, session, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, initialUserState, pathname]); // Note: pathname dependency is needed for onboarding check, but the logic above prevents loop
+    // FIX: Removed 'session?.user?.id' to prevent TS error. 
+    // Using 'currentUserId' (defined in body) or just 'session' covers the reactivity needs.
+    }, [status, session, currentUserId, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, initialUserState, pathname]);
 
     return null;
 }
