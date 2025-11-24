@@ -14,6 +14,7 @@ import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from './ConstellationControlPanel';
 import { getCommentedContentIds } from '@/app/actions/userActions';
 import styles from './ConstellationControlPanel.module.css';
+import { PerformanceMonitor } from '@react-three/drei'; // <-- IMPORT ADDED
 
 const CelestialGearIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -30,10 +31,13 @@ type InitialData = {
 
 export default function Constellation({ initialData }: { initialData?: InitialData }) {
     const [isHydrated, setIsHydrated] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    // SMART PERFORMANCE: Start at 1.5, let the monitor adjust up to 2 or down to 0.5
+    const [dpr, setDpr] = useState(1.5);
+
     useEffect(() => { setIsHydrated(true); }, []);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
 
     useBodyClass('constellation-active'); 
     useBodyClass('fullscreen-active', isFullscreen); 
@@ -195,9 +199,6 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
 
     if (!isHydrated) { return <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', width: '100%' }} />; }
 
-    // OPTIMIZATION: Strict type casting for Three.js DPR prop
-    const dpr: [number, number] = isMobile ? [1, 1] : [1, 2];
-
     return (
         <>
             <AnimatePresence>
@@ -210,8 +211,10 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
                 </motion.button>
                 <Canvas 
                     camera={{ position: [0, 0, isMobile ? 10 : 7], fov: 60 }}
-                    dpr={dpr} // Now correctly typed
+                    dpr={dpr}
                 >
+                    {/* SMART MONITOR: Adjusts resolution based on actual FPS */}
+                    <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(2)} />
                     <Scene 
                         settings={settings} 
                         chronologicalStars={chronologicalStars} 

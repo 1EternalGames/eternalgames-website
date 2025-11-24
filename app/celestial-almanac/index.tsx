@@ -13,6 +13,7 @@ import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from '@/components/constellation/ConstellationControlPanel';
 import type { SanityGameRelease } from '@/types/sanity';
 import styles from '@/components/constellation/ConstellationControlPanel.module.css';
+import { PerformanceMonitor } from '@react-three/drei'; // <-- IMPORT ADDED
 
 const isFeatureLive = false;
 
@@ -63,6 +64,8 @@ const ComingSoonOverlay = () => {
 export default function CelestialAlmanac({ releases }: { releases: SanityGameRelease[] }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // SMART PERFORMANCE: Start at 1.5, let the monitor adjust up to 2 or down to 0.5
+  const [dpr, setDpr] = useState(1.5);
 
   useEffect(() => { 
       setIsHydrated(true); 
@@ -172,9 +175,6 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
 
   if (!isHydrated) { return <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', width: '100%' }} />; }
 
-  // OPTIMIZATION: Strict type casting for Three.js DPR prop
-  const dpr: [number, number] = isMobile ? [1, 1] : [1, 2];
-
   return (
     <>
       {isFeatureLive && (
@@ -196,8 +196,10 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
         )}
         <Canvas 
             camera={{ position: [0, 0, 8], fov: 60 }}
-            dpr={dpr} // Now correctly typed
+            dpr={dpr}
         >
+          {/* SMART MONITOR: Adjusts resolution based on actual FPS */}
+          <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(2)} />
           <Scene settings={settings} orbitalData={orbitalData} themeColors={themeColors} setActiveStar={handleSetActiveBody} isFeatureLive={isFeatureLive} />
         </Canvas>
 

@@ -15,7 +15,7 @@ import NextImage from 'next/image'
 import {useLightboxStore} from '@/lib/lightboxStore'
 import type {PortableTextBlock} from '@portabletext/types'
 import {useTheme} from 'next-themes'
-import {sanityLoader} from '@/lib/sanity.loader' // <-- IMPORT ADDED
+import {sanityLoader} from '@/lib/sanity.loader'
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => (
@@ -46,125 +46,13 @@ const YoutubeEmbed = dynamic(() => import('./content/YoutubeEmbed'), {
 })
 // --- END LAZY-LOADED COMPONENTS ---
 
-// MODIFIED: Cleaned palette. Only one mid-gray.
-const COLOR_PALETTE = [
-  {
-    title: 'Grays',
-    colors: [
-      '#9CA3AF', 
-    ],
-  },
-  {
-    title: 'Reds',
-    colors: [
-      '#FEF2F2',
-      '#FEE2E2',
-      '#FECACA',
-      '#F87171',
-      '#EF4444',
-      '#DC2626',
-      '#B91C1C',
-      '#991B1B',
-      '#7F1D1D',
-      '#450A0A',
-    ],
-  },
-  {
-    title: 'Oranges',
-    colors: [
-      '#FFF7ED',
-      '#FFEDD5',
-      '#FED7AA',
-      '#FB923C',
-      '#F97316',
-      '#EA580C',
-      '#C2410C',
-      '#9A3412',
-      '#7C2D12',
-      '#431407',
-    ],
-  },
-  {
-    title: 'Yellows',
-    colors: [
-      '#FEFCE8',
-      '#FEF9C3',
-      '#FEF08A',
-      '#FACC15',
-      '#EAB308',
-      '#CA8A04',
-      '#A16207',
-      '#854D0E',
-      '#713F12',
-      '#422006',
-    ],
-  },
-  {
-    title: 'Greens',
-    colors: [
-      '#F0FDF4',
-      '#DCFCE7',
-      '#BBF7D0',
-      '#4ADE80',
-      '#22C55E',
-      '#16A34A',
-      '#15803D',
-      '#166534',
-      '#14532D',
-      '#052e16',
-    ],
-  },
-  {
-    title: 'Cyans',
-    colors: [
-      '#ECFEFF',
-      '#CFFAFE',
-      '#A5F3FC',
-      '#22D3EE',
-      '#06B6D4',
-      '#0891B2',
-      '#0E7490',
-      '#155E75',
-      '#164E63',
-      '#083344',
-    ],
-  },
-  {
-    title: 'Blues',
-    colors: [
-      '#EFF6FF',
-      '#DBEAFE',
-      '#BFDBFE',
-      '#60A5FA',
-      '#3B82F6',
-      '#2563EB',
-      '#1D4ED8',
-      '#1E40AF',
-      '#1E3A8A',
-      '#172554',
-    ],
-  },
-  {
-    title: 'Purples',
-    colors: [
-      '#F5F3FF',
-      '#EDE9FE',
-      '#DDD6FE',
-      '#A78BFA',
-      '#8B5CF6',
-      '#7C3AED',
-      '#6D28D9',
-      '#5B21B6',
-      '#4C1D95',
-      '#2E1065',
-    ],
-  },
-]
-
 type ColorMapping = {
   word: string
   color: string
 }
+
+// Match English words (Latin characters)
+const ENGLISH_REGEX = /(\b[a-zA-Z]+(?:['’][a-zA-Z]+)?\b)/g
 
 const shouldIgnoreColor = (hex: string): boolean => {
   if (!hex || !hex.startsWith('#')) return true
@@ -201,11 +89,14 @@ const ColorMark = ({
   const originalColor = value?.hex
 
   if (!mounted || !originalColor) {
-    return <span style={{color: originalColor}}>{children}</span>
+    // Default server render or if no color provided
+    // We still apply bold if it was intended to be colored
+    return <span style={{color: originalColor, fontWeight: '700'}}>{children}</span>
   }
 
   if (shouldIgnoreColor(originalColor)) {
-    return <span>{children}</span>
+    // Even if color is ignored (too dark/light), we enforce bold
+    return <span style={{fontWeight: '700'}}>{children}</span>
   }
 
   let finalColor = originalColor
@@ -227,7 +118,8 @@ const ColorMark = ({
     finalColor = `color-mix(in srgb, ${finalColor} 70%, black 30%)`
   }
 
-  return <span style={{color: finalColor}}>{children}</span>
+  // Apply both color and bold weight
+  return <span style={{color: finalColor, fontWeight: '700'}}>{children}</span>
 }
 
 const SanityImageComponent = ({value}: {value: any}) => {
@@ -246,7 +138,7 @@ const SanityImageComponent = ({value}: {value: any}) => {
     <div style={{margin: '4rem 0'}}>
       <div onClick={() => openLightbox([fullResSrc], 0)} className="image-lightbox-trigger">
         <NextImage
-          loader={sanityLoader} // <-- LOADER ADDED
+          loader={sanityLoader}
           src={optimizedSrc}
           alt={alt || 'Content Image'}
           width={width}
@@ -317,7 +209,7 @@ export default function PortableTextComponent({
 
   const components: PortableTextComponents = useMemo(() => {
     const colorMap = new Map(colorDictionary.map((item) => [item.word.toLowerCase(), item.color]))
-    const regex =
+    const colorRegex =
       colorDictionary.length > 0
         ? new RegExp(
             `\\b(${colorDictionary
@@ -327,11 +219,20 @@ export default function PortableTextComponent({
           )
         : null
 
-    const NormalBlockRenderer = (props: PortableTextComponentProps<PortableTextBlock>) => {
-      if (!regex) {
-        return <p>{props.children}</p>
-      }
+    const processTextForEnglish = (text: string) => {
+      const parts = text.split(ENGLISH_REGEX)
+      return parts.map((part, i) => {
+        if (ENGLISH_REGEX.test(part)) {
+          // Double check if it contains actual latin letters
+          if (/[a-zA-Z]/.test(part)) {
+             return <strong key={`eng-${i}`} style={{ fontWeight: '700' }}>{part}</strong>
+          }
+        }
+        return part
+      })
+    }
 
+    const NormalBlockRenderer = (props: PortableTextComponentProps<PortableTextBlock>) => {
       return (
         <p>
           {React.Children.map(props.children, (child: any) => {
@@ -339,19 +240,26 @@ export default function PortableTextComponent({
               return child
             }
 
-            const parts = child.split(regex)
+            // 1. Split by Color Dictionary first
+            if (colorRegex) {
+              const parts = child.split(colorRegex)
+              return parts.map((part, i) => {
+                const lowerPart = part.toLowerCase()
+                if (colorMap.has(lowerPart)) {
+                  // Colored words from dictionary: Apply color + BOLD (700)
+                  return (
+                    <span key={i} style={{color: colorMap.get(lowerPart), fontWeight: '700'}}>
+                      {part}
+                    </span>
+                  )
+                }
+                // 2. Process remaining parts for English bolding
+                return <React.Fragment key={i}>{processTextForEnglish(part)}</React.Fragment>
+              })
+            }
 
-            return parts.map((part, i) => {
-              const lowerPart = part.toLowerCase()
-              if (colorMap.has(lowerPart)) {
-                return (
-                  <span key={i} style={{color: colorMap.get(lowerPart), fontWeight: '600'}}>
-                    {part}
-                  </span>
-                )
-              }
-              return <React.Fragment key={i}>{part}</React.Fragment>
-            })
+            // No color regex, just process English
+            return processTextForEnglish(child)
           })}
         </p>
       )
@@ -375,7 +283,7 @@ export default function PortableTextComponent({
         normal: NormalBlockRenderer,
       },
       marks: {
-        color: ColorMark,
+        color: ColorMark, // Use updated ColorMark
         link: ({value, children}) => {
           const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined
           const isExternal = rel === 'noreferrer noopener'
