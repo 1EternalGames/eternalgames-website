@@ -3,59 +3,59 @@
 
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { CardProps } from '@/types';
 import { Calendar03Icon } from '@/components/icons/index';
 import { translateTag } from '@/lib/translations';
-import styles from './NewsfeedStream.module.css';
 import feedStyles from '../feed/Feed.module.css';
-import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import Image from 'next/image';
 
 const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
     const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
-    const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "homepage-news-stream";
     const linkPath = `/news/${item.slug}`;
     
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        if (e.ctrlKey || e.metaKey) return; // Allow new tab
-        e.preventDefault();
+    const handleClick = () => {
         setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
     };
 
     return (
-        <motion.a
+        <Link
             href={linkPath}
             onClick={handleClick}
-            layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
-            className={`${feedStyles.newsListItem} no-underline`}
-            style={{ display: 'grid' }}
+            prefetch={false} // THE FIX: Disable prefetch
+            className="no-underline"
+            style={{ display: 'block' }}
         >
-            <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
-                <Image 
-                    src={item.imageUrl} 
-                    alt={item.title} 
-                    fill 
-                    sizes="60px" 
-                    placeholder="blur" 
-                    blurDataURL={item.blurDataURL} 
-                    style={{ objectFit: 'cover' }} 
-                />
+            <motion.div
+                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+                className={feedStyles.newsListItem}
+            >
+                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
+                    <Image 
+                        src={item.imageUrl} 
+                        alt={item.title} 
+                        fill 
+                        sizes="60px" 
+                        placeholder="blur" 
+                        blurDataURL={item.blurDataURL} 
+                        style={{ objectFit: 'cover' }} 
+                    />
+                </motion.div>
+                <div className={feedStyles.newsListInfo}>
+                    <p className={feedStyles.newsListCategory}>{primaryTag}</p>
+                    <motion.h5 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className={feedStyles.newsListTitle}>{item.title}</motion.h5>
+                    {item.date && (
+                        <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
+                            <span>{item.date.split(' - ')[0]}</span>
+                        </div>
+                    )}
+                </div>
             </motion.div>
-            <div className={feedStyles.newsListInfo}>
-                <p className={feedStyles.newsListCategory}>{primaryTag}</p>
-                <motion.h5 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className={feedStyles.newsListTitle}>{item.title}</motion.h5>
-                {item.date && (
-                    <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
-                        <span>{item.date.split(' - ')[0]}</span>
-                    </div>
-                )}
-            </div>
-        </motion.a>
+        </Link>
     );
 });
 LatestNewsListItem.displayName = "LatestNewsListItem";

@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import type { SanityNews } from '@/types/sanity';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import styles from '../app/news/NewsPage.module.css'; // <-- IMPORTED
+import styles from '../app/news/NewsPage.module.css';
 
 const ScrambledText = ({ text }: { text: string }) => {
   const [displayText, setDisplayText] = useState('');
@@ -74,7 +74,11 @@ export default function TerminalTicker({ headlines }: { headlines: SanityNews[] 
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Link href={`/news/${headlines[index].slug}`} className="no-underline">
+            <Link 
+                href={`/news/${headlines[index].slug}`} 
+                className="no-underline"
+                prefetch={false} // THE FIX: Disable prefetch
+            >
               <p className={styles.terminalTickerCategory}>{headlines[index].category}</p>
               <h4 className={styles.terminalTickerHeadline}>
                 <ScrambledText text={headlines[index].title} />
@@ -86,11 +90,3 @@ export default function TerminalTicker({ headlines }: { headlines: SanityNews[] 
     </div>
   );
 }
-
-
-
-
-
-
-
-

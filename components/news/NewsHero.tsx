@@ -10,7 +10,6 @@ import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useRouter } from 'next/navigation';
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
@@ -30,17 +29,13 @@ const typeLabelMap: Record<string, string> = {
 };
 
 const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProps; isActive: boolean, layoutIdPrefix: string }) => {
-    // THE FIX: Use newsType for the label instead of the generic tag
     const newsType = item.newsType || 'official';
     const label = typeLabelMap[newsType] || 'أخبار';
 
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const router = useRouter();
-
-    const handleClick = (e: React.MouseEvent) => {
-        e.preventDefault();
+    
+    const handleClick = () => {
         setPrefix(layoutIdPrefix);
-        router.push(`/news/${item.slug}`, { scroll: false });
     };
 
     return (
@@ -55,13 +50,13 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                     transition={{ duration: 0.5 }}
                 >
                     <div className={styles.textContent}>
-                        {/* Applied dynamic class based on newsType */}
                         <p className={`${styles.storyCategory} ${styles[newsType]}`}>
                             {label}
                         </p>
-                        <a 
+                        <Link 
                             href={`/news/${item.slug}`}
                             onClick={handleClick}
+                            prefetch={false} // THE FIX: Disable prefetch
                             className={`${styles.storyLink} no-underline`}
                         >
                             <motion.h1 
@@ -77,7 +72,7 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                                     </motion.span>
                                 ))}
                             </motion.h1>
-                        </a>
+                        </Link>
                         <div className={styles.storyMeta}>
                             <CreatorCredit label="بواسطة" creators={item.authors} small disableLink />
                             <span className={styles.storyMetaDate}>
@@ -96,7 +91,6 @@ AnimatedStory.displayName = "AnimatedStory";
 const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix }: { imageUrl: string; alt: string; layoutId: string; legacyId: number; layoutIdPrefix: string }) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     
-    // Allow clicking the background too
     const handleClick = () => {
         setPrefix(layoutIdPrefix);
     };
@@ -105,7 +99,7 @@ const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix
         <motion.div 
             key={imageUrl} 
             className={styles.heroBackground} 
-            layoutId={`${layoutIdPrefix}-card-container-${legacyId}`} // Transition container
+            layoutId={`${layoutIdPrefix}-card-container-${legacyId}`} 
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
@@ -114,7 +108,7 @@ const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix
         >
              <motion.div 
                 style={{ position: 'relative', width: '100%', height: '100%' }}
-                layoutId={`${layoutIdPrefix}-card-image-${legacyId}`} // Transition image
+                layoutId={`${layoutIdPrefix}-card-image-${legacyId}`} 
              >
                 <Image
                     src={imageUrl}

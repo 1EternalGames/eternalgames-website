@@ -3,8 +3,8 @@
 
 import React, { memo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
@@ -27,23 +27,15 @@ const typeLabelMap: Record<string, string> = {
 };
 
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: NewsGridCardProps) => {
-    const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
-    const { livingCardRef, livingCardAnimation } = useLivingCard();
+    // THE FIX: Typed as HTMLDivElement since the ref is on the wrapper div
+    const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
 
     const linkPath = `/news/${item.slug}`;
     
     const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a, button, [role="button"]')) {
-            return;
-        }
-        e.preventDefault();
+        // Allow default Link behavior (navigation), just set the layout prefix
         setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
-    };
-
-    const handleMouseEnter = () => {
-        router.prefetch(linkPath);
     };
 
     const imageSource = item.imageUrl;
@@ -55,12 +47,11 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         <motion.div
             ref={livingCardRef}
             onMouseMove={livingCardAnimation.onMouseMove}
-            onMouseEnter={() => { livingCardAnimation.onMouseEnter(); handleMouseEnter(); }}
+            onMouseEnter={livingCardAnimation.onMouseEnter}
             onMouseLeave={livingCardAnimation.onMouseLeave}
             onTouchStart={livingCardAnimation.onTouchStart}
             onTouchEnd={livingCardAnimation.onTouchEnd}
             onTouchCancel={livingCardAnimation.onTouchCancel}
-            onClick={handleClick}
             className={styles.cardContainer}
             style={livingCardAnimation.style}
         >
@@ -72,7 +63,12 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 25 }}
             >
-                <div className={`${styles.cardLink} no-underline`}>
+                <Link 
+                    href={linkPath} 
+                    className={`${styles.cardLink} no-underline`}
+                    onClick={handleClick}
+                    prefetch={false} // THE FIX: Disable prefetch to prevent request spam
+                >
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
                             className={styles.imageContainer} 
@@ -119,7 +115,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                             </div>
                         )}
                     </div>
-                </div>
+                </Link>
             </motion.div>
         </motion.div>
     );
