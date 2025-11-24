@@ -69,10 +69,13 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
     if (comment.isDeleted) { return ( <> <DeletedState /> {replyCount > 0 && ( <div className={styles.commentRepliesList}> {(replies || []).map((reply: any) => ( <CommentItem key={reply.id} comment={reply} session={session} slug={slug} onVoteUpdate={onVoteUpdate} onPostReply={onPostReply} onDeleteSuccess={onDeleteSuccess} onUpdateSuccess={onUpdateSuccess} /> ))} </div> )} </> ); }
 
     return ( <> <motion.div className={styles.commentItem} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}> <div className={styles.commentHeader}> <div className={styles.commentAuthorInfo}>
-        <Link href={`/profile/${comment.author.username}`}><Image src={comment.author.image || '/default-avatar.svg'} alt={comment.author.name || 'User Avatar'} width={40} height={40} className="user-avatar" /></Link>
+        {/* FIX: Disable prefetch to avoid loading every commenter's profile */}
+        <Link href={`/profile/${comment.author.username}`} prefetch={false}><Image src={comment.author.image || '/default-avatar.svg'} alt={comment.author.name || 'User Avatar'} width={40} height={40} className="user-avatar" /></Link>
         <div className={styles.authorAndTimestamp}>
+            {/* FIX: Disable prefetch here too */}
             <Link 
                 href={`/profile/${comment.author.username}`} 
+                prefetch={false}
                 className={`${styles.commentAuthorLink} no-underline ${comment.isOptimistic ? styles.pulsingText : ''}`}
             >
                 {comment.author.name}

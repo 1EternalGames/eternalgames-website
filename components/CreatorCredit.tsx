@@ -125,7 +125,7 @@ const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableL
                     className="creator-credit-link no-underline"
                     onClick={(e) => e.stopPropagation()}
                     onTouchStart={handleTouch}
-                    prefetch={false}
+                    prefetch={false} // FIX: Disable prefetch to prevent loading all creator pages
                 >
                     {creator.name}
                 </Link>
