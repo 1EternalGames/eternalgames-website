@@ -37,11 +37,8 @@ const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const Footer = () => {
   const pathname = usePathname();
 
-  // THE DEFINITIVE FIX:
-  // Completely unmount the footer if we are in a specific studio editor route.
-  // This regex matches /studio/reviews/..., /studio/news/..., etc.
-  // but does NOT match /studio (the dashboard), which should have a footer.
-  const isStudioEditor = /^\/studio\/(reviews|articles|news|releases)\/.+/.test(pathname);
+  // Updated regex to include social-templates
+  const isStudioEditor = /^\/studio\/(reviews|articles|news|releases|social-templates)\/.+/.test(pathname);
 
   if (isStudioEditor) {
     return null;
