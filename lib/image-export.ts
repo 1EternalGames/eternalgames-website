@@ -88,7 +88,13 @@ async function getFontStyles() {
     }
 }
 
-export async function downloadElementAsImage(elementId: string, fileName: string, format: 'png' | 'jpeg' = 'png') {
+export async function downloadElementAsImage(
+    elementId: string, 
+    fileName: string, 
+    format: 'png' | 'jpeg' = 'jpeg', 
+    scale: number = 2, // Default to 2x (4K)
+    quality: number = 0.9 // Default 90% quality for JPG
+) {
     const element = document.getElementById(elementId);
     if (!element) return;
 
@@ -115,26 +121,34 @@ export async function downloadElementAsImage(elementId: string, fileName: string
         }
     }
 
-    // 2. Inject Fonts
+    // 2. Inject Fonts & Styles
     const fontStyles = await getFontStyles();
-    if (fontStyles) {
-        let styleTag = svg.querySelector('style');
-        if (!styleTag) {
-            styleTag = document.createElement('style');
-            svg.prepend(styleTag);
-        }
-        // Append our specific font mappings
-        // CRITICAL FIX: We do NOT append a global '* { font-family... }' override here.
-        // We rely on the aliases created in getFontStyles ('Impact'->'Anton') to handle specific elements.
-        styleTag.textContent = (styleTag.textContent || '') + fontStyles;
+    // Define critical layout styles that might be missing in the serialized SVG context
+    const criticalStyles = `
+        .social-editor-content p { margin: 0 !important; }
+        .ProseMirror p { margin: 0 !important; }
+        .social-editor-content { overflow: hidden; }
+    `;
+    
+    let styleTag = svg.querySelector('style');
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        svg.prepend(styleTag);
     }
+    // Append our specific font mappings and critical fixes
+    styleTag.textContent = (styleTag.textContent || '') + criticalStyles + (fontStyles || '');
 
     // 3. Serialize and Draw
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
     
-    const width = 1080; 
-    const height = 1350;
+    // Base dimensions for the template
+    const baseWidth = 1080; 
+    const baseHeight = 1350;
+
+    // Calculate target dimensions
+    const width = baseWidth * scale;
+    const height = baseHeight * scale;
     
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -153,6 +167,7 @@ export async function downloadElementAsImage(elementId: string, fileName: string
                 ctx.fillStyle = '#050505'; 
                 ctx.fillRect(0, 0, width, height);
             }
+            // Draw image scaled
             ctx.drawImage(img, 0, 0, width, height);
             
             canvas.toBlob((blob) => {
@@ -169,7 +184,7 @@ export async function downloadElementAsImage(elementId: string, fileName: string
                 } else {
                     reject(new Error('Canvas conversion failed'));
                 }
-            }, `image/${format}`, 1.0);
+            }, `image/${format}`, quality);
         };
         img.onerror = (e) => reject(e);
     });

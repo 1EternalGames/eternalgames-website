@@ -14,16 +14,18 @@ export interface GameSlotData {
     };
     badges: {
         gamePass: boolean;
-        optimized: boolean; // "Optimized for X|S" or "PS5 Enhanced"
+        psPlus: boolean;
         exclusive: boolean;
-        nintendo: boolean;
+        price: {
+            active: boolean;
+            text: string;
+        };
     };
     imageSettings: { x: number; y: number; scale: number };
 }
 
 export interface MonthlyGamesTemplateData {
-    month: string; // e.g. "نوفمبر"
-    // Removed subtitle property
+    month: string;
     slots: GameSlotData[];
 }
 

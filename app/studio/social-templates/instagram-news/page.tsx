@@ -48,7 +48,6 @@ export default function InstagramNewsEditor() {
     const [scale, setScale] = useState(0.4);
     const [isFillerOpen, setIsFillerOpen] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-    const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png');
     const [isExporting, startExport] = useTransition();
     const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const toast = useToast();
@@ -172,13 +171,13 @@ export default function InstagramNewsEditor() {
         }
     };
 
-    const handleDownload = (format: 'png' | 'jpeg') => {
+    const handleDownload = (format: 'png' | 'jpeg', quality: number = 0.9) => {
         setIsExportMenuOpen(false);
-        setExportFormat(format);
         startExport(async () => {
             try {
-                await downloadElementAsImage('instagram-news-canvas', `ig-news-${Date.now()}`, format);
-                toast.success(`تم التنزيل (${format.toUpperCase()})`);
+                // MODIFIED: 2x scale for 4K
+                await downloadElementAsImage('instagram-news-canvas', `ig-news-${Date.now()}`, format, 2, quality);
+                toast.success(`تم التنزيل (${format.toUpperCase()}) - 4K`);
             } catch (e) {
                 console.error(e);
                 toast.error("فشل التصدير.");
@@ -205,9 +204,9 @@ export default function InstagramNewsEditor() {
                             </button>
                             
                             <div className={styles.downloadGroup}>
-                                <button className={styles.downloadButton} onClick={() => handleDownload('png')} disabled={isExporting}>
+                                <button className={styles.downloadButton} onClick={() => handleDownload('jpeg', 0.9)} disabled={isExporting}>
                                     <DownloadIcon />
-                                    <span style={{ marginRight: '0.8rem' }}>تنزيل (PNG)</span>
+                                    <span style={{ marginRight: '0.8rem' }}>تحميل 4K (JPG)</span>
                                 </button>
                                 <button className={styles.dropdownTrigger} onClick={() => setIsExportMenuOpen(!isExportMenuOpen)} disabled={isExporting}>
                                     <motion.div animate={{ rotate: isExportMenuOpen ? 180 : 0 }}>
@@ -218,7 +217,7 @@ export default function InstagramNewsEditor() {
                              <AnimatePresence>
                                 {isExportMenuOpen && (
                                     <motion.div className={styles.dropdownMenu} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                                        <button className={styles.dropdownItem} onClick={() => handleDownload('jpeg')}>صورة JPG</button>
+                                        <button className={styles.dropdownItem} onClick={() => handleDownload('png')}>تحميل 4K (PNG)</button>
                                     </motion.div>
                                 )}
                             </AnimatePresence>

@@ -423,3 +423,8 @@ body.lightbox-active {
     pointer-events: none;
     height: 0;
 }
+
+/* FIX: Remove margins from paragraphs in social editor to prevent layout issues in SVG/Flex containers */
+.social-editor-content .ProseMirror p {
+    margin: 0 !important;
+}

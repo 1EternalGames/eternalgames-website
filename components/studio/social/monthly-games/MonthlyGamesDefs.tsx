@@ -36,7 +36,8 @@ export default function MonthlyGamesDefs() {
             </linearGradient>
 
             <clipPath id="mg-towerClip">
-                <path d="M 40,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 L 0,40 L 40,0 Z"></path>
+                {/* Updated path: removed top-left cut (M 0,0) */}
+                <path d="M 0,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 Z"></path>
             </clipPath>
             
              <g id="mg-glassDock">

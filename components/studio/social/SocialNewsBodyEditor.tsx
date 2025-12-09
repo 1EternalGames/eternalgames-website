@@ -37,6 +37,8 @@ interface SocialNewsBodyEditorProps {
     // Added: Optional config to control extensions (e.g. disable auto-english color for titles)
     disableAutoEnglish?: boolean;
     textAlign?: 'left' | 'right' | 'center' | 'justify';
+    // NEW: Allow auto height for vertical centering
+    autoHeight?: boolean;
 }
 
 export default function SocialNewsBodyEditor({ 
@@ -47,7 +49,8 @@ export default function SocialNewsBodyEditor({
     setEditing,
     customStyle = {},
     disableAutoEnglish = false,
-    textAlign = 'right'
+    textAlign = 'right',
+    autoHeight = false
 }: SocialNewsBodyEditorProps) {
     const [mounted, setMounted] = useState(false);
 
@@ -72,7 +75,8 @@ export default function SocialNewsBodyEditor({
         editorProps: {
             attributes: {
                 class: 'social-editor-content',
-                style: 'outline: none; height: 100%; width: 100%; overflow: hidden;' // Base styles
+                // MODIFIED: Conditionally apply height: 100%
+                style: `outline: none; width: 100%; overflow: hidden; ${autoHeight ? 'min-height: 0;' : 'height: 100%;'}` 
             }
         },
         onUpdate: ({ editor }) => {
@@ -156,7 +160,8 @@ export default function SocialNewsBodyEditor({
                     </motion.button>
                 </BubbleMenu>
             )}
-            <EditorContent editor={editor} style={{ width: '100%', height: '100%' }} />
+            {/* MODIFIED: Conditionally apply height: 100% to inner EditorContent wrapper */}
+            <EditorContent editor={editor} style={{ width: '100%', height: autoHeight ? 'auto' : '100%' }} />
         </div>
     );
 }

@@ -8,6 +8,8 @@ import GameSlot from './GameSlot';
 import SpaceBackground from '../shared/SpaceBackground';
 import EditableText from '../shared/EditableText';
 
+const CARD_SCALE = 0.9;
+
 export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: MonthlyGamesCanvasProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
 
@@ -16,6 +18,20 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
         newSlots[index] = { ...newSlots[index], ...newSlotData };
         onDataChange({ slots: newSlots });
     };
+
+    // Calculate grid positions for 85% scale (255x323)
+    // 4 gaps over 1080px width
+    // Gaps = (1080 - (255*3)) / 4 = 78.75
+    // X positions: 79, 413, 746
+    const X_POS = [79, 413, 746];
+    
+    // Y positions
+    // Header is ~150px high. Footer ~100px.
+    // Start at 180. Gap ~50px.
+    // Row 1: 180
+    // Row 2: 180 + 323 + 50 = 553
+    // Row 3: 553 + 323 + 50 = 926
+    const Y_POS = [180, 553, 926];
 
     return (
         <div 
@@ -51,7 +67,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                         x={0} 
                         y={20} // Adjusted position to be centered properly
                         text={data.month}
-                        fontSize={80}
+                        fontSize={60} // REDUCED from 80
                         align="middle"
                         onChange={(val) => onDataChange({ month: val })}
                         isEditing={editingField === 'month'}
@@ -59,7 +75,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                         style={{
                             fill: "#00FFF0",
                             fontWeight: 900,
-                            fontFamily: "Impact, sans-serif",
+                            fontFamily: "'Cairo', sans-serif", // Changed to Cairo
                             textTransform: "uppercase",
                             filter: "drop-shadow(0 0 30px rgba(0,255,240,0.6))",
                         }}
@@ -73,21 +89,21 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                     </g>
                 </g>
 
-                {/* SLOTS - 3 Rows Grid Layout */}
+                {/* SLOTS - 3 Rows Grid Layout - RESCALED */}
                 {/* Row 1 */}
-                <GameSlot slot={data.slots[0]} onChange={(d) => handleSlotChange(0, d)} x={40} y={140} scale={scale} />
-                <GameSlot slot={data.slots[1]} onChange={(d) => handleSlotChange(1, d)} x={390} y={140} scale={scale} />
-                <GameSlot slot={data.slots[2]} onChange={(d) => handleSlotChange(2, d)} x={740} y={140} scale={scale} />
+                <GameSlot slot={data.slots[0]} onChange={(d) => handleSlotChange(0, d)} x={X_POS[0]} y={Y_POS[0]} scale={scale} sizeScale={CARD_SCALE} />
+                <GameSlot slot={data.slots[1]} onChange={(d) => handleSlotChange(1, d)} x={X_POS[1]} y={Y_POS[0]} scale={scale} sizeScale={CARD_SCALE} />
+                <GameSlot slot={data.slots[2]} onChange={(d) => handleSlotChange(2, d)} x={X_POS[2]} y={Y_POS[0]} scale={scale} sizeScale={CARD_SCALE} />
 
                 {/* Row 2 */}
-                <GameSlot slot={data.slots[3]} onChange={(d) => handleSlotChange(3, d)} x={40} y={550} scale={scale} />
-                <GameSlot slot={data.slots[4]} onChange={(d) => handleSlotChange(4, d)} x={390} y={550} scale={scale} />
-                <GameSlot slot={data.slots[5]} onChange={(d) => handleSlotChange(5, d)} x={740} y={550} scale={scale} />
+                <GameSlot slot={data.slots[3]} onChange={(d) => handleSlotChange(3, d)} x={X_POS[0]} y={Y_POS[1]} scale={scale} sizeScale={CARD_SCALE} />
+                <GameSlot slot={data.slots[4]} onChange={(d) => handleSlotChange(4, d)} x={X_POS[1]} y={Y_POS[1]} scale={scale} sizeScale={CARD_SCALE} />
+                <GameSlot slot={data.slots[5]} onChange={(d) => handleSlotChange(5, d)} x={X_POS[2]} y={Y_POS[1]} scale={scale} sizeScale={CARD_SCALE} />
 
                 {/* Row 3 */}
-                <GameSlot slot={data.slots[6]} onChange={(d) => handleSlotChange(6, d)} x={40} y={960} scale={scale} />
-                <GameSlot slot={data.slots[7]} onChange={(d) => handleSlotChange(7, d)} x={390} y={960} scale={scale} />
-                <GameSlot slot={data.slots[8]} onChange={(d) => handleSlotChange(8, d)} x={740} y={960} scale={scale} />
+                <GameSlot slot={data.slots[6]} onChange={(d) => handleSlotChange(6, d)} x={X_POS[0]} y={Y_POS[2]} scale={scale} sizeScale={CARD_SCALE} />
+                <GameSlot slot={data.slots[7]} onChange={(d) => handleSlotChange(7, d)} x={X_POS[1]} y={Y_POS[2]} scale={scale} sizeScale={CARD_SCALE} />
+                <GameSlot slot={data.slots[8]} onChange={(d) => handleSlotChange(8, d)} x={X_POS[2]} y={Y_POS[2]} scale={scale} sizeScale={CARD_SCALE} />
 
                 {/* WATERMARK */}
                 <g transform="translate(540, 1345)">
