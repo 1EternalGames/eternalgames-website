@@ -30,6 +30,10 @@ export default function ReviewCardDefs() {
                 <stop offset="0%" stopColor="#0F1115"></stop>
                 <stop offset="100%" stopColor="#050608"></stop>
             </linearGradient>
+            <linearGradient id="review-beamGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#00FFF0" stopOpacity="0"></stop>
+                <stop offset="100%" stopColor="#00FFF0" stopOpacity="0.15"></stop>
+            </linearGradient>
                 <pattern id="review-inactiveModule" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
                     <line x1="0" y1="0" x2="10" y2="10" stroke="#1A202C" strokeWidth="1" />
             </pattern>
@@ -39,6 +43,10 @@ export default function ReviewCardDefs() {
             </pattern>
             <pattern id="review-hexTech" x="0" y="0" width="20" height="34.64" patternUnits="userSpaceOnUse">
                 <path d="M10 0 L20 5 L20 15 L10 20 L0 15 L0 5 Z" fill="none" stroke="#00FFF0" strokeWidth="0.5" opacity="0.1"></path>
+            </pattern>
+            <pattern id="review-holoScan" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="2" height="2" fill="#000" opacity="0.3"/>
+                <rect x="2" y="2" width="2" height="2" fill="#000" opacity="0.3"/>
             </pattern>
             <filter id="review-cyanGlow">
                 <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
@@ -58,6 +66,19 @@ export default function ReviewCardDefs() {
                 <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"></feTurbulence>
                 <feColorMatrix type="saturate" values="0"></feColorMatrix>
             </filter>
+            <filter id="platformGlow">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feFlood floodColor="#00FFF0" result="color" />
+                <feComposite in="color" in2="blur" operator="in" result="glow" />
+                <feMerge>
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+            <mask id="review-holoMask">
+                 <rect x="-100" y="-100" width="200" height="200" fill="white"/>
+                 <rect x="-100" y="-100" width="200" height="200" fill="url(#review-holoScan)"/>
+            </mask>
             <clipPath id="review-monolithClip">
                 <path d="M 0,0 L 500,0 L 540,40 L 540,400 L 500,440 L 500,900 L 540,940 L 540,1310 L 500,1350 L 0,1350 Z"></path>
             </clipPath>
@@ -69,6 +90,9 @@ export default function ReviewCardDefs() {
             </clipPath>
             <clipPath id="review-titleBodyClip">
                 <path d="M 0,0 L 480,0 L 480,90 L 460,110 L 0,110 Z"></path>
+            </clipPath>
+            <clipPath id="review-baseClip">
+                 <path d="M 0,0 L 600,0 L 600,40 L 580,60 L 20,60 L 0,40 Z" />
             </clipPath>
         </defs>
     );
