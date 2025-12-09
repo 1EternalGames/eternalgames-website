@@ -11,6 +11,7 @@ import { downloadElementAsImage } from '@/lib/image-export';
 import { useToast } from '@/lib/toastStore';
 import { SparklesIcon } from '@/components/icons';
 import { useBodyClass } from '@/hooks/useBodyClass';
+import { stripHtml } from '@/components/studio/social/shared/canvas-utils';
 
 // Default Data State
 const DEFAULT_DATA: ReviewTemplateData = {
@@ -172,23 +173,23 @@ export default function ReviewCardEditor() {
 
                         <div className={styles.controlGroup}>
                             <label className={styles.label}>العناوين</label>
-                            <input className={styles.input} value={data.gameTitleAr} onChange={e => updateData({ gameTitleAr: e.target.value })} placeholder="الاسم بالعربية" />
-                            <input className={styles.input} value={data.gameTitleEnTop} onChange={e => updateData({ gameTitleEnTop: e.target.value })} placeholder="English Top" style={{direction: 'ltr', textAlign: 'left'}} />
-                            <input className={styles.input} value={data.gameTitleEnBottom} onChange={e => updateData({ gameTitleEnBottom: e.target.value })} placeholder="English Bottom" style={{direction: 'ltr', textAlign: 'left'}} />
+                            <input className={styles.input} value={stripHtml(data.gameTitleAr)} onChange={e => updateData({ gameTitleAr: e.target.value })} placeholder="الاسم بالعربية" />
+                            <input className={styles.input} value={stripHtml(data.gameTitleEnTop)} onChange={e => updateData({ gameTitleEnTop: e.target.value })} placeholder="English Top" style={{direction: 'ltr', textAlign: 'left'}} />
+                            <input className={styles.input} value={stripHtml(data.gameTitleEnBottom)} onChange={e => updateData({ gameTitleEnBottom: e.target.value })} placeholder="English Bottom" style={{direction: 'ltr', textAlign: 'left'}} />
                         </div>
 
                         <div className={styles.controlGroup}>
                             <label className={styles.label}>التقييم</label>
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                <input className={styles.input} value={data.score} onChange={e => updateData({ score: e.target.value })} placeholder="9.5" />
-                                <input className={styles.input} value={data.rank} onChange={e => updateData({ rank: e.target.value })} placeholder="S-RANK" />
+                                <input className={styles.input} value={stripHtml(data.score)} onChange={e => updateData({ score: e.target.value })} placeholder="9.5" />
+                                <input className={styles.input} value={stripHtml(data.rank)} onChange={e => updateData({ rank: e.target.value })} placeholder="S-RANK" />
                             </div>
-                            <input className={styles.input} value={data.status} onChange={e => updateData({ status: e.target.value })} placeholder="الحالة (مثال: أسطوري)" />
+                            <input className={styles.input} value={stripHtml(data.status)} onChange={e => updateData({ status: e.target.value })} placeholder="الحالة (مثال: أسطوري)" />
                         </div>
 
                         <div className={styles.controlGroup}>
                             <label className={styles.label}>الملخص</label>
-                            <textarea className={`${styles.input} ${styles.textarea}`} value={data.verdict} onChange={e => updateData({ verdict: e.target.value })} />
+                            <textarea className={`${styles.input} ${styles.textarea}`} value={stripHtml(data.verdict)} onChange={e => updateData({ verdict: e.target.value })} />
                         </div>
                         
                         <div className={styles.controlGroup}>
@@ -200,7 +201,7 @@ export default function ReviewCardEditor() {
                             </div>
                             {data.pros.map((pro, i) => (
                                 <div key={`pro-input-${i}`} style={{display: 'flex', gap: '0.5rem'}}>
-                                    <input className={styles.input} value={pro} onChange={e => handleItemChange('pros', i, e.target.value)} />
+                                    <input className={styles.input} value={stripHtml(pro)} onChange={e => handleItemChange('pros', i, e.target.value)} />
                                     <button onClick={() => handleRemoveItem('pros', i)} className="icon-button outline-button" style={{color: '#DC2626', borderColor: '#DC2626', height: 'auto'}}>
                                         <TrashIcon />
                                     </button>
@@ -217,7 +218,7 @@ export default function ReviewCardEditor() {
                             </div>
                             {data.cons.map((con, i) => (
                                 <div key={`con-input-${i}`} style={{display: 'flex', gap: '0.5rem'}}>
-                                    <input className={styles.input} value={con} onChange={e => handleItemChange('cons', i, e.target.value)} />
+                                    <input className={styles.input} value={stripHtml(con)} onChange={e => handleItemChange('cons', i, e.target.value)} />
                                     <button onClick={() => handleRemoveItem('cons', i)} className="icon-button outline-button" style={{color: '#DC2626', borderColor: '#DC2626', height: 'auto'}}>
                                         <TrashIcon />
                                     </button>

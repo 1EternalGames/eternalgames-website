@@ -3,6 +3,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import SocialNewsBodyEditor from './SocialNewsBodyEditor';
+import SpaceBackground from './shared/SpaceBackground';
 
 export interface TemplateData {
     titleTop: string;
@@ -76,13 +77,12 @@ const EditableText = ({
     if (align === 'end') foreignX = x; 
     
     // Adjusted vertical alignment for input
-    const foreignY = y - (fontSize * 1.62); // UPDATED multiplier
+    const foreignY = y - (fontSize * 1.62); 
 
     const inputColor = isFocused ? (style?.fill as string || '#FFFFFF') : 'transparent';
 
     return (
         <g onClick={(e) => { e.stopPropagation(); setEditing(true); }} style={{ cursor: 'text' }}>
-            {/* SVG Text Layer - Visible only when NOT editing */}
             {!isFocused && (
                 <g style={{ opacity: 1 }}>
                     {strokeWidth > 0 && (
@@ -113,13 +113,12 @@ const EditableText = ({
                 </g>
             )}
 
-            {/* Input Overlay - Always rendered but transparent when not focused */}
             <foreignObject 
                 x={foreignX} 
                 y={foreignY} 
                 width={width} 
                 height={fontSize * 2.5} 
-                style={{ pointerEvents: 'all' }} // Explicitly allow pointer events
+                style={{ pointerEvents: 'all' }} 
             >
                 <input
                     ref={inputRef}
@@ -150,7 +149,7 @@ const EditableText = ({
                         caretColor: '#fff',
                         textShadow: isFocused ? '0 2px 10px rgba(0,0,0,0.5)' : 'none',
                         lineHeight: '1.2',
-                        opacity: isFocused ? 1 : 0, // Transparent when not focused so SVG shows
+                        opacity: isFocused ? 1 : 0, 
                         cursor: 'text'
                     }}
                 />
@@ -169,11 +168,9 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
     const dragStart = useRef({ x: 0, y: 0 });
     const initialImgPos = useRef({ x: 0, y: 0 });
     
-    // Image Dimensions & Calculation
     const [imgDims, setImgDims] = useState({ width: 1080, height: 850 });
     const [baseScale, setBaseScale] = useState(1);
 
-    // Load image dimensions to calculate fit
     useEffect(() => {
         const img = new Image();
         img.src = data.image;
@@ -181,15 +178,13 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
             const w = img.naturalWidth || 1080;
             const h = img.naturalHeight || 850;
             setImgDims({ width: w, height: h });
-            
-            // Calculate Base Scale (COVER)
             const scaleW = 1080 / w;
             const scaleH = 850 / h;
             setBaseScale(Math.max(scaleW, scaleH));
         };
     }, [data.image]);
 
-    // --- Interaction Handlers ---
+    // Handlers...
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && file.type.startsWith('image/')) {
@@ -246,7 +241,6 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
         return dots;
     };
 
-    // --- Image Manipulation Handlers ---
     const handleMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0) return;
         e.preventDefault(); e.stopPropagation();
@@ -283,6 +277,10 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
 
     const clipPathData = "M 0,0 L 1080,0 L 1080,850 L 1000,800 L 80,800 L 0,850 Z";
 
+    // DEFINE CLIP PATH FOR BOTTOM AREA (Where text resides)
+    // Starts below the image cut (y=850) and goes down to 1350
+    const bottomAreaClipPath = "M 0,850 L 80,800 L 1000,800 L 1080,850 L 1080,1350 L 0,1350 Z";
+
     return (
         <div 
             className="canvas-container"
@@ -308,20 +306,11 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                 style={{ backgroundColor: '#000', direction: 'rtl' }}
             >
                 <defs>
-                    <linearGradient id="voidBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#151820" />
-                        <stop offset="100%" stopColor="#050505" />
-                    </linearGradient>
-
                     <linearGradient id="imageFade" x1="0%" y1="0%" x2="0%" y2="100%">
                         <stop offset="60%" stopColor="#000" stopOpacity="0" />
                         <stop offset="100%" stopColor="#000" stopOpacity="1" />
                     </linearGradient>
                     
-                    <pattern id="hexGrid" x="0" y="0" width="30" height="52" patternUnits="userSpaceOnUse">
-                         <path d="M15 0 L30 8.6 L30 25.9 L15 34.6 L0 25.9 L0 8.6 Z" fill="none" stroke="#1A202C" strokeWidth="1" opacity="0.4" />
-                    </pattern>
-
                     <pattern id="diagScan" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                         <line x1="0" y1="0" x2="0" y2="10" stroke="#000" strokeWidth="4" opacity="0.2" />
                     </pattern>
@@ -349,11 +338,20 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                     <clipPath id="newsImageClip">
                         <path d={clipPathData} />
                     </clipPath>
+                    
+                    <clipPath id="bottomAreaClip">
+                        <path d={bottomAreaClipPath} />
+                    </clipPath>
                 </defs>
 
-                {/* BACKGROUND */}
-                <rect width="100%" height="100%" fill="url(#voidBody)" />
-                <rect width="100%" height="100%" fill="url(#hexGrid)" />
+                {/* BACKGROUND: Default dark */}
+                <rect width="100%" height="100%" fill="#10121A" />
+                
+                {/* SPACE BACKGROUND: RESTRICTED TO BOTTOM AREA */}
+                <g clipPath="url(#bottomAreaClip)">
+                     <SpaceBackground />
+                </g>
+
                 <text x="540" y="600" textAnchor="middle" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="600" fill="#10121A" opacity="0.5" style={{ pointerEvents: 'none' }}>أخبار</text>
 
                 {/* STATIC MASK GROUP FOR IMAGE */}
@@ -402,7 +400,7 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
 
                 {/* FRAME PATH - RENDERED BEFORE TEXT */}
                 <g pointerEvents="none">
-                    <path d="M 0,1350 L 1080,1350 L 1080,850 L 1000,800 L 80,800 L 0,850 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="2" />
+                    <path d="M 0,1350 L 1080,1350 L 1080,850 L 1000,800 L 80,800 L 0,850 Z" fill="none" stroke="#1A202C" strokeWidth="2" /> {/* Removed opaque fill here to let BG show */}
                     <path d="M 0,850 L 80,800 L 80,900 L 100,920 L 420,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
                     <path d="M 1080,850 L 1000,800 L 1000,900 L 980,920 L 660,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
 

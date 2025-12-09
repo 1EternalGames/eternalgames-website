@@ -11,6 +11,7 @@ import ReviewCardScore from './ReviewCardScore';
 import ReviewCardVerdict from './ReviewCardVerdict';
 import ReviewCardProsCons from './ReviewCardProsCons';
 import ReviewCardPlatforms from './ReviewCardPlatforms';
+import SpaceBackground from '../shared/SpaceBackground';
 
 export default function ReviewCardCanvas({ data, onDataChange, scale = 1 }: ReviewCardCanvasProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
@@ -48,6 +49,9 @@ export default function ReviewCardCanvas({ data, onDataChange, scale = 1 }: Revi
                 style={{ backgroundColor: '#050505', direction: 'ltr' }}
             >
                 <ReviewCardDefs />
+                
+                {/* Replaced solid background with SpaceBackground */}
+                <SpaceBackground />
                 
                 <ReviewCardFrame enChar={data.gameTitleEnBottom ? data.gameTitleEnBottom.charAt(0) : 'R'} />
                 

@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { ReviewTemplateData } from './types';
+import { PLATFORM_ICONS } from './utils';
 
 interface ReviewCardPlatformsProps {
     data: ReviewTemplateData;
@@ -11,7 +12,7 @@ interface ReviewCardPlatformsProps {
     setEditingField: (field: string | null) => void;
 }
 
-export default function ReviewCardPlatforms({ data, onDataChange }: ReviewCardPlatformsProps) {
+export default function ReviewCardPlatforms({ data, onDataChange, editingField, setEditingField }: ReviewCardPlatformsProps) {
     
     const handlePlatformToggle = (key: keyof typeof data.platforms) => {
         onDataChange({ platforms: { ...data.platforms, [key]: !data.platforms[key] } });
@@ -24,9 +25,6 @@ export default function ReviewCardPlatforms({ data, onDataChange }: ReviewCardPl
     return (
         <g transform="translate(580, 1100)">
             
-            {/* A. TITLE */}
-            <text x="445" y="0" textAnchor="end" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="16" fill="#00FFF0">المنصات المدعومة</text>
-            
             {/* B. THE FLAT TECH PLATE */}
             <g transform="translate(0, 40) scale(0.8)">
                 
@@ -35,8 +33,12 @@ export default function ReviewCardPlatforms({ data, onDataChange }: ReviewCardPl
                     {/* 1. The 2D Base Plate (Chamfered Rect) */}
                     <path d="M 0,0 L 600,0 L 600,40 L 580,60 L 20,60 L 0,40 Z" 
                           fill="url(#review-titleHeaderGradient)" stroke="#556070" strokeWidth="1"/>
+                    
+                    {/* 2. Cyan Highlights (Corners & Sides) */}
+                    <path d="M 0,0 L 0,40 L 20,60" fill="none" stroke="#00FFF0" strokeWidth="3" filter="url(#review-cyanGlow)" />
+                    <path d="M 600,0 L 600,40 L 580,60" fill="none" stroke="#00FFF0" strokeWidth="3" filter="url(#review-cyanGlow)" />
                           
-                    {/* 2. Hex Pattern Overlay */}
+                    {/* 3. Hex Pattern Overlay */}
                     <rect x="0" y="0" width="600" height="60" fill="url(#review-hexTech)" clipPath="url(#review-baseClip)" opacity="0.3"/>
                     
                     {/* C. HOLOGRAPHIC PROJECTIONS */}

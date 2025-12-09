@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import EditableText from '../shared/EditableText';
+import SocialNewsBodyEditor from '../SocialNewsBodyEditor';
 import { ReviewTemplateData } from './types';
 
 interface ReviewCardTitleProps {
@@ -19,17 +19,19 @@ export default function ReviewCardTitle({ data, onDataChange, editingField, setE
             <rect x="0" y="0" width="150" height="2" fill="#00FFF0" filter="url(#review-cyanGlow)"></rect>
             <rect x="150" y="0" width="310" height="1" fill="#556070"></rect>
             
-            <EditableText 
-                x={470} y={20} 
-                text={data.gameTitleAr} 
-                fontSize={16} 
-                align="end" 
-                style={{ fill: "#E2E8F0" }}
-                isEditing={editingField === 'gameTitleAr'}
-                setEditing={(v) => setEditingField(v ? 'gameTitleAr' : null)}
-                onChange={(val) => onDataChange({ gameTitleAr: val })}
-                width={450}
-            />
+            {/* Arabic Title: Ends at x=470 */}
+            <foreignObject x={470 - 450} y={0} width={450} height={35}>
+                <SocialNewsBodyEditor 
+                    content={data.gameTitleAr} 
+                    onChange={(val) => onDataChange({ gameTitleAr: val })}
+                    isEditing={editingField === 'gameTitleAr'}
+                    setEditing={(val) => setEditingField(val ? 'gameTitleAr' : null)}
+                    fontSize={16}
+                    textAlign="right"
+                    customStyle={{ color: "#E2E8F0", lineHeight: 2 }}
+                    disableAutoEnglish={true}
+                />
+            </foreignObject>
             
             <g transform="translate(0, 30)">
                 <path d="M 0,0 L 480,0 L 480,90 L 460,110 L 0,110 Z" fill="#050608" opacity="0.95"></path>
@@ -37,33 +39,45 @@ export default function ReviewCardTitle({ data, onDataChange, editingField, setE
                 <rect x="0" y="0" width="6" height="110" fill="#00FFF0" filter="url(#review-cyanGlow)"></rect>
 
                 <g transform="translate(25, 45)">
-                        <EditableText 
-                        x={0} y={0} 
-                        text={data.gameTitleEnTop} 
-                        fontSize={44} 
-                        align="start" 
-                        style={{ fill: "#FFFFFF", letterSpacing: "-1px" }}
-                        fontFamily="Arial, sans-serif"
-                        fontWeight={900}
-                        isEditing={editingField === 'gameTitleEnTop'}
-                        setEditing={(v) => setEditingField(v ? 'gameTitleEnTop' : null)}
-                        onChange={(val) => onDataChange({ gameTitleEnTop: val })}
-                        width={450}
-                    />
+                     {/* English Top */}
+                     <foreignObject x={0} y={-25} width={450} height={60}>
+                         <SocialNewsBodyEditor 
+                            content={data.gameTitleEnTop} 
+                            onChange={(val) => onDataChange({ gameTitleEnTop: val })}
+                            isEditing={editingField === 'gameTitleEnTop'}
+                            setEditing={(val) => setEditingField(val ? 'gameTitleEnTop' : null)}
+                            fontSize={44}
+                            textAlign="left"
+                            customStyle={{ 
+                                color: "#FFFFFF", 
+                                letterSpacing: "-1px", 
+                                fontFamily: "Arial, sans-serif",
+                                fontWeight: 900,
+                                direction: 'ltr'
+                            }}
+                            disableAutoEnglish={true}
+                        />
+                     </foreignObject>
                     
-                    <EditableText 
-                        x={0} y={45} 
-                        text={data.gameTitleEnBottom} 
-                        fontSize={48} 
-                        align="start" 
-                        style={{ fill: "#00FFF0", filter: "drop-shadow(0 0 8px rgba(0,255,240,0.5))" }}
-                        fontFamily="Impact, sans-serif"
-                        fontWeight={400}
-                        isEditing={editingField === 'gameTitleEnBottom'}
-                        setEditing={(v) => setEditingField(v ? 'gameTitleEnBottom' : null)}
-                        onChange={(val) => onDataChange({ gameTitleEnBottom: val })}
-                        width={450}
-                    />
+                    {/* English Bottom */}
+                    <foreignObject x={0} y={25} width={450} height={60}>
+                        <SocialNewsBodyEditor 
+                            content={data.gameTitleEnBottom} 
+                            onChange={(val) => onDataChange({ gameTitleEnBottom: val })}
+                            isEditing={editingField === 'gameTitleEnBottom'}
+                            setEditing={(val) => setEditingField(val ? 'gameTitleEnBottom' : null)}
+                            fontSize={48}
+                            textAlign="left"
+                            customStyle={{ 
+                                color: "#00FFF0", 
+                                filter: "drop-shadow(0 0 8px rgba(0,255,240,0.5))",
+                                fontFamily: "Impact, sans-serif",
+                                fontWeight: 400,
+                                direction: 'ltr'
+                            }}
+                            disableAutoEnglish={true}
+                        />
+                    </foreignObject>
                 </g>
             </g>
         </g>

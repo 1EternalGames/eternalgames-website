@@ -7,8 +7,8 @@ export default function ReviewCardFrame({ enChar }: { enChar: string }) {
 
     return (
         <>
-            <rect width="100%" height="100%" fill="#050505"></rect>
-            <rect x="540" y="0" width="540" height="1350" fill="url(#review-microGrid)"></rect>
+            {/* Removed the black background rect and hex grid, now handled by SpaceBackground in parent */}
+            
             <text x="810" y="700" textAnchor="middle" fontFamily="'Impact', sans-serif" fontWeight="900" fontSize="600" fill="#10121A" opacity="0.5">
                 {enChar || 'R'}
             </text>

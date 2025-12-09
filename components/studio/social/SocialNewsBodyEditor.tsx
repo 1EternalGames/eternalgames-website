@@ -28,57 +28,96 @@ const ClearIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 interface SocialNewsBodyEditorProps {
     content: string;
     onChange: (html: string) => void;
-    fontSize: number;
+    // Modified: Make fontSize optional as it might be handled in customStyle
+    fontSize?: number; 
     isEditing: boolean;
     setEditing: (val: boolean) => void;
+    // Added: Allow passing custom CSS styles
+    customStyle?: React.CSSProperties;
+    // Added: Optional config to control extensions (e.g. disable auto-english color for titles)
+    disableAutoEnglish?: boolean;
+    textAlign?: 'left' | 'right' | 'center' | 'justify';
 }
 
-export default function SocialNewsBodyEditor({ content, onChange, fontSize, isEditing, setEditing }: SocialNewsBodyEditorProps) {
+export default function SocialNewsBodyEditor({ 
+    content, 
+    onChange, 
+    fontSize = 24, 
+    isEditing, 
+    setEditing,
+    customStyle = {},
+    disableAutoEnglish = false,
+    textAlign = 'right'
+}: SocialNewsBodyEditorProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
+    const extensions = [
+        StarterKit.configure({ heading: false, bulletList: false, orderedList: false, blockquote: false, bold: false }),
+        TextStyle,
+        Color,
+        SocialDeactivateMarks, // Breaks formatting on Space/Enter
+    ];
+
+    if (!disableAutoEnglish) {
+        extensions.push(RandomEnglishStyleExtension);
+    }
+
     const editor = useEditor({
-        extensions: [
-            StarterKit.configure({ heading: false, bulletList: false, orderedList: false, blockquote: false, bold: false }),
-            TextStyle,
-            Color,
-            RandomEnglishStyleExtension, // Auto-apply White/Cyan to English Sequences
-            SocialDeactivateMarks, // Breaks formatting on Space/Enter
-        ],
+        extensions: extensions,
         content: content,
         editorProps: {
             attributes: {
                 class: 'social-editor-content',
-                // UPDATED: Changed text-align to justify and added text-align-last
-                style: `font-size: ${fontSize}px; line-height: 1.6; font-weight: 700; text-align: justify; text-align-last: right; direction: rtl; font-family: 'Cairo', sans-serif; color: #A0AEC0; outline: none; height: 100%; overflow: hidden;`
+                style: 'outline: none; height: 100%; width: 100%; overflow: hidden;' // Base styles
             }
         },
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
-        }
+        },
+        // We handle focus manually via effects, but let's ensure click focuses too
     });
 
+    // Sync content if it changes externally
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
+             // Only update if not focused to avoid cursor jumping
              if (!editor.isFocused) {
                  editor.commands.setContent(content);
              }
         }
     }, [content, editor]);
 
+    // Handle focus based on parent state
     useEffect(() => {
-        if (isEditing && editor) {
+        if (isEditing && editor && !editor.isFocused) {
             editor.commands.focus();
         }
     }, [isEditing, editor]);
 
     if (!editor) return null;
 
+    // Merge default styles with custom styles
+    const combinedStyle: React.CSSProperties = {
+        fontSize: `${fontSize}px`,
+        lineHeight: 1.2,
+        fontWeight: 700,
+        textAlign: textAlign,
+        textAlignLast: textAlign === 'justify' ? 'right' : undefined,
+        direction: 'rtl',
+        fontFamily: "'Cairo', sans-serif",
+        color: '#A0AEC0', // Default color, can be overridden
+        ...customStyle
+    };
+
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%' }} onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
+        <div 
+            style={{ position: 'relative', width: '100%', height: '100%', ...combinedStyle }} 
+            onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+        >
             {mounted && (
                 <BubbleMenu 
                     editor={editor} 
@@ -111,7 +150,7 @@ export default function SocialNewsBodyEditor({ content, onChange, fontSize, isEd
                         onClick={() => editor.chain().focus().unsetAllMarks().run()} 
                         className={styles.bubbleMenuButton} 
                         whileTap={{ scale: 0.9 }} 
-                        title="Reset to Gray"
+                        title="Reset Color"
                     >
                         <ClearIcon />
                     </motion.button>
