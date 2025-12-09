@@ -2,8 +2,9 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
+import SocialNewsBodyEditor from './SocialNewsBodyEditor';
 
-interface TemplateData {
+export interface TemplateData {
     titleTop: string;
     titleBottom: string;
     subTitle: string; 
@@ -34,15 +35,17 @@ const DEFAULT_ACCENT = '#00FFF0';
 // --- Font Scaling Logic ---
 const calculateFontSize = (text: string, maxWidth: number, maxFontSize: number, minFontSize: number) => {
     if (!text) return maxFontSize;
-    const estimatedSize = maxWidth / (text.length * 0.55); 
+    const plainText = text.replace(/<[^>]*>?/gm, '');
+    const estimatedSize = maxWidth / (plainText.length * 0.55); 
     return Math.min(maxFontSize, Math.max(minFontSize, estimatedSize));
 };
 
 const calculateBodyFontSize = (text: string, width: number, height: number, maxFontSize: number) => {
     if (!text) return maxFontSize;
+    const plainText = text.replace(/<[^>]*>?/gm, '');
     const area = width * height;
-    const charCount = text.length || 1;
-    const estimatedSize = Math.sqrt(area / (charCount * 1.2)); 
+    const charCount = plainText.length || 1;
+    const estimatedSize = Math.sqrt(area / (charCount * 1.5)); 
     return Math.min(maxFontSize, Math.max(16, estimatedSize));
 };
 
@@ -73,6 +76,9 @@ const EditableText = ({
     if (align === 'end') foreignX = x; 
     
     const foreignY = y - (fontSize * 1.7);
+    
+    // THE FIX: Use the color from the style prop for the input, defaulting to white.
+    const inputColor = isFocused ? (style?.fill as string || '#FFFFFF') : 'transparent';
 
     return (
         <g onClick={(e) => { e.stopPropagation(); }}>
@@ -119,7 +125,7 @@ const EditableText = ({
                         background: 'transparent',
                         border: 'none',
                         outline: 'none',
-                        color: isFocused ? (style?.fill as string || '#fff') : 'transparent',
+                        color: inputColor,
                         fontSize: `${fontSize}px`,
                         fontFamily: "'Cairo', sans-serif",
                         fontWeight: 900,
@@ -141,7 +147,6 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
     const fileInputRef = useRef<HTMLInputElement>(null);
     const config = TYPE_CONFIG[data.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.official;
     const [editingField, setEditingField] = useState<string | null>(null);
-    const [bodyFocused, setBodyFocused] = useState(false);
     
     // Pan/Zoom State
     const [isDragging, setIsDragging] = useState(false);
@@ -164,14 +169,14 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
             setImgDims({ width: w, height: h });
             
             // Calculate Base Scale (COVER)
-            // We need the image to cover 1080x850
+            // We need the image to cover 1080x850 initially
             const scaleW = 1080 / w;
             const scaleH = 850 / h;
             setBaseScale(Math.max(scaleW, scaleH));
         };
     }, [data.image]);
 
-    // --- File Handling Helper ---
+    // --- Interaction Handlers ---
     const processFile = (file: File) => {
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
@@ -195,16 +200,17 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
     };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            processFile(e.dataTransfer.files[0]);
+        e.preventDefault(); e.stopPropagation();
+        if (e.dataTransfer.files?.[0]?.type.startsWith('image/')) {
+             const reader = new FileReader();
+            reader.onload = (ev) => { if(ev.target?.result) onDataChange({ image: ev.target.result as string, imageSettings: { x: 0, y: 0, scale: 1 } }); };
+            reader.readAsDataURL(e.dataTransfer.files[0]);
         }
     };
 
     const toggleType = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const types = ['official', 'rumor', 'leak'];
+        const types: Array<'official' | 'rumor' | 'leak'> = ['official', 'rumor', 'leak'];
         const currentIndex = types.indexOf(data.type);
         const nextIndex = (currentIndex + 1) % types.length;
         onDataChange({ type: types[nextIndex] });
@@ -212,8 +218,7 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
 
     const titleTopSize = calculateFontSize(data.titleTop, 1000, 110, 50);
     const titleBottomSize = calculateFontSize(data.titleBottom, 700, 65, 35);
-    const bodySize = calculateBodyFontSize(data.body, 880, 260, 36);
-    
+    const bodySize = calculateBodyFontSize(data.body, 880, 260, 30); 
     const titleTopStroke = Math.max(3, titleTopSize * 0.05); 
 
     const renderDots = () => {
@@ -221,60 +226,23 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
         const spacing = 35; 
         const totalWidth = (totalSlides - 1) * spacing;
         const startX = -totalWidth / 2;
-
         for (let i = 0; i < totalSlides; i++) {
             const isActive = i === currentSlide;
             const x = startX + (i * spacing);
-            
             dots.push(
                 <g key={i} transform={`translate(${x}, 0)`}>
-                    <rect 
-                        x="-6" y="-6" width="12" height="12" 
-                        fill={isActive ? config.color : "none"} 
-                        stroke={isActive ? "none" : "#556070"}
-                        strokeWidth="2"
-                        transform="rotate(45)" 
-                        style={{ transition: 'all 0.3s ease' }}
-                    />
-                    {isActive && (
-                        <rect 
-                            x="-6" y="-6" width="12" height="12" 
-                            fill={config.color} 
-                            transform="rotate(45)" 
-                            filter="url(#glowEffect)" 
-                            opacity="0.5"
-                        />
-                    )}
+                    <rect x="-6" y="-6" width="12" height="12" fill={isActive ? config.color : "none"} stroke={isActive ? "none" : "#556070"} strokeWidth="2" transform="rotate(45)" style={{ transition: 'all 0.3s ease' }} />
+                    {isActive && <rect x="-6" y="-6" width="12" height="12" fill={config.color} transform="rotate(45)" filter="url(#glowEffect)" opacity="0.5" />}
                 </g>
             );
         }
         return dots;
     };
 
-    // --- CONSTRAINT LOGIC ---
-    const clampPosition = (x: number, y: number, currentScale: number) => {
-        // Effective dimensions
-        const renderW = imgDims.width * baseScale * currentScale;
-        const renderH = imgDims.height * baseScale * currentScale;
-
-        // Boundaries: Distance from center we are allowed to move
-        // If image matches 1080 exactly, max offset is 0.
-        // If image is larger, we can move by (diff / 2).
-        const maxOffsetX = Math.max(0, (renderW - 1080) / 2);
-        const maxOffsetY = Math.max(0, (renderH - 850) / 2);
-
-        const clampedX = Math.max(-maxOffsetX, Math.min(maxOffsetX, x));
-        const clampedY = Math.max(-maxOffsetY, Math.min(maxOffsetY, y));
-
-        return { x: clampedX, y: clampedY };
-    };
-
-    // --- MOUSE HANDLERS (Desktop) ---
+    // --- Image Manipulation Handlers ---
     const handleMouseDown = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
         if (e.button !== 0) return;
-        
+        e.preventDefault(); e.stopPropagation();
         setIsDragging(true);
         dragStart.current = { x: e.clientX, y: e.clientY };
         const settings = data.imageSettings || { x: 0, y: 0, scale: 1 };
@@ -283,135 +251,30 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDragging) return;
-        e.preventDefault();
-        e.stopPropagation();
-
+        e.preventDefault(); e.stopPropagation();
         const dx = (e.clientX - dragStart.current.x) / scale;
         const dy = (e.clientY - dragStart.current.y) / scale;
-
         const settings = data.imageSettings || { x: 0, y: 0, scale: 1 };
-        const rawX = initialImgPos.current.x + dx;
-        const rawY = initialImgPos.current.y + dy;
-
-        // Apply constraints
-        const clamped = clampPosition(rawX, rawY, settings.scale);
-
-        onDataChange({
-            imageSettings: {
-                ...settings,
-                x: clamped.x,
-                y: clamped.y
-            }
-        });
+        onDataChange({ imageSettings: { ...settings, x: initialImgPos.current.x + dx, y: initialImgPos.current.y + dy } });
     };
 
     const handleMouseUp = (e: React.MouseEvent) => {
         if (!isDragging) return;
-        e.stopPropagation();
-        setIsDragging(false);
-        const dist = Math.hypot(e.clientX - dragStart.current.x, e.clientY - dragStart.current.y);
-        if (dist < 5) fileInputRef.current?.click();
+        e.stopPropagation(); setIsDragging(false);
     };
 
     const handleWheel = (e: React.WheelEvent) => {
         e.stopPropagation();
         const settings = data.imageSettings || { x: 0, y: 0, scale: 1 };
-        const zoomSensitivity = 0.001;
-        // Min scale 1 ensures it never shrinks smaller than "Cover"
-        const newScale = Math.max(1, Math.min(5, settings.scale - e.deltaY * zoomSensitivity));
-        
-        // Re-clamp position when zooming out to prevent gaps
-        const clamped = clampPosition(settings.x, settings.y, newScale);
-
-        onDataChange({
-            imageSettings: {
-                scale: newScale,
-                x: clamped.x,
-                y: clamped.y
-            }
-        });
-    };
-
-    // --- TOUCH HANDLERS (Mobile) ---
-    const handleTouchStart = (e: React.TouchEvent) => {
-        e.stopPropagation();
-        const settings = data.imageSettings || { x: 0, y: 0, scale: 1 };
-
-        if (e.touches.length === 1) {
-            setIsDragging(true);
-            dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            initialImgPos.current = { x: settings.x, y: settings.y };
-        } else if (e.touches.length === 2) {
-            const dist = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
-            pinchStartDist.current = dist;
-            initialScale.current = settings.scale;
-        }
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        e.preventDefault(); 
-        e.stopPropagation();
-        const settings = data.imageSettings || { x: 0, y: 0, scale: 1 };
-
-        if (e.touches.length === 1 && isDragging) {
-            const dx = (e.touches[0].clientX - dragStart.current.x) / scale;
-            const dy = (e.touches[0].clientY - dragStart.current.y) / scale;
-            
-            const rawX = initialImgPos.current.x + dx;
-            const rawY = initialImgPos.current.y + dy;
-            const clamped = clampPosition(rawX, rawY, settings.scale);
-
-            onDataChange({
-                imageSettings: {
-                    ...settings,
-                    x: clamped.x,
-                    y: clamped.y
-                }
-            });
-        } else if (e.touches.length === 2 && pinchStartDist.current !== null) {
-            const dist = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
-            
-            const scaleFactor = dist / pinchStartDist.current;
-            const newScale = Math.max(1, Math.min(5, initialScale.current * scaleFactor));
-            const clamped = clampPosition(settings.x, settings.y, newScale);
-
-            onDataChange({
-                imageSettings: {
-                    scale: newScale,
-                    x: clamped.x,
-                    y: clamped.y
-                }
-            });
-        }
-    };
-
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        e.stopPropagation();
-        if (isDragging) {
-            setIsDragging(false);
-            if (e.changedTouches.length === 1) {
-                const dist = Math.hypot(
-                    e.changedTouches[0].clientX - dragStart.current.x,
-                    e.changedTouches[0].clientY - dragStart.current.y
-                );
-                if (dist < 5) fileInputRef.current?.click();
-            }
-        }
-        if (e.touches.length < 2) {
-            pinchStartDist.current = null;
-        }
+        const newScale = Math.max(0.1, Math.min(5, settings.scale - e.deltaY * 0.001));
+        onDataChange({ imageSettings: { ...settings, scale: newScale } });
     };
 
     const imgSettings = data.imageSettings || { x: 0, y: 0, scale: 1 };
-    
     const totalScale = baseScale * imgSettings.scale;
     const imageTransform = `translate(${540 + imgSettings.x} ${425 + imgSettings.y}) scale(${totalScale}) translate(${-imgDims.width / 2} ${-imgDims.height / 2})`;
+
+    const clipPathData = "M 0,0 L 1080,0 L 1080,850 L 1000,800 L 80,800 L 0,850 Z";
 
     return (
         <div 
@@ -426,15 +289,8 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
             }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
-            onDoubleClick={() => fileInputRef.current?.click()}
         >
-            <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*" 
-                onChange={handleImageUpload} 
-            />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleImageUpload} />
 
             <svg 
                 viewBox="0 0 1080 1350" 
@@ -484,7 +340,7 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                     </filter>
 
                     <clipPath id="newsImageClip">
-                        <path d="M 0,0 L 1080,0 L 1080,850 L 1000,800 L 80,800 L 0,850 Z" />
+                        <path d={clipPathData} />
                     </clipPath>
                 </defs>
 
@@ -493,31 +349,30 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                 <rect width="100%" height="100%" fill="url(#hexGrid)" />
                 <text x="540" y="600" textAnchor="middle" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="600" fill="#10121A" opacity="0.5" style={{ pointerEvents: 'none' }}>أخبار</text>
 
-                {/* IMAGE LAYER */}
-                <g 
-                    id="image-layer" 
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    onWheel={handleWheel}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-                >
-                    <image 
-                        href={data.image} 
-                        // Explicitly set width/height to natural dims for transform logic to work
-                        width={imgDims.width}
-                        height={imgDims.height}
-                        // Change preserveAspectRatio to none to allow our custom transform to control scaling/aspect
-                        preserveAspectRatio="none"
-                        clipPath="url(#newsImageClip)"
-                        transform={imageTransform}
-                    />
-                    <rect x="0" y="500" width="1080" height="350" fill="url(#imageFade)" clipPath="url(#newsImageClip)" pointerEvents="none" />
-                    <rect width="1080" height="850" fill="url(#diagScan)" opacity="0.3" clipPath="url(#newsImageClip)" pointerEvents="none" />
+                {/* STATIC MASK GROUP FOR IMAGE */}
+                <g clipPath="url(#newsImageClip)">
+                    <g 
+                        id="image-layer" 
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        onWheel={handleWheel}
+                        onDoubleClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                    >
+                        <image 
+                            href={data.image} 
+                            width={imgDims.width}
+                            height={imgDims.height}
+                            preserveAspectRatio="none"
+                            transform={imageTransform}
+                        />
+                    </g>
+                    
+                    {/* STATIC OVERLAYS - Inside Clip */}
+                    <rect x="0" y="500" width="1080" height="350" fill="url(#imageFade)" pointerEvents="none" />
+                    <rect width="1080" height="850" fill="url(#diagScan)" opacity="0.3" pointerEvents="none" />
                 </g>
 
                 {/* TYPE BADGE */}
@@ -574,9 +429,9 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                     <rect x="-400" y="-10" width="800" height="2" fill={DEFAULT_ACCENT} opacity="0.5" />
                 </g>
 
-                {/* FRAME */}
+                {/* FRAME PATH */}
                 <g pointerEvents="none">
-                    <path d="M 0,1350 L 1080,1350 L 1080,850 L 1000,800 L 1000,900 L 980,920 L 100,920 L 80,900 L 80,800 L 0,850 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="2" />
+                    <path d="M 0,1350 L 1080,1350 L 1080,850 L 1000,800 L 80,800 L 0,850 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="2" />
                     <path d="M 0,850 L 80,800 L 80,900 L 100,920 L 420,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
                     <path d="M 1080,850 L 1000,800 L 1000,900 L 980,920 L 660,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
 
@@ -588,7 +443,7 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                     </g>
                 </g>
 
-                {/* BODY CONTENT */}
+                {/* BODY CONTENT - Now using the full Rich Text Editor */}
                 <g transform="translate(0, 950)">
                     <rect x="980" y="0" width="4" height="30" fill="#556070" />
                     
@@ -604,47 +459,16 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                         setEditing={(val) => setEditingField(val ? 'source' : null)}
                     />
 
-                    <foreignObject x="100" y="50" width="880" height="260">
-                        <textarea
-                            value={data.body}
-                            onChange={(e) => onDataChange({ body: e.target.value })}
-                            onFocus={() => setBodyFocused(true)}
-                            onBlur={() => setBodyFocused(false)}
-                            style={{
-                                width: '100%', height: '100%', 
-                                background: 'transparent',
-                                border: 'none', outline: 'none', resize: 'none',
-                                color: bodyFocused ? '#fff' : '#A0AEC0',
-                                fontSize: `${bodySize}px`,
-                                lineHeight: '1.6', 
-                                fontWeight: '700',
-                                textAlign: 'right', 
-                                direction: 'rtl', 
-                                fontFamily: "'Cairo', sans-serif",
-                                textShadow: bodyFocused ? '0 1px 5px rgba(0,0,0,0.5)' : 'none',
-                                padding: '0',
-                                overflow: 'hidden'
-                            }}
-                        />
+                    {/* Rich Text Editor Container */}
+                    <foreignObject x="100" y="50" width="880" height="350">
+                         <SocialNewsBodyEditor 
+                            content={data.body} 
+                            onChange={(html) => onDataChange({ body: html })}
+                            fontSize={bodySize}
+                            isEditing={editingField === 'body'}
+                            setEditing={(val) => setEditingField(val ? 'body' : null)}
+                         />
                     </foreignObject>
-                </g>
-
-                {/* FOOTER */}
-                <g transform="translate(0, 1280)">
-                     <text x="980" y="0" textAnchor="start" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="24" fill="#FFF">
-                        إيترنال<tspan fill={DEFAULT_ACCENT}>غيمز</tspan>
-                     </text>
-                     <EditableText 
-                        x={100} y={0}
-                        text={data.footerHandle}
-                        fontSize={14}
-                        width={300}
-                        align="end" 
-                        style={{ fontFamily: "monospace", fill: "#556070" }}
-                        onChange={(val) => onDataChange({ footerHandle: val })}
-                        isEditing={editingField === 'footerHandle'}
-                        setEditing={(val) => setEditingField(val ? 'footerHandle' : null)}
-                     />
                 </g>
 
                 <rect width="100%" height="100%" filter="url(#grain)" opacity="0.08" pointerEvents="none" style={{ mixBlendMode: 'overlay' }} />

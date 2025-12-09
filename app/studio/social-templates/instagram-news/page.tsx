@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import InstagramNewsCanvas from '@/components/studio/social/InstagramNewsCanvas';
+import InstagramNewsCanvas, { TemplateData } from '@/components/studio/social/InstagramNewsCanvas';
 import SmartFiller from '@/components/studio/social/SmartFiller';
 import styles from '@/components/studio/social/SocialEditor.module.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,22 +12,14 @@ import { SparklesIcon } from '@/components/icons';
 import { smartSplitText } from '@/lib/text-utils';
 import { useBodyClass } from '@/hooks/useBodyClass';
 
-interface SlideData {
-    id: string; 
-    titleTop: string;
-    titleBottom: string;
-    body: string;
-    source: string;
-    image: string;
-    imageSettings: { x: number; y: number; scale: number }; // Added for persistence
-    type: 'official' | 'rumor' | 'leak';
-    footerHandle: string;
-}
+// Use the type exported from the component to ensure consistency
+type SlideData = TemplateData & { id: string };
 
 const DEFAULT_SLIDE: SlideData = {
     id: 'default',
     titleTop: 'عنوان الخبر',
     titleBottom: 'تفاصيل إضافية',
+    subTitle: '',
     body: 'نص الخبر يظهر هنا. يمكنك النقر على زر "الملء الذكي" لجلب البيانات من المقالات والأخبار الموجودة على الموقع مباشرة.',
     source: 'المصدر: EternalGames',
     image: 'https://images.unsplash.com/photo-1614145121029-83a9f7cafd8e?q=80&w=1080&auto=format&fit=crop',
@@ -43,9 +35,9 @@ const ArrowLeftIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill
 const ArrowRightIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>;
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 const TrashIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
-
 const SettingsIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
 const CanvasIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>;
+const DownloadIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
 
 export default function InstagramNewsEditor() {
     useBodyClass('editor-active');
@@ -61,7 +53,6 @@ export default function InstagramNewsEditor() {
     const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const toast = useToast();
     
-    // Mobile View Toggle State
     const [activeTab, setActiveTab] = useState<'sidebar' | 'canvas'>('canvas');
     const [isMobile, setIsMobile] = useState(false);
 
@@ -72,23 +63,21 @@ export default function InstagramNewsEditor() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Auto-fit logic using ResizeObserver for robustness
     useEffect(() => {
         if (!canvasWrapperRef.current) return;
         
         const updateScale = () => {
             if (!canvasWrapperRef.current) return;
             const { width, height } = canvasWrapperRef.current.getBoundingClientRect();
-            // Increased padding to ensure full visibility on mobile
-            const padding = isMobile ? 40 : 100; 
+            // Maximize space: small padding
+            const padding = 40; 
             const availableWidth = width - padding;
             const availableHeight = height - padding;
             
             const scaleX = availableWidth / 1080;
             const scaleY = availableHeight / 1350;
             
-            // Adjust cap based on device
-            const cap = isMobile ? 1 : 0.85;
+            const cap = isMobile ? 1 : 0.95;
             const newScale = Math.min(scaleX, scaleY, cap);
             setScale(newScale);
         };
@@ -131,10 +120,11 @@ export default function InstagramNewsEditor() {
 
         const textChunks = smartSplitText(fullBodyText, 350);
         
-        const newSlides = textChunks.map((chunk, index) => ({
+        const newSlides = textChunks.map((chunk) => ({
             id: crypto.randomUUID(),
             titleTop: top || item.title,
             titleBottom: bottom || '',
+            subTitle: '',
             body: chunk,
             image: item.imageUrl || DEFAULT_SLIDE.image,
             imageSettings: { x: 0, y: 0, scale: 1 },
@@ -145,7 +135,7 @@ export default function InstagramNewsEditor() {
 
         setSlides(newSlides);
         setCurrentSlideIndex(0);
-        toast.success(`تم إنشاء ${newSlides.length} شرائح من المحتوى.`);
+        toast.success(`تم إنشاء ${newSlides.length} شرائح.`);
         
         if (isMobile) setActiveTab('canvas');
     };
@@ -164,8 +154,7 @@ export default function InstagramNewsEditor() {
             ...currentSlide, 
             id: crypto.randomUUID(),
             body: 'نص الشريحة الجديدة...',
-            // Inherit image settings for continuity
-            imageSettings: { ...currentSlide.imageSettings }
+            imageSettings: { ...currentSlide.imageSettings! }
         };
         
         const newSlides = [...slides];
@@ -189,10 +178,10 @@ export default function InstagramNewsEditor() {
         startExport(async () => {
             try {
                 await downloadElementAsImage('instagram-news-canvas', `ig-news-${Date.now()}`, format);
-                toast.success(`تم التنزيل بصيغة ${format.toUpperCase()}`);
+                toast.success(`تم التنزيل (${format.toUpperCase()})`);
             } catch (e) {
                 console.error(e);
-                toast.error("فشل التصدير. يرجى المحاولة مرة أخرى.");
+                toast.error("فشل التصدير.");
             }
         });
     };
@@ -201,52 +190,50 @@ export default function InstagramNewsEditor() {
 
     return (
         <div className={styles.editorContainer}>
-            <div className={styles.toolbar}>
-                <div className={styles.toolbarTitle}>
-                    <span>قالب: خبر Instagram</span>
-                </div>
-                <div className={styles.actions}>
-                    <button className={styles.smartFillButton} onClick={() => setIsFillerOpen(true)}>
-                        <SparklesIcon width={20} height={20} />
-                        <span>الملء الذكي</span>
-                    </button>
-                    
-                    <div className={styles.downloadGroup}>
-                        <button className={styles.downloadButton} onClick={() => handleDownload(exportFormat)} disabled={isExporting}>
-                            {isExporting ? 'جارٍ...' : `تنزيل (${exportFormat.toUpperCase()})`}
-                        </button>
-                        <button className={styles.dropdownTrigger} onClick={() => setIsExportMenuOpen(!isExportMenuOpen)} disabled={isExporting}>
-                            <motion.div animate={{ rotate: isExportMenuOpen ? 180 : 0 }}>
-                                <ChevronDownIcon />
-                            </motion.div>
-                        </button>
-                        
-                        <AnimatePresence>
-                            {isExportMenuOpen && (
-                                <motion.div className={styles.dropdownMenu} initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.15 }}>
-                                    <button className={styles.dropdownItem} onClick={() => handleDownload('png')}>صورة شفافة <span>PNG</span></button>
-                                    <button className={styles.dropdownItem} onClick={() => handleDownload('jpeg')}>صورة مضغوطة <span>JPG</span></button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </div>
-
             <div className={styles.mainArea}>
-                {/* Responsive Logic: Render based on activeTab on mobile, both on desktop */}
+                {/* Sidebar Controls */}
                 {(!isMobile || activeTab === 'sidebar') && (
                     <div className={styles.sidebar}>
+                        <div className={styles.sidebarHeader}>
+                             <h2 className={styles.sidebarTitle}>قالب: خبر Instagram</h2>
+                        </div>
+
+                        <div className={styles.controlGroup}>
+                            <button className={styles.smartFillButton} onClick={() => setIsFillerOpen(true)}>
+                                <SparklesIcon width={20} height={20} />
+                                <span>الملء الذكي</span>
+                            </button>
+                            
+                            <div className={styles.downloadGroup}>
+                                <button className={styles.downloadButton} onClick={() => handleDownload('png')} disabled={isExporting}>
+                                    <DownloadIcon />
+                                    <span style={{ marginRight: '0.8rem' }}>تنزيل (PNG)</span>
+                                </button>
+                                <button className={styles.dropdownTrigger} onClick={() => setIsExportMenuOpen(!isExportMenuOpen)} disabled={isExporting}>
+                                    <motion.div animate={{ rotate: isExportMenuOpen ? 180 : 0 }}>
+                                        <ChevronDownIcon />
+                                    </motion.div>
+                                </button>
+                            </div>
+                             <AnimatePresence>
+                                {isExportMenuOpen && (
+                                    <motion.div className={styles.dropdownMenu} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                                        <button className={styles.dropdownItem} onClick={() => handleDownload('jpeg')}>صورة JPG</button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
                         <div className={styles.controlGroup}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <label className={styles.label}>الشرائح (Slides)</label>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button className="icon-button outline-button" onClick={handleAddSlide} title="إضافة شريحة" style={{ padding: '0.5rem 1rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 600 }}>
+                                    <button className="icon-button outline-button" onClick={handleAddSlide} title="إضافة" style={{ padding: '0.5rem 1rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 600 }}>
                                         <PlusIcon />
                                         <span>إضافة</span>
                                     </button>
                                     {slides.length > 1 && (
-                                        <button className="icon-button outline-button" onClick={handleDeleteSlide} title="حذف الشريحة" style={{ padding: '0.5rem', height: 'auto', color: '#DC2626', borderColor: '#DC2626' }}>
+                                        <button className="icon-button outline-button" onClick={handleDeleteSlide} title="حذف" style={{ padding: '0.5rem', height: 'auto', color: '#DC2626', borderColor: '#DC2626' }}>
                                             <TrashIcon />
                                         </button>
                                     )}
@@ -254,23 +241,11 @@ export default function InstagramNewsEditor() {
                             </div>
                             
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-primary)', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                                <button 
-                                    className="icon-button" 
-                                    onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
-                                    disabled={currentSlideIndex === 0}
-                                    style={{ opacity: currentSlideIndex === 0 ? 0.3 : 1 }}
-                                >
+                                <button className="icon-button" onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))} disabled={currentSlideIndex === 0} style={{ opacity: currentSlideIndex === 0 ? 0.3 : 1 }}>
                                     <ArrowRightIcon />
                                 </button>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 600 }}>
-                                    {currentSlideIndex + 1} / {slides.length}
-                                </span>
-                                <button 
-                                    className="icon-button" 
-                                    onClick={() => setCurrentSlideIndex(Math.min(slides.length - 1, currentSlideIndex + 1))}
-                                    disabled={currentSlideIndex === slides.length - 1}
-                                    style={{ opacity: currentSlideIndex === slides.length - 1 ? 0.3 : 1 }}
-                                >
+                                <span style={{ fontSize: '1.4rem', fontWeight: 600 }}>{currentSlideIndex + 1} / {slides.length}</span>
+                                <button className="icon-button" onClick={() => setCurrentSlideIndex(Math.min(slides.length - 1, currentSlideIndex + 1))} disabled={currentSlideIndex === slides.length - 1} style={{ opacity: currentSlideIndex === slides.length - 1 ? 0.3 : 1 }}>
                                     <ArrowLeftIcon />
                                 </button>
                             </div>
@@ -295,8 +270,9 @@ export default function InstagramNewsEditor() {
                             <input className={styles.input} value={currentSlide.titleBottom} onChange={e => updateCurrentSlide({ titleBottom: e.target.value })} />
                         </div>
                         <div className={styles.controlGroup}>
-                            <label className={styles.label}>النص (الشريحة الحالية)</label>
-                            <textarea className={`${styles.input} ${styles.textarea}`} value={currentSlide.body} onChange={e => updateCurrentSlide({ body: e.target.value })} />
+                            <label className={styles.label}>النص (محرر ذكي متاح في المعاينة)</label>
+                            {/* NOTE: Text area removed here since editing is done in-canvas */}
+                            <div className={styles.input} style={{opacity: 0.7, fontSize: '1.2rem'}}>اضغط على النص في التصميم للتعديل</div>
                         </div>
                         <div className={styles.controlGroup}>
                             <label className={styles.label}>المصدر</label>
@@ -305,6 +281,7 @@ export default function InstagramNewsEditor() {
                     </div>
                 )}
 
+                {/* Main Canvas Area */}
                 {(!isMobile || activeTab === 'canvas') && (
                     <div className={styles.canvasWrapper} ref={canvasWrapperRef}>
                         <InstagramNewsCanvas 
@@ -318,21 +295,15 @@ export default function InstagramNewsEditor() {
                 )}
             </div>
 
-            {/* Mobile Navigation Toggle */}
+            {/* Mobile Tabs */}
             {isMobile && (
                 <div className={styles.mobileToggleBar}>
-                    <button 
-                        className={`${styles.mobileToggleButton} ${activeTab === 'sidebar' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('sidebar')}
-                    >
+                    <button className={`${styles.mobileToggleButton} ${activeTab === 'sidebar' ? styles.active : ''}`} onClick={() => setActiveTab('sidebar')}>
                         <SettingsIcon />
                         <span>الإعدادات</span>
                     </button>
                     <div className={styles.mobileDivider} />
-                    <button 
-                        className={`${styles.mobileToggleButton} ${activeTab === 'canvas' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('canvas')}
-                    >
+                    <button className={`${styles.mobileToggleButton} ${activeTab === 'canvas' ? styles.active : ''}`} onClick={() => setActiveTab('canvas')}>
                         <CanvasIcon />
                         <span>التصميم</span>
                     </button>

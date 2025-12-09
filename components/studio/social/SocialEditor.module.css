@@ -3,39 +3,13 @@
 .editorContainer {
   display: flex;
   flex-direction: column;
-  /* Desktop: Push down significantly to clear any large headers */
-  height: calc(100vh - 14rem); 
-  margin-top: 14rem; 
+  height: calc(100vh - var(--nav-height-scrolled));
+  margin-top: var(--nav-height-scrolled); 
   background-color: #050505;
   color: #fff;
   overflow: hidden;
-}
-
-.toolbar {
-  height: 70px;
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 3rem;
-  z-index: 10;
-  flex-shrink: 0;
-}
-
-.toolbarTitle {
-  font-family: var(--font-heading);
-  font-size: 1.8rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.actions {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
+  position: relative;
+  z-index: 1; 
 }
 
 .mainArea {
@@ -60,23 +34,39 @@
   background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   background-color: #0a0a0a;
   overflow: hidden;
-  padding: 2rem;
+  padding: 0; 
   position: relative;
 }
 
 .sidebar {
-  width: 340px; 
+  width: 360px;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
-  padding: 2.5rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 2rem;
   overflow-y: auto;
-  z-index: 5;
+  z-index: 10;
   height: 100%;
   flex-shrink: 0;
   transition: transform 0.3s ease;
+}
+
+.sidebarHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebarTitle {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
 }
 
 .controlGroup {
@@ -157,6 +147,7 @@
 .smartFillButton {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
     background: transparent;
     border: 1px solid var(--border-color);
@@ -169,6 +160,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    width: 100%;
 }
 
 .smartFillButton:hover {
@@ -183,25 +175,18 @@
     color: var(--accent);
 }
 
-/* --- Download Group (RTL Corrected) --- */
+/* --- Download Group --- */
 .downloadGroup {
     display: flex;
     align-items: center;
-    box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 25%, transparent);
-    border-radius: 8px;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.downloadGroup:hover {
-    box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent);
-    transform: translateY(-1px);
+    width: 100%;
 }
 
 .downloadButton {
     background-color: var(--accent);
     color: #fff;
     border: none;
-    padding: 0 2.5rem;
+    padding: 0 1rem;
     height: 44px;
     font-family: var(--font-main);
     font-weight: 800;
@@ -216,6 +201,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-grow: 1;
 }
 [data-theme="dark"] .downloadButton {
     color: var(--bg-primary);
@@ -235,7 +221,7 @@
     background-color: var(--accent);
     color: #fff;
     border: none;
-    width: 40px;
+    width: 44px;
     height: 44px;
     cursor: pointer;
     border-top-left-radius: 8px;
@@ -247,6 +233,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     position: relative;
+    flex-shrink: 0;
 }
 [data-theme="dark"] .dropdownTrigger {
     color: var(--bg-primary);
@@ -257,50 +244,34 @@
 }
 
 .dropdownMenu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 160px;
-    background-color: var(--bg-secondary);
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 10px 40px -5px rgba(0,0,0,0.4);
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    z-index: 50;
-    padding: 0.5rem;
 }
 
 .dropdownItem {
     background: none;
     border: none;
-    padding: 1rem 1.5rem;
+    padding: 1rem;
     text-align: right;
     cursor: pointer;
     color: var(--text-primary);
     font-family: var(--font-main);
-    font-size: 1.4rem;
-    font-weight: 500;
-    border-radius: 6px;
+    font-size: 1.3rem;
     transition: all 0.2s ease;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.dropdownItem span:last-child {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    font-weight: 400;
-    font-family: var(--font-ui);
+    width: 100%;
 }
 
 .dropdownItem:hover {
-    background-color: var(--bg-primary);
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
 }
 
-/* ... Search Styles ... */
+/* --- Search Styles --- */
 .searchResultItem {
   display: flex;
   gap: 1.5rem;
@@ -342,34 +313,89 @@
   font-family: var(--font-ui);
 }
 
+/* Mobile Toggle Bar */
+.mobileToggleBar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    z-index: 100;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.mobileToggleButton {
+    flex: 1;
+    height: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+}
+
+.mobileToggleButton.active {
+    color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.mobileDivider {
+    width: 1px;
+    height: 24px;
+    background-color: var(--border-color);
+}
+
+/* --- Bubble Menu Styles (Ported from Editor.module.css) --- */
+.formattingToolbar {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 5px 20px -5px color-mix(in srgb, var(--text-primary) 15%, transparent);
+    padding: 0.4rem;
+    z-index: 100;
+    gap: 0.25rem;
+}
+
+.bubbleMenuButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    width: 32px;
+    border-radius: 4px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+.bubbleMenuButton:hover {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+}
+
+.bubbleMenuButton.active {
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+}
+
 /* Mobile Media Queries */
 @media (max-width: 1024px) {
     .editorContainer {
-        /* Fix: Use standard navbar height (8rem) to push content down */
-        height: calc(100vh - 8rem);
-        margin-top: 8rem;
+        height: calc(100vh - var(--nav-height-scrolled));
+        margin-top: var(--nav-height-scrolled);
     }
-    .toolbar {
-        padding: 0 1rem;
-        height: 60px;
-    }
-    .toolbarTitle {
-        font-size: 1.4rem;
-    }
-    .actions {
-        gap: 0.5rem;
-    }
-    .smartFillButton {
-        padding: 0 1rem;
-    }
-    .smartFillButton span {
-        display: none;
-    }
-    .downloadButton {
-        padding: 0 1rem;
-        font-size: 1.2rem;
-    }
-    
     .sidebar {
         width: 100%;
         padding-bottom: 80px;
@@ -380,7 +406,7 @@
     }
     
     .canvasWrapper {
-        padding: 1rem;
+        padding: 0;
         padding-bottom: 80px;
     }
 }

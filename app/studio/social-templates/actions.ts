@@ -45,7 +45,8 @@ export async function searchContentForTemplateAction(query: string) {
             return results;
         }
 
-        const results = await client.fetch(searchContentQuery, { query });
+        // FIX: Cast params to any to silence strict type error
+        const results = await client.fetch(searchContentQuery, { query } as any);
         return results;
     } catch (error) {
         console.error("Smart Fill Search Error:", error);

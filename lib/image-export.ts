@@ -1,19 +1,89 @@
 // lib/image-export.ts
 
-// Helper to fetch and base64 encode the font
-async function getFontBase64() {
+/**
+ * Fetches and embeds fonts to ensure the downloaded image looks exactly like the canvas.
+ * We map 'Impact' to 'Anton' and 'Arial' to 'Roboto' to ensure consistent rendering
+ * across all devices (especially mobile) where system fonts might be missing.
+ */
+async function getFontStyles() {
     try {
-        // Fetch the Cairo font (Bold/Black 900) directly to ensure it renders in Canvas
-        const response = await fetch('https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmpQdkhxzQw.woff2');
-        const blob = await response.blob();
-        return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
+        // Fetch Cairo (for Arabic/Main text), Anton (Impact replacement), Roboto (Arial replacement)
+        const cssUrl = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Anton&family=Roboto:wght@400;700;900&display=swap';
+        const cssResponse = await fetch(cssUrl);
+        const cssText = await cssResponse.text();
+
+        // Regex to parse Google Fonts CSS
+        const fontFaceRegex = /@font-face\s*{([^}]*)}/g;
+        let match;
+        let newCss = '';
+
+        const urlRegex = /url\(([^)]+)\)/;
+        const familyRegex = /font-family:\s*['"]?([^'";]+)['"]?/;
+        const weightRegex = /font-weight:\s*(\d+)/;
+
+        while ((match = fontFaceRegex.exec(cssText)) !== null) {
+            const block = match[1];
+            const urlMatch = urlRegex.exec(block);
+            const familyMatch = familyRegex.exec(block);
+            const weightMatch = weightRegex.exec(block);
+
+            if (urlMatch && familyMatch) {
+                const fontUrl = urlMatch[1].replace(/['"]/g, '');
+                const family = familyMatch[1];
+                const weight = weightMatch ? weightMatch[1] : '400';
+                
+                try {
+                    const fontResponse = await fetch(fontUrl);
+                    const blob = await fontResponse.blob();
+                    const base64 = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(blob);
+                    });
+
+                    // 1. Add the actual font rule
+                    newCss += `
+                        @font-face {
+                            font-family: '${family}';
+                            font-style: normal;
+                            font-weight: ${weight};
+                            src: url(${base64}) format('woff2');
+                        }
+                    `;
+
+                    // 2. Create Aliases for System Fonts to ensure consistent look
+                    // Map 'Impact' -> 'Anton'
+                    if (family === 'Anton') {
+                        newCss += `
+                            @font-face {
+                                font-family: 'Impact';
+                                font-style: normal;
+                                font-weight: 400;
+                                src: url(${base64}) format('woff2');
+                            }
+                        `;
+                    }
+                    // Map 'Arial' -> 'Roboto'
+                    if (family === 'Roboto') {
+                        newCss += `
+                            @font-face {
+                                font-family: 'Arial';
+                                font-style: normal;
+                                font-weight: ${weight};
+                                src: url(${base64}) format('woff2');
+                            }
+                        `;
+                    }
+
+                } catch (err) {
+                    console.warn(`Failed to fetch font ${family} weight ${weight}:`, err);
+                }
+            }
+        }
+
+        return newCss;
     } catch (e) {
-        console.warn('Failed to fetch font for export', e);
+        console.warn('Failed to process fonts for export', e);
         return null;
     }
 }
@@ -45,37 +115,31 @@ export async function downloadElementAsImage(elementId: string, fileName: string
         }
     }
 
-    // 2. Pre-process Fonts (Inject @font-face with base64 data)
-    const fontBase64 = await getFontBase64();
-    let styleTag = svg.querySelector('style');
-    if (!styleTag) {
-        styleTag = document.createElement('style');
-        svg.prepend(styleTag);
-    }
-    
-    if (fontBase64) {
-        // Explicitly define the font face for the SVG context
-        styleTag.textContent += `
-            @font-face {
-                font-family: 'Cairo';
-                font-style: normal;
-                font-weight: 900;
-                src: url(${fontBase64}) format('woff2');
-            }
-            text, input { font-family: 'Cairo', sans-serif !important; }
-        `;
+    // 2. Inject Fonts
+    const fontStyles = await getFontStyles();
+    if (fontStyles) {
+        let styleTag = svg.querySelector('style');
+        if (!styleTag) {
+            styleTag = document.createElement('style');
+            svg.prepend(styleTag);
+        }
+        // Append our specific font mappings
+        // CRITICAL FIX: We do NOT append a global '* { font-family... }' override here.
+        // We rely on the aliases created in getFontStyles ('Impact'->'Anton') to handle specific elements.
+        styleTag.textContent = (styleTag.textContent || '') + fontStyles;
     }
 
     // 3. Serialize and Draw
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    
     const width = 1080; 
     const height = 1350;
     
+    const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
+    const ctx = canvas.getContext('2d');
 
     if (!ctx) return;
 
@@ -86,10 +150,11 @@ export async function downloadElementAsImage(elementId: string, fileName: string
     return new Promise<void>((resolve, reject) => {
         img.onload = () => {
             if (format === 'jpeg') {
-                ctx.fillStyle = '#000000';
+                ctx.fillStyle = '#050505'; 
                 ctx.fillRect(0, 0, width, height);
             }
             ctx.drawImage(img, 0, 0, width, height);
+            
             canvas.toBlob((blob) => {
                 if (blob) {
                     const url = URL.createObjectURL(blob);

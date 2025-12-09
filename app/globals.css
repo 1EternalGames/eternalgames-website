@@ -401,3 +401,25 @@ body.lightbox-active {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Social Template Effects --- */
+.text-stroke-effect {
+    -webkit-text-stroke: 1.5px #FFFFFF;
+    color: transparent !important;
+    font-weight: 900;
+    paint-order: stroke fill;
+}
+
+/* Ensure Tiptap inside SVG foreignObject behaves */
+.social-editor-content .ProseMirror {
+    outline: none;
+    min-height: 100%;
+}
+
+.social-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: rgba(255,255,255,0.3);
+    float: right;
+    pointer-events: none;
+    height: 0;
+}
