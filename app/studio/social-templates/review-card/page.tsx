@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import ReviewCardCanvas, { ReviewTemplateData } from '@/components/studio/social/ReviewCardCanvas';
+import ReviewCardCanvas from '@/components/studio/social/review-card/ReviewCardCanvas';
+import { ReviewTemplateData } from '@/components/studio/social/review-card/types';
 import SmartFiller from '@/components/studio/social/SmartFiller';
 import styles from '@/components/studio/social/SocialEditor.module.css';
 import { motion, AnimatePresence } from 'framer-motion';

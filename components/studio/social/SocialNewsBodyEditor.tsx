@@ -7,7 +7,7 @@ import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { TextStrokeMark } from './extensions/TextStrokeMark';
 import { RandomEnglishStyleExtension } from './extensions/RandomEnglishStyleExtension';
-import { SocialDeactivateMarks } from './extensions/SocialDeactivateMarks'; // IMPORTED
+import { SocialDeactivateMarks } from './extensions/SocialDeactivateMarks'; 
 import { useEffect, useState } from 'react';
 import styles from './SocialEditor.module.css';
 import { motion } from 'framer-motion';
@@ -52,8 +52,8 @@ export default function SocialNewsBodyEditor({ content, onChange, fontSize, isEd
         editorProps: {
             attributes: {
                 class: 'social-editor-content',
-                // Base text is Gray (#A0AEC0) and Bold (700)
-                style: `font-size: ${fontSize}px; line-height: 1.6; font-weight: 700; text-align: right; direction: rtl; font-family: 'Cairo', sans-serif; color: #A0AEC0; outline: none; height: 100%; overflow: hidden;`
+                // UPDATED: Changed text-align to justify and added text-align-last
+                style: `font-size: ${fontSize}px; line-height: 1.6; font-weight: 700; text-align: justify; text-align-last: right; direction: rtl; font-family: 'Cairo', sans-serif; color: #A0AEC0; outline: none; height: 100%; overflow: hidden;`
             }
         },
         onUpdate: ({ editor }) => {

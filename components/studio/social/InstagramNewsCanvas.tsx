@@ -75,15 +75,16 @@ const EditableText = ({
     if (align === 'start') foreignX = x - width; 
     if (align === 'end') foreignX = x; 
     
-    const foreignY = y - (fontSize * 1.7);
-    
-    // THE FIX: Use the color from the style prop for the input, defaulting to white.
+    // Adjusted vertical alignment for input
+    const foreignY = y - (fontSize * 1.62); // UPDATED multiplier
+
     const inputColor = isFocused ? (style?.fill as string || '#FFFFFF') : 'transparent';
 
     return (
-        <g onClick={(e) => { e.stopPropagation(); }}>
+        <g onClick={(e) => { e.stopPropagation(); setEditing(true); }} style={{ cursor: 'text' }}>
+            {/* SVG Text Layer - Visible only when NOT editing */}
             {!isFocused && (
-                <>
+                <g style={{ opacity: 1 }}>
                     {strokeWidth > 0 && (
                         <text 
                             x={x} y={y} 
@@ -109,16 +110,29 @@ const EditableText = ({
                     >
                         {text}
                     </text>
-                </>
+                </g>
             )}
 
-            <foreignObject x={foreignX} y={foreignY} width={width} height={fontSize * 2.5}>
+            {/* Input Overlay - Always rendered but transparent when not focused */}
+            <foreignObject 
+                x={foreignX} 
+                y={foreignY} 
+                width={width} 
+                height={fontSize * 2.5} 
+                style={{ pointerEvents: 'all' }} // Explicitly allow pointer events
+            >
                 <input
                     ref={inputRef}
                     value={text}
                     onChange={(e) => onChange(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
+                    onFocus={() => {
+                        setIsFocused(true);
+                        setEditing(true);
+                    }}
+                    onBlur={() => {
+                        setIsFocused(false);
+                        setEditing(false);
+                    }}
                     style={{
                         width: '100%',
                         height: '100%',
@@ -136,6 +150,8 @@ const EditableText = ({
                         caretColor: '#fff',
                         textShadow: isFocused ? '0 2px 10px rgba(0,0,0,0.5)' : 'none',
                         lineHeight: '1.2',
+                        opacity: isFocused ? 1 : 0, // Transparent when not focused so SVG shows
+                        cursor: 'text'
                     }}
                 />
             </foreignObject>
@@ -152,8 +168,6 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
     const [isDragging, setIsDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
     const initialImgPos = useRef({ x: 0, y: 0 });
-    const pinchStartDist = useRef<number | null>(null);
-    const initialScale = useRef<number>(1);
     
     // Image Dimensions & Calculation
     const [imgDims, setImgDims] = useState({ width: 1080, height: 850 });
@@ -169,7 +183,6 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
             setImgDims({ width: w, height: h });
             
             // Calculate Base Scale (COVER)
-            // We need the image to cover 1080x850 initially
             const scaleW = 1080 / w;
             const scaleH = 850 / h;
             setBaseScale(Math.max(scaleW, scaleH));
@@ -177,25 +190,19 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
     }, [data.image]);
 
     // --- Interaction Handlers ---
-    const processFile = (file: File) => {
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 if(ev.target?.result) {
                     onDataChange({ 
                         image: ev.target.result as string,
-                        imageSettings: { x: 0, y: 0, scale: 1 } // Reset pos on new image
+                        imageSettings: { x: 0, y: 0, scale: 1 } 
                     });
                 }
             };
             reader.readAsDataURL(file);
-        }
-    };
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            processFile(file);
         }
     };
 
@@ -393,10 +400,25 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                     </g>
                 </g>
 
-                {/* TITLE GROUP */}
+                {/* FRAME PATH - RENDERED BEFORE TEXT */}
+                <g pointerEvents="none">
+                    <path d="M 0,1350 L 1080,1350 L 1080,850 L 1000,800 L 80,800 L 0,850 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="2" />
+                    <path d="M 0,850 L 80,800 L 80,900 L 100,920 L 420,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
+                    <path d="M 1080,850 L 1000,800 L 1000,900 L 980,920 L 660,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
+
+                    <g transform="translate(480, 1340)">
+                        <path d="M 0,0 L 120,0 L 130,10 L -10,10 Z" fill="#151820" stroke="#333" strokeWidth="1" />
+                        <g transform="translate(60, -15)">
+                            {renderDots()}
+                        </g>
+                    </g>
+                </g>
+
+                {/* TITLE GROUP - RENDERED AFTER FRAME */}
                 <g transform="translate(540, 780)">
+                    {/* Title Top - Positioned relative to separator */}
                     <EditableText 
-                        x={0} y={-10} 
+                        x={0} y={-25} 
                         text={data.titleTop} 
                         fontSize={titleTopSize}
                         width={1000} 
@@ -410,8 +432,9 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                         setEditing={(val) => setEditingField(val ? 'titleTop' : null)}
                     />
                     
+                    {/* Title Bottom - Positioned explicitly below separator - Dragged down slightly */}
                     <EditableText 
-                        x={0} y={90 - ((90 - titleTopSize) * 0.5)} 
+                        x={0} y={80} 
                         text={data.titleBottom} 
                         fontSize={titleBottomSize}
                         width={700}
@@ -426,24 +449,11 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
                         setEditing={(val) => setEditingField(val ? 'titleBottom' : null)}
                     />
 
+                    {/* Separator Line */}
                     <rect x="-400" y="-10" width="800" height="2" fill={DEFAULT_ACCENT} opacity="0.5" />
                 </g>
 
-                {/* FRAME PATH */}
-                <g pointerEvents="none">
-                    <path d="M 0,1350 L 1080,1350 L 1080,850 L 1000,800 L 80,800 L 0,850 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="2" />
-                    <path d="M 0,850 L 80,800 L 80,900 L 100,920 L 420,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
-                    <path d="M 1080,850 L 1000,800 L 1000,900 L 980,920 L 660,920" fill="none" stroke={DEFAULT_ACCENT} strokeWidth="3" strokeLinecap="square" style={{ filter: `drop-shadow(0 0 5px ${DEFAULT_ACCENT})` }} />
-
-                    <g transform="translate(480, 1340)">
-                        <path d="M 0,0 L 120,0 L 130,10 L -10,10 Z" fill="#151820" stroke="#333" strokeWidth="1" />
-                        <g transform="translate(60, -15)">
-                            {renderDots()}
-                        </g>
-                    </g>
-                </g>
-
-                {/* BODY CONTENT - Now using the full Rich Text Editor */}
+                {/* BODY CONTENT */}
                 <g transform="translate(0, 950)">
                     <rect x="980" y="0" width="4" height="30" fill="#556070" />
                     
