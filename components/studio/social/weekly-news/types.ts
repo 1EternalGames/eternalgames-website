@@ -17,6 +17,7 @@ export interface BadgeState {
 }
 
 export interface WeeklyHeroData {
+    sourceId?: string; // NEW
     tag: string;
     title: string;
     image: string;
@@ -25,6 +26,7 @@ export interface WeeklyHeroData {
 }
 
 export interface WeeklyCardData {
+    sourceId?: string; // NEW
     id: number;
     title: string;
     image: string;
@@ -33,6 +35,7 @@ export interface WeeklyCardData {
 }
 
 export interface WeeklyListItem {
+    sourceId?: string; // NEW
     id: number;
     number: string;
     text: string;

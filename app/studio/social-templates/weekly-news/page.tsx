@@ -17,47 +17,46 @@ const ChevronDownIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" f
 const CanvasIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>;
 const SettingsIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
 
+// UPDATED: Empty Default Data
 const DEFAULT_DATA: WeeklyNewsTemplateData = {
-    weekNumber: `الأسبوع 50`,
+    weekNumber: `الأسبوع 00`,
     year: `2025`,
     hero: {
         tag: 'خبر عاجل',
-        title: '<p>GTA VI: تفاصيل العرض الثاني</p><p>عودة أيقونية لمدينة Vice City</p>',
-        image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1080&auto=format&fit=crop',
+        title: '',
+        image: '',
         imageSettings: { x: 0, y: 0, scale: 1 },
         badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
     },
     cards: [
         { 
             id: 1, 
-            title: '<p>Nintendo تؤكد التوافق المسبق</p><p>ودعم تقنيات 4K و DLSS عند الإطلاق</p>', 
-            image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf?q=80&w=320&auto=format&fit=crop', 
+            title: '', 
+            image: '', 
             imageSettings: { x: 0, y: 0, scale: 1 },
             badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
         },
         { 
             id: 2, 
-            title: '<p>Microsoft تطور جهازاً محمولاً</p><p>مخصصاً لخدمة Game Pass السحابية</p>', 
-            image: 'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?q=80&w=320&auto=format&fit=crop', 
+            title: '', 
+            image: '', 
             imageSettings: { x: 0, y: 0, scale: 1 },
-            badges: { type: 'rumor', xbox: true, playstation: false, nintendo: false, pc: false }
+            badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
         },
         { 
             id: 3, 
-            title: '<p>Insomniac تستعرض أسلوب القتال</p><p>الدموي والقصة السوداوية للعبة</p>', 
-            image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=320&auto=format&fit=crop', 
+            title: '', 
+            image: '', 
             imageSettings: { x: 0, y: 0, scale: 1 },
-            badges: { type: 'leak', xbox: false, playstation: true, nintendo: false, pc: false }
+            badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
         }
     ],
     newsList: Array.from({ length: 10 }).map((_, i) => ({
         id: i + 5,
         number: (i + 5).toString().padStart(2, '0'),
-        text: i % 2 === 0 
-            ? 'CD Projekt Red تؤكد انتهاء مرحلة الإنتاج الأولي لمشروع The Witcher 4'
-            : 'Epic Games تمدد موسم Fortnite OG أسبوعين إضافيين بعد طلبات اللاعبين',
-        type: i % 2 === 0 ? 'official' : 'rumor',
-        isImportant: i % 2 === 0
+        text: '',
+        type: 'official',
+        isImportant: false
     }))
 };
 
@@ -130,6 +129,7 @@ export default function WeeklyNewsEditor() {
                         </div>
                         
                         <div className={styles.controlGroup}>
+                            {/* SMART FILL BUTTON */}
                             <button className={styles.smartFillButton} onClick={() => setIsFillerOpen(true)}>
                                 <SparklesIcon width={20} height={20} />
                                 <span>الملء الذكي</span>
@@ -200,6 +200,7 @@ export default function WeeklyNewsEditor() {
                 isOpen={isFillerOpen} 
                 onClose={() => setIsFillerOpen(false)} 
                 onApply={handleSmartFill} 
+                currentData={data}
             />
         </div>
     );

@@ -6,11 +6,11 @@ import React from 'react';
 const BACKGROUND_BRIGHTNESS = 0.7; 
 
 // --- ADJUST CONSTELLATION OPACITY HERE ---
-const CONSTELLATION_OPACITY = 0.5;
+const CONSTELLATION_OPACITY = 0.8;
 
 // --- ADJUST STAR DENSITY HERE ---
 // Range: 0.0 to 1.0 (1.0 = All stars, 0.5 = ~50% evenly distributed)
-const STAR_DENSITY = 0.15;
+const STAR_DENSITY = 0.25;
 
 const STAR_POSITIONS = [
     { id: 'A', x: 50, y: 50, r: 0, o: 0.8 }, { id: 'B', x: 150, y: 80, r: 20, o: 0.7 }, { id: 'C', x: 50, y: 150, r: 0, o: 0.8 },

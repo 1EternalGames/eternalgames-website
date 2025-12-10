@@ -14,17 +14,16 @@ interface Props {
 }
 
 const NEWS_TYPE_CONFIG: Record<NewsType, { label: string, color: string }> = {
-    official: { label: 'رسمي', color: '#00FFF0' }, // Cyan
-    rumor: { label: 'إشاعة', color: '#FFD700' },   // Bright Gold
-    leak: { label: 'تسريب', color: '#FF3333' }      // Bright Red
+    official: { label: 'رسمي', color: '#00FFF0' },
+    rumor: { label: 'إشاعة', color: '#FFD700' },
+    leak: { label: 'تسريب', color: '#DC2626' }
 };
 
-// High Contrast Platform Colors
 const PLATFORM_CONFIG: Record<string, { color: string, icon: any }> = {
-    xbox: { color: '#10B981', icon: PLATFORM_ICONS['XSX'] },       // Emerald Green (High Contrast)
-    playstation: { color: '#3B82F6', icon: PLATFORM_ICONS['PS5'] }, // Bright Blue
-    nintendo: { color: '#EF4444', icon: PLATFORM_ICONS['NSW'] },    // Bright Red
-    pc: { color: '#E2E8F0', icon: PLATFORM_ICONS['PC'] }            // Bright Gray/White
+    xbox: { color: '#10B981', icon: PLATFORM_ICONS['XSX'] },
+    playstation: { color: '#3B82F6', icon: PLATFORM_ICONS['PS5'] },
+    nintendo: { color: '#EF4444', icon: PLATFORM_ICONS['NSW'] },
+    pc: { color: '#E2E8F0', icon: PLATFORM_ICONS['PC'] }
 };
 
 export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
@@ -40,6 +39,7 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
     const [baseScale, setBaseScale] = useState(1);
 
     useEffect(() => {
+        if (!data.hero.image) return;
         const img = new Image();
         img.src = data.hero.image;
         img.onload = () => {
@@ -83,15 +83,10 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
         onChange({ hero: { ...data.hero, badges: { ...badges, [key]: !badges[key] } } });
     };
 
-    // Calculate dynamic badge layout (Cascading on the RIGHT side)
     const activeBadges = useMemo(() => {
         const list: any[] = [];
-        
-        // 1. News Type Badge
         const typeConfig = NEWS_TYPE_CONFIG[badges.type];
         list.push({ type: 'type', ...typeConfig, width: 90 });
-
-        // 2. Platforms
         if (badges.playstation) list.push({ type: 'platform', ...PLATFORM_CONFIG.playstation, width: 50 });
         if (badges.xbox) list.push({ type: 'platform', ...PLATFORM_CONFIG.xbox, width: 50 });
         if (badges.nintendo) list.push({ type: 'platform', ...PLATFORM_CONFIG.nintendo, width: 50 });
@@ -101,28 +96,18 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
         const DIAGONAL_OFFSET = 15;
         let currentY = 0;
         let prevBottomWidth = 0;
-        
-        const RIGHT_EDGE = 1080; // Right edge of the hero image
+        const RIGHT_EDGE = 1080; 
 
         return list.map((b, i) => {
             const isFirst = i === 0;
-            // Widths grow downwards in reverse (getting smaller towards bottom is typical, or here just cascade)
-            // Let's keep the logic of "Top is widest" from previous, but anchored right.
-            
             const topWidth = isFirst ? b.width + 20 : prevBottomWidth;
             const bottomWidth = topWidth - DIAGONAL_OFFSET;
             prevBottomWidth = bottomWidth;
             
-            // Draw from Right Edge:
-            // M (Right, Top) -> L (Right, Bottom) -> L (Right - BottomWidth, Bottom) -> L (Right - TopWidth, Top) -> Z
             const shape = `M ${RIGHT_EDGE},${currentY} L ${RIGHT_EDGE},${currentY + BADGE_HEIGHT} L ${RIGHT_EDGE - bottomWidth},${currentY + BADGE_HEIGHT} L ${RIGHT_EDGE - topWidth},${currentY} Z`;
-            
-            // Center X for text/icon (approximate)
             const cx = RIGHT_EDGE - (topWidth + bottomWidth) / 4; 
-            
             const badgeY = currentY;
             currentY += BADGE_HEIGHT;
-
             return { ...b, shape, y: badgeY, cx };
         });
     }, [badges]);
@@ -151,6 +136,8 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                     onDoubleClick={() => fileInputRef.current?.click()}
                     style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                 >
+                    {/* Transparent rect to ensure clickability when empty */}
+                    <rect x="0" y="0" width={1080} height={350} fill="transparent" />
                     <image 
                         href={data.hero.image} 
                         width={imgDims.width}
@@ -168,7 +155,6 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
             <rect x="1070" y="115" width="2" height="30" fill="#00FFF0" opacity="0.6"></rect>
             <rect x="8" y="115" width="2" height="30" fill="#00FFF0" opacity="0.6"></rect>
 
-            {/* --- BADGES (RIGHT SIDE) --- */}
             <g transform="translate(0, 0)"> 
                 {activeBadges.map((badge, i) => (
                     <g key={i} onClick={(e) => { e.stopPropagation(); if (badge.type === 'type') toggleBadgeType(); }} style={{ cursor: 'pointer' }}>
@@ -186,7 +172,6 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                 ))}
             </g>
 
-            {/* --- HOVER CONTROLS (Moved to Right Side area to match badges) --- */}
             <g transform="translate(850, 0)" opacity={isHovered ? 1 : 0} style={{ transition: 'opacity 0.2s' }}>
                  {['playstation', 'xbox', 'nintendo', 'pc'].map((p, i) => {
                      const isActive = badges[p as keyof BadgeState];

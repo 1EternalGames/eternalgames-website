@@ -14,8 +14,8 @@ interface Props {
 
 const NEWS_TYPE_CONFIG: Record<NewsType, { label: string, color: string }> = {
     official: { label: 'رسمي', color: '#00FFF0' },
-    rumor: { label: 'إشاعة', color: '#FFD700' },
-    leak: { label: 'تسريب', color: '#FF3333' }
+    rumor: { label: 'إشاعة', color: '#F59E0B' },
+    leak: { label: 'تسريب', color: '#DC2626' }
 };
 
 const PLATFORM_CONFIG: Record<string, { color: string, icon: any }> = {
@@ -46,6 +46,7 @@ const SingleCard = ({
     const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
+        if (!card.image) return;
         const img = new Image();
         img.src = card.image;
         img.onload = () => {
@@ -58,7 +59,7 @@ const SingleCard = ({
         };
     }, [card.image]);
 
-    // ... Image Handlers (Same as before)
+    // ... Image Handlers ...
     const handleMouseDown = (e: React.MouseEvent) => { if (e.button !== 0) return; e.preventDefault(); e.stopPropagation(); setIsDragging(true); dragStart.current = { x: e.clientX, y: e.clientY }; initialImgPos.current = { ...card.imageSettings }; };
     const handleMouseMove = (e: React.MouseEvent) => { if (!isDragging) return; e.preventDefault(); e.stopPropagation(); const dx = (e.clientX - dragStart.current.x) / scale; const dy = (e.clientY - dragStart.current.y) / scale; onCardChange({ ...card, imageSettings: { ...card.imageSettings, x: initialImgPos.current.x + dx, y: initialImgPos.current.y + dy } }); };
     const handleMouseUp = () => setIsDragging(false);
@@ -92,7 +93,7 @@ const SingleCard = ({
         let currentY = 0;
         let prevBottomWidth = 0;
         
-        const RIGHT_EDGE = 320; // Right edge of the card
+        const RIGHT_EDGE = 320; 
 
         return list.map((b, i) => {
             const isFirst = i === 0;
@@ -100,13 +101,10 @@ const SingleCard = ({
             const bottomWidth = topWidth - DIAGONAL_OFFSET;
             prevBottomWidth = bottomWidth;
             
-            // Draw from RIGHT edge
             const shape = `M ${RIGHT_EDGE},${currentY} L ${RIGHT_EDGE},${currentY + BADGE_HEIGHT} L ${RIGHT_EDGE - bottomWidth},${currentY + BADGE_HEIGHT} L ${RIGHT_EDGE - topWidth},${currentY} Z`;
-            
             const cx = RIGHT_EDGE - (topWidth + bottomWidth) / 4; 
             const badgeY = currentY;
             currentY += BADGE_HEIGHT;
-
             return { ...b, shape, y: badgeY, cx };
         });
     }, [badges]);
@@ -136,6 +134,8 @@ const SingleCard = ({
                      onDoubleClick={() => fileInputRef.current?.click()}
                      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                 >
+                     {/* Transparent Hit Area */}
+                     <rect x="0" y="0" width="320" height="160" fill="transparent" />
                      <image 
                         href={card.image} 
                         width={imgDims.width}
@@ -150,7 +150,7 @@ const SingleCard = ({
             <path d="M 20,0 L 300,0 L 320,20 L 320,140 L 300,160 L 190,160 L 180,150 L 140,150 L 130,160 L 20,160 L 0,140 L 0,20 Z" fill="none" stroke="#556070" strokeWidth="2" pointerEvents="none"></path>
             <path d="M 128,160 L 140,150 L 180,150 L 192,160" stroke="#00FFF0" strokeWidth="3" fill="none" filter="url(#wn-strongNeonGlow)"></path>
             
-            {/* BADGES (RIGHT SIDE) */}
+            {/* BADGES */}
             <g transform="translate(0, 0)"> 
                 {activeBadges.map((badge, i) => (
                     <g key={i} onClick={(e) => { e.stopPropagation(); if (badge.type === 'type') toggleBadgeType(); }} style={{ cursor: 'pointer' }}>
@@ -168,7 +168,7 @@ const SingleCard = ({
                 ))}
             </g>
 
-             {/* PLATFORM CONTROLS ON HOVER (Moved Left for Balance) */}
+             {/* PLATFORM CONTROLS ON HOVER */}
              <g transform="translate(20, -35)" opacity={isHovered ? 1 : 0} style={{ transition: 'opacity 0.2s' }}>
                  {['playstation', 'xbox', 'nintendo', 'pc'].map((p, i) => {
                      const isActive = badges[p as keyof BadgeState];

@@ -80,6 +80,7 @@ export default function SocialNewsBodyEditor({
         extensions.push(RandomEnglishStyleExtension);
     }
     
+    // Configure extension with color
     if (enableFirstWordColor) {
         extensions.push(FirstWordColorExtension.configure({ color: firstWordColor }));
     }
@@ -96,7 +97,43 @@ export default function SocialNewsBodyEditor({
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
-    }, [firstWordColor]); 
+    }, [firstWordColor, enableFirstWordColor]); // Re-create if these props change
+
+    // --- FORCE COLOR UPDATE ---
+    // This effect manually reapplies the first-word coloring when the color prop changes.
+    // This fixes the issue where clicking the number (changing type) didn't update the text color immediately.
+    useEffect(() => {
+        if (!editor || !enableFirstWordColor || !firstWordColor || editor.isDestroyed) return;
+
+        const { tr, doc } = editor.state;
+        const textStyleMark = editor.schema.marks.textStyle;
+        let modified = false;
+        let firstTextNodeFound = false;
+
+        doc.descendants((node, pos) => {
+            if (firstTextNodeFound) return false;
+            if (node.isText && node.text) {
+                firstTextNodeFound = true;
+                const match = node.text.match(/^(\s*)([^\s]+)/);
+                if (match) {
+                    const [_, leadingSpace, firstWord] = match;
+                    const start = pos + leadingSpace.length;
+                    const end = start + firstWord.length;
+
+                    // Remove old marks and apply new color
+                    tr.removeMark(start, end, textStyleMark);
+                    tr.addMark(start, end, textStyleMark.create({ color: firstWordColor }));
+                    modified = true;
+                }
+            }
+            return true;
+        });
+
+        if (modified) {
+            editor.view.dispatch(tr);
+        }
+    }, [editor, firstWordColor, enableFirstWordColor]);
+
 
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
