@@ -8,7 +8,7 @@ import { Color } from '@tiptap/extension-color';
 import { TextStrokeMark } from './extensions/TextStrokeMark';
 import { RandomEnglishStyleExtension } from './extensions/RandomEnglishStyleExtension';
 import { SocialDeactivateMarks } from './extensions/SocialDeactivateMarks'; 
-import { FirstWordCyanExtension } from './extensions/FirstWordCyanExtension'; // <-- IMPORTED
+import { FirstWordCyanExtension } from './extensions/FirstWordCyanExtension';
 import { useEffect, useState } from 'react';
 import styles from './SocialEditor.module.css';
 import { motion } from 'framer-motion';
@@ -26,6 +26,8 @@ const CyanIcon = () => (
 );
 const ClearIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
+type StylingVariant = 'none' | 'hero' | 'card';
+
 interface SocialNewsBodyEditorProps {
     content: string;
     onChange: (html: string) => void;
@@ -36,7 +38,8 @@ interface SocialNewsBodyEditorProps {
     disableAutoEnglish?: boolean;
     textAlign?: 'left' | 'right' | 'center' | 'justify';
     autoHeight?: boolean;
-    enableFirstWordCyan?: boolean; // <-- NEW PROP
+    enableFirstWordCyan?: boolean;
+    stylingVariant?: StylingVariant; 
 }
 
 export default function SocialNewsBodyEditor({ 
@@ -49,7 +52,8 @@ export default function SocialNewsBodyEditor({
     disableAutoEnglish = false,
     textAlign = 'right',
     autoHeight = false,
-    enableFirstWordCyan = false // <-- DEFAULT FALSE
+    enableFirstWordCyan = false,
+    stylingVariant = 'none'
 }: SocialNewsBodyEditorProps) {
     const [mounted, setMounted] = useState(false);
 
@@ -58,9 +62,17 @@ export default function SocialNewsBodyEditor({
     }, []);
 
     const extensions = [
-        StarterKit.configure({ heading: false, bulletList: false, orderedList: false, blockquote: false, bold: false }),
+        StarterKit.configure({ 
+            heading: false, 
+            bulletList: false, 
+            orderedList: false, 
+            blockquote: false, 
+            bold: false,
+        }),
         TextStyle,
         Color,
+        // Include DeactivateMarks only for 'none' variant to allow flow in others if needed, 
+        // though for auto-wrap variants simple typing is all that matters.
         SocialDeactivateMarks, 
     ];
 
@@ -68,7 +80,6 @@ export default function SocialNewsBodyEditor({
         extensions.push(RandomEnglishStyleExtension);
     }
     
-    // <-- CONDITIONALLY ADD EXTENSION
     if (enableFirstWordCyan) {
         extensions.push(FirstWordCyanExtension);
     }
@@ -78,7 +89,7 @@ export default function SocialNewsBodyEditor({
         content: content,
         editorProps: {
             attributes: {
-                class: 'social-editor-content',
+                class: `social-editor-content variant-${stylingVariant}`,
                 style: `outline: none; width: 100%; overflow: hidden; ${autoHeight ? 'min-height: 0;' : 'height: 100%;'}` 
             }
         },
@@ -87,7 +98,6 @@ export default function SocialNewsBodyEditor({
         },
     });
 
-    // Sync content if it changes externally
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
              if (!editor.isFocused) {
@@ -96,7 +106,6 @@ export default function SocialNewsBodyEditor({
         }
     }, [content, editor]);
 
-    // Handle focus based on parent state
     useEffect(() => {
         if (isEditing && editor && !editor.isFocused) {
             editor.commands.focus();
@@ -122,6 +131,50 @@ export default function SocialNewsBodyEditor({
             style={{ position: 'relative', width: '100%', height: '100%', ...combinedStyle }} 
             onClick={(e) => { e.stopPropagation(); setEditing(true); }}
         >
+            <style jsx global>{`
+                /* 
+                   LOGIC: 
+                   The BASE style applies to the whole paragraph (lines 2, 3, etc.).
+                   The ::first-line style overrides it for the top line.
+                */
+
+                /* HERO VARIANT */
+                .variant-hero p {
+                    margin: 0;
+                    /* Base style (Subtitle): Small, Cyan */
+                    font-size: 0.55em !important; 
+                    color: #00FFF0 !important;
+                    line-height: 1.4 !important;
+                    font-weight: 700;
+                }
+                .variant-hero p::first-line {
+                    /* First Line (Title): Large (1em = editor fontSize), White */
+                    font-size: 1.81em !important; /* Invert 0.55 to get back to 1.0 (approx 1/0.55) */
+                    color: #FFFFFF !important;
+                    line-height: 1.1 !important;
+                    font-weight: 900;
+                }
+
+                /* CARD VARIANT */
+                .variant-card p {
+                    margin: 0;
+                    /* Base style: Smaller */
+                    font-size: 0.85em !important;
+                    color: #FFFFFF !important;
+                    opacity: 0.9;
+                    font-weight: 500;
+                    line-height: 1.3 !important;
+                }
+                .variant-card p::first-line {
+                    /* First Line: Normal Size, Full Opacity */
+                    font-size: 1.17em !important; /* Invert 0.85 to get back to 1.0 */
+                    color: #FFFFFF !important;
+                    opacity: 1;
+                    font-weight: 700;
+                    line-height: 1.2 !important;
+                }
+            `}</style>
+
             {mounted && (
                 <BubbleMenu 
                     editor={editor} 

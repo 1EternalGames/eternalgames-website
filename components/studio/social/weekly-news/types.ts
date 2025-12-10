@@ -8,30 +8,28 @@ export interface ImageSettings {
 
 export interface WeeklyHeroData {
     tag: string;
-    title: string;
-    subtitle: string;
+    title: string; // Combined Title + Subtitle
     image: string;
     imageSettings: ImageSettings;
 }
 
 export interface WeeklyCardData {
     id: number;
-    title: string;
-    subtitle: string;
+    title: string; // Combined Title + Subtitle
     image: string;
     imageSettings: ImageSettings;
 }
 
 export interface WeeklyListItem {
     id: number;
-    number: string; // "05", "06", etc.
-    text: string; // Rich text content
+    number: string;
+    text: string;
 }
 
 export interface WeeklyNewsTemplateData {
     weekNumber: string;
     year: string;
     hero: WeeklyHeroData;
-    cards: WeeklyCardData[]; // Always length 3
-    newsList: WeeklyListItem[]; // Length 10 (split into 2 cols of 5)
+    cards: WeeklyCardData[];
+    newsList: WeeklyListItem[];
 }

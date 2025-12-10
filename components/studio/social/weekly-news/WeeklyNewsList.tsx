@@ -32,12 +32,12 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
 
                     return (
                         <g key={item.id} transform={`translate(0, ${yPos})`}>
-                            {/* Rect is at x=456, width=4 */}
+                            {/* Vertical Line Marker */}
                             {isCyan && <rect x="456" y="0" width="4" height="20" fill={numberColor} />}
                             
-                            {/* ADJUSTED: Moved number text left to x=430 to increase gap from vertical line */}
+                            {/* Number: Moved Left (x=425) to create gap from line at x=456 */}
                             <EditableText
-                                x={430} y={16} // Changed from 440 to 430
+                                x={425} y={16}
                                 text={item.number}
                                 fontSize={16}
                                 align="end"
@@ -49,7 +49,8 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                                 inputStyle={{fontFamily: 'monospace'}}
                             />
                             
-                            <foreignObject x={0} y={-5} width={415} height={60}>
+                            {/* Text Body: Lowered y from -5 to 0 to align center with number */}
+                            <foreignObject x={0} y={0} width={410} height={60}>
                                 <SocialNewsBodyEditor
                                     content={item.text}
                                     onChange={(val) => handleItemChange(globalIndex, 'text', val)}
@@ -62,8 +63,10 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                                         fontWeight: 700,
                                         lineHeight: 1.4
                                     }}
-                                    // ADDED: Enable first word coloring
+                                    // FIRST WORD CYAN ONLY
                                     enableFirstWordCyan={true}
+                                    // NO RANDOM ENGLISH COLORS
+                                    disableAutoEnglish={true}
                                 />
                             </foreignObject>
                         </g>

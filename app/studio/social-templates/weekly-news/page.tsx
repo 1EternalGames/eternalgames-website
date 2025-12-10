@@ -20,15 +20,31 @@ const DEFAULT_DATA: WeeklyNewsTemplateData = {
     year: `2025`,
     hero: {
         tag: 'خبر عاجل',
-        title: 'GTA VI: تفاصيل العرض الثاني',
-        subtitle: 'عودة أيقونية لمدينة Vice City',
+        // Merged title and subtitle
+        title: '<p>GTA VI: تفاصيل العرض الثاني</p><p>عودة أيقونية لمدينة Vice City</p>',
         image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1080&auto=format&fit=crop',
         imageSettings: { x: 0, y: 0, scale: 1 }
     },
     cards: [
-        { id: 1, title: 'Nintendo تؤكد التوافق المسبق', subtitle: 'ودعم تقنيات 4K و DLSS عند الإطلاق', image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf?q=80&w=320&auto=format&fit=crop', imageSettings: { x: 0, y: 0, scale: 1 } },
-        { id: 2, title: 'Microsoft تطور جهازاً محمولاً', subtitle: 'مخصصاً لخدمة Game Pass السحابية', image: 'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?q=80&w=320&auto=format&fit=crop', imageSettings: { x: 0, y: 0, scale: 1 } },
-        { id: 3, title: 'Insomniac تستعرض أسلوب القتال', subtitle: 'الدموي والقصة السوداوية للعبة', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=320&auto=format&fit=crop', imageSettings: { x: 0, y: 0, scale: 1 } }
+        { 
+            id: 1, 
+            // Merged title and subtitle
+            title: '<p>Nintendo تؤكد التوافق المسبق</p><p>ودعم تقنيات 4K و DLSS عند الإطلاق</p>', 
+            image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf?q=80&w=320&auto=format&fit=crop', 
+            imageSettings: { x: 0, y: 0, scale: 1 } 
+        },
+        { 
+            id: 2, 
+            title: '<p>Microsoft تطور جهازاً محمولاً</p><p>مخصصاً لخدمة Game Pass السحابية</p>', 
+            image: 'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?q=80&w=320&auto=format&fit=crop', 
+            imageSettings: { x: 0, y: 0, scale: 1 } 
+        },
+        { 
+            id: 3, 
+            title: '<p>Insomniac تستعرض أسلوب القتال</p><p>الدموي والقصة السوداوية للعبة</p>', 
+            image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=320&auto=format&fit=crop', 
+            imageSettings: { x: 0, y: 0, scale: 1 } 
+        }
     ],
     newsList: Array.from({ length: 10 }).map((_, i) => ({
         id: i + 5,

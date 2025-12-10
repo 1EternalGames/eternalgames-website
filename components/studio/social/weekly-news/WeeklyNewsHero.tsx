@@ -147,8 +147,13 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                     />
                 </g>
                 
-                {/* ADJUSTED: Increased width to 900 and shifted X to -900 to give more space before wrapping */}
-                <foreignObject x={-900} y={-45} width={900} height={90}>
+                {/* 
+                    Unified Title Field 
+                    Width increased to 900
+                    Position adjusted to allow multiline growth upwards
+                    stylingVariant='hero' handles formatting
+                */}
+                <foreignObject x={-900} y={-45} width={900} height={140}>
                     <SocialNewsBodyEditor 
                         content={data.hero.title} 
                         onChange={(val) => onChange({ hero: { ...data.hero, title: val }})}
@@ -163,24 +168,8 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                             lineHeight: 1.1
                         }}
                         autoHeight
-                    />
-                </foreignObject>
-
-                <foreignObject x={-600} y={45} width={600} height={40}>
-                    <SocialNewsBodyEditor 
-                        content={data.hero.subtitle} 
-                        onChange={(val) => onChange({ hero: { ...data.hero, subtitle: val }})}
-                        fontSize={24}
-                        textAlign="right"
-                        isEditing={editingField === 'heroSubtitle'}
-                        setEditing={(v) => setEditingField(v ? 'heroSubtitle' : null)}
-                        customStyle={{
-                            color: "#00FFF0",
-                            fontWeight: 700,
-                            textShadow: "0 2px 10px rgba(0,0,0,0.5)"
-                        }}
-                        autoHeight
-                        disableAutoEnglish
+                        stylingVariant="hero" // Applies the White/Cyan Large/Small logic
+                        disableAutoEnglish // Disable random english colors to rely on variant styling
                     />
                 </foreignObject>
             </g>

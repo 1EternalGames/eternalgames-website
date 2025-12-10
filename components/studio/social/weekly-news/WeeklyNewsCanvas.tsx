@@ -48,10 +48,6 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                 <WeeklyNewsDefs />
 
                 <rect width="100%" height="100%" fill="url(#wn-cleanVoid)"></rect>
-                
-                {/* REMOVED: wn-techGrid per request */}
-                {/* <rect width="100%" height="100%" fill="url(#wn-techGrid)"></rect> */}
-                
                 <rect width="100%" height="100%" fill="url(#wn-dataStream)" opacity="0.15"></rect>
 
                 <g transform="translate(40, 60)">
@@ -59,8 +55,10 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                     <rect x="0" y="49" width="1000" height="1" fill="#00FFF0"></rect>
                     <rect x="994" y="-5" width="6" height="50" fill="#00FFF0"></rect>
                     
-                    <text x="975" y="32" direction="rtl" textAnchor="start" fontWeight="900" fontSize="34" fill="#FFFFFF">النشرة</text>
-                    <text x="850" y="32" direction="rtl" textAnchor="start" fontWeight="900" fontSize="34" fill="#00FFF0" stroke="none">الأسبوعية</text>
+                    {/* Unified Title Bar */}
+                    <text x="980" y="32" direction="rtl" textAnchor="start" fontWeight="900" fontSize="34" fill="#FFFFFF">
+                        النشرة <tspan fill="#00FFF0">الأسبوعية</tspan>
+                    </text>
 
                     <g transform="translate(0, 5)">
                         <path d="M 0,0 L 140,0 L 140,20 L 120,40 L 0,40 Z" fill="#00FFF0"></path>
@@ -76,11 +74,10 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                             width={100}
                         />
                         
-                        {/* MOVED 2025 (Year) to the right */}
                         <EditableText
-                            x={20} y={35} // Changed from 10 to 20
+                            x={35} y={35}
                             text={data.year}
-                            fontSize={12} // Increased size slightly
+                            fontSize={12}
                             align="start"
                             style={{ fill: "#000000", fontWeight: 'bold', fontFamily: 'monospace' }}
                             onChange={(val) => onChange({ year: val })}
@@ -104,9 +101,9 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                         <text x="-15" y="32" direction="rtl" textAnchor="start" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="36" fill="#00FFF0" letterSpacing="-1">GAMES</text>
                     </g>
                     
-                    {/* MOVED Footer Text (URL and Handle) to the right */}
-                    <text x="80" y="60" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#FFF" letterSpacing="1">WWW.ETERNALGAMES.NET</text>
-                    <text x="80" y="80" textAnchor="start" fontFamily="monospace" fontSize="12" fill="#556070">@ETERNALGAMES_NET</text>
+                    {/* Adjusted position to x=120 and updated content */}
+                    <text x="220" y="60" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#FFF" letterSpacing="1">WWW.ETERNALGAMES.ME</text>
+                    <text x="145" y="90" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#556070">1EternalGames@</text>
                 </g>
 
                 <rect width="100%" height="100%" filter="url(#wn-grain)" opacity="0.06" style={{ mixBlendMode: 'overlay' }} pointerEvents="none"></rect>

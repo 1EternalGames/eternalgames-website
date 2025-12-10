@@ -129,7 +129,8 @@ const SingleCard = ({
             <path d="M 20,0 L 300,0 L 320,20 L 320,140 L 300,160 L 190,160 L 180,150 L 140,150 L 130,160 L 20,160 L 0,140 L 0,20 Z" fill="none" stroke="#556070" strokeWidth="2" pointerEvents="none"></path>
             <path d="M 128,160 L 140,150 L 180,150 L 192,160" stroke="#00FFF0" strokeWidth="3" fill="none" filter="url(#wn-strongNeonGlow)"></path>
             
-            <foreignObject x={10} y={80} width={300} height={35}>
+            {/* Unified Title Field */}
+            <foreignObject x={10} y={80} width={300} height={70}>
                 <SocialNewsBodyEditor 
                     content={card.title} 
                     onChange={(val) => onCardChange({ ...card, title: val })}
@@ -142,22 +143,8 @@ const SingleCard = ({
                         fontWeight: 700,
                         textShadow: "0 2px 4px #000"
                     }}
-                />
-            </foreignObject>
-             <foreignObject x={10} y={115} width={300} height={30}>
-                <SocialNewsBodyEditor 
-                    content={card.subtitle} 
-                    onChange={(val) => onCardChange({ ...card, subtitle: val })}
-                    fontSize={16}
-                    textAlign="right"
-                    isEditing={editingField === 'subtitle'}
-                    setEditing={(v) => setEditingField(v ? 'subtitle' : null)}
-                    customStyle={{
-                        color: "#FFFFFF",
-                        fontWeight: 500,
-                         textShadow: "0 2px 4px #000"
-                    }}
-                    disableAutoEnglish
+                    stylingVariant="card" // Use card variant for 2nd line smaller styling
+                    disableAutoEnglish // Rely on variant styling
                 />
             </foreignObject>
         </g>
