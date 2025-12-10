@@ -27,19 +27,51 @@ export default function SocialTemplatesDashboard() {
                             </div>
                         </div>
                     </Link>
-                    
-                    {/* Placeholder for future templates */}
-                     <div className={styles.templateCard} style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                        <div className={styles.templatePreview}>
-                            <span>Review</span>
+
+                    {/* Review Card Template */}
+                    <Link href="/studio/social-templates/review-card" className="no-underline">
+                        <div className={styles.templateCard}>
+                            <div className={styles.templatePreview} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)' }}>
+                                <span style={{ color: '#00FFF0' }}>Review</span>
+                            </div>
+                            <div style={{ padding: '1.5rem', textAlign: 'right' }}>
+                                <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>بطاقة مراجعة</h3>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1.4rem' }}>
+                                    التقييم، الإيجابيات، والسلبيات بتصميم موشور.
+                                </p>
+                            </div>
                         </div>
-                        <div style={{ padding: '1.5rem', textAlign: 'right' }}>
-                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>بطاقة مراجعة (قريبًا)</h3>
-                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1.4rem' }}>
-                                تلخيص التقييم، الإيجابيات، والسلبيات.
-                            </p>
+                    </Link>
+
+                     {/* Monthly Games Template */}
+                     <Link href="/studio/social-templates/monthly-games" className="no-underline">
+                        <div className={styles.templateCard}>
+                            <div className={styles.templatePreview} style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+                                <span style={{ color: '#FACC15' }}>Monthly</span>
+                            </div>
+                            <div style={{ padding: '1.5rem', textAlign: 'right' }}>
+                                <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>ألعاب الشهر</h3>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1.4rem' }}>
+                                    جدول إصدارات شهري لـ 9 ألعاب مع منصات.
+                                </p>
+                            </div>
                         </div>
-                    </div>
+                    </Link>
+
+                    {/* Weekly News Template (NEW) */}
+                    <Link href="/studio/social-templates/weekly-news" className="no-underline">
+                        <div className={styles.templateCard}>
+                            <div className={styles.templatePreview} style={{ background: 'linear-gradient(135deg, #10121A 0%, #050505 100%)' }}>
+                                <span style={{ color: '#00FFF0', fontSize: '2rem' }}>Weekly</span>
+                            </div>
+                            <div style={{ padding: '1.5rem', textAlign: 'right' }}>
+                                <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>النشرة الأسبوعية</h3>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1.4rem' }}>
+                                    ملخص لأهم الأحداث وأخبار الأسبوع في صورة واحدة.
+                                </p>
+                            </div>
+                        </div>
+                    </Link>
                 </div>
             </ContentBlock>
         </div>

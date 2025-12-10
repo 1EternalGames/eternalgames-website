@@ -8,6 +8,7 @@ import { Color } from '@tiptap/extension-color';
 import { TextStrokeMark } from './extensions/TextStrokeMark';
 import { RandomEnglishStyleExtension } from './extensions/RandomEnglishStyleExtension';
 import { SocialDeactivateMarks } from './extensions/SocialDeactivateMarks'; 
+import { FirstWordCyanExtension } from './extensions/FirstWordCyanExtension'; // <-- IMPORTED
 import { useEffect, useState } from 'react';
 import styles from './SocialEditor.module.css';
 import { motion } from 'framer-motion';
@@ -28,17 +29,14 @@ const ClearIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 interface SocialNewsBodyEditorProps {
     content: string;
     onChange: (html: string) => void;
-    // Modified: Make fontSize optional as it might be handled in customStyle
     fontSize?: number; 
     isEditing: boolean;
     setEditing: (val: boolean) => void;
-    // Added: Allow passing custom CSS styles
     customStyle?: React.CSSProperties;
-    // Added: Optional config to control extensions (e.g. disable auto-english color for titles)
     disableAutoEnglish?: boolean;
     textAlign?: 'left' | 'right' | 'center' | 'justify';
-    // NEW: Allow auto height for vertical centering
     autoHeight?: boolean;
+    enableFirstWordCyan?: boolean; // <-- NEW PROP
 }
 
 export default function SocialNewsBodyEditor({ 
@@ -50,7 +48,8 @@ export default function SocialNewsBodyEditor({
     customStyle = {},
     disableAutoEnglish = false,
     textAlign = 'right',
-    autoHeight = false
+    autoHeight = false,
+    enableFirstWordCyan = false // <-- DEFAULT FALSE
 }: SocialNewsBodyEditorProps) {
     const [mounted, setMounted] = useState(false);
 
@@ -62,11 +61,16 @@ export default function SocialNewsBodyEditor({
         StarterKit.configure({ heading: false, bulletList: false, orderedList: false, blockquote: false, bold: false }),
         TextStyle,
         Color,
-        SocialDeactivateMarks, // Breaks formatting on Space/Enter
+        SocialDeactivateMarks, 
     ];
 
     if (!disableAutoEnglish) {
         extensions.push(RandomEnglishStyleExtension);
+    }
+    
+    // <-- CONDITIONALLY ADD EXTENSION
+    if (enableFirstWordCyan) {
+        extensions.push(FirstWordCyanExtension);
     }
 
     const editor = useEditor({
@@ -75,20 +79,17 @@ export default function SocialNewsBodyEditor({
         editorProps: {
             attributes: {
                 class: 'social-editor-content',
-                // MODIFIED: Conditionally apply height: 100%
                 style: `outline: none; width: 100%; overflow: hidden; ${autoHeight ? 'min-height: 0;' : 'height: 100%;'}` 
             }
         },
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
-        // We handle focus manually via effects, but let's ensure click focuses too
     });
 
     // Sync content if it changes externally
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
-             // Only update if not focused to avoid cursor jumping
              if (!editor.isFocused) {
                  editor.commands.setContent(content);
              }
@@ -104,7 +105,6 @@ export default function SocialNewsBodyEditor({
 
     if (!editor) return null;
 
-    // Merge default styles with custom styles
     const combinedStyle: React.CSSProperties = {
         fontSize: `${fontSize}px`,
         lineHeight: 1.2,
@@ -113,7 +113,7 @@ export default function SocialNewsBodyEditor({
         textAlignLast: textAlign === 'justify' ? 'right' : undefined,
         direction: 'rtl',
         fontFamily: "'Cairo', sans-serif",
-        color: '#A0AEC0', // Default color, can be overridden
+        color: '#A0AEC0', 
         ...customStyle
     };
 
@@ -160,7 +160,6 @@ export default function SocialNewsBodyEditor({
                     </motion.button>
                 </BubbleMenu>
             )}
-            {/* MODIFIED: Conditionally apply height: 100% to inner EditorContent wrapper */}
             <EditorContent editor={editor} style={{ width: '100%', height: autoHeight ? 'auto' : '100%' }} />
         </div>
     );
