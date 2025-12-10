@@ -42,6 +42,28 @@ export default function WeeklyNewsDefs() {
                     <feMergeNode in="SourceGraphic"></feMergeNode>
                 </feMerge>
             </filter>
+            
+            {/* Added: Red Glow for Leaks */}
+            <filter id="wn-leakGlow">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feFlood floodColor="#DC2626" result="color" />
+                <feComposite in="color" in2="blur" operator="in" result="coloredBlur" />
+                <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+
+            {/* Added: Amber Glow for Rumors */}
+            <filter id="wn-rumorGlow">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feFlood floodColor="#F59E0B" result="color" />
+                <feComposite in="color" in2="blur" operator="in" result="coloredBlur" />
+                <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
 
             <filter id="wn-grain">
                 <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"></feTurbulence>

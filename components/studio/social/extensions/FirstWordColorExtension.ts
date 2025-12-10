@@ -1,16 +1,26 @@
-// components/studio/social/extensions/FirstWordCyanExtension.ts
+// components/studio/social/extensions/FirstWordColorExtension.ts
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 
-export const FirstWordCyanExtension = Extension.create({
-    name: 'firstWordCyan',
+export interface FirstWordColorOptions {
+    color: string;
+}
+
+export const FirstWordColorExtension = Extension.create<FirstWordColorOptions>({
+    name: 'firstWordColor',
+
+    addOptions() {
+        return {
+            color: '#00FFF0', // Default Cyan
+        };
+    },
 
     addProseMirrorPlugins() {
-        const { editor } = this;
+        const { editor, options } = this;
 
         return [
             new Plugin({
-                key: new PluginKey('firstWordCyan'),
+                key: new PluginKey('firstWordColor'),
                 appendTransaction: (transactions, oldState, newState) => {
                     const docChanged = transactions.some(transaction => transaction.docChanged);
                     if (!docChanged) return null;
@@ -18,18 +28,16 @@ export const FirstWordCyanExtension = Extension.create({
                     const tr = newState.tr;
                     const textStyleMark = editor.schema.marks.textStyle;
                     
-                    // We only want to target the very first text node of the document
                     let firstTextNodeFound = false;
                     let modified = false;
 
                     newState.doc.descendants((node, pos) => {
-                        if (firstTextNodeFound) return false; // Stop after first text node
+                        if (firstTextNodeFound) return false; 
 
                         if (node.isText && node.text) {
                             firstTextNodeFound = true;
                             
-                            // Find the first word boundary
-                            // Matches the first sequence of non-whitespace characters
+                            // Regex to find the first word (non-whitespace sequence)
                             const match = node.text.match(/^(\s*)([^\s]+)/);
                             
                             if (match) {
@@ -37,15 +45,19 @@ export const FirstWordCyanExtension = Extension.create({
                                 const start = pos + leadingSpace.length;
                                 const end = start + firstWord.length;
 
-                                // Check if it already has the specific cyan color
-                                const hasCyan = node.marks.some(m => 
-                                    m.type.name === 'textStyle' && m.attrs.color === '#00FFF0'
+                                // Check if it already has the CORRECT color
+                                const hasCorrectColor = node.marks.some(m => 
+                                    m.type.name === 'textStyle' && m.attrs.color === options.color
                                 );
 
-                                // If not, apply it
-                                if (!hasCyan) {
-                                    tr.addMark(start, end, textStyleMark.create({ color: '#00FFF0' }));
-                                    modified = true;
+                                if (!hasCorrectColor) {
+                                    if (textStyleMark) {
+                                        // Remove any existing textStyle marks on this range first
+                                        tr.removeMark(start, end, textStyleMark);
+                                        // Add the new color mark
+                                        tr.addMark(start, end, textStyleMark.create({ color: options.color }));
+                                        modified = true;
+                                    }
                                 }
                             }
                         }

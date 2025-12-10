@@ -8,7 +8,7 @@ import { Color } from '@tiptap/extension-color';
 import { TextStrokeMark } from './extensions/TextStrokeMark';
 import { RandomEnglishStyleExtension } from './extensions/RandomEnglishStyleExtension';
 import { SocialDeactivateMarks } from './extensions/SocialDeactivateMarks'; 
-import { FirstWordCyanExtension } from './extensions/FirstWordCyanExtension';
+import { FirstWordColorExtension } from './extensions/FirstWordColorExtension';
 import { useEffect, useState } from 'react';
 import styles from './SocialEditor.module.css';
 import { motion } from 'framer-motion';
@@ -38,7 +38,8 @@ interface SocialNewsBodyEditorProps {
     disableAutoEnglish?: boolean;
     textAlign?: 'left' | 'right' | 'center' | 'justify';
     autoHeight?: boolean;
-    enableFirstWordCyan?: boolean;
+    enableFirstWordColor?: boolean; 
+    firstWordColor?: string;
     stylingVariant?: StylingVariant; 
 }
 
@@ -52,7 +53,8 @@ export default function SocialNewsBodyEditor({
     disableAutoEnglish = false,
     textAlign = 'right',
     autoHeight = false,
-    enableFirstWordCyan = false,
+    enableFirstWordColor = false,
+    firstWordColor = '#00FFF0',
     stylingVariant = 'none'
 }: SocialNewsBodyEditorProps) {
     const [mounted, setMounted] = useState(false);
@@ -71,8 +73,6 @@ export default function SocialNewsBodyEditor({
         }),
         TextStyle,
         Color,
-        // Include DeactivateMarks only for 'none' variant to allow flow in others if needed, 
-        // though for auto-wrap variants simple typing is all that matters.
         SocialDeactivateMarks, 
     ];
 
@@ -80,8 +80,8 @@ export default function SocialNewsBodyEditor({
         extensions.push(RandomEnglishStyleExtension);
     }
     
-    if (enableFirstWordCyan) {
-        extensions.push(FirstWordCyanExtension);
+    if (enableFirstWordColor) {
+        extensions.push(FirstWordColorExtension.configure({ color: firstWordColor }));
     }
 
     const editor = useEditor({
@@ -96,7 +96,7 @@ export default function SocialNewsBodyEditor({
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
-    });
+    }, [firstWordColor]); 
 
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
@@ -132,24 +132,16 @@ export default function SocialNewsBodyEditor({
             onClick={(e) => { e.stopPropagation(); setEditing(true); }}
         >
             <style jsx global>{`
-                /* 
-                   LOGIC: 
-                   The BASE style applies to the whole paragraph (lines 2, 3, etc.).
-                   The ::first-line style overrides it for the top line.
-                */
-
                 /* HERO VARIANT */
                 .variant-hero p {
                     margin: 0;
-                    /* Base style (Subtitle): Small, Cyan */
                     font-size: 0.55em !important; 
                     color: #00FFF0 !important;
                     line-height: 1.4 !important;
                     font-weight: 700;
                 }
                 .variant-hero p::first-line {
-                    /* First Line (Title): Large (1em = editor fontSize), White */
-                    font-size: 1.81em !important; /* Invert 0.55 to get back to 1.0 (approx 1/0.55) */
+                    font-size: 1.81em !important; 
                     color: #FFFFFF !important;
                     line-height: 1.1 !important;
                     font-weight: 900;
@@ -158,7 +150,6 @@ export default function SocialNewsBodyEditor({
                 /* CARD VARIANT */
                 .variant-card p {
                     margin: 0;
-                    /* Base style: Smaller */
                     font-size: 0.85em !important;
                     color: #FFFFFF !important;
                     opacity: 0.9;
@@ -166,8 +157,7 @@ export default function SocialNewsBodyEditor({
                     line-height: 1.3 !important;
                 }
                 .variant-card p::first-line {
-                    /* First Line: Normal Size, Full Opacity */
-                    font-size: 1.17em !important; /* Invert 0.85 to get back to 1.0 */
+                    font-size: 1.17em !important; 
                     color: #FFFFFF !important;
                     opacity: 1;
                     font-weight: 700;

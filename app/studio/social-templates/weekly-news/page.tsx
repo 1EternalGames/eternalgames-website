@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import WeeklyNewsCanvas from '@/components/studio/social/weekly-news/WeeklyNewsCanvas';
 import { WeeklyNewsTemplateData } from '@/components/studio/social/weekly-news/types';
 import styles from '@/components/studio/social/SocialEditor.module.css';
+import SmartFillerWeekly from '@/components/studio/social/weekly-news/SmartFillerWeekly';
+import { SparklesIcon } from '@/components/icons';
 
 const DownloadIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
 const ChevronDownIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>);
@@ -20,30 +22,32 @@ const DEFAULT_DATA: WeeklyNewsTemplateData = {
     year: `2025`,
     hero: {
         tag: 'خبر عاجل',
-        // Merged title and subtitle
         title: '<p>GTA VI: تفاصيل العرض الثاني</p><p>عودة أيقونية لمدينة Vice City</p>',
         image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1080&auto=format&fit=crop',
-        imageSettings: { x: 0, y: 0, scale: 1 }
+        imageSettings: { x: 0, y: 0, scale: 1 },
+        badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
     },
     cards: [
         { 
             id: 1, 
-            // Merged title and subtitle
             title: '<p>Nintendo تؤكد التوافق المسبق</p><p>ودعم تقنيات 4K و DLSS عند الإطلاق</p>', 
             image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf?q=80&w=320&auto=format&fit=crop', 
-            imageSettings: { x: 0, y: 0, scale: 1 } 
+            imageSettings: { x: 0, y: 0, scale: 1 },
+            badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
         },
         { 
             id: 2, 
             title: '<p>Microsoft تطور جهازاً محمولاً</p><p>مخصصاً لخدمة Game Pass السحابية</p>', 
             image: 'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?q=80&w=320&auto=format&fit=crop', 
-            imageSettings: { x: 0, y: 0, scale: 1 } 
+            imageSettings: { x: 0, y: 0, scale: 1 },
+            badges: { type: 'rumor', xbox: true, playstation: false, nintendo: false, pc: false }
         },
         { 
             id: 3, 
             title: '<p>Insomniac تستعرض أسلوب القتال</p><p>الدموي والقصة السوداوية للعبة</p>', 
             image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=320&auto=format&fit=crop', 
-            imageSettings: { x: 0, y: 0, scale: 1 } 
+            imageSettings: { x: 0, y: 0, scale: 1 },
+            badges: { type: 'leak', xbox: false, playstation: true, nintendo: false, pc: false }
         }
     ],
     newsList: Array.from({ length: 10 }).map((_, i) => ({
@@ -51,7 +55,9 @@ const DEFAULT_DATA: WeeklyNewsTemplateData = {
         number: (i + 5).toString().padStart(2, '0'),
         text: i % 2 === 0 
             ? 'CD Projekt Red تؤكد انتهاء مرحلة الإنتاج الأولي لمشروع The Witcher 4'
-            : 'Epic Games تمدد موسم Fortnite OG أسبوعين إضافيين بعد طلبات اللاعبين'
+            : 'Epic Games تمدد موسم Fortnite OG أسبوعين إضافيين بعد طلبات اللاعبين',
+        type: i % 2 === 0 ? 'official' : 'rumor',
+        isImportant: i % 2 === 0
     }))
 };
 
@@ -62,6 +68,7 @@ export default function WeeklyNewsEditor() {
     const [scale, setScale] = useState(0.4);
     const [isExporting, startExport] = useTransition();
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+    const [isFillerOpen, setIsFillerOpen] = useState(false);
     const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const toast = useToast();
     
@@ -108,6 +115,11 @@ export default function WeeklyNewsEditor() {
         });
     };
 
+    const handleSmartFill = (newData: Partial<WeeklyNewsTemplateData>) => {
+        setData(prev => ({ ...prev, ...newData }));
+        toast.success("تم تطبيق البيانات بنجاح!");
+    };
+
     return (
         <div className={styles.editorContainer}>
             <div className={styles.mainArea}>
@@ -115,12 +127,14 @@ export default function WeeklyNewsEditor() {
                     <div className={styles.sidebar}>
                         <div className={styles.sidebarHeader}>
                             <h2 className={styles.sidebarTitle}>قالب: النشرة الأسبوعية</h2>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '1.4rem', margin: 0 }}>
-                                انقر على النصوص والصور في التصميم لتعديلها مباشرة.
-                            </p>
                         </div>
                         
                         <div className={styles.controlGroup}>
+                            <button className={styles.smartFillButton} onClick={() => setIsFillerOpen(true)}>
+                                <SparklesIcon width={20} height={20} />
+                                <span>الملء الذكي</span>
+                            </button>
+
                             <div className={styles.downloadGroup}>
                                 <button className={styles.downloadButton} onClick={() => handleDownload('jpeg', 0.9)} disabled={isExporting}>
                                     <DownloadIcon />
@@ -181,6 +195,12 @@ export default function WeeklyNewsEditor() {
                     </button>
                 </div>
             )}
+            
+            <SmartFillerWeekly 
+                isOpen={isFillerOpen} 
+                onClose={() => setIsFillerOpen(false)} 
+                onApply={handleSmartFill} 
+            />
         </div>
     );
 }

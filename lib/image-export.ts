@@ -2,17 +2,17 @@
 
 /**
  * Fetches and embeds fonts to ensure the downloaded image looks exactly like the canvas.
- * We map 'Impact' to 'Anton' and 'Arial' to 'Roboto' to ensure consistent rendering
- * across all devices (especially mobile) where system fonts might be missing.
+ * specifically targets Cairo for Arabic support.
  */
 async function getFontStyles() {
     try {
-        // Fetch Cairo (for Arabic/Main text), Anton (Impact replacement), Roboto (Arial replacement)
-        const cssUrl = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Anton&family=Roboto:wght@400;700;900&display=swap';
+        // Explicitly request specific weights for Cairo to ensure all bold/black variants render correctly
+        const cssUrl = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;900&family=Anton&family=Roboto:wght@400;700;900&display=swap';
         const cssResponse = await fetch(cssUrl);
         const cssText = await cssResponse.text();
 
         // Regex to parse Google Fonts CSS
+        // This regex is robust enough to handle standard Google Fonts response format
         const fontFaceRegex = /@font-face\s*{([^}]*)}/g;
         let match;
         let newCss = '';
@@ -41,7 +41,7 @@ async function getFontStyles() {
                         reader.readAsDataURL(blob);
                     });
 
-                    // 1. Add the actual font rule
+                    // 1. Add the actual font rule with Base64 data
                     newCss += `
                         @font-face {
                             font-family: '${family}';
@@ -51,7 +51,7 @@ async function getFontStyles() {
                         }
                     `;
 
-                    // 2. Create Aliases for System Fonts to ensure consistent look
+                    // 2. Create Aliases for fallback fonts to ensure design consistency
                     // Map 'Impact' -> 'Anton'
                     if (family === 'Anton') {
                         newCss += `
@@ -98,7 +98,9 @@ export async function downloadElementAsImage(
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    const svg = element.querySelector('svg');
+    // Clone the element to manipulate it safely without affecting the DOM
+    const clone = element.cloneNode(true) as HTMLElement;
+    const svg = clone.querySelector('svg');
     if (!svg) return;
 
     // 1. Pre-process Images (Convert external hrefs to Base64)
@@ -107,6 +109,7 @@ export async function downloadElementAsImage(
         const href = img.getAttribute('href');
         if (href && !href.startsWith('data:')) {
             try {
+                // Fetch with no-cors if possible, or assume same-origin/CORS-enabled
                 const response = await fetch(href);
                 const blob = await response.blob();
                 const base64 = await new Promise<string>((resolve) => {
@@ -124,10 +127,12 @@ export async function downloadElementAsImage(
     // 2. Inject Fonts & Styles
     const fontStyles = await getFontStyles();
     // Define critical layout styles that might be missing in the serialized SVG context
+    // Specifically targeted for Tiptap paragraphs which add margins by default
     const criticalStyles = `
         .social-editor-content p { margin: 0 !important; }
         .ProseMirror p { margin: 0 !important; }
         .social-editor-content { overflow: hidden; }
+        text, input, div, span, p { font-family: 'Cairo', sans-serif !important; } 
     `;
     
     let styleTag = svg.querySelector('style');
@@ -142,7 +147,7 @@ export async function downloadElementAsImage(
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
     
-    // Base dimensions for the template
+    // Base dimensions for the template (Assuming Instagram Portrait 1080x1350 as base)
     const baseWidth = 1080; 
     const baseHeight = 1350;
 
@@ -158,13 +163,14 @@ export async function downloadElementAsImage(
     if (!ctx) return;
 
     const img = new Image();
+    // Encoding optimization for UTF-8 characters (Arabic) in SVG data URI
     const svgBase64 = window.btoa(unescape(encodeURIComponent(svgString)));
     img.src = `data:image/svg+xml;base64,${svgBase64}`;
 
     return new Promise<void>((resolve, reject) => {
         img.onload = () => {
             if (format === 'jpeg') {
-                ctx.fillStyle = '#050505'; 
+                ctx.fillStyle = '#050505'; // Default dark background to prevent transparent artifacts
                 ctx.fillRect(0, 0, width, height);
             }
             // Draw image scaled

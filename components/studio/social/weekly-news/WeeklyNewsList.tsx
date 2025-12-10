@@ -11,12 +11,28 @@ interface Props {
     onChange: (newData: Partial<WeeklyNewsTemplateData>) => void;
 }
 
+// Colors: Official (Cyan), Rumor (Gold), Leak (Red)
+const TYPE_COLORS: Record<string, string> = {
+    official: '#00FFF0', 
+    rumor: '#FFD700',    
+    leak: '#FF3333'      
+};
+
 export default function WeeklyNewsList({ data, onChange }: Props) {
     const [editingField, setEditingField] = useState<string | null>(null);
 
     const handleItemChange = (index: number, field: 'number' | 'text', value: string) => {
         const newList = [...data.newsList];
         newList[index] = { ...newList[index], [field]: value };
+        onChange({ newsList: newList });
+    };
+    
+    // Cycle through types: Official -> Rumor -> Leak -> Official
+    const toggleItemType = (index: number) => {
+        const newList = [...data.newsList];
+        const types = ['official', 'rumor', 'leak'] as const;
+        const currentTypeIndex = types.indexOf(newList[index].type || 'official');
+        newList[index].type = types[(currentTypeIndex + 1) % types.length];
         onChange({ newsList: newList });
     };
 
@@ -27,15 +43,23 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                 {items.map((item, localIndex) => {
                     const globalIndex = startIndex + localIndex;
                     const yPos = localIndex * 85;
-                    const isCyan = [0, 2].includes(localIndex);
-                    const numberColor = isCyan ? "#00FFF0" : "#556070";
+                    
+                    const isImportant = !!item.isImportant;
+                    const typeColor = TYPE_COLORS[item.type || 'official'];
+                    const numberColor = isImportant ? typeColor : "#556070";
 
                     return (
                         <g key={item.id} transform={`translate(0, ${yPos})`}>
-                            {/* Vertical Line Marker */}
-                            {isCyan && <rect x="456" y="0" width="4" height="20" fill={numberColor} />}
+                            {/* Vertical Line Marker (Important Only) */}
+                            {isImportant && (
+                                <rect 
+                                    x="456" y="0" width="4" height="20" fill={typeColor} 
+                                    onClick={(e) => { e.stopPropagation(); toggleItemType(globalIndex); }}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                            )}
                             
-                            {/* Number: Moved Left (x=425) to create gap from line at x=456 */}
+                            {/* Number Text */}
                             <EditableText
                                 x={425} y={16}
                                 text={item.number}
@@ -49,7 +73,18 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                                 inputStyle={{fontFamily: 'monospace'}}
                             />
                             
-                            {/* Text Body: Lowered y from -5 to 0 to align center with number */}
+                            {/* INTERACTIVE OVERLAY: Placed AFTER EditableText to capture clicks on top of it */}
+                            <rect 
+                                x={375} y={0} width={60} height={30} 
+                                fill="transparent" 
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    toggleItemType(globalIndex); 
+                                }}
+                            />
+                            
+                            {/* Text Body */}
                             <foreignObject x={0} y={0} width={410} height={60}>
                                 <SocialNewsBodyEditor
                                     content={item.text}
@@ -63,9 +98,8 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                                         fontWeight: 700,
                                         lineHeight: 1.4
                                     }}
-                                    // FIRST WORD CYAN ONLY
-                                    enableFirstWordCyan={true}
-                                    // NO RANDOM ENGLISH COLORS
+                                    enableFirstWordColor={true}
+                                    firstWordColor={typeColor}
                                     disableAutoEnglish={true}
                                 />
                             </foreignObject>

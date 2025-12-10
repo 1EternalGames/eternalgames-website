@@ -1,29 +1,43 @@
 // components/studio/social/weekly-news/types.ts
 
+export type NewsType = 'official' | 'rumor' | 'leak';
+
 export interface ImageSettings {
     x: number;
     y: number;
     scale: number;
 }
 
+export interface BadgeState {
+    type: NewsType;
+    xbox: boolean;
+    playstation: boolean;
+    nintendo: boolean;
+    pc: boolean;
+}
+
 export interface WeeklyHeroData {
     tag: string;
-    title: string; // Combined Title + Subtitle
+    title: string;
     image: string;
     imageSettings: ImageSettings;
+    badges: BadgeState;
 }
 
 export interface WeeklyCardData {
     id: number;
-    title: string; // Combined Title + Subtitle
+    title: string;
     image: string;
     imageSettings: ImageSettings;
+    badges: BadgeState;
 }
 
 export interface WeeklyListItem {
     id: number;
     number: string;
     text: string;
+    type: NewsType;
+    isImportant: boolean;
 }
 
 export interface WeeklyNewsTemplateData {

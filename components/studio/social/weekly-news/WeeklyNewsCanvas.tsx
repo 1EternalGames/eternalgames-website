@@ -8,6 +8,7 @@ import WeeklyNewsHero from './WeeklyNewsHero';
 import WeeklyNewsMainCards from './WeeklyNewsMainCards';
 import WeeklyNewsList from './WeeklyNewsList';
 import EditableText from '../shared/EditableText';
+import SpaceBackground from '../shared/SpaceBackground';
 
 interface Props {
     data: WeeklyNewsTemplateData;
@@ -47,21 +48,23 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
             >
                 <WeeklyNewsDefs />
 
-                <rect width="100%" height="100%" fill="url(#wn-cleanVoid)"></rect>
-                <rect width="100%" height="100%" fill="url(#wn-dataStream)" opacity="0.15"></rect>
+                {/* BACKGROUND LAYER */}
+                <SpaceBackground />
+                <rect width="100%" height="100%" fill="url(#wn-dataStream)" opacity="0.10" style={{ mixBlendMode: 'overlay' }}></rect>
 
                 <g transform="translate(40, 60)">
-                    <rect x="0" y="0" width="1000" height="50" fill="#0B0D12"></rect>
+                    {/* REMOVED BLACK BACKGROUND RECT HERE */}
                     <rect x="0" y="49" width="1000" height="1" fill="#00FFF0"></rect>
                     <rect x="994" y="-5" width="6" height="50" fill="#00FFF0"></rect>
                     
-                    {/* Unified Title Bar */}
+                    {/* Unified Title Bar with Space */}
                     <text x="980" y="32" direction="rtl" textAnchor="start" fontWeight="900" fontSize="34" fill="#FFFFFF">
                         النشرة <tspan fill="#00FFF0">الأسبوعية</tspan>
                     </text>
 
                     <g transform="translate(0, 5)">
                         <path d="M 0,0 L 140,0 L 140,20 L 120,40 L 0,40 Z" fill="#00FFF0"></path>
+                        
                         <EditableText
                             x={70} y={26}
                             text={data.weekNumber}
@@ -74,11 +77,12 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                             width={100}
                         />
                         
+                        {/* FIXED: Year Position - Aligned Left inside the cyan box */}
                         <EditableText
-                            x={35} y={35}
+                            x={15} y={35}
                             text={data.year}
                             fontSize={12}
-                            align="start"
+                            align="end" // 'end' in RTL aligns to the LEFT edge
                             style={{ fill: "#000000", fontWeight: 'bold', fontFamily: 'monospace' }}
                             onChange={(val) => onChange({ year: val })}
                             isEditing={editingField === 'year'}
@@ -101,9 +105,8 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                         <text x="-15" y="32" direction="rtl" textAnchor="start" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="36" fill="#00FFF0" letterSpacing="-1">GAMES</text>
                     </g>
                     
-                    {/* Adjusted position to x=120 and updated content */}
                     <text x="220" y="60" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#FFF" letterSpacing="1">WWW.ETERNALGAMES.ME</text>
-                    <text x="145" y="90" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#556070">1EternalGames@</text>
+                    <text x="150" y="90" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#556070">1EternalGames@</text>
                 </g>
 
                 <rect width="100%" height="100%" filter="url(#wn-grain)" opacity="0.06" style={{ mixBlendMode: 'overlay' }} pointerEvents="none"></rect>

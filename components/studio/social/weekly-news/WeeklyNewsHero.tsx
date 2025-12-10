@@ -1,10 +1,11 @@
 // components/studio/social/weekly-news/WeeklyNewsHero.tsx
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { WeeklyNewsTemplateData } from './types';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { WeeklyNewsTemplateData, NewsType, BadgeState } from './types';
 import SocialNewsBodyEditor from '../SocialNewsBodyEditor';
 import EditableText from '../shared/EditableText';
+import { PLATFORM_ICONS } from '../monthly-games/utils';
 
 interface Props {
     data: WeeklyNewsTemplateData;
@@ -12,12 +13,27 @@ interface Props {
     scale: number;
 }
 
+const NEWS_TYPE_CONFIG: Record<NewsType, { label: string, color: string }> = {
+    official: { label: 'رسمي', color: '#00FFF0' }, // Cyan
+    rumor: { label: 'إشاعة', color: '#FFD700' },   // Bright Gold
+    leak: { label: 'تسريب', color: '#FF3333' }      // Bright Red
+};
+
+// High Contrast Platform Colors
+const PLATFORM_CONFIG: Record<string, { color: string, icon: any }> = {
+    xbox: { color: '#10B981', icon: PLATFORM_ICONS['XSX'] },       // Emerald Green (High Contrast)
+    playstation: { color: '#3B82F6', icon: PLATFORM_ICONS['PS5'] }, // Bright Blue
+    nintendo: { color: '#EF4444', icon: PLATFORM_ICONS['NSW'] },    // Bright Red
+    pc: { color: '#E2E8F0', icon: PLATFORM_ICONS['PC'] }            // Bright Gray/White
+};
+
 export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
     const initialImgPos = useRef({ x: 0, y: 0 });
     const [editingField, setEditingField] = useState<string | null>(null);
+    const [isHovered, setIsHovered] = useState(false);
     
     // Image Dimensions
     const [imgDims, setImgDims] = useState({ width: 1080, height: 350 });
@@ -36,75 +52,96 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
         };
     }, [data.hero.image]);
 
+    // Image Handlers
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 if(ev.target?.result) {
-                    onChange({ 
-                        hero: { 
-                            ...data.hero, 
-                            image: ev.target.result as string,
-                            imageSettings: { x: 0, y: 0, scale: 1 } 
-                        } 
-                    });
+                    onChange({ hero: { ...data.hero, image: ev.target.result as string, imageSettings: { x: 0, y: 0, scale: 1 } } });
                 }
             };
             reader.readAsDataURL(file);
         }
     };
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (e.button !== 0) return;
-        e.preventDefault(); e.stopPropagation();
-        setIsDragging(true);
-        dragStart.current = { x: e.clientX, y: e.clientY };
-        initialImgPos.current = { ...data.hero.imageSettings };
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging) return;
-        e.preventDefault(); e.stopPropagation();
-        const dx = (e.clientX - dragStart.current.x) / scale;
-        const dy = (e.clientY - dragStart.current.y) / scale;
-        onChange({ 
-            hero: {
-                ...data.hero,
-                imageSettings: { 
-                    ...data.hero.imageSettings, 
-                    x: initialImgPos.current.x + dx, 
-                    y: initialImgPos.current.y + dy 
-                }
-            }
-        });
-    };
-
+    const handleMouseDown = (e: React.MouseEvent) => { if (e.button !== 0) return; e.preventDefault(); e.stopPropagation(); setIsDragging(true); dragStart.current = { x: e.clientX, y: e.clientY }; initialImgPos.current = { ...data.hero.imageSettings }; };
+    const handleMouseMove = (e: React.MouseEvent) => { if (!isDragging) return; e.preventDefault(); e.stopPropagation(); const dx = (e.clientX - dragStart.current.x) / scale; const dy = (e.clientY - dragStart.current.y) / scale; onChange({ hero: { ...data.hero, imageSettings: { ...data.hero.imageSettings, x: initialImgPos.current.x + dx, y: initialImgPos.current.y + dy } } }); };
     const handleMouseUp = () => setIsDragging(false);
+    const handleWheel = (e: React.WheelEvent) => { e.stopPropagation(); const settings = data.hero.imageSettings; const newScale = Math.max(0.1, Math.min(5, settings.scale - e.deltaY * 0.001)); onChange({ hero: { ...data.hero, imageSettings: { ...settings, scale: newScale } } }); };
 
-    const handleWheel = (e: React.WheelEvent) => {
-        e.stopPropagation();
-        const settings = data.hero.imageSettings;
-        const newScale = Math.max(0.1, Math.min(5, settings.scale - e.deltaY * 0.001));
-        onChange({ 
-            hero: {
-                ...data.hero,
-                imageSettings: { ...settings, scale: newScale }
-            }
-        });
+    // --- Badge Logic ---
+    const badges = data.hero.badges || { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false };
+
+    const toggleBadgeType = () => {
+        const types: NewsType[] = ['official', 'rumor', 'leak'];
+        const nextIndex = (types.indexOf(badges.type) + 1) % types.length;
+        onChange({ hero: { ...data.hero, badges: { ...badges, type: types[nextIndex] } } });
     };
+
+    const togglePlatform = (key: 'xbox' | 'playstation' | 'nintendo' | 'pc') => {
+        onChange({ hero: { ...data.hero, badges: { ...badges, [key]: !badges[key] } } });
+    };
+
+    // Calculate dynamic badge layout (Cascading on the RIGHT side)
+    const activeBadges = useMemo(() => {
+        const list: any[] = [];
+        
+        // 1. News Type Badge
+        const typeConfig = NEWS_TYPE_CONFIG[badges.type];
+        list.push({ type: 'type', ...typeConfig, width: 90 });
+
+        // 2. Platforms
+        if (badges.playstation) list.push({ type: 'platform', ...PLATFORM_CONFIG.playstation, width: 50 });
+        if (badges.xbox) list.push({ type: 'platform', ...PLATFORM_CONFIG.xbox, width: 50 });
+        if (badges.nintendo) list.push({ type: 'platform', ...PLATFORM_CONFIG.nintendo, width: 50 });
+        if (badges.pc) list.push({ type: 'platform', ...PLATFORM_CONFIG.pc, width: 50 });
+
+        const BADGE_HEIGHT = 30;
+        const DIAGONAL_OFFSET = 15;
+        let currentY = 0;
+        let prevBottomWidth = 0;
+        
+        const RIGHT_EDGE = 1080; // Right edge of the hero image
+
+        return list.map((b, i) => {
+            const isFirst = i === 0;
+            // Widths grow downwards in reverse (getting smaller towards bottom is typical, or here just cascade)
+            // Let's keep the logic of "Top is widest" from previous, but anchored right.
+            
+            const topWidth = isFirst ? b.width + 20 : prevBottomWidth;
+            const bottomWidth = topWidth - DIAGONAL_OFFSET;
+            prevBottomWidth = bottomWidth;
+            
+            // Draw from Right Edge:
+            // M (Right, Top) -> L (Right, Bottom) -> L (Right - BottomWidth, Bottom) -> L (Right - TopWidth, Top) -> Z
+            const shape = `M ${RIGHT_EDGE},${currentY} L ${RIGHT_EDGE},${currentY + BADGE_HEIGHT} L ${RIGHT_EDGE - bottomWidth},${currentY + BADGE_HEIGHT} L ${RIGHT_EDGE - topWidth},${currentY} Z`;
+            
+            // Center X for text/icon (approximate)
+            const cx = RIGHT_EDGE - (topWidth + bottomWidth) / 4; 
+            
+            const badgeY = currentY;
+            currentY += BADGE_HEIGHT;
+
+            return { ...b, shape, y: badgeY, cx };
+        });
+    }, [badges]);
 
     const settings = data.hero.imageSettings;
     const totalScale = baseScale * settings.scale;
     const transform = `translate(${540 + settings.x} ${175 + settings.y}) scale(${totalScale}) translate(${-imgDims.width / 2} ${-imgDims.height / 2})`;
 
     return (
-        <g transform="translate(0, 110)">
+        <g transform="translate(0, 110)"
+           onMouseEnter={() => setIsHovered(true)}
+           onMouseLeave={() => setIsHovered(false)}
+        >
             <foreignObject width="0" height="0">
                  <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleImageUpload} />
             </foreignObject>
 
             <g clipPath="url(#wn-heroClipNotched)">
+                 <rect width="1080" height="350" fill="#000000" />
                  <g 
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
@@ -131,28 +168,41 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
             <rect x="1070" y="115" width="2" height="30" fill="#00FFF0" opacity="0.6"></rect>
             <rect x="8" y="115" width="2" height="30" fill="#00FFF0" opacity="0.6"></rect>
 
+            {/* --- BADGES (RIGHT SIDE) --- */}
+            <g transform="translate(0, 0)"> 
+                {activeBadges.map((badge, i) => (
+                    <g key={i} onClick={(e) => { e.stopPropagation(); if (badge.type === 'type') toggleBadgeType(); }} style={{ cursor: 'pointer' }}>
+                        <path d={badge.shape} fill={badge.color} stroke="none" />
+                        {badge.type === 'type' ? (
+                            <text x={badge.cx} y={badge.y + 20} textAnchor="middle" fill="#000" fontWeight="900" fontSize="14" fontFamily="'Cairo', sans-serif">
+                                {badge.label}
+                            </text>
+                        ) : (
+                            <g transform={`translate(${badge.cx - 10}, ${badge.y + 5})`} color="#fff">
+                                <badge.icon width={20} height={20} />
+                            </g>
+                        )}
+                    </g>
+                ))}
+            </g>
+
+            {/* --- HOVER CONTROLS (Moved to Right Side area to match badges) --- */}
+            <g transform="translate(850, 0)" opacity={isHovered ? 1 : 0} style={{ transition: 'opacity 0.2s' }}>
+                 {['playstation', 'xbox', 'nintendo', 'pc'].map((p, i) => {
+                     const isActive = badges[p as keyof BadgeState];
+                     const cfg = PLATFORM_CONFIG[p];
+                     return (
+                         <g key={p} transform={`translate(${i * 40}, 0)`} onClick={(e) => { e.stopPropagation(); togglePlatform(p as any); }} style={{ cursor: 'pointer' }}>
+                            <rect width="35" height="35" fill="#1A202C" stroke={isActive ? cfg.color : '#555'} rx="4" />
+                            <g transform="translate(7.5, 7.5)" color={isActive ? cfg.color : '#888'}>
+                                <cfg.icon width={20} height={20} />
+                            </g>
+                         </g>
+                     )
+                 })}
+            </g>
+
             <g transform="translate(1040, 220)">
-                <g transform="translate(0, -90)">
-                   <rect x="-160" y="0" width="160" height="30" fill="#00FFF0" transform="skewX(-20)"></rect>
-                    <EditableText
-                        x={-80} y={21}
-                        text={data.hero.tag}
-                        fontSize={16}
-                        align="middle"
-                        style={{ fill: "#000", fontWeight: 900 }}
-                        onChange={(val) => onChange({ hero: { ...data.hero, tag: val }})}
-                        isEditing={editingField === 'heroTag'}
-                        setEditing={(v) => setEditingField(v ? 'heroTag' : null)}
-                        width={140}
-                    />
-                </g>
-                
-                {/* 
-                    Unified Title Field 
-                    Width increased to 900
-                    Position adjusted to allow multiline growth upwards
-                    stylingVariant='hero' handles formatting
-                */}
                 <foreignObject x={-900} y={-45} width={900} height={140}>
                     <SocialNewsBodyEditor 
                         content={data.hero.title} 
@@ -168,8 +218,8 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                             lineHeight: 1.1
                         }}
                         autoHeight
-                        stylingVariant="hero" // Applies the White/Cyan Large/Small logic
-                        disableAutoEnglish // Disable random english colors to rely on variant styling
+                        stylingVariant="hero"
+                        disableAutoEnglish 
                     />
                 </foreignObject>
             </g>
