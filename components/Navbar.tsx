@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 import UserProfile from './UserProfile';
-import NotificationBell from '@/components/notifications/NotificationBell'; // <-- ADDED IMPORT
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { motion, AnimatePresence, Variants, Transition } from 'framer-motion';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useBodyClass } from '@/hooks/useBodyClass';
@@ -59,6 +59,7 @@ const navItems = [
     { href: '/constellation', label: 'الكوكبة', Icon: ConstellationIcon }
 ];
 
+// --- Orbital Animation Variants ---
 const orbitalContainerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.2 } }
@@ -69,7 +70,6 @@ const itemTransition: Transition = { type: 'spring', stiffness: 400, damping: 20
 const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: typeof navItems[0], angle: number, radius: string, isActive: boolean, onClick: () => void }) => {
     const cosAngle = Math.round(Math.cos(angle) * 1e10) / 1e10;
     const sinAngle = Math.round(Math.sin(angle) * 1e10) / 1e10;
-
     const x = `calc(${radius} * ${cosAngle})`;
     const y = `calc(${radius} * ${sinAngle})`;
 
@@ -80,22 +80,13 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
     };
     
     return (
-        <motion.div
-            variants={itemVariants}
-            transition={itemTransition}
-            className={styles.orbitalItemWrapper}
-        >
+        <motion.div variants={itemVariants} transition={itemTransition} className={styles.orbitalItemWrapper}>
             <Link href={item.href} onClick={onClick} className="no-underline" prefetch={false}>
                 <motion.div className={`${styles.orbitalOrb} ${isActive ? styles.active : ''}`} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
                     <item.Icon />
                 </motion.div>
             </Link>
-            <motion.div
-                className={styles.orbitalTitle}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0, transition: { delay: 0.15, duration: 0.3 } }}
-                exit={{ opacity: 0, y: 5, transition: { duration: 0.1 } }}
-            >
+            <motion.div className={styles.orbitalTitle} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.15, duration: 0.3 } }} exit={{ opacity: 0, y: 5, transition: { duration: 0.1 } }}>
                 {item.label}
             </motion.div>
         </motion.div>
@@ -105,49 +96,110 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
 const AnimatedPreviewIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <motion.circle 
-            cx="12" cy="12" r="3"
-            variants={{
-                hover: { scaleY: 0.1, transition: { duration: 0.1, ease: "easeOut" } },
-                rest: { scaleY: 1, transition: { duration: 0.2, delay: 0.1, ease: "easeIn" } }
-            }}
-        />
+        <motion.circle cx="12" cy="12" r="3" variants={{ hover: { scaleY: 0.1, transition: { duration: 0.1, ease: "easeOut" } }, rest: { scaleY: 1, transition: { duration: 0.2, delay: 0.1, ease: "easeIn" } } }} />
     </svg>
 );
 
 const EditorPreviewButton = () => {
     const { liveUrl } = useEditorStore();
     const MotionLink = motion(Link);
-
-    const linkVariants = {
-        rest: { color: 'var(--text-primary)', scale: 1 },
-        hover: { color: 'var(--accent)', scale: 1.15 }
-    };
+    const linkVariants = { rest: { color: 'var(--text-primary)', scale: 1 }, hover: { color: 'var(--accent)', scale: 1.15 } };
 
     return liveUrl ? (
-        <MotionLink
-            href={liveUrl}
-            target="_blank"
-            className={`${editorStyles.iconButton} no-underline`}
-            title="معاينة الصفحة الحية"
-            initial="rest"
-            whileHover="hover"
-            whileTap="hover"
-            animate="rest"
-            variants={linkVariants}
-            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            prefetch={false}
-        >
+        <MotionLink href={liveUrl} target="_blank" className={`${editorStyles.iconButton} no-underline`} title="معاينة الصفحة الحية" initial="rest" whileHover="hover" whileTap="hover" animate="rest" variants={linkVariants} transition={{ type: 'spring', stiffness: 400, damping: 15 }} prefetch={false}>
             <AnimatedPreviewIcon />
         </MotionLink>
     ) : (
-        <motion.button
-            className={editorStyles.iconButton}
-            disabled
-            title="المستند غير منشور"
-        >
+        <motion.button className={editorStyles.iconButton} disabled title="المستند غير منشور">
             <PreviewIcon />
         </motion.button>
+    );
+};
+
+// --- BLACK HOLE LINK COMPONENT ---
+const BlackHoleNavLink = ({ 
+    item, 
+    isActive, 
+    onClick 
+}: { 
+    item: typeof navItems[0]; 
+    isActive: boolean; 
+    onClick?: () => void;
+}) => {
+    const [isHovered, setIsHovered] = useState(false);
+    
+    return (
+        <Link 
+            href={item.href} 
+            onClick={onClick} 
+            prefetch={false} 
+            className={styles.blackHoleLink}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div className={styles.contentContainer}>
+                {/* 1. TEXT LAYER (The Matter) */}
+                <motion.span
+                    className={styles.textWrapper}
+                    animate={isHovered ? "sucked" : "rest"}
+                    variants={{
+                        rest: {
+                            y: 0,
+                            scale: 1,
+                            opacity: 1,
+                            filter: "blur(0px)",
+                            transition: { duration: 0.4, ease: "easeOut" }
+                        },
+                        sucked: {
+                            y: -20,       // Move UP and away
+                            scale: 0.6,   // Shrink into distance
+                            opacity: 0,   // Fade out
+                            filter: "blur(8px)", // Motion blur effect
+                            transition: { duration: 0.3, ease: "easeIn" }
+                        }
+                    }}
+                    style={{ 
+                        color: isActive ? "var(--accent)" : "var(--text-primary)",
+                        transformOrigin: "center bottom"
+                    }}
+                >
+                    {item.label}
+                </motion.span>
+
+                {/* 2. ICON LAYER (The Singularity) */}
+                <motion.div
+                    className={styles.iconWrapper}
+                    initial={{ y: 25, scale: 0.5, rotate: -45, opacity: 0 }}
+                    animate={isHovered ? "active" : "inactive"}
+                    variants={{
+                        inactive: { 
+                            y: 25, 
+                            scale: 0.5, 
+                            rotate: -45, 
+                            opacity: 0,
+                            transition: { duration: 0.3, ease: "easeOut" }
+                        },
+                        active: { 
+                            y: 0, 
+                            scale: 1.1,  // Slight overshoot for impact
+                            rotate: 0, 
+                            opacity: 1,
+                            transition: { 
+                                type: "spring", 
+                                stiffness: 400, 
+                                damping: 25, 
+                                mass: 1,
+                                delay: 0.05 
+                            }
+                        }
+                    }}
+                >
+                     <item.Icon className={styles.navIconSvg} />
+                </motion.div>
+            </div>
+            
+            {/* Removed the Active Indicator (Underline) as requested */}
+        </Link>
     );
 };
 
@@ -160,15 +212,8 @@ const Navbar = () => {
 
     useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
-    const openSearch = () => {
-        setIsSearchOpen(true);
-        setMobileMenuOpen(false);
-    };
-
-    const closeAll = () => {
-        setMobileMenuOpen(false);
-        setIsSearchOpen(false);
-    }
+    const openSearch = () => { setIsSearchOpen(true); setMobileMenuOpen(false); };
+    const closeAll = () => { setMobileMenuOpen(false); setIsSearchOpen(false); }
     
     return (
         <>
@@ -180,14 +225,21 @@ const Navbar = () => {
                         </Link>
                         <nav>
                             <ul className={styles.navLinks}>
-                                {navItems.map(item => (
-                                    <li key={item.href}><Link href={item.href} prefetch={false}>{item.label}</Link></li>
-                                ))}
+                                {navItems.map(item => {
+                                    const isActive = pathname.startsWith(item.href);
+                                    return (
+                                        <li key={item.href} className={styles.navItem}>
+                                            <BlackHoleNavLink 
+                                                item={item} 
+                                                isActive={isActive} 
+                                            />
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </nav>
                         <div className={styles.navControls}>
                             {isEditorActive && <EditorPreviewButton />}
-                            {/* ADDED: Notification Bell */}
                             <NotificationBell />
                             <ThemeToggle />
                             <UserProfile />
@@ -203,11 +255,7 @@ const Navbar = () => {
                                 <HamburgerIcon isOpen={isMobileMenuOpen} />
                             </button>
                             {isEditorActive && (
-                                <QualityToggle
-                                    currentQuality={blockUploadQuality}
-                                    onQualityChange={setBlockUploadQuality}
-                                    isMobile={true}
-                                />
+                                <QualityToggle currentQuality={blockUploadQuality} onQualityChange={setBlockUploadQuality} isMobile={true} />
                             )}
                              <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
                                 <SearchIcon />
@@ -218,7 +266,6 @@ const Navbar = () => {
                         </Link>
                         <div className={styles.mobileNavGroupRight}>
                             {isEditorActive && <EditorPreviewButton />}
-                            {/* ADDED: Notification Bell */}
                             <NotificationBell />
                             <ThemeToggle />
                             <UserProfile />
@@ -229,35 +276,14 @@ const Navbar = () => {
             
             <AnimatePresence>
                 {isMobileMenuOpen && (
-                    <motion.div
-                        className={styles.mobileNavOverlay}
-                        onClick={closeAll}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    >
-                        <motion.div
-                            className={styles.mobileNavContent}
-                            variants={orbitalContainerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                        >
+                    <motion.div className={styles.mobileNavOverlay} onClick={closeAll} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <motion.div className={styles.mobileNavContent} variants={orbitalContainerVariants} initial="hidden" animate="visible" exit="exit">
                             <Link href="/" onClick={closeAll} className={`${styles.orbitalCenter} no-underline ${pathname === '/' ? styles.active : ''}`} prefetch={false}>
                                 <EternalGamesIcon style={{ width: '48px', height: '48px' }} />
                             </Link>
                             {navItems.map((item, i) => {
                                 const angle = -Math.PI / 2 + (i / navItems.length) * (Math.PI * 2);
-                                return (
-                                    <OrbitalNavItem
-                                        key={item.href}
-                                        item={item}
-                                        angle={angle}
-                                        radius="min(38vh, 38vw)"
-                                        isActive={pathname.startsWith(item.href)}
-                                        onClick={closeAll}
-                                    />
-                                );
+                                return ( <OrbitalNavItem key={item.href} item={item} angle={angle} radius="min(38vh, 38vw)" isActive={pathname.startsWith(item.href)} onClick={closeAll} /> );
                             })}
                         </motion.div>
                     </motion.div>

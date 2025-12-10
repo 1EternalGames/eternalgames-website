@@ -3,18 +3,22 @@
 --bg-secondary:#FFFFFF;
 --text-primary:#1F2937;
 --text-secondary:#6B7280;
---accent:#0891B2;
+--accent:#00FFF0; /* Updated to Cyan */
+--warning:#FFD700; /* Amber */
+--critical:#DC2626; /* Crimson */
 --overlay-color:rgba(249,250,251,0.7);
 --border-color:#E5E7EB;
 --nav-height:8rem;
 --nav-height-scrolled:6rem;
 }
 [data-theme="dark"]{
---bg-primary:#0A0B0F;
+--bg-primary:#0A0B0F; /* Kept close to Void Black but respected "don't change background" instruction */
 --bg-secondary:#14161D;
 --text-primary:#E1E1E6;
 --text-secondary:#7D808C;
---accent:#00E5FF;
+--accent:#00FFF0; /* Cyan */
+--warning:#FFD700; /* Amber */
+--critical:#DC2626; /* Crimson */
 --overlay-color:rgba(10,11,15,0.7);
 --border-color:#2a2e3c;
 }
@@ -75,9 +79,8 @@ overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;
   word-break: break-word;
 }
 
-/* --- THE DEFINITIVE FIX FOR EMPTY LINES (ADJUSTED) --- */
 .portable-text-content p:empty {
-  height: 3rem; /* Match the body's font-size to simulate one line break */
+  height: 3rem;
 }
 
 .toast-container-global {
@@ -103,7 +106,7 @@ gap: 1rem;
   transform: scale(1.05) translateY(-1px) !important;
 }
 
-.primary-button{background-color:var(--accent);color:#fff;border:none;padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:700;cursor:pointer;box-shadow:0 0 15px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform 0.2s ease-out,box-shadow 0.2s ease-out;}
+.primary-button{background-color:var(--accent);color:#050505;border:none;padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:800;cursor:pointer;box-shadow:0 0 15px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform 0.2s ease-out,box-shadow 0.2s ease-out;}
 .primary-button:hover:not(:disabled){transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
 .primary-button:disabled{background-color:var(--border-color);color:var(--text-secondary);box-shadow:none;cursor:not-allowed;opacity:0.6;}
 .outline-button{background:transparent;border:1px solid var(--border-color);color:var(--text-secondary);padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:500;cursor:pointer;transition:background-color 0.15s ease-out,color 0.15s ease-out,border-color 0.15s ease-out;}
@@ -157,7 +160,6 @@ gap: 1rem;
   box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent);
 }
 
-/* THE DEFINITIVE PLACEHOLDER FIX */
 .profile-input::placeholder {
   color: var(--text-secondary);
   opacity: 0.7;
@@ -185,6 +187,7 @@ gap: 1rem;
 .primary-button.delete-forever {
   background-color: #DC2626;
   box-shadow: 0 0 15px color-mix(in srgb, #DC2626 30%, transparent);
+  color: #fff;
 }
 
 .country-picker-button {
@@ -272,9 +275,6 @@ gap: 1rem;
     border: 1px solid var(--accent);
 }
 
-/* --- FINAL UI POLISH FIXES --- */
-
-/* RTL Placeholder Text Alignment for Studio Inputs */
 .sidebar-input::placeholder,
 div[class*="sidebarInput"] > span {
     text-align: right;
@@ -286,21 +286,16 @@ div[class*="sidebarInput"] > span[style*="position: absolute"] {
     left: auto !important;
 }
 
-/* This rule is now removed to allow the header to show in the editor */
-
-/* Disable Main Scroll for Editor and Mobile Menu */
 body.editor-active,
 body.mobile-menu-open {
     overflow: hidden !important;
 }
 
-/* Hide Footer in Editor and Constellation views */
 body.editor-active footer,
 body.constellation-active footer {
     display: none !important;
 }
 
-/* Fullscreen mode for immersive views */
 body.fullscreen-active > header,
 body.fullscreen-active > footer,
 body.fullscreen-active > div[class*="StudioBar_studioBar"] {
@@ -318,7 +313,6 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
     box-shadow: none !important;
 }
 
-/* --- IMAGE LIGHTBOX HOVER EFFECT --- */
 .image-lightbox-trigger {
     position: relative;
     display: block;
@@ -360,12 +354,10 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
     transform: scale(1.03);
 }
 
-/* --- THE DEFINITIVE SCROLL LOCK FOR LIGHTBOX --- */
 body.lightbox-active {
     overflow: hidden !important;
 }
 
-/* --- MOBILE RESPONSIVENESS --- */
 @media (max-width: 1024px) {
   html { font-size: 60%; }
 }
@@ -402,7 +394,6 @@ body.lightbox-active {
   }
 }
 
-/* --- Social Template Effects --- */
 .text-stroke-effect {
     -webkit-text-stroke: 1.5px #FFFFFF;
     color: transparent !important;
@@ -410,7 +401,6 @@ body.lightbox-active {
     paint-order: stroke fill;
 }
 
-/* Ensure Tiptap inside SVG foreignObject behaves */
 .social-editor-content .ProseMirror {
     outline: none;
     min-height: 100%;
@@ -424,7 +414,6 @@ body.lightbox-active {
     height: 0;
 }
 
-/* FIX: Remove margins from paragraphs in social editor to prevent layout issues in SVG/Flex containers */
 .social-editor-content .ProseMirror p {
     margin: 0 !important;
 }
