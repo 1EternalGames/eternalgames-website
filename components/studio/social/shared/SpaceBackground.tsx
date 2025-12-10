@@ -3,7 +3,7 @@ import React from 'react';
 
 // --- ADJUST BRIGHTNESS HERE ---
 // 1.0 is default.
-const BACKGROUND_BRIGHTNESS = 1.0; 
+const BACKGROUND_BRIGHTNESS = 0.7; 
 
 // --- ADJUST CONSTELLATION OPACITY HERE ---
 const CONSTELLATION_OPACITY = 0.5;

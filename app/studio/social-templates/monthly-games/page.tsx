@@ -32,7 +32,7 @@ const createEmptySlot = (id: number): GameSlotData => ({
 });
 
 const DEFAULT_DATA: MonthlyGamesTemplateData = {
-    month: 'ألعاب نوفمبر',
+    month: 'شهر نوفمبر',
     slots: Array.from({ length: 9 }).map((_, i) => createEmptySlot(i))
 };
 

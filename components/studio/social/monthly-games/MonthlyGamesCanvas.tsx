@@ -8,7 +8,7 @@ import GameSlot from './GameSlot';
 import SpaceBackground from '../shared/SpaceBackground';
 import EditableText from '../shared/EditableText';
 
-const CARD_SCALE = 0.9;
+const CARD_SCALE = 0.85;
 
 export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: MonthlyGamesCanvasProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
@@ -19,19 +19,9 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
         onDataChange({ slots: newSlots });
     };
 
-    // Calculate grid positions for 85% scale (255x323)
-    // 4 gaps over 1080px width
-    // Gaps = (1080 - (255*3)) / 4 = 78.75
-    // X positions: 79, 413, 746
+    // Recalculated positions for smaller cards and a smaller header
     const X_POS = [79, 413, 746];
-    
-    // Y positions
-    // Header is ~150px high. Footer ~100px.
-    // Start at 180. Gap ~50px.
-    // Row 1: 180
-    // Row 2: 180 + 323 + 50 = 553
-    // Row 3: 553 + 323 + 50 = 926
-    const Y_POS = [180, 553, 926];
+    const Y_POS = [250, 613, 976];
 
     return (
         <div 
@@ -58,52 +48,76 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                 
                 {/* SHARED BACKGROUND */}
                 <SpaceBackground />
-                <rect width="100%" height="100%" fill="url(#mg-techGrid)"></rect>
+                {/* REMOVED GRID OVERLAY */}
+                {/* <rect width="100%" height="100%" fill="url(#mg-techGrid)"></rect> */}
 
-                {/* NEW HEADER DESIGN */}
-                <g transform="translate(540, 80)">
-                    {/* Big Cyan Title - Lifted Up - Using EditableText for cleaner export */}
+                {/* SIMPLIFIED HEADER DESIGN */}
+                <g transform="translate(540, 150) scale(0.8)">
+                    <defs>
+                        <linearGradient id="titleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="40%" stopColor="#00FFF0" />
+                            <stop offset="100%" stopColor="#008F86" />
+                        </linearGradient>
+
+                        <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
+                            <feColorMatrix in="blur" type="matrix" values="
+                                0 0 0 0 0
+                                0 0 0 0 1
+                                0 0 0 0 0.94
+                                0 0 0 1 0" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+    
+                    {/* TEXT GROUP */}
                     <EditableText
-                        x={0} 
-                        y={20} // Adjusted position to be centered properly
+                        x={0} y={-70}
+                        text="أهم ألعاب"
+                        fontSize={35}
+                        align="middle"
+                        onChange={() => {}}
+                        isEditing={false}
+                        setEditing={() => {}}
+                        style={{ fill: "#FFFFFF", letterSpacing: '2px', filter: "drop-shadow(0 0 10px rgba(255,255,255,0.4))" }}
+                        width={400}
+                    />
+                    
+                    <EditableText
+                        x={0} y={25}
                         text={data.month}
-                        fontSize={60} // REDUCED from 80
+                        fontSize={90}
                         align="middle"
                         onChange={(val) => onDataChange({ month: val })}
                         isEditing={editingField === 'month'}
                         setEditing={(val) => setEditingField(val ? 'month' : null)}
-                        style={{
-                            fill: "#00FFF0",
-                            fontWeight: 900,
-                            fontFamily: "'Cairo', sans-serif", // Changed to Cairo
-                            textTransform: "uppercase",
-                            filter: "drop-shadow(0 0 30px rgba(0,255,240,0.6))",
-                        }}
-                        width={800}
+                        style={{ fill: "url(#titleGradient)", textTransform: 'uppercase', filter: "url(#neonGlow)" }}
+                        width={600}
                     />
-
-                    {/* Styled Line: Gray with Cyan Center */}
-                    <g transform="translate(0, 95)">
-                        <line x1="-300" y1="0" x2="300" y2="0" stroke="#556070" strokeWidth="2" opacity="0.3"></line>
-                        <rect x="-40" y="-2" width="80" height="4" fill="#00FFF0" filter="drop-shadow(0 0 5px #00FFF0)"></rect>
+    
+                    {/* Bottom Structure */}
+                    <g transform="translate(0, 60)">
+                        <rect x="-80" y="13" width="160" height="4" fill="#00FFF0" filter="url(#neonGlow)" />
                     </g>
                 </g>
-
-                {/* SLOTS - 3 Rows Grid Layout - RESCALED */}
-                {/* Row 1 */}
+                
+                {/* --- SLOTS --- */}
                 <GameSlot slot={data.slots[0]} onChange={(d) => handleSlotChange(0, d)} x={X_POS[0]} y={Y_POS[0]} scale={scale} sizeScale={CARD_SCALE} />
                 <GameSlot slot={data.slots[1]} onChange={(d) => handleSlotChange(1, d)} x={X_POS[1]} y={Y_POS[0]} scale={scale} sizeScale={CARD_SCALE} />
                 <GameSlot slot={data.slots[2]} onChange={(d) => handleSlotChange(2, d)} x={X_POS[2]} y={Y_POS[0]} scale={scale} sizeScale={CARD_SCALE} />
-
-                {/* Row 2 */}
+                
                 <GameSlot slot={data.slots[3]} onChange={(d) => handleSlotChange(3, d)} x={X_POS[0]} y={Y_POS[1]} scale={scale} sizeScale={CARD_SCALE} />
                 <GameSlot slot={data.slots[4]} onChange={(d) => handleSlotChange(4, d)} x={X_POS[1]} y={Y_POS[1]} scale={scale} sizeScale={CARD_SCALE} />
                 <GameSlot slot={data.slots[5]} onChange={(d) => handleSlotChange(5, d)} x={X_POS[2]} y={Y_POS[1]} scale={scale} sizeScale={CARD_SCALE} />
-
-                {/* Row 3 */}
+                
                 <GameSlot slot={data.slots[6]} onChange={(d) => handleSlotChange(6, d)} x={X_POS[0]} y={Y_POS[2]} scale={scale} sizeScale={CARD_SCALE} />
                 <GameSlot slot={data.slots[7]} onChange={(d) => handleSlotChange(7, d)} x={X_POS[1]} y={Y_POS[2]} scale={scale} sizeScale={CARD_SCALE} />
                 <GameSlot slot={data.slots[8]} onChange={(d) => handleSlotChange(8, d)} x={X_POS[2]} y={Y_POS[2]} scale={scale} sizeScale={CARD_SCALE} />
+
 
                 {/* WATERMARK */}
                 <g transform="translate(540, 1345)">

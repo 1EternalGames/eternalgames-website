@@ -242,7 +242,6 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                     fontSize={30}
                     align="middle"
                     style={{ fill: "#050505" }}
-                    // Force LTR for numbers so they don't jump, Cairo font
                     inputStyle={{ direction: 'ltr', fontFamily: "'Cairo', sans-serif" }}
                     fontFamily="'Cairo', sans-serif"
                     fontWeight={900}
@@ -250,7 +249,7 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                     isEditing={editingField === 'day'}
                     setEditing={(val) => setEditingField(val ? 'day' : null)}
                     width={60}
-                    inputDy={-15} // Lift input up to match visual text
+                    inputDy={-5}
                 />
             </g>
             
@@ -283,7 +282,6 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                             style={{ cursor: badge.key === 'price' ? 'text' : 'default' }}
                         >
                             <path d={path} fill="#050505" stroke={badge.color} strokeWidth="1.5"></path>
-                            {/* Inner fill for color pop */}
                             <path d={path} fill={badge.color} fillOpacity="0.15" stroke="none"></path>
                             
                             {badge.key === 'price' ? (
@@ -292,12 +290,12 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                                     text={badge.text}
                                     fontSize={16}
                                     align="middle"
-                                    style={{ fill: badge.color, fontFamily: "'Cairo', sans-serif", fontWeight: 'bold', direction: 'ltr' }}
+                                    style={{ fill: badge.color, fontFamily: "'Cairo', sans-serif", fontWeight: 'bold' }}
+                                    inputStyle={{ direction: 'ltr' }}
                                     onChange={updatePriceText}
                                     isEditing={editingField === 'price'}
                                     setEditing={(val) => setEditingField(val ? 'price' : null)}
                                     width={badge.topWidth}
-                                    inputDy={-8} // Minor lift for price editing
                                 />
                             ) : (
                                 <text 
@@ -353,9 +351,9 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                     textAlign="center"
                     customStyle={{ 
                         color: "#FFFFFF", 
-                        fontFamily: "Arial, sans-serif",
+                        fontFamily: "'Cairo', sans-serif",
                         fontWeight: 900,
-                        textTransform: "uppercase",
+                        textTransform: "none",
                         filter: "drop-shadow(0 2px 4px #000)",
                         lineHeight: 1.1,
                         display: 'flex',
