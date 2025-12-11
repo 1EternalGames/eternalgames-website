@@ -12,6 +12,7 @@ import { CardProps } from '@/types';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { PenEdit02Icon, Calendar03Icon } from '@/components/icons/index';
 import { useLivingCard } from '@/hooks/useLivingCard';
+import { translateTag } from '@/lib/translations';
 import styles from './ArticleCard.module.css';
 
 type ArticleCardProps = {
@@ -90,8 +91,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         { hoverX: 140, hoverY: -40, rotate: 6 },     
         { hoverX: 0, hoverY: -140, rotate: 2 }      
     ];
-
-    // Destructure the animation styles to exclude box-shadow manually
+    
     const { boxShadow, ...otherAnimationStyles } = livingCardAnimation.style;
 
     return (
@@ -104,8 +104,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         >
             <motion.div
                 className="tilt-container flex flex-col"
-                // THE FIX: Only apply the transform from the hook, EXCLUDING the box-shadow.
-                // This forces the component to rely entirely on the CSS box-shadow in module.css
                 style={{ 
                     ...(disableLivingEffect ? {} : otherAnimationStyles),
                     borderRadius: '16px' 
@@ -164,8 +162,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         <div className={styles.hudContainer}>
                              {authorName ? (
                                 <div className={styles.creditCapsule}>
+                                    {/* THE FIX: Icon is now first */}
                                     <div className={styles.capsuleIcon}>
-                                        <PenEdit02Icon style={{ width: 10, height: 10 }} />
+                                        <PenEdit02Icon style={{ width: 14, height: 14 }} />
                                     </div>
                                     <span title={authorName}>{authorName}</span>
                                 </div>
@@ -217,7 +216,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                     }}
                                     style={{ left: '50%', top: '50%' }}
                                  >
-                                     {tag.title}
+                                     {translateTag(tag.title)}
                                  </motion.div>
                              ))}
                         </AnimatePresence>

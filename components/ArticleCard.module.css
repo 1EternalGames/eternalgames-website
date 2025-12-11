@@ -24,7 +24,6 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 10; 
-    /* THE FIX: Reduced min-height to 230px */
     min-height: 230px; 
     
     border-radius: 16px;
@@ -97,7 +96,7 @@
 }
 
 .livingCardWrapper:hover .cardImage {
-    transform: scale(1.15);
+    transform: scale(1.1);
 }
 
 /* --- MOUSE SPOTLIGHT --- */
@@ -124,37 +123,38 @@
     opacity: 1;
 }
 
-/* --- THE SCORE BADGE (Scaled Down) --- */
+/* --- THE SCORE BADGE --- */
 .scoreBadge {
     position: absolute;
-    /* Tighter positioning */
     top: 1rem;
     left: 1rem;
-    /* Smaller dimensions */
     width: 48px;
     height: 48px;
-    
     background-color: var(--bg-secondary);
     backdrop-filter: blur(16px);
-    
     border: 2px solid var(--accent);
     border-radius: 50%;
-    
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--accent);
-    
     font-family: var(--font-heading);
     font-weight: 900;
-    /* Smaller font */
     font-size: 1.8rem;
     letter-spacing: -1px;
-    
     z-index: 30;
     transform: translateZ(50px);
     box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    /* THE FIX: Added transition */
+    transition: color 0.3s ease, background-color 0.3s ease;
 }
+
+/* THE FIX: Hover state for score badge */
+.livingCardWrapper:hover .scoreBadge {
+    background-color: var(--accent);
+    color: var(--bg-primary);
+}
+
 
 /* --- TITLE OVERLAY --- */
 .titleOverlay {
@@ -162,7 +162,6 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    /* THE FIX: Adjusted padding for smaller card height to fit bigger credits */
     padding: 6rem 1.5rem 7rem 1.5rem; 
     background: linear-gradient(to top, rgba(5,6,8,0.98) 25%, rgba(5,6,8,0.7) 65%, transparent 100%);
     display: flex;
@@ -179,7 +178,6 @@
 
 .cardTitle {
     font-family: var(--font-heading);
-    /* Smaller title font to fit compact card */
     font-size: 1.8rem;
     font-weight: 800;
     line-height: 1.2;
@@ -218,33 +216,31 @@
     pointer-events: auto;
 }
 
-/* THE FIX: Bigger Credits Capsule */
+/* Credits Capsule */
 .creditCapsule {
     display: inline-flex;
     align-items: center;
     gap: 0.8rem; 
-    background: rgba(255,255,255,0.05);
+    background: rgba(10, 11, 15, 0.8);
     border: 1px solid rgba(255,255,255,0.1);
-    /* Increased padding */
-    padding: 0.3rem 0.9rem 0.3rem 0.5rem; 
+    padding: 0; 
     border-radius: 999px;
     transition: all 0.3s ease;
-    /* Increased height */
-    min-height: 34px; 
+    height: 32px; 
     backdrop-filter: blur(8px);
 }
 
+/* THE FIX: Hover state for credits capsule */
 .livingCardWrapper:hover .creditCapsule {
     border-color: var(--accent);
     box-shadow: 0 0 15px -5px var(--accent);
     transform: scale(1.02);
-    background-color: rgba(0,0,0,0.5);
+    background-color: var(--accent);
 }
 
 .capsuleIcon {
-    /* Bigger icon circle */
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background-color: var(--accent);
     color: #000;
@@ -252,15 +248,20 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: color 0.3s ease, background-color 0.3s ease;
 }
 .capsuleIcon svg {
-    /* Bigger SVG inside */
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
+}
+
+/* THE FIX: Invert icon colors on hover */
+.livingCardWrapper:hover .capsuleIcon {
+    background-color: var(--bg-primary);
+    color: var(--accent);
 }
 
 .creditCapsule :global(span) {
-    /* Bigger text */
     font-size: 1.2rem;
     font-weight: 700;
     color: #fff;
@@ -268,11 +269,18 @@
     white-space: nowrap; 
     overflow: hidden; 
     text-overflow: ellipsis;
+    padding-left: 1.2rem; 
+    padding-right: 0.8rem;
+    transition: color 0.3s ease;
+}
+
+/* THE FIX: Change text color on hover */
+.livingCardWrapper:hover .creditCapsule :global(span) {
+    color: var(--bg-primary);
 }
 
 .dateReadout {
     font-family: var(--font-ui);
-    /* Smaller date to de-emphasize vs credits */
     font-size: 1.1rem;
     color: rgba(255,255,255,0.7);
     font-weight: 500;
@@ -295,12 +303,12 @@
 
 .satelliteShard {
     position: absolute;
-    padding: 0.6rem 1.4rem;
+    padding: 0.5rem 1.2rem;
     background: rgba(15, 17, 26, 0.95);
     border: 2px solid var(--accent);
     color: var(--accent);
     font-family: var(--font-ui);
-    font-size: 1.3rem; 
+    font-size: 1.2rem; 
     font-weight: 800;
     border-radius: 6px;
     white-space: nowrap;
@@ -310,7 +318,16 @@
     justify-content: center;
     filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
     opacity: 0;
+    /* THE FIX: Added transition for hover effect */
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* THE FIX: Hover state for tags */
+.livingCardWrapper:hover .satelliteShard {
+    background-color: var(--accent);
+    color: var(--bg-primary);
+}
+
 
 .scanLine {
     position: absolute;
