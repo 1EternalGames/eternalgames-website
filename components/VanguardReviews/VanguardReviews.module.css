@@ -12,11 +12,7 @@
     --side-width: 280px;
     background-color: var(--bg-secondary);
     width: 100%;
-    overflow-x: clip; /* THE DEFINITIVE FIX */
-}
-
-.vanguardContainer.manual-hover {
-    /* This class is now handled by the parent component for hover state */
+    overflow-x: clip;
 }
 
 .spotlightGlow {
@@ -53,28 +49,44 @@
     filter: brightness(1) saturate(1);
 }
 
+/* MODIFIED: Removed standard borders/bg, now relies on SVG frame */
 .vanguardCard {
-    background-color: var(--bg-secondary);
-    border-radius: 12px;
+    background-color: transparent;
+    border-radius: 0; 
     overflow: visible;
     height: 100%;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 15px 30px -10px rgba(0,0,0,0.3);
+    border: none;
+    box-shadow: none; /* Shadow handled by frame or living card hook */
     color: #fff;
     position: relative;
-    transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+    /* Use drop-shadow for irregular shape depth if needed, 
+       though useLivingCard hook provides the main 3D shadow */
 }
 
-.cardSlot:hover .vanguardCard {
-    border-color: var(--accent);
-    box-shadow: 0 0 30px -8px color-mix(in srgb, var(--accent) 60%, transparent);
+/* NEW: Container for the SVG frame */
+.frameSvgContainer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
 }
 
+.frameSvg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* MODIFIED: Applied SVG clip-path */
 .cardImageContainer {
     position: absolute;
     inset: 0;
-    border-radius: 12px;
     overflow: hidden;
+    /* This connects to the ID defined in the TSX file */
+    clip-path: url(#vg-cardClip);
+    z-index: 1; /* Above frame background, below content */
 }
 
 .cardImage {
@@ -91,18 +103,28 @@
 .cardContent {
     position: absolute;
     inset: 0;
-    padding: 1.5rem;
+    padding: 2.5rem;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     text-align: right;
-    border-radius: 12px;
     pointer-events: none;
+    z-index: 2; /* Above image */
+    clip-path: url(#vg-cardClip); /* Ensures content doesn't bleed */
 }
 
-.cardContent h3 { font-size: 2rem; line-height: 1.3; margin: 0 0 0.5rem 0; }
-.cardDate { font-size: 1.3rem; color: rgba(255,255,255,0.7); }
-
+.cardContent h3 { 
+    font-size: 2.4rem; 
+    line-height: 1.2; 
+    margin: 0 0 0.75rem 0; 
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+.cardDate { 
+    font-size: 1.4rem; 
+    color: var(--accent); 
+    font-weight: 600;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+}
 
 .vanguardScoreBadge {
     position: absolute;
@@ -166,10 +188,9 @@
 .creatorName { font-size: 1.2rem; font-weight: 600; transition: color 0.3s ease; }
 .creatorBubble:hover .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
 
-/* THE DEFINITIVE FIX */
 .creatorArrow { 
     position: absolute; 
-    left: -22px; /* Increased initial distance */
+    left: -22px;
     top: 75%; 
     transform: translateY(-50%); 
     color: var(--accent); 
@@ -178,9 +199,8 @@
 }
 .creatorBubble:hover .creatorArrow, .creatorBubble.pressed .creatorArrow { 
     opacity: 1; 
-    transform: translateY(-50%) translateX(-8px); /* Increased travel distance */
+    transform: translateY(-50%) translateX(-8px);
 }
-/* END FIX */
 
 .kineticNavigator {
     position: absolute;
@@ -266,6 +286,7 @@
         padding-top: 5.5rem;
         padding-bottom: 8rem;
     }
+    .cardContent { padding: 1.5rem; }
     .cardContent h3 { font-size: 1.8rem; }
     .vanguardScoreBadge {
         width: 55px;

@@ -13,7 +13,7 @@ import { urlFor } from '@/sanity/lib/image';
 import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
@@ -28,6 +28,65 @@ const ArrowIcon = () => (
         <path d="M12.293 5.29273C12.6591 4.92662 13.2381 4.90402 13.6309 5.22437L13.707 5.29273L19.707 11.2927L19.7754 11.3689C20.0957 11.7617 20.0731 12.3407 19.707 12.7068L13.707 18.7068C13.3165 19.0973 12.6835 19.0973 12.293 18.7068C11.9025 18.3163 11.9025 17.6833 12.293 17.2927L16.5859 12.9998H5C4.44772 12.9998 4 12.552 4 11.9998C4 11.4475 4.44772 10.9998 5 10.9998H16.5859L12.293 6.7068L12.2246 6.63063C11.9043 6.23785 11.9269 5.65885 12.293 5.29273Z" fill="currentColor"></path>
     </svg>
 );
+
+// --- NEW FRAME COMPONENT ---
+// Replicates the "Monthly Games" game slot look (Chamfered, Notched, Glowing)
+const VanguardCardFrame = () => (
+    <div className={styles.frameSvgContainer}>
+        <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none">
+            <defs>
+                 <filter id="vg-activeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"></feMergeNode>
+                        <feMergeNode in="SourceGraphic"></feMergeNode>
+                    </feMerge>
+                </filter>
+                {/* 
+                   Normalized Clip Path (0..1 coordinates) to match the path shape below.
+                   Original Path:
+                   M 0,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 Z
+                   
+                   Conversion (X / 300, Y / 380):
+                   0,0
+                   1,0
+                   1, 0.315 (120/380)
+                   0.966, 0.329 (290/300, 125/380)
+                   1, 0.342 (130/380)
+                   1, 0.657 (250/380)
+                   0.966, 0.684 (260/380)
+                   0.966, 0.763 (290/380)
+                   1, 0.789 (300/380)
+                   1, 0.921 (350/380)
+                   0.9, 1 (270/300, 380/380)
+                   0.1, 1 (30/300, 380/380)
+                   0, 0.921 (350/380)
+                   0, 0.789 (300/380)
+                   0.033, 0.763 (10/300)
+                   0.033, 0.684
+                   0, 0.657
+                   0, 0.342
+                   0.033, 0.329
+                   0, 0.315
+                */}
+                <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox">
+                     <path d="M 0,0 L 1,0 L 1,0.315 L 0.966,0.329 L 1,0.342 L 1,0.657 L 0.966,0.684 L 0.966,0.763 L 1,0.789 L 1,0.921 L 0.9,1 L 0.1,1 L 0,0.921 L 0,0.789 L 0.033,0.763 L 0.033,0.684 L 0,0.657 L 0,0.342 L 0.033,0.329 L 0,0.315 Z" />
+                </clipPath>
+            </defs>
+
+            {/* Frame Background & Border */}
+            <path d="M 0,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 Z" 
+                  fill="var(--bg-secondary)" stroke="#556070" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            
+            {/* Glowing Accents */}
+            <path d="M 0,300 L 0,350 L 30,380" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
+            <path d="M 300,300 L 300,350 L 270,380" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
+            <path d="M 10,260 L 10,290" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
+            <path d="M 290,260 L 290,290" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
+        </svg>
+    </div>
+);
+
 
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const [isPressed, setIsPressed] = useState(false);
@@ -122,6 +181,9 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
                 >
+                    {/* SVG Frame Background */}
+                    <VanguardCardFrame />
+
                     <AnimatePresence>
                         {showCredits && (
                             <motion.div
@@ -139,6 +201,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     </AnimatePresence>
 
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
+                    
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
                         <Image 
                             loader={sanityLoader} // <-- LOADER ADDED
