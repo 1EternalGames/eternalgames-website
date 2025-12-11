@@ -8,7 +8,6 @@ import { motion, useMotionValue, useSpring, useMotionTemplate, AnimatePresence }
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useScrollStore } from '@/lib/scrollStore';
-import TagLinks from './TagLinks'; 
 import { CardProps } from '@/types';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { PenEdit02Icon, Calendar03Icon } from '@/components/icons/index';
@@ -22,7 +21,6 @@ type ArticleCardProps = {
     disableLivingEffect?: boolean; 
 };
 
-// -- HELPER: Extract creator name safely for manual rendering --
 const getCreatorName = (creators: any[]): string | null => {
     if (!creators || creators.length === 0) return null;
     return creators[0]?.name || null;
@@ -36,16 +34,18 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const [isHovered, setIsHovered] = useState(false);
 
-    // Glare Tracking
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+    
+    const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
+    const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!disableLivingEffect) {
             livingCardAnimation.onMouseMove(e);
             const rect = e.currentTarget.getBoundingClientRect();
-            mouseX.set(e.clientX - rect.left);
-            mouseY.set(e.clientY - rect.top);
+            mouseX.set(e.clientX - rect.left - 75); 
+            mouseY.set(e.clientY - rect.top - 75);
         }
     };
 
@@ -63,7 +63,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         }
     };
 
-    // Navigation
     const getLinkBasePath = () => {
         switch (article.type) {
             case 'review': return '/reviews/';
@@ -85,21 +84,15 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const hasScore = article.type === 'review' && typeof article.score === 'number';
     const authorName = getCreatorName(article.authors);
 
-    // MODIFIED: Adjusted orbital configuration for 3D Float
     const displayTags = article.tags.slice(0, 3);
     const satelliteConfig = [
-        { hoverX: -130, hoverY: -60, rotate: -5 },   // Top Left far
-        { hoverX: 140, hoverY: -40, rotate: 6 },     // Top Right far
-        { hoverX: 0, hoverY: -140, rotate: 2 }       // Top Center far
+        { hoverX: -130, hoverY: -60, rotate: -5 },   
+        { hoverX: 140, hoverY: -40, rotate: 6 },     
+        { hoverX: 0, hoverY: -140, rotate: 2 }      
     ];
 
-    // Intense Glare Gradient
-    const glareBackground = useMotionTemplate`radial-gradient(
-        500px circle at ${mouseX}px ${mouseY}px,
-        rgba(255, 255, 255, 0.25) 0%,
-        rgba(0, 255, 240, 0.1) 40%,
-        transparent 80%
-    )`;
+    // Destructure the animation styles to exclude box-shadow manually
+    const { boxShadow, ...otherAnimationStyles } = livingCardAnimation.style;
 
     return (
         <div
@@ -110,22 +103,32 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             onMouseLeave={handleMouseLeave}
         >
             <motion.div
-                className="tilt-container h-full flex flex-col"
-                style={disableLivingEffect ? {} : livingCardAnimation.style}
+                className="tilt-container flex flex-col"
+                // THE FIX: Only apply the transform from the hook, EXCLUDING the box-shadow.
+                // This forces the component to rely entirely on the CSS box-shadow in module.css
+                style={{ 
+                    ...(disableLivingEffect ? {} : otherAnimationStyles),
+                    borderRadius: '16px' 
+                }}
             >
                 <Link 
                     href={linkPath}
                     onClick={handleClick}
                     prefetch={false}
-                    className="no-underline block h-full w-full flex flex-col"
+                    className="no-underline block w-full flex flex-col"
                 >
-                    {/* --- THE MONOLITH --- */}
                     <div className={styles.monolithFrame}>
-                        {/* Effects Layer */}
-                        <motion.div className={styles.holoGlare} style={{ background: glareBackground }} />
+                        
+                        <motion.div 
+                            className={styles.holoSpotlight} 
+                            style={{ 
+                                x: smoothMouseX, 
+                                y: smoothMouseY 
+                            }} 
+                        />
+                        
                         <div className={styles.scanLine} />
 
-                        {/* Image */}
                         <Image 
                             loader={sanityLoader}
                             src={article.imageUrl}
@@ -138,23 +141,17 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                             priority={isPriority}
                         />
 
-                        {/* Floating Score: Enhanced Z Depth */}
                         {hasScore && (
                              <motion.div 
                                 className={styles.scoreBadge}
-                                initial={{ scale: 0.9, z: 0 }}
-                                animate={{ 
-                                    scale: isHovered ? 1.2 : 0.9, 
-                                    rotate: isHovered ? -10 : 0,
-                                    z: isHovered ? 100 : 0 // Motion controlled Z-index for smooth pop
-                                }}
+                                initial={{ scale: 0.9 }}
+                                animate={{ scale: isHovered ? 1.1 : 0.9, rotate: isHovered ? -10 : 0 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 15 }}
                              >
                                  {article.score!.toFixed(1)}
                              </motion.div>
                         )}
 
-                        {/* Title Overlay */}
                         <div className={styles.titleOverlay}>
                             <motion.h3 
                                 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}
@@ -163,9 +160,34 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                 {article.title}
                             </motion.h3>
                         </div>
+                        
+                        <div className={styles.hudContainer}>
+                             {authorName ? (
+                                <div className={styles.creditCapsule}>
+                                    <div className={styles.capsuleIcon}>
+                                        <PenEdit02Icon style={{ width: 10, height: 10 }} />
+                                    </div>
+                                    <span title={authorName}>{authorName}</span>
+                                </div>
+                             ) : <div />}
+
+                             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
+                                {article.date && (
+                                    <div className={styles.dateReadout}>
+                                        <Calendar03Icon style={{ width: '14px', height: '14px', color: 'var(--accent)' }} />
+                                        {article.date.split(' - ')[0]}
+                                    </div>
+                                )}
+                                <div className={styles.techDecoration}>
+                                    <div className={styles.techDot} />
+                                    <div className={styles.techDot} />
+                                    <div className={styles.techDot} />
+                                </div>
+                             </div>
+                        </div>
+
                     </div>
 
-                    {/* --- ORBITALS: 3D Floating Tags --- */}
                     <div className={styles.satelliteField}>
                         <AnimatePresence>
                              {displayTags.map((tag, i) => (
@@ -179,7 +201,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                         x: satelliteConfig[i]?.hoverX || 0,
                                         y: satelliteConfig[i]?.hoverY || 0,
                                         rotate: satelliteConfig[i]?.rotate || 0,
-                                        z: 100 // Projecting outwards in 3D
+                                        z: 100
                                     } : {
                                         opacity: 0,
                                         scale: 0.4,
@@ -195,42 +217,12 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                     }}
                                     style={{ left: '50%', top: '50%' }}
                                  >
-                                     {/* REMOVED: Circle span indicator */}
                                      {tag.title}
                                  </motion.div>
                              ))}
                         </AnimatePresence>
                     </div>
 
-                    {/* --- INFO HUD (Metadata Bar) --- */}
-                    <div className={styles.hudContainer}>
-                         {/* Credit Pill */}
-                         {authorName ? (
-                            <div className={styles.creditCapsule}>
-                                <div className={styles.capsuleIcon}>
-                                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
-                                </div>
-                                <span title={authorName}>{authorName}</span>
-                            </div>
-                         ) : <div />}
-
-                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
-                            {/* Date */}
-                            {article.date && (
-                                <div className={styles.dateReadout}>
-                                    <Calendar03Icon style={{ width: '14px', height: '14px', color: 'var(--accent)' }} />
-                                    {article.date.split(' - ')[0]}
-                                </div>
-                            )}
-                            
-                            {/* Tech Decor */}
-                            <div className={styles.techDecoration}>
-                                <div className={styles.techDot} />
-                                <div className={styles.techDot} />
-                                <div className={styles.techDot} />
-                            </div>
-                         </div>
-                    </div>
                 </Link>
             </motion.div>
         </div>

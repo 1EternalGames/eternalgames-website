@@ -2,7 +2,6 @@
 
 /* THE ANCHOR */
 .livingCardWrapper {
-    height: 100%;
     width: 100%;
     position: relative;
     transform-style: preserve-3d;
@@ -12,7 +11,8 @@
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    margin-bottom: 2rem;
+    margin-bottom: 0; 
+    background: transparent !important;
 }
 
 .livingCardWrapper:hover {
@@ -23,11 +23,12 @@
 .monolithFrame {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3; 
-    min-height: 280px; 
+    aspect-ratio: 16 / 10; 
+    /* THE FIX: Reduced min-height to 230px */
+    min-height: 230px; 
     
     border-radius: 16px;
-    overflow: hidden;
+    overflow: hidden; 
     background-color: var(--bg-secondary);
     
     transform: translateZ(0px);
@@ -36,38 +37,106 @@
 
     box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
     border: 1px solid rgba(255,255,255,0.08);
+
+    backface-visibility: hidden;
+    isolation: isolate;
+
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    mask-image: radial-gradient(white, black);
 }
 
+/* --- KINETIC BRACKET --- */
+.monolithFrame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    border-top: 3px solid rgba(255,255,255,0.4);
+    border-left: 3px solid rgba(255,255,255,0.4);
+    border-top-left-radius: 16px;
+    transition: 
+        width 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        height 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.3s ease;
+    z-index: 20;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(135deg, #000 0%, #000 30%, transparent 95%);
+    mask-image: linear-gradient(135deg, #000 0%, #000 30%, transparent 95%);
+}
+
+.monolithFrame::after {
+    content: none;
+}
+
+/* Frame Hover States */
 .livingCardWrapper:hover .monolithFrame {
-    transform: translateZ(20px) translateY(-5px);
+    transform: translateZ(40px);
     box-shadow: 
         0 35px 70px -15px rgba(0,0,0,0.8),
-        0 0 0 1px var(--accent);
+        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.livingCardWrapper:hover .monolithFrame::before {
+    width: 100%;
+    height: 100%;
+    border-color: var(--accent);
+    filter: drop-shadow(0 0 4px var(--accent));
 }
 
 .cardImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1), filter 0.5s ease;
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
     scale: 1.02;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    transform: translate3d(0,0,0);
 }
 
 .livingCardWrapper:hover .cardImage {
     transform: scale(1.15);
-    filter: brightness(1.15);
 }
 
-/* --- THE SCORE BADGE (3D Floating Layer) --- */
+/* --- MOUSE SPOTLIGHT --- */
+.holoSpotlight {
+    position: absolute;
+    width: 150px; 
+    height: 150px;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    background: radial-gradient(
+        circle, 
+        rgba(255,255,255,0.5) 0%, 
+        rgba(255,255,255,0.1) 60%, 
+        transparent 70%
+    );
+    mix-blend-mode: overlay; 
+    border-radius: 50%;
+}
+
+.livingCardWrapper:hover .holoSpotlight {
+    opacity: 1;
+}
+
+/* --- THE SCORE BADGE (Scaled Down) --- */
 .scoreBadge {
     position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
-    width: 58px;
-    height: 58px;
+    /* Tighter positioning */
+    top: 1rem;
+    left: 1rem;
+    /* Smaller dimensions */
+    width: 48px;
+    height: 48px;
     
-    background-color: rgba(10, 11, 16, 0.85);
+    background-color: var(--bg-secondary);
     backdrop-filter: blur(16px);
+    
     border: 2px solid var(--accent);
     border-radius: 50%;
     
@@ -78,40 +147,40 @@
     
     font-family: var(--font-heading);
     font-weight: 900;
-    font-size: 2.2rem;
+    /* Smaller font */
+    font-size: 1.8rem;
     letter-spacing: -1px;
     
     z-index: 30;
-    
-    /* MODIFIED: Increased Z depth for distinct floating effect */
-    transform: translateZ(80px);
-    /* MODIFIED: Softer, larger shadow to indicate height */
-    box-shadow: 
-        0 20px 40px rgba(0,0,0,0.6),
-        0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
+    transform: translateZ(50px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
 }
 
-/* --- TITLE & HUD --- */
+/* --- TITLE OVERLAY --- */
 .titleOverlay {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 7rem 2rem 2rem 2rem;
-    background: linear-gradient(to top, rgba(5,6,8,0.98) 20%, rgba(5,6,8,0.8) 55%, transparent 100%);
+    /* THE FIX: Adjusted padding for smaller card height to fit bigger credits */
+    padding: 6rem 1.5rem 7rem 1.5rem; 
+    background: linear-gradient(to top, rgba(5,6,8,0.98) 25%, rgba(5,6,8,0.7) 65%, transparent 100%);
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-start;
     text-align: right;
     pointer-events: none;
-    z-index: 20;
+    z-index: 25;
     transform: translateZ(10px);
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
 }
 
 .cardTitle {
     font-family: var(--font-heading);
-    font-size: 2.2rem;
+    /* Smaller title font to fit compact card */
+    font-size: 1.8rem;
     font-weight: 800;
     line-height: 1.2;
     color: #fff;
@@ -120,42 +189,62 @@
     white-space: normal;
     direction: rtl;
     width: 100%;
+    pointer-events: auto;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 
-/* --- FLOATING INFO HUD --- */
+.cardTitle:hover {
+    color: var(--accent) !important;
+    text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* --- INTEGRATED HUD --- */
 .hudContainer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    margin-top: 1.5rem; 
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: space-between; 
-    padding: 0 0.5rem;
-    transform: translateZ(30px); 
+    padding: 0 1rem 1rem 1rem;
+    z-index: 30;
+    transform: translateZ(30px);
+    pointer-events: none; 
 }
 
+.hudContainer > * {
+    pointer-events: auto;
+}
+
+/* THE FIX: Bigger Credits Capsule */
 .creditCapsule {
     display: inline-flex;
     align-items: center;
-    gap: 0.8rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    padding: 0.4rem 0.5rem 0.4rem 1.2rem;
+    gap: 0.8rem; 
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    /* Increased padding */
+    padding: 0.3rem 0.9rem 0.3rem 0.5rem; 
     border-radius: 999px;
     transition: all 0.3s ease;
-    min-height: 38px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.25);
+    /* Increased height */
+    min-height: 34px; 
+    backdrop-filter: blur(8px);
 }
 
 .livingCardWrapper:hover .creditCapsule {
     border-color: var(--accent);
-    box-shadow: 0 0 20px -5px var(--accent);
-    transform: translateY(-4px) scale(1.03);
-    background-color: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+    box-shadow: 0 0 15px -5px var(--accent);
+    transform: scale(1.02);
+    background-color: rgba(0,0,0,0.5);
 }
 
 .capsuleIcon {
-    width: 28px;
-    height: 28px;
+    /* Bigger icon circle */
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background-color: var(--accent);
     color: #000;
@@ -165,15 +254,17 @@
     flex-shrink: 0;
 }
 .capsuleIcon svg {
-    width: 16px;
-    height: 16px;
+    /* Bigger SVG inside */
+    width: 14px;
+    height: 14px;
 }
 
 .creditCapsule :global(span) {
-    font-size: 1.3rem;
+    /* Bigger text */
+    font-size: 1.2rem;
     font-weight: 700;
-    color: var(--text-primary);
-    max-width: 140px; 
+    color: #fff;
+    max-width: 120px; 
     white-space: nowrap; 
     overflow: hidden; 
     text-overflow: ellipsis;
@@ -181,22 +272,23 @@
 
 .dateReadout {
     font-family: var(--font-ui);
-    font-size: 1.4rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-    opacity: 0.9;
+    /* Smaller date to de-emphasize vs credits */
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
 }
 
-/* --- ORBITALS (Flying Tags - High Z-Layer) --- */
+/* --- ORBITALS & FX --- */
 .satelliteField {
     position: absolute;
     inset: -100px;
     pointer-events: none;
-    z-index: 50; /* Higher than Score/HUD */
+    z-index: 50; 
     overflow: visible; 
     transform-style: preserve-3d;
 }
@@ -212,17 +304,14 @@
     font-weight: 800;
     border-radius: 6px;
     white-space: nowrap;
-    /* MODIFIED: Deep, detached shadow */
     box-shadow: 0 15px 40px rgba(0,0,0,0.8);
     display: flex;
     align-items: center;
     justify-content: center;
     filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
-    
     opacity: 0;
 }
 
-/* --- ATMOSPHERE FX --- */
 .scanLine {
     position: absolute;
     top: -50%;
@@ -247,27 +336,17 @@
     100% { top: 130%; }
 }
 
-.holoGlare {
-    position: absolute;
-    inset: 0;
-    mix-blend-mode: color-dodge;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-}
-.livingCardWrapper:hover .holoGlare { opacity: 0.8; }
-
 .techDecoration {
     display: flex;
-    gap: 6px;
-    padding: 1rem 0;
+    gap: 5px;
+    padding: 0.5rem 0;
     justify-content: flex-end;
 }
 
 .techDot {
-    width: 6px;
-    height: 6px;
-    background-color: var(--border-color);
+    width: 4px;
+    height: 4px;
+    background-color: rgba(255,255,255,0.2);
     border-radius: 50%;
     transition: background-color 0.3s ease;
 }
@@ -297,16 +376,27 @@
         min-height: auto; 
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         transform: none !important;
+        mask-image: none;
+        -webkit-mask-image: none;
     }
-
-    .cardTitle { font-size: 1.8rem; }
     
-    .titleOverlay { padding: 5rem 1.5rem 1.5rem 1.5rem; }
+    .monolithFrame::before { display: none; }
+
+    .cardTitle { font-size: 1.6rem; }
+    .titleOverlay { padding: 4rem 1.5rem 6.5rem 1.5rem; }
+    
+    .hudContainer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        padding: 0 1rem 1rem 1rem;
+    }
 
     .scoreBadge {
-        width: 44px; height: 44px; font-size: 1.6rem;
+        width: 40px; height: 40px; font-size: 1.5rem;
         transform: none !important;
+        top: 0.8rem; left: 0.8rem;
     }
-
-    .satelliteField, .scanLine, .holoGlare { display: none; }
+    
+    .holoSpotlight, .satelliteField { display: none; }
 }
