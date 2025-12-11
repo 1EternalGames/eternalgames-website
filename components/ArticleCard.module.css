@@ -1,320 +1,312 @@
 /* components/ArticleCard.module.css */
 
+/* THE ANCHOR */
 .livingCardWrapper {
     height: 100%;
-    /* Essential for the 3D parallax effect of children */
-    transform-style: preserve-3d;
-    perspective: 1000px;
-}
-
-.articleCard {
+    width: 100%;
     position: relative;
-    /* Deep Materials: Subtle gradient instead of flat black */
-    background: linear-gradient(145deg, #0A0B10 0%, #111218 100%);
-    border-radius: 12px;
-    height: 100%;
+    transform-style: preserve-3d;
+    perspective: 1200px;
+    z-index: 1;
+    overflow: visible !important; 
+    cursor: pointer;
     display: flex;
     flex-direction: column;
-    overflow: hidden; 
-    border: 1px solid transparent; 
-    box-shadow: 0 15px 40px -15px rgba(0,0,0,0.6);
-    transition: box-shadow 0.4s ease, transform 0.4s ease;
-    will-change: transform;
-    transform-style: preserve-3d;
+    margin-bottom: 2rem;
 }
 
-/* --- The Tech Frame (Brackets) --- */
-.articleCard::before,
-.articleCard::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--border-color);
-    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 10;
-    pointer-events: none;
+.livingCardWrapper:hover {
+    z-index: 100;
 }
 
-.articleCard::before {
-    top: 0;
-    left: 0;
-    border-right: none;
-    border-bottom: none;
-    border-top-left-radius: 12px;
-}
-
-.articleCard::after {
-    bottom: 0;
-    right: 0;
-    border-left: none;
-    border-top: none;
-    border-bottom-right-radius: 12px;
-}
-
-/* Hover State: Brackets expand to become a full border glow */
-.livingCardWrapper:hover .articleCard::before {
-    width: 100%;
-    height: 100%;
-    border-color: var(--accent);
-    border-radius: 12px;
-    box-shadow: 0 0 20px -2px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
-.livingCardWrapper:hover .articleCard::after {
-    opacity: 0;
-}
-
-/* --- Parallax Image Layer --- */
-.imageContainer {
+/* THE MONOLITH */
+.monolithFrame {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
-    flex-shrink: 0;
+    aspect-ratio: 4 / 3; 
+    min-height: 280px; 
+    
+    border-radius: 16px;
     overflow: hidden;
-    /* Tech notch */
-    clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
     background-color: var(--bg-secondary);
-    transform: translateZ(0px); 
-    transition: clip-path 0.5s ease;
+    
+    transform: translateZ(0px);
+    will-change: transform, box-shadow;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease;
+
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
-.livingCardWrapper:hover .imageContainer {
-    /* Flatten notch on hover */
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 100% 100%, 0 100%);
+.livingCardWrapper:hover .monolithFrame {
+    transform: translateZ(20px) translateY(-5px);
+    box-shadow: 
+        0 35px 70px -15px rgba(0,0,0,0.8),
+        0 0 0 1px var(--accent);
 }
 
 .cardImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1), filter 0.5s ease;
+    scale: 1.02;
 }
 
 .livingCardWrapper:hover .cardImage {
-    transform: scale(1.1);
+    transform: scale(1.15);
+    filter: brightness(1.15);
 }
 
-/* --- Interactive Holographic Glare & Sheen --- */
-.holographicOverlay {
-    position: absolute;
-    inset: 0;
-    /* Dynamic background set via inline style in TSX */
-    mix-blend-mode: overlay;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.livingCardWrapper:hover .holographicOverlay {
-    opacity: 1;
-}
-
-.sheenLayer {
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transform: skewX(-25deg);
-    pointer-events: none;
-    z-index: 3;
-    transition: left 0s;
-}
-
-.livingCardWrapper:hover .sheenLayer {
-    left: 200%;
-    transition: left 0.8s ease-in-out;
-}
-
-/* Overlay gradient for atmosphere */
-.imageOverlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(10, 11, 16, 0.9) 0%, rgba(10, 11, 16, 0.2) 50%, transparent 100%);
-    z-index: 1;
-    pointer-events: none;
-}
-
-/* --- Floating Elements --- */
+/* --- THE SCORE BADGE (3D Floating Layer) --- */
 .scoreBadge {
     position: absolute;
-    top: 1.2rem;
-    left: 1.2rem;
-    width: 42px;
-    height: 42px;
-    background-color: rgba(10, 11, 16, 0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--accent);
+    top: 1.5rem;
+    left: 1.5rem;
+    width: 58px;
+    height: 58px;
+    
+    background-color: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(16px);
+    border: 2px solid var(--accent);
     border-radius: 50%;
+    
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--accent);
+    
     font-family: var(--font-heading);
-    font-weight: 800;
-    font-size: 1.4rem;
-    z-index: 20;
-    transform: translateZ(30px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    font-weight: 900;
+    font-size: 2.2rem;
+    letter-spacing: -1px;
+    
+    z-index: 30;
+    
+    /* MODIFIED: Increased Z depth for distinct floating effect */
+    transform: translateZ(80px);
+    /* MODIFIED: Softer, larger shadow to indicate height */
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.6),
+        0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-.typeBadge {
+/* --- TITLE & HUD --- */
+.titleOverlay {
     position: absolute;
-    bottom: 1.2rem;
-    right: 1.2rem;
-    background-color: var(--accent);
-    color: #000;
-    font-family: var(--font-ui);
-    font-weight: 700;
-    font-size: 1rem;
-    padding: 0.3rem 0.8rem;
-    border-radius: 4px;
-    text-transform: uppercase;
-    z-index: 20;
-    transform: translateZ(20px);
-    box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-
-/* --- Content Section with Glassmorphism --- */
-.cardContent {
-    padding: 2rem;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 7rem 2rem 2rem 2rem;
+    background: linear-gradient(to top, rgba(5,6,8,0.98) 20%, rgba(5,6,8,0.8) 55%, transparent 100%);
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    position: relative;
-    z-index: 5;
-    margin-top: -2rem; 
-    transform: translateZ(20px); 
-    
-    /* Default: Dark Solid transition to gradient */
-    background: linear-gradient(to bottom, transparent 0%, #0A0B10 15%);
-    transition: background-color 0.4s ease, backdrop-filter 0.4s ease;
-}
-
-.livingCardWrapper:hover .cardContent {
-    /* MODIFIED: Removed obstructing background color and blur to keep badge visible */
-    background: linear-gradient(to bottom, transparent 0%, #0A0B10 15%);
-    backdrop-filter: none;
-    background-image: none;
-}
-
-.cardTitleLink {
-    text-decoration: none;
-    color: var(--text-primary);
-    display: block;
-    margin-bottom: 1rem;
+    justify-content: flex-end;
+    align-items: flex-start;
+    text-align: right;
+    pointer-events: none;
+    z-index: 20;
+    transform: translateZ(10px);
 }
 
 .cardTitle {
     font-family: var(--font-heading);
-    font-size: 1.8rem;
-    line-height: 1.3;
-    margin: 0;
-    position: relative;
-    display: inline;
-    /* Kinetic Underline */
-    background-image: linear-gradient(to right, var(--accent), var(--accent));
-    background-size: 0% 2px;
-    background-position: 50% 100%; /* Center out */
-    background-repeat: no-repeat;
-    transition: background-size 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
-}
-
-.livingCardWrapper:hover .cardTitle {
-    background-size: 100% 2px;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.2;
     color: #fff;
-    text-shadow: 0 0 15px rgba(255,255,255,0.3);
+    margin: 0;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.7);
+    white-space: normal;
+    direction: rtl;
+    width: 100%;
 }
 
-/* --- Metadata Section --- */
-.metaRow {
+/* --- FLOATING INFO HUD --- */
+.hudContainer {
+    width: 100%;
+    margin-top: 1.5rem; 
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 1rem;
+    justify-content: space-between; 
+    padding: 0 0.5rem;
+    transform: translateZ(30px); 
 }
 
-.authorBlock {
-    transform: scale(0.95);
-    transform-origin: right center;
+.creditCapsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.5rem 0.4rem 1.2rem;
+    border-radius: 999px;
+    transition: all 0.3s ease;
+    min-height: 38px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.25);
 }
 
-.dateBlock {
+.livingCardWrapper:hover .creditCapsule {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px -5px var(--accent);
+    transform: translateY(-4px) scale(1.03);
+    background-color: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+}
+
+.capsuleIcon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.capsuleIcon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.creditCapsule :global(span) {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    max-width: 140px; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}
+
+.dateReadout {
+    font-family: var(--font-ui);
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    opacity: 0.9;
+    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-    font-family: var(--font-ui);
 }
 
-.metaIcon {
-    width: 14px;
-    height: 14px;
+/* --- ORBITALS (Flying Tags - High Z-Layer) --- */
+.satelliteField {
+    position: absolute;
+    inset: -100px;
+    pointer-events: none;
+    z-index: 50; /* Higher than Score/HUD */
+    overflow: visible; 
+    transform-style: preserve-3d;
+}
+
+.satelliteShard {
+    position: absolute;
+    padding: 0.6rem 1.4rem;
+    background: rgba(15, 17, 26, 0.95);
+    border: 2px solid var(--accent);
     color: var(--accent);
-    opacity: 0.8;
-}
-
-/* --- Footer / Tags --- */
-.cardFooter {
-    margin-top: auto;
+    font-family: var(--font-ui);
+    font-size: 1.3rem; 
+    font-weight: 800;
+    border-radius: 6px;
+    white-space: nowrap;
+    /* MODIFIED: Deep, detached shadow */
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
+    
+    opacity: 0;
 }
 
-/* --- Neon Pulse Beat --- */
+/* --- ATMOSPHERE FX --- */
+.scanLine {
+    position: absolute;
+    top: -50%;
+    left: 0;
+    width: 100%;
+    height: 30%;
+    background: linear-gradient(to bottom, transparent, rgba(0, 255, 240, 0.4) 50%, transparent);
+    z-index: 10;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.livingCardWrapper:hover .scanLine {
+    opacity: 1;
+    animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+@keyframes scan {
+    0% { top: -30%; }
+    100% { top: 130%; }
+}
+
+.holoGlare {
+    position: absolute;
+    inset: 0;
+    mix-blend-mode: color-dodge;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.livingCardWrapper:hover .holoGlare { opacity: 0.8; }
+
 .techDecoration {
     display: flex;
-    gap: 5px;
+    gap: 6px;
+    padding: 1rem 0;
+    justify-content: flex-end;
 }
 
 .techDot {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
     background-color: var(--border-color);
     border-radius: 50%;
     transition: background-color 0.3s ease;
 }
 
-@keyframes pulse-dot {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.5); opacity: 1; box-shadow: 0 0 8px var(--accent); }
-}
-
 .livingCardWrapper:hover .techDot {
     background-color: var(--accent);
-    animation: pulse-dot 1.5s infinite ease-in-out;
+    animation: pulse-dot 1.2s infinite ease-in-out;
 }
 .livingCardWrapper:hover .techDot:nth-child(2) { animation-delay: 0.2s; }
 .livingCardWrapper:hover .techDot:nth-child(3) { animation-delay: 0.4s; }
-
+@keyframes pulse-dot {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); }
+}
 
 /* --- Mobile Optimization --- */
 @media (max-width: 768px) {
-    .articleCard {
+    .livingCardWrapper {
+        perspective: none;
+        overflow: hidden !important;
+        border-radius: 12px;
+        background: transparent;
+        margin-bottom: 2.5rem;
+    }
+    
+    .monolithFrame {
+        min-height: auto; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         transform: none !important;
     }
+
+    .cardTitle { font-size: 1.8rem; }
+    
+    .titleOverlay { padding: 5rem 1.5rem 1.5rem 1.5rem; }
+
     .scoreBadge {
-        width: 36px;
-        height: 36px;
-        font-size: 1.2rem;
-        top: 1rem;
-        left: 1rem;
+        width: 44px; height: 44px; font-size: 1.6rem;
+        transform: none !important;
     }
-    .cardContent {
-        padding: 1.5rem;
-        margin-top: -1.5rem;
-    }
-    .cardTitle {
-        font-size: 1.6rem;
-    }
-    .holographicOverlay {
-        display: none; /* Disable glare on mobile for performance */
-    }
+
+    .satelliteField, .scanLine, .holoGlare { display: none; }
 }

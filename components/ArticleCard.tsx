@@ -1,27 +1,19 @@
 // components/ArticleCard.tsx
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useMotionTemplate, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useScrollStore } from '@/lib/scrollStore';
-import CreatorCredit from './CreatorCredit';
-import TagLinks from './TagLinks';
+import TagLinks from './TagLinks'; 
 import { CardProps } from '@/types';
 import { sanityLoader } from '@/lib/sanity.loader';
-import { Calendar03Icon } from '@/components/icons/index';
+import { PenEdit02Icon, Calendar03Icon } from '@/components/icons/index';
+import { useLivingCard } from '@/hooks/useLivingCard';
 import styles from './ArticleCard.module.css';
-
-// Type mapping for the "Type Badge"
-const TYPE_LABELS: Record<string, string> = {
-    review: 'مراجعة',
-    article: 'مقال',
-    news: 'خبر',
-};
 
 type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
@@ -30,180 +22,218 @@ type ArticleCardProps = {
     disableLivingEffect?: boolean; 
 };
 
+// -- HELPER: Extract creator name safely for manual rendering --
+const getCreatorName = (creators: any[]): string | null => {
+    if (!creators || creators.length === 0) return null;
+    return creators[0]?.name || null;
+};
+
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false }: ArticleCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
-    // Generic hook now explicitly typed for Div
+    
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
+    const [isHovered, setIsHovered] = useState(false);
 
-    // Interactive Holographic Logic
+    // Glare Tracking
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (disableLivingEffect) return;
-        
-        // 1. Trigger the tilt from the hook
-        livingCardAnimation.onMouseMove(e);
-
-        // 2. Local calculations for the glare effect
-        const rect = e.currentTarget.getBoundingClientRect();
-        mouseX.set(e.clientX - rect.left);
-        mouseY.set(e.clientY - rect.top);
+        if (!disableLivingEffect) {
+            livingCardAnimation.onMouseMove(e);
+            const rect = e.currentTarget.getBoundingClientRect();
+            mouseX.set(e.clientX - rect.left);
+            mouseY.set(e.clientY - rect.top);
+        }
     };
 
-    const type = article.type;
-    const typeLabel = TYPE_LABELS[type] || 'محتوى';
+    const handleMouseEnter = () => {
+        if (!disableLivingEffect) {
+            livingCardAnimation.onMouseEnter();
+            setIsHovered(true);
+        }
+    };
+    
+    const handleMouseLeave = () => {
+        if (!disableLivingEffect) {
+            livingCardAnimation.onMouseLeave();
+            setIsHovered(false);
+        }
+    };
 
+    // Navigation
     const getLinkBasePath = () => {
-        switch (type) {
+        switch (article.type) {
             case 'review': return '/reviews/';
             case 'article': return '/articles/';
             case 'news': return '/news/';
             default: return '/';
         }
     };
-
     const linkPath = `${getLinkBasePath()}${article.slug}`;
-    
+
     const handleClick = (e: React.MouseEvent) => {
-        // Allow clicks on nested links (creators, tags) to bubble appropriately or be handled
-        if ((e.target as HTMLElement).closest('a[href^="/creators"]') || (e.target as HTMLElement).closest('a[href^="/tags"]')) {
-            return;
-        }
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
         e.preventDefault();
-        
         setScrollPos(window.scrollY);
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
     };
 
-    const hasScore = type === 'review' && typeof article.score === 'number';
-    const imageSource = article.imageUrl;
-    if (!imageSource) return null;
+    const hasScore = article.type === 'review' && typeof article.score === 'number';
+    const authorName = getCreatorName(article.authors);
 
-    // Smoother transition for layout animations
-    const springTransition = { type: 'spring' as const, stiffness: 100, damping: 20 };
+    // MODIFIED: Adjusted orbital configuration for 3D Float
+    const displayTags = article.tags.slice(0, 3);
+    const satelliteConfig = [
+        { hoverX: -130, hoverY: -60, rotate: -5 },   // Top Left far
+        { hoverX: 140, hoverY: -40, rotate: 6 },     // Top Right far
+        { hoverX: 0, hoverY: -140, rotate: 2 }       // Top Center far
+    ];
 
-    const wrapperProps = disableLivingEffect ? {} : {
-        ref: livingCardRef,
-        onMouseMove: handleMouseMove, // Using our wrapped handler
-        onMouseEnter: livingCardAnimation.onMouseEnter,
-        onMouseLeave: livingCardAnimation.onMouseLeave,
-        onTouchStart: livingCardAnimation.onTouchStart,
-        onTouchEnd: livingCardAnimation.onTouchEnd,
-        onTouchCancel: livingCardAnimation.onTouchCancel,
-    };
-    
-    const motionStyle = disableLivingEffect 
-        ? { cursor: 'pointer', position: 'relative', zIndex: 1 } 
-        : { ...livingCardAnimation.style, cursor: 'pointer', position: 'relative', zIndex: 1 };
-
-    // Dynamic Radial Gradient for the Glare
+    // Intense Glare Gradient
     const glareBackground = useMotionTemplate`radial-gradient(
-        circle at ${mouseX}px ${mouseY}px,
-        rgba(255, 255, 255, 0.3) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
+        500px circle at ${mouseX}px ${mouseY}px,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(0, 255, 240, 0.1) 40%,
         transparent 80%
     )`;
 
     return (
-        <motion.div
-            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
-            transition={springTransition}
-            onClick={handleClick}
+        <div
             className={styles.livingCardWrapper}
-            {...wrapperProps}
-            style={motionStyle as any}
+            ref={livingCardRef}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
-            <div className={styles.articleCard}>
-                
-                {/* PARALLAX LAYER 1: IMAGE & EFFECTS */}
-                <motion.div 
-                    className={styles.imageContainer} 
-                    layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}
-                    transition={springTransition}
+            <motion.div
+                className="tilt-container h-full flex flex-col"
+                style={disableLivingEffect ? {} : livingCardAnimation.style}
+            >
+                <Link 
+                    href={linkPath}
+                    onClick={handleClick}
+                    prefetch={false}
+                    className="no-underline block h-full w-full flex flex-col"
                 >
-                    {/* Interactive Holographic Glare */}
-                    <motion.div 
-                        className={styles.holographicOverlay}
-                        style={{ background: glareBackground }}
-                    />
-                    
-                    {/* Sheen Sweep */}
-                    <div className={styles.sheenLayer} />
+                    {/* --- THE MONOLITH --- */}
+                    <div className={styles.monolithFrame}>
+                        {/* Effects Layer */}
+                        <motion.div className={styles.holoGlare} style={{ background: glareBackground }} />
+                        <div className={styles.scanLine} />
 
-                    <Image 
-                        loader={sanityLoader}
-                        src={imageSource}
-                        alt={article.title}
-                        width={800}
-                        height={450}
-                        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 350px"
-                        className={styles.cardImage}
-                        style={{ objectFit: 'cover' }}
-                        placeholder="blur" 
-                        blurDataURL={article.blurDataURL}
-                        priority={isPriority}
-                    />
-                    <div className={styles.imageOverlay} />
-                    
-                    {/* Floating Badges inside Image Area for Parallax Context */}
-                    {hasScore && (
-                         <motion.div 
-                            className={styles.scoreBadge}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2, type: 'spring' }}
-                         >
-                             {article.score!.toFixed(1)}
-                         </motion.div> 
-                    )}
-                    
-                    <div className={styles.typeBadge}>
-                        {typeLabel}
-                    </div>
-                </motion.div>
+                        {/* Image */}
+                        <Image 
+                            loader={sanityLoader}
+                            src={article.imageUrl}
+                            alt={article.title}
+                            fill
+                            className={styles.cardImage}
+                            sizes="(max-width: 768px) 100vw, 500px"
+                            placeholder="blur"
+                            blurDataURL={article.blurDataURL}
+                            priority={isPriority}
+                        />
 
-                {/* PARALLAX LAYER 2: CONTENT */}
-                <div className={styles.cardContent}>
-                    <Link href={linkPath} className={styles.cardTitleLink} prefetch={false} onClick={(e) => e.preventDefault()}>
-                        <motion.h3 
-                            className={styles.cardTitle}
-                            layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}
-                            transition={springTransition}
-                        >
-                            {article.title}
-                        </motion.h3>
-                    </Link>
-
-                    <div className={styles.metaRow}>
-                        <div className={styles.authorBlock}>
-                             <CreatorCredit label="بقلم" creators={article.authors} small />
-                        </div>
-                        {article.date && (
-                            <div className={styles.dateBlock}>
-                                <Calendar03Icon className={styles.metaIcon} />
-                                <span>{article.date}</span>
-                            </div>
+                        {/* Floating Score: Enhanced Z Depth */}
+                        {hasScore && (
+                             <motion.div 
+                                className={styles.scoreBadge}
+                                initial={{ scale: 0.9, z: 0 }}
+                                animate={{ 
+                                    scale: isHovered ? 1.2 : 0.9, 
+                                    rotate: isHovered ? -10 : 0,
+                                    z: isHovered ? 100 : 0 // Motion controlled Z-index for smooth pop
+                                }}
+                                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                             >
+                                 {article.score!.toFixed(1)}
+                             </motion.div>
                         )}
-                    </div>
 
-                    <div className={styles.cardFooter}>
-                         {/* Pass small=true to TagLinks for the compact style */}
-                        <TagLinks tags={article.tags.slice(0, 3).map(tag => tag.title)} small={true} />
-                        
-                        {/* Decorative Neon Pulse Dots */}
-                        <div className={styles.techDecoration}>
-                            <div className={styles.techDot}></div>
-                            <div className={styles.techDot}></div>
-                            <div className={styles.techDot}></div>
+                        {/* Title Overlay */}
+                        <div className={styles.titleOverlay}>
+                            <motion.h3 
+                                layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}
+                                className={styles.cardTitle}
+                            >
+                                {article.title}
+                            </motion.h3>
                         </div>
                     </div>
-                </div>
-            </div>
-        </motion.div>
+
+                    {/* --- ORBITALS: 3D Floating Tags --- */}
+                    <div className={styles.satelliteField}>
+                        <AnimatePresence>
+                             {displayTags.map((tag, i) => (
+                                 <motion.div
+                                    key={`${article.id}-${tag.slug}`}
+                                    className={styles.satelliteShard}
+                                    initial={{ opacity: 0, scale: 0.4, z: 0 }}
+                                    animate={isHovered ? {
+                                        opacity: 1,
+                                        scale: 1,
+                                        x: satelliteConfig[i]?.hoverX || 0,
+                                        y: satelliteConfig[i]?.hoverY || 0,
+                                        rotate: satelliteConfig[i]?.rotate || 0,
+                                        z: 100 // Projecting outwards in 3D
+                                    } : {
+                                        opacity: 0,
+                                        scale: 0.4,
+                                        x: 0,
+                                        y: 50,
+                                        z: 0
+                                    }}
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 160,
+                                        damping: 18,
+                                        delay: i * 0.05
+                                    }}
+                                    style={{ left: '50%', top: '50%' }}
+                                 >
+                                     {/* REMOVED: Circle span indicator */}
+                                     {tag.title}
+                                 </motion.div>
+                             ))}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* --- INFO HUD (Metadata Bar) --- */}
+                    <div className={styles.hudContainer}>
+                         {/* Credit Pill */}
+                         {authorName ? (
+                            <div className={styles.creditCapsule}>
+                                <div className={styles.capsuleIcon}>
+                                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                                </div>
+                                <span title={authorName}>{authorName}</span>
+                            </div>
+                         ) : <div />}
+
+                         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
+                            {/* Date */}
+                            {article.date && (
+                                <div className={styles.dateReadout}>
+                                    <Calendar03Icon style={{ width: '14px', height: '14px', color: 'var(--accent)' }} />
+                                    {article.date.split(' - ')[0]}
+                                </div>
+                            )}
+                            
+                            {/* Tech Decor */}
+                            <div className={styles.techDecoration}>
+                                <div className={styles.techDot} />
+                                <div className={styles.techDot} />
+                                <div className={styles.techDot} />
+                            </div>
+                         </div>
+                    </div>
+                </Link>
+            </motion.div>
+        </div>
     );
 };
 
