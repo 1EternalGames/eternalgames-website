@@ -4,7 +4,7 @@
 import React, { memo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useMotionValue, useSpring, useMotionTemplate, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useScrollStore } from '@/lib/scrollStore';
@@ -74,8 +74,12 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     };
     const linkPath = `${getLinkBasePath()}${article.slug}`;
 
-    const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
+    const handleCardClick = (e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('a') || target.closest('button')) {
+            return;
+        }
+
         e.preventDefault();
         setScrollPos(window.scrollY);
         setPrefix(layoutIdPrefix);
@@ -84,15 +88,50 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
     const hasScore = article.type === 'review' && typeof article.score === 'number';
     const authorName = getCreatorName(article.authors);
+    const authorUsername = article.authors[0]?.username;
 
     const displayTags = article.tags.slice(0, 3);
+    
+    // UPDATED:
+    // 1. Reduced Left hoverX (-145 -> -115) to make it nearer
+    // 2. Maintained other positions
     const satelliteConfig = [
-        { hoverX: -130, hoverY: -60, rotate: -5 },   
-        { hoverX: 140, hoverY: -40, rotate: 6 },     
-        { hoverX: 0, hoverY: -140, rotate: 2 }      
+        { hoverX: -110, hoverY: -50, rotate: -12 },
+        { hoverX: 135, hoverY: -35, rotate: 12 },
+        { hoverX: 0, hoverY: -125, rotate: 5 }
     ];
     
     const { boxShadow, ...otherAnimationStyles } = livingCardAnimation.style;
+
+    const CreatorCapsule = () => {
+        const content = (
+            <>
+                <div className={styles.capsuleIcon}>
+                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                </div>
+                <span title={authorName || ''}>{authorName}</span>
+            </>
+        );
+
+        if (authorUsername) {
+            return (
+                <Link 
+                    href={`/creators/${authorUsername}`}
+                    className={`${styles.creditCapsule} no-underline`}
+                    onClick={(e) => e.stopPropagation()}
+                    prefetch={false}
+                >
+                    {content}
+                </Link>
+            );
+        }
+
+        return (
+            <div className={styles.creditCapsule}>
+                {content}
+            </div>
+        );
+    };
 
     return (
         <div
@@ -101,43 +140,47 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
+            onClick={handleCardClick}
         >
             <motion.div
                 className="tilt-container flex flex-col"
+                layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
                 style={{ 
                     ...(disableLivingEffect ? {} : otherAnimationStyles),
-                    borderRadius: '16px' 
+                    borderRadius: '16px',
+                    height: '100%',
+                    transformStyle: 'preserve-3d',
                 }}
             >
-                <Link 
-                    href={linkPath}
-                    onClick={handleClick}
-                    prefetch={false}
+                <div 
                     className="no-underline block w-full flex flex-col"
+                    style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
                 >
                     <div className={styles.monolithFrame}>
                         
                         <motion.div 
                             className={styles.holoSpotlight} 
-                            style={{ 
-                                x: smoothMouseX, 
-                                y: smoothMouseY 
-                            }} 
+                            style={{ x: smoothMouseX, y: smoothMouseY }} 
                         />
                         
                         <div className={styles.scanLine} />
 
-                        <Image 
-                            loader={sanityLoader}
-                            src={article.imageUrl}
-                            alt={article.title}
-                            fill
-                            className={styles.cardImage}
-                            sizes="(max-width: 768px) 100vw, 500px"
-                            placeholder="blur"
-                            blurDataURL={article.blurDataURL}
-                            priority={isPriority}
-                        />
+                        <motion.div 
+                            className={styles.imageWrapper}
+                            layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`}
+                        >
+                            <Image 
+                                loader={sanityLoader}
+                                src={article.imageUrl}
+                                alt={article.title}
+                                fill
+                                className={styles.cardImage}
+                                sizes="(max-width: 768px) 100vw, 500px"
+                                placeholder="blur"
+                                blurDataURL={article.blurDataURL}
+                                priority={isPriority}
+                            />
+                        </motion.div>
 
                         {hasScore && (
                              <motion.div 
@@ -145,6 +188,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                 initial={{ scale: 0.9 }}
                                 animate={{ scale: isHovered ? 1.1 : 0.9, rotate: isHovered ? -10 : 0 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                style={{ transform: 'translateZ(50px)' }}
                              >
                                  {article.score!.toFixed(1)}
                              </motion.div>
@@ -159,16 +203,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                             </motion.h3>
                         </div>
                         
-                        <div className={styles.hudContainer}>
-                             {authorName ? (
-                                <div className={styles.creditCapsule}>
-                                    {/* THE FIX: Icon is now first */}
-                                    <div className={styles.capsuleIcon}>
-                                        <PenEdit02Icon style={{ width: 14, height: 14 }} />
-                                    </div>
-                                    <span title={authorName}>{authorName}</span>
-                                </div>
-                             ) : <div />}
+                        <div className={styles.hudContainer} style={{ transform: 'translateZ(60px)' }}>
+                             {authorName ? <CreatorCapsule /> : <div />}
 
                              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
                                 {article.date && (
@@ -187,42 +223,53 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                     </div>
 
-                    <div className={styles.satelliteField}>
+                    <div className={styles.satelliteField} style={{ transform: 'translateZ(100px)' }}>
                         <AnimatePresence>
                              {displayTags.map((tag, i) => (
                                  <motion.div
                                     key={`${article.id}-${tag.slug}`}
                                     className={styles.satelliteShard}
-                                    initial={{ opacity: 0, scale: 0.4, z: 0 }}
+                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 30, z: 0 }}
                                     animate={isHovered ? {
                                         opacity: 1,
                                         scale: 1,
                                         x: satelliteConfig[i]?.hoverX || 0,
                                         y: satelliteConfig[i]?.hoverY || 0,
                                         rotate: satelliteConfig[i]?.rotate || 0,
-                                        z: 100
+                                        // UPDATED: Reduced Z from 50 to 30.
+                                        // This reduces the parallax movement (floating effect) when hovering.
+                                        z: -30 
                                     } : {
                                         opacity: 0,
                                         scale: 0.4,
                                         x: 0,
-                                        y: 50,
+                                        y: 30,
+                                        rotate: 0,
                                         z: 0
                                     }}
                                     transition={{
                                         type: "spring",
-                                        stiffness: 160,
-                                        damping: 18,
+                                        stiffness: 180,
+                                        damping: 20,
                                         delay: i * 0.05
                                     }}
-                                    style={{ left: '50%', top: '50%' }}
+                                    style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                                    onClick={(e) => e.stopPropagation()}
                                  >
-                                     {translateTag(tag.title)}
+                                     <Link 
+                                        href={`/tags/${tag.slug}`} 
+                                        onClick={(e) => e.stopPropagation()}
+                                        className={`${styles.satelliteShardLink} no-underline`}
+                                        prefetch={false}
+                                     >
+                                         {translateTag(tag.title)}
+                                     </Link>
                                  </motion.div>
                              ))}
                         </AnimatePresence>
                     </div>
 
-                </Link>
+                </div>
             </motion.div>
         </div>
     );

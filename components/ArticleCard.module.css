@@ -4,8 +4,6 @@
 .livingCardWrapper {
     width: 100%;
     position: relative;
-    transform-style: preserve-3d;
-    perspective: 1200px;
     z-index: 1;
     overflow: visible !important; 
     cursor: pointer;
@@ -25,11 +23,11 @@
     width: 100%;
     aspect-ratio: 16 / 10; 
     min-height: 230px; 
-    
     border-radius: 16px;
     overflow: hidden; 
     background-color: var(--bg-secondary);
     
+    transform-style: preserve-3d;
     transform: translateZ(0px);
     will-change: transform, box-shadow;
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease;
@@ -37,14 +35,10 @@
     box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
     border: 1px solid rgba(255,255,255,0.08);
 
-    backface-visibility: hidden;
-    isolation: isolate;
-
-    -webkit-mask-image: -webkit-radial-gradient(white, black);
-    mask-image: radial-gradient(white, black);
+    isolation: isolate; 
 }
 
-/* --- KINETIC BRACKET --- */
+/* Kinetic Bracket (Corner decoration) */
 .monolithFrame::before {
     content: '';
     position: absolute;
@@ -55,23 +49,15 @@
     border-top: 3px solid rgba(255,255,255,0.4);
     border-left: 3px solid rgba(255,255,255,0.4);
     border-top-left-radius: 16px;
-    transition: 
-        width 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-        height 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-        border-color 0.3s ease;
+    transition: all 0.3s ease;
     z-index: 20;
     pointer-events: none;
-    -webkit-mask-image: linear-gradient(135deg, #000 0%, #000 30%, transparent 95%);
-    mask-image: linear-gradient(135deg, #000 0%, #000 30%, transparent 95%);
 }
 
-.monolithFrame::after {
-    content: none;
-}
+.monolithFrame::after { content: none; }
 
-/* Frame Hover States */
 .livingCardWrapper:hover .monolithFrame {
-    transform: translateZ(40px);
+    transform: translateZ(20px);
     box-shadow: 
         0 35px 70px -15px rgba(0,0,0,0.8),
         0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
@@ -84,6 +70,16 @@
     filter: drop-shadow(0 0 4px var(--accent));
 }
 
+.imageWrapper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+    transform: translateZ(0); 
+}
+
 .cardImage {
     width: 100%;
     height: 100%;
@@ -91,8 +87,6 @@
     transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
     scale: 1.02;
     backface-visibility: hidden;
-    border-radius: 16px;
-    transform: translate3d(0,0,0);
 }
 
 .livingCardWrapper:hover .cardImage {
@@ -123,212 +117,6 @@
     opacity: 1;
 }
 
-/* --- THE SCORE BADGE --- */
-.scoreBadge {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    width: 48px;
-    height: 48px;
-    background-color: var(--bg-secondary);
-    backdrop-filter: blur(16px);
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent);
-    font-family: var(--font-heading);
-    font-weight: 900;
-    font-size: 1.8rem;
-    letter-spacing: -1px;
-    z-index: 30;
-    transform: translateZ(50px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-    /* THE FIX: Added transition */
-    transition: color 0.3s ease, background-color 0.3s ease;
-}
-
-/* THE FIX: Hover state for score badge */
-.livingCardWrapper:hover .scoreBadge {
-    background-color: var(--accent);
-    color: var(--bg-primary);
-}
-
-
-/* --- TITLE OVERLAY --- */
-.titleOverlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 6rem 1.5rem 7rem 1.5rem; 
-    background: linear-gradient(to top, rgba(5,6,8,0.98) 25%, rgba(5,6,8,0.7) 65%, transparent 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: flex-start;
-    text-align: right;
-    pointer-events: none;
-    z-index: 25;
-    transform: translateZ(10px);
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-}
-
-.cardTitle {
-    font-family: var(--font-heading);
-    font-size: 1.8rem;
-    font-weight: 800;
-    line-height: 1.2;
-    color: #fff;
-    margin: 0;
-    text-shadow: 0 4px 20px rgba(0,0,0,0.7);
-    white-space: normal;
-    direction: rtl;
-    width: 100%;
-    pointer-events: auto;
-    transition: color 0.2s ease, text-shadow 0.2s ease;
-}
-
-.cardTitle:hover {
-    color: var(--accent) !important;
-    text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
-}
-
-/* --- INTEGRATED HUD --- */
-.hudContainer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between; 
-    padding: 0 1rem 1rem 1rem;
-    z-index: 30;
-    transform: translateZ(30px);
-    pointer-events: none; 
-}
-
-.hudContainer > * {
-    pointer-events: auto;
-}
-
-/* Credits Capsule */
-.creditCapsule {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem; 
-    background: rgba(10, 11, 15, 0.8);
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 0; 
-    border-radius: 999px;
-    transition: all 0.3s ease;
-    height: 32px; 
-    backdrop-filter: blur(8px);
-}
-
-/* THE FIX: Hover state for credits capsule */
-.livingCardWrapper:hover .creditCapsule {
-    border-color: var(--accent);
-    box-shadow: 0 0 15px -5px var(--accent);
-    transform: scale(1.02);
-    background-color: var(--accent);
-}
-
-.capsuleIcon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--accent);
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: color 0.3s ease, background-color 0.3s ease;
-}
-.capsuleIcon svg {
-    width: 16px;
-    height: 16px;
-}
-
-/* THE FIX: Invert icon colors on hover */
-.livingCardWrapper:hover .capsuleIcon {
-    background-color: var(--bg-primary);
-    color: var(--accent);
-}
-
-.creditCapsule :global(span) {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #fff;
-    max-width: 120px; 
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis;
-    padding-left: 1.2rem; 
-    padding-right: 0.8rem;
-    transition: color 0.3s ease;
-}
-
-/* THE FIX: Change text color on hover */
-.livingCardWrapper:hover .creditCapsule :global(span) {
-    color: var(--bg-primary);
-}
-
-.dateReadout {
-    font-family: var(--font-ui);
-    font-size: 1.1rem;
-    color: rgba(255,255,255,0.7);
-    font-weight: 500;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding-bottom: 0.5rem;
-}
-
-/* --- ORBITALS & FX --- */
-.satelliteField {
-    position: absolute;
-    inset: -100px;
-    pointer-events: none;
-    z-index: 50; 
-    overflow: visible; 
-    transform-style: preserve-3d;
-}
-
-.satelliteShard {
-    position: absolute;
-    padding: 0.5rem 1.2rem;
-    background: rgba(15, 17, 26, 0.95);
-    border: 2px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--font-ui);
-    font-size: 1.2rem; 
-    font-weight: 800;
-    border-radius: 6px;
-    white-space: nowrap;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
-    opacity: 0;
-    /* THE FIX: Added transition for hover effect */
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* THE FIX: Hover state for tags */
-.livingCardWrapper:hover .satelliteShard {
-    background-color: var(--accent);
-    color: var(--bg-primary);
-}
-
-
 .scanLine {
     position: absolute;
     top: -50%;
@@ -353,11 +141,245 @@
     100% { top: 130%; }
 }
 
+/* --- OVERLAYS --- */
+.titleOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 6rem 1.5rem 7rem 1.5rem; 
+    background: linear-gradient(to top, rgba(5,6,8,0.98) 25%, rgba(5,6,8,0.7) 65%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    text-align: right;
+    pointer-events: none;
+    z-index: 25;
+    transform: translateZ(10px); 
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.cardTitle {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #fff;
+    margin: 0;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.7);
+    white-space: normal;
+    direction: rtl;
+    width: 100%;
+    pointer-events: auto;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.livingCardWrapper:hover .cardTitle {
+    color: var(--accent);
+    text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* --- BADGES --- */
+.scoreBadge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    width: 48px;
+    height: 48px;
+    background-color: var(--bg-secondary);
+    backdrop-filter: blur(16px);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: 1.8rem;
+    letter-spacing: -1px;
+    z-index: 30;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    transition: color 0.3s ease, background-color 0.3s ease;
+    pointer-events: none;
+}
+
+.livingCardWrapper:hover .scoreBadge {
+    background-color: var(--accent);
+    color: var(--bg-primary);
+}
+
+/* --- INTERACTIVE ELEMENTS --- */
+.hudContainer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+    padding: 0 1rem 1rem 1rem;
+    z-index: 50; 
+    pointer-events: none; 
+}
+
+.hudContainer > * {
+    pointer-events: auto;
+}
+
+/* Credits Capsule Link */
+a.creditCapsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem; 
+    background: rgba(10, 11, 15, 0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0; 
+    border-radius: 999px;
+    transition: all 0.3s ease;
+    height: 32px; 
+    backdrop-filter: blur(8px);
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 51;
+}
+
+/* Non-link Capsule */
+div.creditCapsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem; 
+    background: rgba(10, 11, 15, 0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0; 
+    border-radius: 999px;
+    height: 32px; 
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+}
+
+.livingCardWrapper:hover .creditCapsule {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px -5px var(--accent);
+    background-color: var(--accent);
+}
+
+.capsuleIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.3s ease, background-color 0.3s ease;
+}
+.capsuleIcon svg { width: 16px; height: 16px; }
+
+.livingCardWrapper:hover .capsuleIcon {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+}
+
+.creditCapsule :global(span) {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    max-width: 120px; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+    padding-left: 1.2rem; 
+    padding-right: 0.8rem;
+    transition: color 0.3s ease;
+}
+
+.livingCardWrapper:hover .creditCapsule :global(span) {
+    color: var(--bg-primary);
+}
+
+/* --- TAGS / SATELLITES --- */
+.satelliteField {
+    position: absolute;
+    inset: -100px;
+    pointer-events: none; 
+    z-index: 100;
+    overflow: visible; 
+    transform-style: preserve-3d;
+}
+
+.satelliteShard {
+    position: absolute;
+    padding: 0;
+    background: transparent;
+    pointer-events: none; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-style: preserve-3d;
+}
+
+/* The actual link block for the tag */
+/* UPDATED: Smaller padding and font size, no underline */
+.satelliteShardLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.8rem; /* Smaller padding */
+    background: rgba(15, 17, 26, 0.95);
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1.1rem; /* Smaller font */
+    font-weight: 800;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+    z-index: 101;
+}
+
+/* Explicitly remove pseudo-element underline if it exists globally */
+.satelliteShardLink::after {
+    display: none !important;
+    content: none !important;
+}
+
+.livingCardWrapper:hover .satelliteShardLink {
+    background-color: var(--accent);
+    color: var(--bg-primary);
+}
+
+.dateReadout {
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    pointer-events: none;
+}
+
 .techDecoration {
     display: flex;
     gap: 5px;
     padding: 0.5rem 0;
     justify-content: flex-end;
+    pointer-events: none;
 }
 
 .techDot {
@@ -379,7 +401,6 @@
     50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); }
 }
 
-/* --- Mobile Optimization --- */
 @media (max-width: 768px) {
     .livingCardWrapper {
         perspective: none;
@@ -403,10 +424,9 @@
     .titleOverlay { padding: 4rem 1.5rem 6.5rem 1.5rem; }
     
     .hudContainer {
-        position: absolute;
-        bottom: 0;
-        left: 0;
         padding: 0 1rem 1rem 1rem;
+        z-index: 50; 
+        transform: none !important;
     }
 
     .scoreBadge {
