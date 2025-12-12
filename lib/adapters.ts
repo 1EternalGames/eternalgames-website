@@ -46,12 +46,18 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         primaryCreators = item.authors || item.reporters || [];
     }
 
+    // Safely extract game data
+    // item.game is typically an object { title: "...", slug: "..." } from the Sanity projection
+    const gameTitle = item.game?.title;
+    const gameSlug = item.game?.slug;
+
     return {
         type: item._type,
         id: item._id, 
         legacyId: item.legacyId,
         slug: item.slug?.current ?? item.slug ?? '',
-        game: item.game?.title,
+        game: gameTitle,
+        gameSlug: gameSlug, // Pass slug to props
         title: item.title,
         authors: primaryCreators,
         designers: item.designers || [],
@@ -63,7 +69,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
         category: item.category?.title,
-        newsType: item.newsType || 'official', // Pass newsType
+        newsType: item.newsType || 'official', 
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],

@@ -76,6 +76,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
     const handleCardClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
+        // Safety check to prevent double navigation if propagation fails
         if (target.closest('a') || target.closest('button')) {
             return;
         }
@@ -92,9 +93,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
     const displayTags = article.tags.slice(0, 3);
     
-    // UPDATED:
-    // 1. Reduced Left hoverX (-145 -> -115) to make it nearer
-    // 2. Maintained other positions
+    // Config: X increased (spread), Y adjusted, Z negative (flat)
     const satelliteConfig = [
         { hoverX: -110, hoverY: -50, rotate: -12 },
         { hoverX: 135, hoverY: -35, rotate: 12 },
@@ -103,6 +102,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     
     const { boxShadow, ...otherAnimationStyles } = livingCardAnimation.style;
 
+    // --- RENDER HELPERS ---
+    
     const CreatorCapsule = () => {
         const content = (
             <>
@@ -118,7 +119,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                 <Link 
                     href={`/creators/${authorUsername}`}
                     className={`${styles.creditCapsule} no-underline`}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()} 
                     prefetch={false}
                 >
                     {content}
@@ -140,7 +141,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            onClick={handleCardClick}
         >
             <motion.div
                 className="tilt-container flex flex-col"
@@ -156,6 +156,18 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     className="no-underline block w-full flex flex-col"
                     style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
                 >
+                    {/* --- MAIN CARD LINK (OVERLAY) --- */}
+                    <Link 
+                        href={linkPath} 
+                        // Added 'no-underline' to prevent global underline styles on the card itself
+                        className={`${styles.cardOverlayLink} no-underline`}
+                        prefetch={false}
+                        onClick={() => {
+                            setScrollPos(window.scrollY);
+                            setPrefix(layoutIdPrefix);
+                        }}
+                    />
+
                     <div className={styles.monolithFrame}>
                         
                         <motion.div 
@@ -223,27 +235,25 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                     </div>
 
-                    <div className={styles.satelliteField} style={{ transform: 'translateZ(100px)' }}>
+                    <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                         <AnimatePresence>
                              {displayTags.map((tag, i) => (
                                  <motion.div
                                     key={`${article.id}-${tag.slug}`}
                                     className={styles.satelliteShard}
-                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 30, z: 0 }}
+                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
                                     animate={isHovered ? {
                                         opacity: 1,
                                         scale: 1,
                                         x: satelliteConfig[i]?.hoverX || 0,
                                         y: satelliteConfig[i]?.hoverY || 0,
                                         rotate: satelliteConfig[i]?.rotate || 0,
-                                        // UPDATED: Reduced Z from 50 to 30.
-                                        // This reduces the parallax movement (floating effect) when hovering.
                                         z: -30 
                                     } : {
                                         opacity: 0,
                                         scale: 0.4,
                                         x: 0,
-                                        y: 30,
+                                        y: 50,
                                         rotate: 0,
                                         z: 0
                                     }}

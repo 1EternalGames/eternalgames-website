@@ -21,12 +21,13 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
+                        whileHover={{ zIndex: 50 }} // FIX: Elevate card wrapper on hover to prevent clipping
                         transition={{ 
                             type: 'spring' as const, 
                             stiffness: 400, 
                             damping: 30, 
                         }}
-                        style={{ height: '100%', willChange: 'transform, opacity' }}
+                        style={{ height: '100%', willChange: 'transform, opacity, z-index' }}
                     >
                         <NewsGridCard 
                             item={item} 

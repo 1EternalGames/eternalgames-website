@@ -6,7 +6,6 @@
     position: relative;
     z-index: 1;
     overflow: visible !important; 
-    cursor: pointer;
     display: flex;
     flex-direction: column;
     margin-bottom: 0; 
@@ -15,6 +14,16 @@
 
 .livingCardWrapper:hover {
     z-index: 100;
+}
+
+/* --- THE EMBEDDED MAIN LINK --- */
+.cardOverlayLink {
+    position: absolute;
+    inset: 0;
+    z-index: 40; 
+    cursor: pointer;
+    background: transparent;
+    transform: translateZ(1px); 
 }
 
 /* THE MONOLITH */
@@ -36,6 +45,8 @@
     border: 1px solid rgba(255,255,255,0.08);
 
     isolation: isolate; 
+    
+    pointer-events: none; 
 }
 
 /* Kinetic Bracket (Corner decoration) */
@@ -46,8 +57,9 @@
     left: 0;
     width: 40px;
     height: 40px;
-    border-top: 3px solid rgba(255,255,255,0.4);
-    border-left: 3px solid rgba(255,255,255,0.4);
+    /* UPDATED: Changed from rgba(255,255,255,0.4) to low opacity accent (cyan) */
+    border-top: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-top-left-radius: 16px;
     transition: all 0.3s ease;
     z-index: 20;
@@ -78,6 +90,7 @@
     z-index: 1;
     overflow: hidden;
     transform: translateZ(0); 
+    pointer-events: none;
 }
 
 .cardImage {
@@ -172,7 +185,7 @@
     white-space: normal;
     direction: rtl;
     width: 100%;
-    pointer-events: auto;
+    pointer-events: none; /* Let clicks pass */
     transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 
@@ -202,7 +215,7 @@
     letter-spacing: -1px;
     z-index: 30;
     box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-    transition: color 0.3s ease, background-color 0.3s ease;
+    transition: color 0.4s ease, background-color 0.4s ease;
     pointer-events: none;
 }
 
@@ -239,7 +252,8 @@ a.creditCapsule {
     border: 1px solid rgba(255,255,255,0.1);
     padding: 0; 
     border-radius: 999px;
-    transition: all 0.3s ease;
+    /* Updated transition time to 0.4s to match rating animation */
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     height: 32px; 
     backdrop-filter: blur(8px);
     text-decoration: none;
@@ -260,12 +274,34 @@ div.creditCapsule {
     height: 32px; 
     backdrop-filter: blur(8px);
     pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* Card Hover: Capsule turns cyan smoothly */
 .livingCardWrapper:hover .creditCapsule {
     border-color: var(--accent);
-    box-shadow: 0 0 15px -5px var(--accent);
     background-color: var(--accent);
+    /* No shadow on generic hover, only specific */
+}
+
+/* Card Hover: Invert internal colors */
+.livingCardWrapper:hover .capsuleIcon {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+}
+.livingCardWrapper:hover .creditCapsule :global(span) {
+    color: var(--bg-primary);
+}
+
+
+/* Specific Capsule Hover (When interacting directly) */
+a.creditCapsule:hover {
+    transform: translateY(-4px) scale(1.05); /* "Stand up" */
+    box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent); /* Bloom */
+    z-index: 100;
+}
+a.creditCapsule:active {
+    transform: scale(0.95);
 }
 
 .capsuleIcon {
@@ -278,14 +314,10 @@ div.creditCapsule {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: color 0.3s ease, background-color 0.3s ease;
+    /* Smoothed transition */
+    transition: color 0.4s ease, background-color 0.4s ease;
 }
 .capsuleIcon svg { width: 16px; height: 16px; }
-
-.livingCardWrapper:hover .capsuleIcon {
-    background-color: var(--bg-primary);
-    color: var(--accent);
-}
 
 .creditCapsule :global(span) {
     font-size: 1.2rem;
@@ -297,11 +329,8 @@ div.creditCapsule {
     text-overflow: ellipsis;
     padding-left: 1.2rem; 
     padding-right: 0.8rem;
-    transition: color 0.3s ease;
-}
-
-.livingCardWrapper:hover .creditCapsule :global(span) {
-    color: var(--bg-primary);
+    /* Smoothed transition */
+    transition: color 0.4s ease;
 }
 
 /* --- TAGS / SATELLITES --- */
@@ -326,39 +355,48 @@ div.creditCapsule {
 }
 
 /* The actual link block for the tag */
-/* UPDATED: Smaller padding and font size, no underline */
 .satelliteShardLink {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.3rem 0.8rem; /* Smaller padding */
-    background: rgba(15, 17, 26, 0.95);
+    padding: 0.3rem 0.8rem; 
+    /* Default: Black fill, Cyan stroke */
+    background: #000; 
     border: 2px solid var(--accent);
     color: var(--accent);
     font-family: var(--font-ui);
-    font-size: 1.1rem; /* Smaller font */
+    font-size: 1.1rem; 
     font-weight: 800;
     border-radius: 6px;
     white-space: nowrap;
     box-shadow: 0 15px 40px rgba(0,0,0,0.8);
     filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
     text-decoration: none;
-    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    /* Smooth transition for hover pop */
+    transition: 
+        background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+        color 0.3s ease, 
+        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.3s ease;
     cursor: pointer;
     pointer-events: auto;
     position: relative;
     z-index: 101;
 }
 
-/* Explicitly remove pseudo-element underline if it exists globally */
-.satelliteShardLink::after {
-    display: none !important;
-    content: none !important;
+.satelliteShardLink::after { display: none !important; content: none !important; }
+
+/* Tag Hover: Turn Fully Cyan and Pop */
+.satelliteShardLink:hover {
+    background-color: var(--accent);
+    color: #000;
+    transform: scale(1.15) translateY(-3px);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
+    z-index: 200;
 }
 
-.livingCardWrapper:hover .satelliteShardLink {
-    background-color: var(--accent);
-    color: var(--bg-primary);
+.satelliteShardLink:active {
+    transform: scale(0.95);
 }
 
 .dateReadout {

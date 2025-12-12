@@ -9,6 +9,7 @@ export type CardProps = {
     legacyId: number; // Numeric legacy ID
     slug: string;
     game?: string;
+    gameSlug?: string; // Added: For linking to game hubs
     title: string;
     authors: SanityAuthor[];
     designers?: SanityAuthor[];
