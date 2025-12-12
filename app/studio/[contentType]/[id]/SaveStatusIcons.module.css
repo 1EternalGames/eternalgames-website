@@ -24,10 +24,15 @@
     cursor: pointer;
     padding: 0;
 }
-
-.iconButton:hover {
+@media (hover: hover) {
+  .iconButton:hover {
     transform: scale(1.1);
 }
+}
+.iconButton:active {
+    transform: scale(1.1);
+}
+
 
 .iconWrapper svg {
     width: 100%;
@@ -77,11 +82,17 @@
     margin-bottom: 5px;
     z-index: 10;
 }
-
-.iconWrapper:hover .tooltip {
+@media (hover: hover) {
+  .iconWrapper:hover .tooltip {
     opacity: 1;
     transform: translateX(-50%) translateY(-3px);
 }
+}
+.iconWrapper:active .tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-3px);
+}
+
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {

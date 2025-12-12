@@ -71,9 +71,15 @@
   opacity: 0;
   transition: opacity 0.2s ease-out;
 }
-.dropzone:hover .dropzoneContent {
+@media (hover: hover) {
+  .dropzone:hover .dropzoneContent {
   opacity: 1;
 }
+}
+.dropzone:active .dropzoneContent {
+  opacity: 1;
+}
+
 
 .imageCompareContainer {
   margin: 2rem 0;

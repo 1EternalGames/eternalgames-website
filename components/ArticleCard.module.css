@@ -11,10 +11,15 @@
     margin-bottom: 0; 
     background: transparent !important;
 }
-
-.livingCardWrapper:hover {
+@media (hover: hover) {
+  .livingCardWrapper:hover {
     z-index: 100;
 }
+}
+.livingCardWrapper:active {
+    z-index: 100;
+}
+
 
 /* --- THE EMBEDDED MAIN LINK --- */
 .cardOverlayLink {
@@ -67,20 +72,36 @@
 }
 
 .monolithFrame::after { content: none; }
-
-.livingCardWrapper:hover .monolithFrame {
+@media (hover: hover) {
+  .livingCardWrapper:hover .monolithFrame {
+    transform: translateZ(20px);
+    box-shadow: 
+        0 35px 70px -15px rgba(0,0,0,0.8),
+        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+}
+.livingCardWrapper:active .monolithFrame {
     transform: translateZ(20px);
     box-shadow: 
         0 35px 70px -15px rgba(0,0,0,0.8),
         0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-.livingCardWrapper:hover .monolithFrame::before {
+@media (hover: hover) {
+  .livingCardWrapper:hover .monolithFrame::before {
     width: 100%;
     height: 100%;
     border-color: var(--accent);
     filter: drop-shadow(0 0 4px var(--accent));
 }
+}
+.livingCardWrapper:active .monolithFrame::before {
+    width: 100%;
+    height: 100%;
+    border-color: var(--accent);
+    filter: drop-shadow(0 0 4px var(--accent));
+}
+
 
 .imageWrapper {
     position: absolute;
@@ -101,10 +122,15 @@
     scale: 1.02;
     backface-visibility: hidden;
 }
-
-.livingCardWrapper:hover .cardImage {
+@media (hover: hover) {
+  .livingCardWrapper:hover .cardImage {
     transform: scale(1.1);
 }
+}
+.livingCardWrapper:active .cardImage {
+    transform: scale(1.1);
+}
+
 
 /* --- MOUSE SPOTLIGHT --- */
 .holoSpotlight {
@@ -125,10 +151,15 @@
     mix-blend-mode: overlay; 
     border-radius: 50%;
 }
-
-.livingCardWrapper:hover .holoSpotlight {
+@media (hover: hover) {
+  .livingCardWrapper:hover .holoSpotlight {
     opacity: 1;
 }
+}
+.livingCardWrapper:active .holoSpotlight {
+    opacity: 1;
+}
+
 
 .scanLine {
     position: absolute;
@@ -143,11 +174,17 @@
     opacity: 0;
     transition: opacity 0.3s ease;
 }
-
-.livingCardWrapper:hover .scanLine {
+@media (hover: hover) {
+  .livingCardWrapper:hover .scanLine {
     opacity: 1;
     animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
+}
+.livingCardWrapper:active .scanLine {
+    opacity: 1;
+    animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
 
 @keyframes scan {
     0% { top: -30%; }
@@ -188,11 +225,17 @@
     pointer-events: none; /* Let clicks pass */
     transition: color 0.2s ease, text-shadow 0.2s ease;
 }
-
-.livingCardWrapper:hover .cardTitle {
+@media (hover: hover) {
+  .livingCardWrapper:hover .cardTitle {
     color: var(--accent);
     text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
 }
+}
+.livingCardWrapper:active .cardTitle {
+    color: var(--accent);
+    text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
 
 /* --- BADGES --- */
 .scoreBadge {
@@ -218,11 +261,17 @@
     transition: color 0.4s ease, background-color 0.4s ease;
     pointer-events: none;
 }
-
-.livingCardWrapper:hover .scoreBadge {
+@media (hover: hover) {
+  .livingCardWrapper:hover .scoreBadge {
     background-color: var(--accent);
     color: var(--bg-primary);
 }
+}
+.livingCardWrapper:active .scoreBadge {
+    background-color: var(--accent);
+    color: var(--bg-primary);
+}
+
 
 /* --- INTERACTIVE ELEMENTS --- */
 .hudContainer {
@@ -289,9 +338,15 @@ div.creditCapsule {
     background-color: var(--bg-primary);
     color: var(--accent);
 }
-.livingCardWrapper:hover .creditCapsule :global(span) {
+@media (hover: hover) {
+  .livingCardWrapper:hover .creditCapsule :global(span) {
     color: var(--bg-primary);
 }
+}
+.livingCardWrapper:active .creditCapsule :global(span) {
+    color: var(--bg-primary);
+}
+
 
 
 /* Specific Capsule Hover (When interacting directly) */
@@ -427,13 +482,27 @@ a.creditCapsule:active {
     border-radius: 50%;
     transition: background-color 0.3s ease;
 }
-
-.livingCardWrapper:hover .techDot {
+@media (hover: hover) {
+  .livingCardWrapper:hover .techDot {
     background-color: var(--accent);
     animation: pulse-dot 1.2s infinite ease-in-out;
 }
-.livingCardWrapper:hover .techDot:nth-child(2) { animation-delay: 0.2s; }
-.livingCardWrapper:hover .techDot:nth-child(3) { animation-delay: 0.4s; }
+}
+.livingCardWrapper:active .techDot {
+    background-color: var(--accent);
+    animation: pulse-dot 1.2s infinite ease-in-out;
+}
+
+@media (hover: hover) {
+  .livingCardWrapper:hover .techDot:nth-child(2) { animation-delay: 0.2s; }
+}
+.livingCardWrapper:active .techDot:nth-child(2) { animation-delay: 0.2s; }
+
+@media (hover: hover) {
+  .livingCardWrapper:hover .techDot:nth-child(3) { animation-delay: 0.4s; }
+}
+.livingCardWrapper:active .techDot:nth-child(3) { animation-delay: 0.4s; }
+
 @keyframes pulse-dot {
     0%, 100% { transform: scale(1); opacity: 0.6; }
     50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); }

@@ -84,9 +84,15 @@
 .showcaseCardImage {
   transition: transform 0.4s ease;
 }
-.showcaseCardLink:hover .showcaseCardImage {
+@media (hover: hover) {
+  .showcaseCardLink:hover .showcaseCardImage {
   transform: scale(1.05);
 }
+}
+.showcaseCardLink:active .showcaseCardImage {
+  transform: scale(1.05);
+}
+
 
 .showcaseCardContent {
   position: absolute;

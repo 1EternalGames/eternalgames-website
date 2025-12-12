@@ -81,12 +81,19 @@
 [data-theme="dark"] .satelliteOrb {
   color: var(--text-primary);
 }
-
-.satelliteOrb:hover {
+@media (hover: hover) {
+  .satelliteOrb:hover {
   border-color: var(--accent);
   color: var(--accent);
   transform: scale(1.1);
 }
+}
+.satelliteOrb:active {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
 
 .satelliteOrb svg {
   color: currentColor;
@@ -110,10 +117,15 @@
   pointer-events: none;
   transition: opacity 0.2s ease-out;
 }
-
-.satelliteWrapper:hover .satelliteLabel {
+@media (hover: hover) {
+  .satelliteWrapper:hover .satelliteLabel {
   opacity: 1;
 }
+}
+.satelliteWrapper:active .satelliteLabel {
+  opacity: 1;
+}
+
 
 .closeIcon {
   color: #fff !important;
@@ -121,10 +133,15 @@
 [data-theme="dark"] .closeIcon {
   color: var(--bg-primary) !important;
 }
-
-.closeIcon:hover {
+@media (hover: hover) {
+  .closeIcon:hover {
   filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
 }
+}
+.closeIcon:active {
+  filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
+}
+
 
 @media (max-width: 768px) {
     .genesisContainer {

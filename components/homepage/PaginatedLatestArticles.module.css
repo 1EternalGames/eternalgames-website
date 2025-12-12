@@ -36,10 +36,15 @@
     padding: 0;
     transition: all 0.3s ease;
 }
-
-.paginationDot:hover {
+@media (hover: hover) {
+  .paginationDot:hover {
     background-color: var(--text-secondary);
 }
+}
+.paginationDot:active {
+    background-color: var(--text-secondary);
+}
+
 
 .paginationDot.active {
     background-color: var(--accent);

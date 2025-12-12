@@ -42,12 +42,24 @@
   width: 22px;
   height: 22px;
 }
-
-.actionDrawerButton:hover {
+@media (hover: hover) {
+  .actionDrawerButton:hover {
   background-color: var(--border-color);
   color: var(--accent);
 }
-.actionDrawerButton.delete:hover {
+}
+.actionDrawerButton:active {
+  background-color: var(--border-color);
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .actionDrawerButton.delete:hover {
+  background-color: #3f1a1a;
+  color: #DC2626;
+}
+}
+.actionDrawerButton.delete:active {
   background-color: #3f1a1a;
   color: #DC2626;
 }

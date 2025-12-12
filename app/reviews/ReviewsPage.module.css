@@ -115,10 +115,17 @@
   position: relative;
   overflow: hidden;
 }
-.filterButton:hover {
+@media (hover: hover) {
+  .filterButton:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
+}
+.filterButton:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 
 .filterButton.active {
   color: #fff;
@@ -186,9 +193,15 @@
   font-family: var(--font-ui);
   transition: background-color 0.1s ease-out;
 }
-.popoverItemButton:hover {
+@media (hover: hover) {
+  .popoverItemButton:hover {
   background-color: var(--bg-primary);
 }
+}
+.popoverItemButton:active {
+  background-color: var(--bg-primary);
+}
+
 .popoverItemButton.selected {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
@@ -215,9 +228,15 @@
   align-items: center;
   justify-content: center;
 }
-.gameClearButton:hover {
+@media (hover: hover) {
+  .gameClearButton:hover {
   opacity: 1;
 }
+}
+.gameClearButton:active {
+  opacity: 1;
+}
+
 .gameSelectedButton.active {
   background-color: var(--accent);
   border-color: var(--accent);

@@ -24,10 +24,15 @@
 [data-theme="dark"] .signInButton {
     color: var(--bg-primary);
 }
-
-.signInButton:hover {
+@media (hover: hover) {
+  .signInButton:hover {
     opacity: 0.85;
 }
+}
+.signInButton:active {
+    opacity: 0.85;
+}
+
 
 
 

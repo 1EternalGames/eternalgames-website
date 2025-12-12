@@ -74,12 +74,19 @@
     box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 70%, transparent);
     transform: scale(1.8);
 }
-
-.marker:hover .markerDot {
+@media (hover: hover) {
+  .marker:hover .markerDot {
     background-color: var(--accent);
     transform: scale(2.2);
     z-index: 2; 
 }
+}
+.marker:active .markerDot {
+    background-color: var(--accent);
+    transform: scale(2.2);
+    z-index: 2; 
+}
+
 
 .marker::after {
   content: attr(data-title);
@@ -101,11 +108,19 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   border: 1px solid var(--border-color);
 }
-.marker:hover::after {
+@media (hover: hover) {
+  .marker:hover::after {
   opacity: 1;
   transform: translateY(-50%) scale(1);
   left: 25px;
 }
+}
+.marker:active::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  left: 25px;
+}
+
 
 .readingHudMobile {
   position: fixed;

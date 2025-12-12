@@ -44,10 +44,15 @@
 .vanguardContainer.manual-hover .cardWrapper {
     filter: brightness(0.6) saturate(0.8);
 }
-
-.vanguardContainer.manual-hover .cardSlot:hover .cardWrapper {
+@media (hover: hover) {
+  .vanguardContainer.manual-hover .cardSlot:hover .cardWrapper {
     filter: brightness(1) saturate(1);
 }
+}
+.vanguardContainer.manual-hover .cardSlot:active .cardWrapper {
+    filter: brightness(1) saturate(1);
+}
+
 
 /* MODIFIED: Removed standard borders/bg, now relies on SVG frame */
 .vanguardCard {
@@ -95,10 +100,15 @@
     object-fit: cover;
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.cardSlot:hover .cardImage {
+@media (hover: hover) {
+  .cardSlot:hover .cardImage {
     transform: scale(1.05);
 }
+}
+.cardSlot:active .cardImage {
+    transform: scale(1.05);
+}
+
 
 .cardContent {
     position: absolute;
@@ -147,11 +157,17 @@
     transform: translateZ(60px);
     transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
-
-.cardSlot:hover .vanguardScoreBadge {
+@media (hover: hover) {
+  .cardSlot:hover .vanguardScoreBadge {
     transform: translateZ(80px) scale(1.05);
     box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent);
 }
+}
+.cardSlot:active .vanguardScoreBadge {
+    transform: translateZ(80px) scale(1.05);
+    box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent);
+}
+
 
 .creatorBubbleContainer {
     position: absolute;
@@ -177,16 +193,30 @@
     cursor: pointer;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
-
-.creatorBubble:hover, .creatorBubble.pressed {
+@media (hover: hover) {
+  .creatorBubble:hover, .creatorBubble.pressed {
+    background-color: var(--accent);
+    box-shadow: 0 0 15px -0.5px var(--accent);
+}
+}
+.creatorBubble:active,  .creatorBubble.pressed {
     background-color: var(--accent);
     box-shadow: 0 0 15px -0.5px var(--accent);
 }
 
+
 .creatorLabel { color: var(--text-secondary); font-size: 1rem; font-weight: 500; transition: color 0.3s ease; }
-.creatorBubble:hover .creatorLabel, .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+@media (hover: hover) {
+  .creatorBubble:hover .creatorLabel, .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+}
+.creatorBubble:active .creatorLabel,  .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+
 .creatorName { font-size: 1.2rem; font-weight: 600; transition: color 0.3s ease; }
-.creatorBubble:hover .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
+@media (hover: hover) {
+  .creatorBubble:hover .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
+}
+.creatorBubble:active .creatorName,  .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
+
 
 .creatorArrow { 
     position: absolute; 
@@ -197,10 +227,17 @@
     transition: opacity 0.3s ease, transform 0.3s ease; 
     opacity: 0; 
 }
-.creatorBubble:hover .creatorArrow, .creatorBubble.pressed .creatorArrow { 
+@media (hover: hover) {
+  .creatorBubble:hover .creatorArrow, .creatorBubble.pressed .creatorArrow { 
     opacity: 1; 
     transform: translateY(-50%) translateX(-8px);
 }
+}
+.creatorBubble:active .creatorArrow,  .creatorBubble.pressed .creatorArrow { 
+    opacity: 1; 
+    transform: translateY(-50%) translateX(-8px);
+}
+
 
 .kineticNavigator {
     position: absolute;

@@ -57,10 +57,17 @@
   position: relative;
   overflow: hidden;
 }
-.filterButton:hover {
+@media (hover: hover) {
+  .filterButton:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
+}
+.filterButton:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 
 .filterButton.active {
   color: var(--bg-secondary);
@@ -75,11 +82,17 @@
   align-items: center;
   gap: 0.75rem;
 }
-
-.filterButton.clear:hover {
+@media (hover: hover) {
+  .filterButton.clear:hover {
   background-color: var(--border-color);
   color: var(--text-primary);
 }
+}
+.filterButton.clear:active {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
 
 .filterHighlight {
   position: absolute;
@@ -166,9 +179,15 @@
   font-family: var(--font-main);
   transition: background-color 0.1s ease-out;
 }
-.popoverItemButton:hover {
+@media (hover: hover) {
+  .popoverItemButton:hover {
   background-color: var(--bg-primary);
 }
+}
+.popoverItemButton:active {
+  background-color: var(--bg-primary);
+}
+
 .popoverItemButton.selected {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
@@ -198,9 +217,15 @@
   justify-content: center;
   z-index: 2;
 }
-.gameClearButton:hover {
+@media (hover: hover) {
+  .gameClearButton:hover {
   opacity: 1;
 }
+}
+.gameClearButton:active {
+  opacity: 1;
+}
+
 .gameSelectedButton.active {
   background-color: transparent;
   border-color: var(--accent);

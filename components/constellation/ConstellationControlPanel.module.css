@@ -19,12 +19,19 @@
   backdrop-filter: blur(4px);
   transition: all 0.3s ease;
 }
-
-.settingsButton:hover {
+@media (hover: hover) {
+  .settingsButton:hover {
   border-color: var(--accent);
   color: var(--accent);
   box-shadow: 0 0 15px 0 color-mix(in srgb,var(--accent) 70%,transparent);
 }
+}
+.settingsButton:active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 15px 0 color-mix(in srgb,var(--accent) 70%,transparent);
+}
+
 
 .panelOverlay {
   position: absolute;
@@ -72,9 +79,15 @@
   cursor: pointer;
   transition: color 0.2s;
 }
-.closeButton:hover {
+@media (hover: hover) {
+  .closeButton:hover {
   color: var(--text-primary);
 }
+}
+.closeButton:active {
+  color: var(--text-primary);
+}
+
 
 .divider {
   height: 1px;
@@ -107,11 +120,17 @@
   font-size: 1.3rem;font-weight: 500;text-transform: capitalize;
   cursor: pointer;transition: all 0.2s ease;
 }
-
-.presetButton:hover {
+@media (hover: hover) {
+  .presetButton:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
+}
+.presetButton:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 
 .presetButton.active {
   background-color: var(--accent);
@@ -136,9 +155,15 @@
   border-radius: 50%;cursor: pointer;
   transition: filter 0.2s ease-out;
 }
-.rangeInput::-webkit-slider-thumb:hover {
+@media (hover: hover) {
+  .rangeInput::-webkit-slider-thumb:hover {
   filter: drop-shadow(0 0 6px var(--accent));
 }
+}
+.rangeInput::-webkit-slider-thumb:active {
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
 .rangeInput:disabled::-webkit-slider-thumb {
   background: var(--text-secondary);cursor: not-allowed;filter: none;
 }

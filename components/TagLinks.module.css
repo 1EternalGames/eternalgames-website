@@ -24,17 +24,30 @@
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out;
     cursor: pointer;
 }
-  
-.tagLink:hover {
+@media (hover: hover) {
+  .tagLink:hover {
     background-color: var(--accent);
     color: #fff;
     transform: translateY(-2px);
     box-shadow: 0 6px 15px -3px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
 }
-  
-[data-theme="dark"] .tagLink:hover {
+}
+.tagLink:active {
+    background-color: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px -3px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+@media (hover: hover) {
+  [data-theme="dark"] .tagLink:hover {
     color: var(--bg-primary);
 }
+}
+[data-theme="dark"] .tagLink:active {
+    color: var(--bg-primary);
+}
+
 
 
 

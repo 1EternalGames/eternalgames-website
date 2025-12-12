@@ -17,10 +17,15 @@
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-
-.userAvatarButton:hover .userAvatar {
+@media (hover: hover) {
+  .userAvatarButton:hover .userAvatar {
   border-color: var(--accent);
 }
+}
+.userAvatarButton:active .userAvatar {
+  border-color: var(--accent);
+}
+
 
 .userAvatarFallback {
   width: 36px;
@@ -37,10 +42,15 @@
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-
-.userAvatarButton:hover .userAvatarFallback {
+@media (hover: hover) {
+  .userAvatarButton:hover .userAvatarFallback {
   border-color: var(--accent);
 }
+}
+.userAvatarButton:active .userAvatarFallback {
+  border-color: var(--accent);
+}
+
 
 .userAvatarSkeleton {
   width: 99px; /* Matches Sign In button */
@@ -123,28 +133,50 @@
     color: var(--text-secondary);
     transition: color 0.2s ease;
 }
-
-.userDropdownItem:hover {
+@media (hover: hover) {
+  .userDropdownItem:hover {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+}
+.userDropdownItem:active {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
 }
 
-.userDropdownItem:hover .dropdownItemIcon {
+@media (hover: hover) {
+  .userDropdownItem:hover .dropdownItemIcon {
     color: var(--accent);
 }
+}
+.userDropdownItem:active .dropdownItemIcon {
+    color: var(--accent);
+}
+
 
 .userDropdownItem.signout {
   color: #DC2626;
 }
-
-.userDropdownItem.signout:hover {
+@media (hover: hover) {
+  .userDropdownItem.signout:hover {
+  background-color: color-mix(in srgb, #DC2626 15%, transparent);
+  color: #DC2626;
+}
+}
+.userDropdownItem.signout:active {
   background-color: color-mix(in srgb, #DC2626 15%, transparent);
   color: #DC2626;
 }
 
-.userDropdownItem.signout:hover .dropdownItemIcon {
+@media (hover: hover) {
+  .userDropdownItem.signout:hover .dropdownItemIcon {
     color: #DC2626;
 }
+}
+.userDropdownItem.signout:active .dropdownItemIcon {
+    color: #DC2626;
+}
+
 
 .signInButton {
   background: var(--accent);
@@ -163,11 +195,17 @@
 [data-theme="dark"] .signInButton {
   color: var(--bg-primary);
 }
-
-.signInButton:hover {
+@media (hover: hover) {
+  .signInButton:hover {
   opacity: 0.85;
   transform: scale(1.05);
 }
+}
+.signInButton:active {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
 
 /* ADDED: Media query for mobile-specific button size */
 @media (max-width: 768px) {

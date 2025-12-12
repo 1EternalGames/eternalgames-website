@@ -38,19 +38,30 @@
   cursor: pointer;
   transition: background-color 0.2s ease-out, color 0.2s ease-out;
 }
-
-.studioBarButton:hover {
+@media (hover: hover) {
+  .studioBarButton:hover {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+}
+.studioBarButton:active {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
 }
 
+
 .brand {
   color: var(--accent);
 }
-
-.brand:hover {
+@media (hover: hover) {
+  .brand:hover {
   color: var(--accent); /* Ensure hover doesn't change color from accent */
 }
+}
+.brand:active {
+  color: var(--accent); /* Ensure hover doesn't change color from accent */
+}
+
 
 
 

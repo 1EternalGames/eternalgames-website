@@ -26,7 +26,11 @@
 .commentHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.2rem; margin-bottom: 1rem; }
 .commentAuthorInfo { display: flex; align-items: center; gap: 1.2rem; flex-grow: 1; }
 .commentAuthorLink { font-family: var(--font-main), sans-serif; font-weight: 700; font-size: 1.8rem; color: var(--text-primary); transition: color 0.2s ease; }
-.commentAuthorLink:hover { color: var(--accent); }
+@media (hover: hover) {
+  .commentAuthorLink:hover { color: var(--accent); }
+}
+.commentAuthorLink:active { color: var(--accent); }
+
 
 .authorAndTimestamp {
     display: flex;
@@ -49,7 +53,11 @@
 .viewRepliesButton { margin-left: auto; margin-right: 1.5rem; padding: 0.6rem 1.2rem !important; font-size: 1.3rem !important; }
 
 .voteButton { display: flex; align-items: center; gap: 0.6rem; background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0.4rem 0.8rem; margin: 0 -0.8rem; border-radius: 999px; transition: color 0.2s ease, background-color 0.2s ease; }
-.voteButton:hover:not(:disabled) { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+@media (hover: hover) {
+  .voteButton:hover:not(:disabled) { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+}
+.voteButton:active:not(:disabled) { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+
 .voteButton.active { color: var(--accent); font-weight: 700; }
 .commentEditForm { margin-top: 1rem; padding-right: 52px; padding-left: 0; }
 .commentEditActions { display: flex; gap: 1rem; }

@@ -30,10 +30,15 @@
     cursor: pointer;
     transition: transform 0.2s ease-out;
 }
-
-.categoryButton:hover {
+@media (hover: hover) {
+  .categoryButton:hover {
     transform: scale(1.1);
 }
+}
+.categoryButton:active {
+    transform: scale(1.1);
+}
+
 
 .activeCategoryHighlight {
     position: absolute;

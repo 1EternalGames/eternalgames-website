@@ -85,10 +85,15 @@
     text-shadow: none;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-
-.textContent:hover .storyCategory::before {
+@media (hover: hover) {
+  .textContent:hover .storyCategory::before {
     transform: scaleX(1);
 }
+}
+.textContent:active .storyCategory::before {
+    transform: scaleX(1);
+}
+
 
 /* Color Variations */
 /* Base Text Colors */
@@ -127,10 +132,15 @@
     text-decoration: none;
     transition: color 0.2s ease;
 }
-
-.textContent:hover .storyLink {
+@media (hover: hover) {
+  .textContent:hover .storyLink {
     color: var(--accent);
 }
+}
+.textContent:active .storyLink {
+    color: var(--accent);
+}
+
 
 /* --- Controls/Pagination --- */
 .controlsContainer {
@@ -156,10 +166,15 @@
     border: none;
     padding: 0;
 }
-
-.progressDot:hover {
+@media (hover: hover) {
+  .progressDot:hover {
     transform: scale(1.6);
 }
+}
+.progressDot:active {
+    transform: scale(1.6);
+}
+
 
 .progressDot.active {
     background-color: var(--accent);

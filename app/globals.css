@@ -61,7 +61,11 @@ background-color:var(--accent);
 transform-origin:bottom right;
 transition:transform 0.3s ease-out;
 }
-a:not(.no-underline):hover::after{transform:scaleX(1);}
+@media (hover: hover) {
+  a:not(.no-underline):hover::after {transform:scaleX(1);}
+}
+a:not(.no-underline):active::after {transform:scaleX(1);}
+
 img{max-width:100%;height:auto;display:block;}
 .container{max-width:1200px;margin:0 auto;padding:0 2rem;}
 .section{padding:8rem 0;}
@@ -100,17 +104,31 @@ gap: 1rem;
     left: 2rem;
     right: auto;
 }
-
-.primary-button.delete-forever:hover {
+@media (hover: hover) {
+  .primary-button.delete-forever:hover {
+  box-shadow: 0 0 20px color-mix(in srgb, #DC2626 50%, transparent) !important;
+  transform: scale(1.05) translateY(-1px) !important;
+}
+}
+.primary-button.delete-forever:active {
   box-shadow: 0 0 20px color-mix(in srgb, #DC2626 50%, transparent) !important;
   transform: scale(1.05) translateY(-1px) !important;
 }
 
+
 .primary-button{background-color:var(--accent);color:#050505;border:none;padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:800;cursor:pointer;box-shadow:0 0 15px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform 0.2s ease-out,box-shadow 0.2s ease-out;}
-.primary-button:hover:not(:disabled){transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
+@media (hover: hover) {
+  .primary-button:hover:not(:disabled) {transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
+}
+.primary-button:active:not(:disabled) {transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
+
 .primary-button:disabled{background-color:var(--border-color);color:var(--text-secondary);box-shadow:none;cursor:not-allowed;opacity:0.6;}
 .outline-button{background:transparent;border:1px solid var(--border-color);color:var(--text-secondary);padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:500;cursor:pointer;transition:background-color 0.15s ease-out,color 0.15s ease-out,border-color 0.15s ease-out;}
-.outline-button:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background-color:color-mix(in srgb,var(--accent) 10%,transparent);}
+@media (hover: hover) {
+  .outline-button:hover:not(:disabled) {border-color:var(--accent);color:var(--accent);background-color:color-mix(in srgb,var(--accent) 10%,transparent);}
+}
+.outline-button:active:not(:disabled) {border-color:var(--accent);color:var(--accent);background-color:color-mix(in srgb,var(--accent) 10%,transparent);}
+
 .outline-button:disabled{opacity:0.6;cursor:not-allowed;}
 
 .profile-form-group{
@@ -201,11 +219,17 @@ gap: 1rem;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
-
-.country-picker-button:hover {
+@media (hover: hover) {
+  .country-picker-button:hover {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
 }
+}
+.country-picker-button:active {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+}
+
 
 .info-tooltip-container {
     position: relative;
@@ -230,10 +254,17 @@ gap: 1rem;
     transition: opacity 0.2s ease-out, visibility 0.2s;
     pointer-events: none;
 }
-.info-tooltip-container:hover .info-tooltip-text {
+@media (hover: hover) {
+  .info-tooltip-container:hover .info-tooltip-text {
     opacity: 1;
     visibility: visible;
 }
+}
+.info-tooltip-container:active .info-tooltip-text {
+    opacity: 1;
+    visibility: visible;
+}
+
 
 .toggle {
   width: 44px;
@@ -307,11 +338,17 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
     border-color: transparent !important;
     color: rgba(255,255,255,0.4) !important;
 }
-
-body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]:hover {
+@media (hover: hover) {
+  body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]:hover {
     color: var(--accent) !important;
     box-shadow: none !important;
 }
+}
+body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]:active {
+    color: var(--accent) !important;
+    box-shadow: none !important;
+}
+
 
 .image-lightbox-trigger {
     position: relative;
@@ -341,18 +378,28 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
     background-position: center 25%;
     padding-top: 40px;
 }
-
-.image-lightbox-trigger:hover::after {
+@media (hover: hover) {
+  .image-lightbox-trigger:hover::after {
     opacity: 1;
 }
+}
+.image-lightbox-trigger:active::after {
+    opacity: 1;
+}
+
 
 .image-lightbox-trigger img {
     transition: transform 0.3s ease-out;
 }
-
-.image-lightbox-trigger:hover img {
+@media (hover: hover) {
+  .image-lightbox-trigger:hover img {
     transform: scale(1.03);
 }
+}
+.image-lightbox-trigger:active img {
+    transform: scale(1.03);
+}
+
 
 body.lightbox-active {
     overflow: hidden !important;

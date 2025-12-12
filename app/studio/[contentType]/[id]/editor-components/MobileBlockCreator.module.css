@@ -75,12 +75,19 @@
     transition: all 0.2s ease-out;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
 }
-
-.satelliteOrb:hover {
+@media (hover: hover) {
+  .satelliteOrb:hover {
     border-color: var(--accent);
     color: var(--accent);
     transform: scale(1.1);
 }
+}
+.satelliteOrb:active {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(1.1);
+}
+
 
 .satelliteLabel {
     display: none;

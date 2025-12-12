@@ -125,12 +125,19 @@
   font-weight: 500;
   transition: all 0.2s ease;
 }
-
-.typeButton:hover {
+@media (hover: hover) {
+  .typeButton:hover {
   background: var(--bg-primary);
   color: #fff;
   border-color: var(--text-secondary);
 }
+}
+.typeButton:active {
+  background: var(--bg-primary);
+  color: #fff;
+  border-color: var(--text-secondary);
+}
+
 
 .typeButton.active {
   background: var(--accent);
@@ -162,14 +169,23 @@
     transition: all 0.2s ease;
     width: 100%;
 }
-
-.smartFillButton:hover {
+@media (hover: hover) {
+  .smartFillButton:hover {
     border-color: var(--accent);
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 5%, transparent);
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
+}
+.smartFillButton:active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
 
 .smartFillButton svg {
     color: var(--accent);
@@ -206,10 +222,15 @@
 [data-theme="dark"] .downloadButton {
     color: var(--bg-primary);
 }
-
-.downloadButton:hover {
+@media (hover: hover) {
+  .downloadButton:hover {
     background-color: color-mix(in srgb, var(--accent) 85%, white);
 }
+}
+.downloadButton:active {
+    background-color: color-mix(in srgb, var(--accent) 85%, white);
+}
+
 
 .downloadButton:disabled, .dropdownTrigger:disabled {
     opacity: 0.7;
@@ -238,10 +259,15 @@
 [data-theme="dark"] .dropdownTrigger {
     color: var(--bg-primary);
 }
-
-.dropdownTrigger:hover {
+@media (hover: hover) {
+  .dropdownTrigger:hover {
     background-color: color-mix(in srgb, var(--accent) 85%, white);
 }
+}
+.dropdownTrigger:active {
+    background-color: color-mix(in srgb, var(--accent) 85%, white);
+}
+
 
 .dropdownMenu {
     background-color: var(--bg-primary);
@@ -265,11 +291,17 @@
     transition: all 0.2s ease;
     width: 100%;
 }
-
-.dropdownItem:hover {
+@media (hover: hover) {
+  .dropdownItem:hover {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
 }
+}
+.dropdownItem:active {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+}
+
 
 /* --- Search Styles --- */
 .searchResultItem {
@@ -284,11 +316,19 @@
   text-align: right;
   align-items: center;
 }
-.searchResultItem:hover {
+@media (hover: hover) {
+  .searchResultItem:hover {
   border-color: var(--accent);
   transform: translateX(-3px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+}
+.searchResultItem:active {
+  border-color: var(--accent);
+  transform: translateX(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
 .searchResultImg {
   width: 60px;
   height: 60px;
@@ -379,11 +419,17 @@
     color: var(--text-secondary);
     transition: background-color 0.15s ease-out, color 0.15s ease-out;
 }
-
-.bubbleMenuButton:hover {
+@media (hover: hover) {
+  .bubbleMenuButton:hover {
     background-color: var(--bg-primary);
     color: var(--accent);
 }
+}
+.bubbleMenuButton:active {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+}
+
 
 .bubbleMenuButton.active {
     background-color: color-mix(in srgb, var(--accent) 15%, transparent);

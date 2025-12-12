@@ -33,10 +33,15 @@
     z-index: 1;
     pointer-events: none;
 }
-
-.livingCardWrapper:hover .livingCardGlare {
+@media (hover: hover) {
+  .livingCardWrapper:hover .livingCardGlare {
     opacity: 1;
 }
+}
+.livingCardWrapper:active .livingCardGlare {
+    opacity: 1;
+}
+
 /* --- END NEW STYLE --- */
 
 .imageContainer {
@@ -55,10 +60,15 @@
     object-fit: cover;
     transition: transform 0.4s ease-out;
 }
-
-.livingCardWrapper:hover .image {
+@media (hover: hover) {
+  .livingCardWrapper:hover .image {
     transform: scale(1.05);
 }
+}
+.livingCardWrapper:active .image {
+    transform: scale(1.05);
+}
+
 
 @keyframes pulse-glow {
     0%, 100% {

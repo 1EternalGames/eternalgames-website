@@ -21,10 +21,15 @@
     transition: color 0.2s ease-in-out;
     flex-shrink: 0; /* Prevent buttons from shrinking */
   }
-  
+@media (hover: hover) {
   .studioTabButton:hover {
     color: var(--text-primary);
   }
+}
+.studioTabButton:active {
+    color: var(--text-primary);
+  }
+
   
   .studioTabButton.active {
     color: var(--accent);

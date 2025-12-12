@@ -14,11 +14,17 @@
     position: relative;
     overflow: hidden;
 }
-
-.dropzone:hover {
+@media (hover: hover) {
+  .dropzone:hover {
     border-color: var(--accent);
     background-color: color-mix(in srgb, var(--accent) 5%, transparent);
 }
+}
+.dropzone:active {
+    border-color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
 
 .dropzone.active {
     border-color: var(--accent);

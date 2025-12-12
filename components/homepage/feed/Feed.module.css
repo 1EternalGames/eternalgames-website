@@ -111,17 +111,30 @@
     transform: scaleX(-1); /* To make it point to the left/outside */
     transition: transform 0.2s ease, color 0.2s ease;
 }
-
-.viewAllLink:hover {
+@media (hover: hover) {
+  .viewAllLink:hover {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+}
+}
+.viewAllLink:active {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
 }
 
-.viewAllLink:hover svg {
+@media (hover: hover) {
+  .viewAllLink:hover svg {
     /* On hover, move the arrow */
     transform: translateX(4px) scaleX(-1); 
     color: var(--accent);
 }
+}
+.viewAllLink:active svg {
+    /* On hover, move the arrow */
+    transform: translateX(4px) scaleX(-1); 
+    color: var(--accent);
+}
+
 
 .topItemsContainer {
     display: block;
@@ -162,10 +175,15 @@
 .topArticleImage img {
     transition: transform 0.4s ease-out;
 }
-
-.topArticleCard:hover .topArticleImage img {
+@media (hover: hover) {
+  .topArticleCard:hover .topArticleImage img {
     transform: scale(1.03);
 }
+}
+.topArticleCard:active .topArticleImage img {
+    transform: scale(1.03);
+}
+
 
 .topArticleContent {
     padding: 1.5rem;
@@ -182,10 +200,15 @@
     margin: 0 0 0.75rem 0;
     transition: color 0.2s ease;
 }
-
-.topArticleCard:hover .topArticleTitle {
+@media (hover: hover) {
+  .topArticleCard:hover .topArticleTitle {
     color: var(--accent);
 }
+}
+.topArticleCard:active .topArticleTitle {
+    color: var(--accent);
+}
+
 
 .topArticleMeta {
     font-size: 1.3rem;
@@ -223,18 +246,28 @@
     border: 1px solid var(--border-color);
     transition: border-color 0.3s ease;
 }
-
-.latestArticleItem:hover .latestArticleThumbnail {
+@media (hover: hover) {
+  .latestArticleItem:hover .latestArticleThumbnail {
     border-color: var(--accent);
 }
+}
+.latestArticleItem:active .latestArticleThumbnail {
+    border-color: var(--accent);
+}
+
 
 .latestArticleThumbnail img {
     transition: transform 0.3s ease-out;
 }
-
-.latestArticleItem:hover .latestArticleThumbnail img {
+@media (hover: hover) {
+  .latestArticleItem:hover .latestArticleThumbnail img {
     transform: scale(1.05);
 }
+}
+.latestArticleItem:active .latestArticleThumbnail img {
+    transform: scale(1.05);
+}
+
 
 .latestArticleInfo {
     text-align: right;
@@ -250,10 +283,15 @@
     position: relative;
     display: inline-block; /* Required for the underline effect */
 }
-
-.latestArticleItem:hover .latestArticleTitle {
+@media (hover: hover) {
+  .latestArticleItem:hover .latestArticleTitle {
     color: var(--accent);
 }
+}
+.latestArticleItem:active .latestArticleTitle {
+    color: var(--accent);
+}
+
 
 .latestArticleTitle::after {
     content: '';
@@ -268,10 +306,15 @@
     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     filter: drop-shadow(0 0 4px var(--accent));
 }
-
-.latestArticleItem:hover .latestArticleTitle::after {
+@media (hover: hover) {
+  .latestArticleItem:hover .latestArticleTitle::after {
     transform: scaleX(1);
 }
+}
+.latestArticleItem:active .latestArticleTitle::after {
+    transform: scaleX(1);
+}
+
 
 .latestArticleMeta {
     font-size: 1.3rem;
@@ -313,10 +356,15 @@
     transition: background-color 0.2s ease;
     min-height: 80px; /* NEW: Enforce consistent height */
 }
-
-.pinnedNewsItem:hover {
+@media (hover: hover) {
+  .pinnedNewsItem:hover {
     background-color: var(--bg-primary);
 }
+}
+.pinnedNewsItem:active {
+    background-color: var(--bg-primary);
+}
+
 
 .pinnedNewsThumbnail {
     width: 80px;
@@ -330,10 +378,15 @@
 .pinnedNewsThumbnail img {
     transition: transform 0.3s ease-out;
 }
-
-.pinnedNewsItem:hover .pinnedNewsThumbnail img {
+@media (hover: hover) {
+  .pinnedNewsItem:hover .pinnedNewsThumbnail img {
     transform: scale(1.05);
 }
+}
+.pinnedNewsItem:active .pinnedNewsThumbnail img {
+    transform: scale(1.05);
+}
+
 
 .pinnedNewsInfo {
     text-align: right;
@@ -357,10 +410,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.pinnedNewsItem:hover .pinnedNewsTitle {
+@media (hover: hover) {
+  .pinnedNewsItem:hover .pinnedNewsTitle {
     color: var(--accent);
 }
+}
+.pinnedNewsItem:active .pinnedNewsTitle {
+    color: var(--accent);
+}
+
 
 .pinnedNewsDate {
     font-size: 1.3rem;
@@ -395,18 +453,33 @@
     transition: background-color 0.2s ease;
     cursor: pointer;
 }
-
-.newsListItem:hover {
+@media (hover: hover) {
+  .newsListItem:hover {
+    background-color: var(--bg-primary);
+}
+}
+.newsListItem:active {
     background-color: var(--bg-primary);
 }
 
-.newsListItem:hover .newsListTitle {
+@media (hover: hover) {
+  .newsListItem:hover .newsListTitle {
+    color: var(--accent);
+}
+}
+.newsListItem:active .newsListTitle {
     color: var(--accent);
 }
 
-.newsListItem:hover .newsListThumbnail {
+@media (hover: hover) {
+  .newsListItem:hover .newsListThumbnail {
     border-color: var(--accent);
 }
+}
+.newsListItem:active .newsListThumbnail {
+    border-color: var(--accent);
+}
+
 
 .newsListThumbnail {
     width: 60px;
@@ -420,9 +493,15 @@
 .newsListThumbnail img {
     transition: transform 0.3s ease-out;
 }
-.newsListItem:hover .newsListThumbnail img {
+@media (hover: hover) {
+  .newsListItem:hover .newsListThumbnail img {
     transform: scale(1.05);
 }
+}
+.newsListItem:active .newsListThumbnail img {
+    transform: scale(1.05);
+}
+
 
 .newsListInfo {
     text-align: right;

@@ -9,7 +9,11 @@
 .statusScheduled { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
 .headerIconGroup { display: flex; align-items: center; gap: 0.5rem; }
 .iconButton { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; color: var(--text-secondary); background-color: transparent; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-out; }
-.iconButton:hover:not(:disabled) { color: var(--accent); background-color: var(--bg-primary); border-color: var(--border-color); }
+@media (hover: hover) {
+  .iconButton:hover:not(:disabled) { color: var(--accent); background-color: var(--bg-primary); border-color: var(--border-color); }
+}
+.iconButton:active:not(:disabled) { color: var(--accent); background-color: var(--bg-primary); border-color: var(--border-color); }
+
 .iconButtonDisabled { pointer-events: none; color: var(--border-color); }
 .mobileHeaderIcons { display: none; } /* Hidden by default */
 .sanctumContainer { position: fixed; top: var(--nav-height-scrolled); right: 0; bottom: 0; left: 0; z-index: 1060; background-color: var(--bg-primary); overflow: hidden; display: flex; flex-direction: column; --sidebar-width: 380px; }
@@ -129,11 +133,19 @@
 .dragHandle:active { cursor: grabbing; }
 
 .bubbleMenuButton { display: flex; align-items: center; justify-content: center; height: 36px; padding: 0 0.8rem; border-radius: 6px; background-color: transparent; border: none; cursor: pointer; color: var(--text-secondary); transition: background-color 0.15s ease-out, color 0.15s ease-out; font-family: var(--font-main); font-weight: 500; font-size: 1.4rem; }
-.bubbleMenuButton:hover { background-color: var(--bg-primary); color: var(--accent); }
+@media (hover: hover) {
+  .bubbleMenuButton:hover { background-color: var(--bg-primary); color: var(--accent); }
+}
+.bubbleMenuButton:active { background-color: var(--bg-primary); color: var(--accent); }
+
 .bubbleMenuButton.active { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); font-weight: 600; }
 .tiptap .image-node-container, .tiptap .image-compare-container, .tiptap .image-grid-container { position: relative; }
 .image-node-menu { position: absolute; top: 0.75rem; right: 0.75rem; z-index: 5; display: flex; gap: 0.5rem; background-color: color-mix(in srgb, var(--bg-secondary) 70%, transparent); backdrop-filter: blur(4px); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem; }
-.deleteButton:hover { background-color: color-mix(in srgb, #DC2626 15%, transparent); color: #DC2626; }
+@media (hover: hover) {
+  .deleteButton:hover { background-color: color-mix(in srgb, #DC2626 15%, transparent); color: #DC2626; }
+}
+.deleteButton:active { background-color: color-mix(in srgb, #DC2626 15%, transparent); color: #DC2626; }
+
 .tiptap .image-node-container { margin: 2rem 0; border-radius: 12px; transition: box-shadow 0.2s ease-out; display: block; }
 .tiptap .ProseMirror-selectednode .image-node-container { box-shadow: 0 0 0 3px var(--accent); }
 .tiptap img { max-width: 100%; height: auto; border-radius: 8px; display: block; }
