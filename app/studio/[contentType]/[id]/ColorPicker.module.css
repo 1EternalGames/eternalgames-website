@@ -30,8 +30,14 @@
     cursor: pointer;
     transition: transform 0.2s ease-out;
 }
-@media (hover: hover) {
-  .categoryButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .categoryButton:hover  {
+    transform: scale(1.1);
+}
+}
+
+  .categoryButton:active  {
     transform: scale(1.1);
 }
 }

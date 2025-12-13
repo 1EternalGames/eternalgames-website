@@ -1,7 +1,7 @@
 // components/news/NewsGridCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo, useEffect, useRef } from 'react';
+import React, { memo, useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,7 @@ type NewsGridCardProps = {
     item: CardProps;
     isPriority?: boolean;
     layoutIdPrefix: string;
+    variant?: 'default' | 'compact';
 };
 
 const typeLabelMap: Record<string, string> = {
@@ -25,14 +26,18 @@ const typeLabelMap: Record<string, string> = {
     'leak': 'تسريب'
 };
 
-const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: NewsGridCardProps) => {
+const typeDisplayMap: Record<string, string> = {
+    'news': 'خبر',
+    'article': 'مقال',
+    'review': 'مراجعة'
+};
+
+const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default' }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     
-    // Internal state
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const touchTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
@@ -41,15 +46,24 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const linkPath = `/news/${item.slug}`;
+    const getLinkPath = () => {
+        switch (item.type) {
+            case 'review': return `/reviews/${item.slug}`;
+            case 'article': return `/articles/${item.slug}`;
+            default: return `/news/${item.slug}`;
+        }
+    };
+    const linkPath = getLinkPath();
     
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
         setPrefix(layoutIdPrefix);
     };
 
     const imageSource = item.imageUrl;
     if (!imageSource) return null;
     
+    const isNews = item.type === 'news';
     const newsType = item.newsType || 'official';
     
     const authorName = item.authors && item.authors.length > 0 ? item.authors[0].name : 'محرر';
@@ -58,57 +72,72 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         : null;
     const authorUsername = item.authors && item.authors.length > 0 ? item.authors[0].username : null;
 
-    // --- Flying Satellites Generation ---
     const flyingItems = useMemo(() => {
         const satellites = [];
 
-        // 1. Generic "News" Tag
-        satellites.push({ label: 'خبر', link: undefined, color: 'var(--accent)' });
-
-        // 2. Category
-        if (item.category) {
-            satellites.push({
-                label: translateTag(item.category),
-                link: undefined,
-                color: '#fff'
-            });
-        }
-
-        // 3. Game
         if (item.game && item.gameSlug) {
             satellites.push({
                 label: item.game,
                 link: `/games/${item.gameSlug}`,
-                color: '#fff'
             });
+        } else {
+             satellites.push(null);
         }
 
+        if (item.category) {
+            satellites.push({
+                label: translateTag(item.category),
+                link: undefined, 
+            });
+        } else if (item.tags && item.tags.length > 0) {
+             satellites.push({
+                label: translateTag(item.tags[0].title),
+                link: `/tags/${item.tags[0].slug}`,
+            });
+        } else {
+            satellites.push(null);
+        }
+
+        satellites.push({ 
+            label: typeDisplayMap[item.type] || 'محتوى', 
+            link: undefined, 
+        });
+
         return satellites;
-    }, [item.category, item.game, item.gameSlug]);
-
-    const gameTitleLength = item.game?.length || 0;
+    }, [item.type, item.category, item.tags, item.game, item.gameSlug]);
     
-    // Desktop Coordinates
-    const desktopGameTagX = -180 - (Math.max(0, gameTitleLength - 8) * 4.5);
     const desktopConfig = [
-        { hoverX: -80, hoverY: -70, rotate: -8 },
-        { hoverX: 120, hoverY: 30, rotate: 6 },
-        { hoverX: desktopGameTagX, hoverY: 50, rotate: -4 } 
+        { hoverX: -180, hoverY: 65, rotate: -6 },   
+        { hoverX: 90, hoverY: 70, rotate: 5 },      
+        { hoverX: -50, hoverY: -100, rotate: -3 }   
     ];
 
-    // Mobile Coordinates
-    const mobileGameTagX = -60 - (Math.max(0, gameTitleLength - 5) * 3);
     const mobileConfig = [
-        { hoverX: -50, hoverY: -55, rotate: -5 },
-        { hoverX: 50, hoverY: 60, rotate: 5 },
-        { hoverX: mobileGameTagX, hoverY: 45, rotate: -2 } 
+        { hoverX: -90, hoverY: 20, rotate: -4 },
+        { hoverX: 70, hoverY: 40, rotate: 4 },
+        { hoverX: 0, hoverY: -85, rotate: -2 } 
     ];
 
-    const satelliteConfig = isMobile ? mobileConfig : desktopConfig;
+    // UPDATED: New tighter configuration for compact desktop cards
+    const compactConfig = [
+        { hoverX: -110, hoverY: 30, rotate: -5 },   // Pulled in
+        { hoverX: 70, hoverY: 35, rotate: 4 },      // Pulled in
+        { hoverX: -20, hoverY: -65, rotate: -2 }    // Pulled in
+    ];
+
+    // Selection logic
+    let satelliteConfig;
+    if (isMobile) {
+        satelliteConfig = mobileConfig;
+    } else if (variant === 'compact') {
+        satelliteConfig = compactConfig;
+    } else {
+        satelliteConfig = desktopConfig;
+    }
 
     const capsuleContent = (
         <>
-            <div style={{ position: 'relative', width: '24px', height: '24px', borderRadius: '50%', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '20px', height: '20px', borderRadius: '50%', overflow: 'hidden' }}>
                 <Image 
                     src={typeof authorImage === 'string' ? authorImage : '/default-avatar.svg'} 
                     alt={authorName}
@@ -120,17 +149,14 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         </>
     );
     
-    // --- Interaction Handlers ---
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         livingCardAnimation.onTouchStart(e);
         setIsHovered(true);
     };
-
     const handleTouchEnd = () => {
         livingCardAnimation.onTouchEnd();
         setIsHovered(false);
     };
-
     const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
         livingCardAnimation.onTouchMove(e);
     };
@@ -140,7 +166,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         onMouseLeave: () => { livingCardAnimation.onMouseLeave(); setIsHovered(false); },
         onMouseMove: livingCardAnimation.onMouseMove,
     };
-
     const touchHandlers = isMobile ? {
         onTouchStart: handleTouchStart,
         onTouchEnd: handleTouchEnd,
@@ -158,7 +183,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
         >
             <motion.div
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
-                className={styles.newsCard}
+                className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''}`}
             >
                 <Link 
                     href={linkPath} 
@@ -171,9 +196,11 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                             className={styles.imageContainer} 
                             layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`}
                         >
-                            <span className={`${styles.imageBadge} ${styles[newsType]}`}>
-                                {typeLabelMap[newsType]}
-                            </span>
+                            {isNews && (
+                                <span className={`${styles.imageBadge} ${styles[newsType]}`}>
+                                    {typeLabelMap[newsType]}
+                                </span>
+                            )}
                             
                             <Image 
                                 loader={sanityLoader}
@@ -190,17 +217,15 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
                         </motion.div>
                         
                         <div className={styles.cardInfoColumn}>
-                            <div>
-                                <motion.h3 
-                                    className={styles.cardTitle}
-                                    layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
-                                >
-                                    {item.title}
-                                </motion.h3>
-                            </div>
+                            <motion.h3 
+                                className={styles.cardTitle}
+                                layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
+                            >
+                                {item.title}
+                            </motion.h3>
 
                             <div className={styles.cardMetadata}>
-                                <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                                <div style={{display:'flex', alignItems:'center', gap:'0.8rem'}}>
                                     {authorUsername ? (
                                         <Link 
                                             href={`/creators/${authorUsername}`}
@@ -225,7 +250,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
 
                                 {item.date && (
                                     <div className={styles.cardDate}>
-                                        {/* FIX: Swapped icon and text order for better RTL layout */}
                                         <Calendar03Icon className={styles.metadataIcon} />
                                         <span>{item.date.split(' - ')[0]}</span>
                                     </div>
@@ -237,47 +261,51 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix }: New
 
                 <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                     <AnimatePresence>
-                         {isHovered && flyingItems.map((sat, i) => (
-                             <motion.div
-                                key={`${item.id}-sat-${i}`}
-                                className={styles.satelliteShard}
-                                initial={{ opacity: 0, scale: 0.4, x: 0, y: 0, z: 0 }}
-                                animate={{
-                                    opacity: 1,
-                                    scale: 1,
-                                    x: satelliteConfig[i]?.hoverX || 0,
-                                    y: satelliteConfig[i]?.hoverY || 0,
-                                    rotate: satelliteConfig[i]?.rotate || 0,
-                                    z: 50
-                                }}
-                                exit={{
-                                    opacity: 0,
-                                    scale: 0.4,
-                                    x: 0,
-                                    y: 0,
-                                    rotate: 0,
-                                    z: 0
-                                }}
-                                transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
-                                onClick={(e) => e.stopPropagation()}
-                             >
-                                 {sat.link ? (
-                                     <Link 
-                                        href={sat.link} 
-                                        onClick={(e) => e.stopPropagation()}
-                                        className={`${styles.satelliteShardLink} no-underline`}
-                                        prefetch={false}
-                                     >
-                                         {sat.label}
-                                     </Link>
-                                 ) : (
-                                     <span className={styles.satelliteShardLink} style={{ cursor: 'default' }}>
-                                         {sat.label}
-                                     </span>
-                                 )}
-                             </motion.div>
-                         ))}
+                         {isHovered && flyingItems.map((sat, i) => {
+                             if (!sat) return null;
+                             return (
+                                 <motion.div
+                                    key={`${item.id}-sat-${i}`}
+                                    className={styles.satelliteShard}
+                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                    animate={{
+                                        opacity: 1,
+                                        scale: 1.15,
+                                        x: satelliteConfig[i]?.hoverX || 0,
+                                        y: satelliteConfig[i]?.hoverY || 0,
+                                        rotate: satelliteConfig[i]?.rotate || 0,
+                                        z: -30 
+                                    }}
+                                    exit={{
+                                        opacity: 0,
+                                        scale: 0.4,
+                                        x: 0,
+                                        y: 50,
+                                        rotate: 0,
+                                        z: 0
+                                    }}
+                                    transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
+                                    style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                                    onClick={(e) => e.stopPropagation()}
+                                 >
+                                     {sat.link ? (
+                                         <Link 
+                                            href={sat.link} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            // Apply smaller tag style if compact variant
+                                            className={`${styles.satelliteShardLink} ${styles.clickable} ${variant === 'compact' ? styles.small : ''} no-underline`}
+                                            prefetch={false}
+                                         >
+                                             {sat.label}
+                                         </Link>
+                                     ) : (
+                                         <span className={`${styles.satelliteShardLink} ${styles.static} ${variant === 'compact' ? styles.small : ''}`}>
+                                             {sat.label}
+                                         </span>
+                                     )}
+                                 </motion.div>
+                             );
+                         })}
                     </AnimatePresence>
                 </div>
             </motion.div>

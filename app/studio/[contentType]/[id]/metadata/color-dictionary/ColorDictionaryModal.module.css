@@ -30,8 +30,14 @@
   cursor: pointer;
   transition: border-color 0.2s ease;
 }
-@media (hover: hover) {
-  .colorInputWrapper:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .colorInputWrapper:hover  {
+  border-color: var(--accent);
+}
+}
+
+  .colorInputWrapper:active  {
   border-color: var(--accent);
 }
 }
@@ -69,8 +75,15 @@
   color: var(--text-primary);
   transition: background-color 0.2s ease-out, border-radius 0.2s ease-out, border-color 0.2s ease-out;
 }
-@media (hover: hover) {
-  .collapsibleHeader:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .collapsibleHeader:hover  {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent);
+}
+}
+
+  .collapsibleHeader:active  {
   background-color: var(--bg-secondary);
   border-color: var(--accent);
 }
@@ -156,8 +169,15 @@
   justify-content: center;
   transition: color 0.2s, background-color 0.2s;
 }
-@media (hover: hover) {
-  .removeButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .removeButton:hover  {
+  color: #dc2626;
+  background-color: color-mix(in srgb, #dc2626 15%, transparent);
+}
+}
+
+  .removeButton:active  {
   color: #dc2626;
   background-color: color-mix(in srgb, #dc2626 15%, transparent);
 }

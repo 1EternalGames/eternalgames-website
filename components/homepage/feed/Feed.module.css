@@ -1,7 +1,7 @@
 /* components/homepage/feed/Feed.module.css */
 @keyframes pulse-live {
-    0%, 100% { box-shadow: 0 0 5px 1px color-mix(in srgb, var(--accent) 60%, transparent); }
-    50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 80%, transparent); }
+    0%, 100% { box-shadow: 0 0 5px 1px color-mix(in srgb, var(--accent) 60%, transparent); transform: scale(1); }
+    50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 80%, transparent); transform: scale(1.1); }
 }
 
 /* --- Generic Feed Container --- */
@@ -12,17 +12,23 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    /* CRITICAL FIX: Allow cards to fly out */
+    overflow: visible !important;
+    position: relative;
+    z-index: 1;
 }
 
 .topSection {
-    padding: 2rem 2.5rem;
+    padding: 1.5rem 2rem;
     position: relative;
     border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: flex-start; /* Aligns label to the right in RTL */
+    justify-content: flex-start;
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
+    overflow: visible !important;
+    z-index: 5;
 }
 
 .sectionLabel {
@@ -40,6 +46,7 @@
     z-index: 2;
 }
 
+/* Reverted to single indicator style */
 .liveIndicator {
     width: 8px;
     height: 8px;
@@ -50,17 +57,20 @@
 
 .topItemsContainer {
     position: relative;
-    z-index: 2;
     width: 100%;
-    order: 2; /* Ensure it's below the label */
+    order: 2; 
     margin-top: 1.5rem;
+    overflow: visible !important;
+    z-index: 10;
 }
 
 .latestSection {
-    padding: 1.5rem 2.5rem 0 2.5rem;
+    padding: 1.5rem 2rem 0 2rem;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    z-index: 1;
+    position: relative;
 }
 
 .latestItemsList {
@@ -74,11 +84,8 @@
 
 .viewAllLink {
     display: flex;
-    /* THE FIX: Set direction to RTL to ensure text is on the right */
     direction: rtl; 
-    /* THE FIX: Reverse the display order of icon/text so the icon is on the left */
     flex-direction: row-reverse;
-    /* THE FIX: Adjust gap for better spacing */
     gap: 0.5rem; 
     
     align-items: center;
@@ -93,100 +100,81 @@
     transition: background-color 0.2s ease, color 0.2s ease;
     position: relative;
     z-index: 2;
-    
-    /* THE FIX: Apply text style to the span */
 }
 
 .viewAllLink span {
-    font-size: 1.8rem; /* Set a specific size for the text to be prominent */
+    font-size: 1.6rem;
 }
 
 .viewAllLink svg {
-    /* Set icon size */
-    width: 2.2rem;
-    height: 2.2rem;
-    color: var(--accent); /* Ensure color from the start */
-    
-    /* The main arrow is now the correct way. We apply the transform only on hover/specific state */
-    transform: scaleX(-1); /* To make it point to the left/outside */
+    width: 2rem;
+    height: 2rem;
+    color: var(--accent); 
+    transform: scaleX(-1); 
     transition: transform 0.2s ease, color 0.2s ease;
 }
 @media (hover: hover) {
-  .viewAllLink:hover {
+  .viewAllLink:hover  {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
+  }
+  .viewAllLink:hover svg  {
+    transform: translateX(4px) scaleX(-1); 
+    color: var(--accent);
+  }
 }
-}
+
 .viewAllLink:active {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
 }
-
-@media (hover: hover) {
-  .viewAllLink:hover svg {
-    /* On hover, move the arrow */
-    transform: translateX(4px) scaleX(-1); 
-    color: var(--accent);
-}
-}
 .viewAllLink:active svg {
-    /* On hover, move the arrow */
     transform: translateX(4px) scaleX(-1); 
     color: var(--accent);
-}
-
-
-.topItemsContainer {
-    display: block;
-    width: 100%;
-    order: 2; 
-    margin-top: 1.5rem;
 }
 
 /* --- Article Feed Specifics --- */
 .topArticlesGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
-    grid-auto-rows: 1fr; /* THE FIX: Ensure equal height */
+    gap: 1.5rem;
+    overflow: visible !important;
 }
 
 .topArticleCard {
     display: block;
     text-decoration: none;
     position: relative;
+    overflow: visible !important; 
     border-radius: 12px;
-    overflow: hidden;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
     transform-style: preserve-3d;
     will-change: transform;
     cursor: pointer;
     transform: translateZ(0px);
-    height: 100%; /* THE FIX: Ensure card fills its row's height */
+    height: 100%;
 }
 
 .topArticleImage {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 9;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    overflow: hidden; 
 }
 
 .topArticleImage img {
     transition: transform 0.4s ease-out;
 }
 @media (hover: hover) {
-  .topArticleCard:hover .topArticleImage img {
-    transform: scale(1.03);
+  .topArticleCard:hover .topArticleImage img  { transform: scale(1.03); }
+  .topArticleCard:active .topArticleImage img  { transform: scale(1.03); }
 }
-}
-.topArticleCard:active .topArticleImage img {
-    transform: scale(1.03);
-}
-
 
 .topArticleContent {
-    padding: 1.5rem;
+    padding: 1.2rem;
     text-align: right;
     border-top: 1px solid var(--border-color);
     transform: translateZ(20px);
@@ -194,109 +182,97 @@
 
 .topArticleTitle {
     font-family: var(--font-heading);
-    font-size: 1.9rem;
+    font-size: 1.6rem;
     color: var(--text-primary);
     line-height: 1.3;
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 0.5rem 0;
     transition: color 0.2s ease;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 @media (hover: hover) {
-  .topArticleCard:hover .topArticleTitle {
-    color: var(--accent);
+  .topArticleCard:hover .topArticleTitle  { color: var(--accent); }
+  .topArticleCard:active .topArticleTitle  { color: var(--accent); }
 }
-}
-.topArticleCard:active .topArticleTitle {
-    color: var(--accent);
-}
-
 
 .topArticleMeta {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: var(--text-secondary);
 }
 
-/* New inner container for clipping to have height 100% for the effect */
 .topArticleCardInner {
-    height: 100%; /* THE FIX: Ensure inner motion.div fills all space */
+    height: 100%;
     display: flex;
     flex-direction: column;
+    border-radius: 12px;
 }
 
-/* --- List Item Fix: Ensure list item is a block element for proper layout */
 .latestArticleItem {
     display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 2rem;
+    grid-template-columns: 85px 1fr; 
+    gap: 1.2rem; 
     align-items: center;
     position: relative;
-    padding: 1.5rem 0;
-    border-radius: 8px; /* Added for hover effect */
+    padding: 1rem 0;
+    border-radius: 8px;
     cursor: pointer;
-    /* NEW: Use flex-grow for vertical space distribution */
     flex-grow: 1; 
 }
 
 
 .latestArticleThumbnail {
-    width: 120px;
-    height: 75px;
-    border-radius: 8px;
+    width: 85px;
+    height: 55px;
+    border-radius: 6px;
     overflow: hidden;
     position: relative;
     border: 1px solid var(--border-color);
     transition: border-color 0.3s ease;
 }
 @media (hover: hover) {
-  .latestArticleItem:hover .latestArticleThumbnail {
-    border-color: var(--accent);
+  .latestArticleItem:hover .latestArticleThumbnail  { border-color: var(--accent); }
+  .latestArticleItem:hover .latestArticleThumbnail img  { transform: scale(1.05); }
 }
-}
-.latestArticleItem:active .latestArticleThumbnail {
-    border-color: var(--accent);
-}
+.latestArticleItem:active .latestArticleThumbnail { border-color: var(--accent); }
+.latestArticleItem:active .latestArticleThumbnail img { transform: scale(1.05); }
 
 
 .latestArticleThumbnail img {
     transition: transform 0.3s ease-out;
 }
-@media (hover: hover) {
-  .latestArticleItem:hover .latestArticleThumbnail img {
-    transform: scale(1.05);
-}
-}
-.latestArticleItem:active .latestArticleThumbnail img {
-    transform: scale(1.05);
-}
-
 
 .latestArticleInfo {
     text-align: right;
 }
 
 .latestArticleTitle {
-    font-size: 1.7rem;
+    font-size: 1.5rem;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.35;
     color: var(--text-primary);
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.4rem 0;
     transition: color 0.2s ease;
     position: relative;
-    display: inline-block; /* Required for the underline effect */
+    display: inline-block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 @media (hover: hover) {
-  .latestArticleItem:hover .latestArticleTitle {
-    color: var(--accent);
+  .latestArticleItem:hover .latestArticleTitle  { color: var(--accent); }
+  .latestArticleItem:hover .latestArticleTitle::after  { transform: scaleX(1); }
 }
-}
-.latestArticleItem:active .latestArticleTitle {
-    color: var(--accent);
-}
+.latestArticleItem:active .latestArticleTitle { color: var(--accent); }
+.latestArticleItem:active .latestArticleTitle::after { transform: scaleX(1); }
 
 
 .latestArticleTitle::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -4px;
     right: 0;
     width: 100%;
     height: 1px;
@@ -306,22 +282,13 @@
     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     filter: drop-shadow(0 0 4px var(--accent));
 }
-@media (hover: hover) {
-  .latestArticleItem:hover .latestArticleTitle::after {
-    transform: scaleX(1);
-}
-}
-.latestArticleItem:active .latestArticleTitle::after {
-    transform: scaleX(1);
-}
-
 
 .latestArticleMeta {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
     flex-wrap: wrap;
 }
 
@@ -335,6 +302,7 @@
 .pinnedNewsList {
     display: flex;
     flex-direction: column;
+    overflow: visible !important;
 }
 
 .pinnedNewsDivider {
@@ -354,17 +322,17 @@
     margin: -0.5rem;
     border-radius: 8px;
     transition: background-color 0.2s ease;
-    min-height: 80px; /* NEW: Enforce consistent height */
+    min-height: 80px; 
+    overflow: visible !important;
 }
 @media (hover: hover) {
-  .pinnedNewsItem:hover {
-    background-color: var(--bg-primary);
+  .pinnedNewsItem:hover  { background-color: var(--bg-primary); }
+  .pinnedNewsItem:hover .pinnedNewsThumbnail img  { transform: scale(1.05); }
+  .pinnedNewsItem:hover .pinnedNewsTitle  { color: var(--accent); }
 }
-}
-.pinnedNewsItem:active {
-    background-color: var(--bg-primary);
-}
-
+.pinnedNewsItem:active { background-color: var(--bg-primary); }
+.pinnedNewsItem:active .pinnedNewsThumbnail img { transform: scale(1.05); }
+.pinnedNewsItem:active .pinnedNewsTitle { color: var(--accent); }
 
 .pinnedNewsThumbnail {
     width: 80px;
@@ -378,15 +346,6 @@
 .pinnedNewsThumbnail img {
     transition: transform 0.3s ease-out;
 }
-@media (hover: hover) {
-  .pinnedNewsItem:hover .pinnedNewsThumbnail img {
-    transform: scale(1.05);
-}
-}
-.pinnedNewsItem:active .pinnedNewsThumbnail img {
-    transform: scale(1.05);
-}
-
 
 .pinnedNewsInfo {
     text-align: right;
@@ -403,22 +362,12 @@
     color: var(--text-primary);
     margin: 0;
     transition: color 0.2s ease;
-    /* NEW: Handle text overflow for consistency */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;  
     overflow: hidden;
     text-overflow: ellipsis;
 }
-@media (hover: hover) {
-  .pinnedNewsItem:hover .pinnedNewsTitle {
-    color: var(--accent);
-}
-}
-.pinnedNewsItem:active .pinnedNewsTitle {
-    color: var(--accent);
-}
-
 
 .pinnedNewsDate {
     font-size: 1.3rem;
@@ -454,32 +403,15 @@
     cursor: pointer;
 }
 @media (hover: hover) {
-  .newsListItem:hover {
-    background-color: var(--bg-primary);
+  .newsListItem:hover  { background-color: var(--bg-primary); }
+  .newsListItem:hover .newsListTitle  { color: var(--accent); }
+  .newsListItem:hover .newsListThumbnail  { border-color: var(--accent); }
+  .newsListItem:hover .newsListThumbnail img  { transform: scale(1.05); }
 }
-}
-.newsListItem:active {
-    background-color: var(--bg-primary);
-}
-
-@media (hover: hover) {
-  .newsListItem:hover .newsListTitle {
-    color: var(--accent);
-}
-}
-.newsListItem:active .newsListTitle {
-    color: var(--accent);
-}
-
-@media (hover: hover) {
-  .newsListItem:hover .newsListThumbnail {
-    border-color: var(--accent);
-}
-}
-.newsListItem:active .newsListThumbnail {
-    border-color: var(--accent);
-}
-
+.newsListItem:active { background-color: var(--bg-primary); }
+.newsListItem:active .newsListTitle { color: var(--accent); }
+.newsListItem:active .newsListThumbnail { border-color: var(--accent); }
+.newsListItem:active .newsListThumbnail img { transform: scale(1.05); }
 
 .newsListThumbnail {
     width: 60px;
@@ -493,15 +425,6 @@
 .newsListThumbnail img {
     transition: transform 0.3s ease-out;
 }
-@media (hover: hover) {
-  .newsListItem:hover .newsListThumbnail img {
-    transform: scale(1.05);
-}
-}
-.newsListItem:active .newsListThumbnail img {
-    transform: scale(1.05);
-}
-
 
 .newsListInfo {
     text-align: right;
@@ -522,14 +445,13 @@
     transition: color 0.2s ease;
 }
 
-/* --- Mobile Overrides --- */
 @media (max-width: 768px) {
     .topArticlesGrid {
-        grid-template-columns: 1fr 1fr; /* THE FIX: Force two columns */
-        gap: 1.5rem; /* THE FIX: Reduce gap to give cards more space */
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
     }
     .topSection, .latestSection {
-        padding-left: 1.5rem; /* THE FIX: Reduce horizontal padding */
-        padding-right: 1.5rem; /* THE FIX: Reduce horizontal padding */
+        padding-left: 1.5rem; 
+        padding-right: 1.5rem; 
     }
 }

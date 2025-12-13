@@ -10,18 +10,13 @@
     flex-direction: column;
     margin-bottom: 0; 
     background: transparent !important;
-}
-@media (hover: hover) {
-  .livingCardWrapper:hover {
-    z-index: 100;
-}
-}
-.livingCardWrapper:active {
-    z-index: 100;
+    -webkit-tap-highlight-color: transparent;
 }
 
+.livingCardWrapper.activeState {
+    z-index: 500;
+}
 
-/* --- THE EMBEDDED MAIN LINK --- */
 .cardOverlayLink {
     position: absolute;
     inset: 0;
@@ -31,12 +26,12 @@
     transform: translateZ(1px); 
 }
 
-/* THE MONOLITH */
+/* THE MONOLITH FRAME */
 .monolithFrame {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 10; 
-    min-height: 230px; 
+    min-height: 180px; 
     border-radius: 16px;
     overflow: hidden; 
     background-color: var(--bg-secondary);
@@ -50,11 +45,9 @@
     border: 1px solid rgba(255,255,255,0.08);
 
     isolation: isolate; 
-    
     pointer-events: none; 
 }
 
-/* Kinetic Bracket (Corner decoration) */
 .monolithFrame::before {
     content: '';
     position: absolute;
@@ -62,7 +55,6 @@
     left: 0;
     width: 40px;
     height: 40px;
-    /* UPDATED: Changed from rgba(255,255,255,0.4) to low opacity accent (cyan) */
     border-top: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-top-left-radius: 16px;
@@ -71,37 +63,58 @@
     pointer-events: none;
 }
 
-.monolithFrame::after { content: none; }
-@media (hover: hover) {
-  .livingCardWrapper:hover .monolithFrame {
+/* --- ACTIVE STATE STYLES --- */
+.livingCardWrapper.activeState .monolithFrame {
     transform: translateZ(20px);
     box-shadow: 
         0 35px 70px -15px rgba(0,0,0,0.8),
         0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
+.livingCardWrapper.activeState .monolithFrame::before {
+    width: 100%;
+    height: 100%;
+    border-color: var(--accent);
+    filter: drop-shadow(0 0 4px var(--accent));
 }
-.livingCardWrapper:active .monolithFrame {
-    transform: translateZ(20px);
-    box-shadow: 
-        0 35px 70px -15px rgba(0,0,0,0.8),
-        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
-}
+.livingCardWrapper.activeState .cardImage { transform: scale(1.1); }
+.livingCardWrapper.activeState .holoSpotlight { opacity: 1; }
+.livingCardWrapper.activeState .scanLine { opacity: 1; animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+.livingCardWrapper.activeState .cardTitle { color: var(--accent); text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent); }
+.livingCardWrapper.activeState .scoreBadge { background-color: var(--accent); color: var(--bg-primary); }
+.livingCardWrapper.activeState .creditCapsule { border-color: var(--accent); background-color: var(--accent); }
+.livingCardWrapper.activeState .capsuleIcon { background-color: var(--bg-primary); color: var(--accent); }
+.livingCardWrapper.activeState .creditCapsule :global(span) { color: var(--bg-primary); }
+.livingCardWrapper.activeState .techDot { background-color: var(--accent); animation: pulse-dot 1.2s infinite ease-in-out; }
+.livingCardWrapper.activeState .techDot:nth-child(2) { animation-delay: 0.2s; }
+.livingCardWrapper.activeState .techDot:nth-child(3) { animation-delay: 0.4s; }
 
+/* --- HOVER STYLES --- */
 @media (hover: hover) {
-  .livingCardWrapper:hover .monolithFrame::before {
-    width: 100%;
-    height: 100%;
-    border-color: var(--accent);
-    filter: drop-shadow(0 0 4px var(--accent));
+    .livingCardWrapper:hover { z-index: 500; }
+    .livingCardWrapper:hover .monolithFrame {
+        transform: translateZ(20px);
+        box-shadow: 
+            0 35px 70px -15px rgba(0,0,0,0.8),
+            0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    .livingCardWrapper:hover .monolithFrame::before {
+        width: 100%;
+        height: 100%;
+        border-color: var(--accent);
+        filter: drop-shadow(0 0 4px var(--accent));
+    }
+    .livingCardWrapper:hover .cardImage { transform: scale(1.1); }
+    .livingCardWrapper:hover .holoSpotlight { opacity: 1; }
+    .livingCardWrapper:hover .scanLine { opacity: 1; animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+    .livingCardWrapper:hover .cardTitle { color: var(--accent); text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent); }
+    .livingCardWrapper:hover .scoreBadge { background-color: var(--accent); color: var(--bg-primary); }
+    .livingCardWrapper:hover .creditCapsule { border-color: var(--accent); background-color: var(--accent); }
+    .livingCardWrapper:hover .capsuleIcon { background-color: var(--bg-primary); color: var(--accent); }
+    .livingCardWrapper:hover .creditCapsule :global(span) { color: var(--bg-primary); }
+    .livingCardWrapper:hover .techDot { background-color: var(--accent); animation: pulse-dot 1.2s infinite ease-in-out; }
+    .livingCardWrapper:hover .techDot:nth-child(2) { animation-delay: 0.2s; }
+    .livingCardWrapper:hover .techDot:nth-child(3) { animation-delay: 0.4s; }
 }
-}
-.livingCardWrapper:active .monolithFrame::before {
-    width: 100%;
-    height: 100%;
-    border-color: var(--accent);
-    filter: drop-shadow(0 0 4px var(--accent));
-}
-
 
 .imageWrapper {
     position: absolute;
@@ -122,17 +135,7 @@
     scale: 1.02;
     backface-visibility: hidden;
 }
-@media (hover: hover) {
-  .livingCardWrapper:hover .cardImage {
-    transform: scale(1.1);
-}
-}
-.livingCardWrapper:active .cardImage {
-    transform: scale(1.1);
-}
 
-
-/* --- MOUSE SPOTLIGHT --- */
 .holoSpotlight {
     position: absolute;
     width: 150px; 
@@ -142,24 +145,10 @@
     z-index: 15;
     opacity: 0;
     transition: opacity 0.2s ease;
-    background: radial-gradient(
-        circle, 
-        rgba(255,255,255,0.5) 0%, 
-        rgba(255,255,255,0.1) 60%, 
-        transparent 70%
-    );
+    background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 60%, transparent 70%);
     mix-blend-mode: overlay; 
     border-radius: 50%;
 }
-@media (hover: hover) {
-  .livingCardWrapper:hover .holoSpotlight {
-    opacity: 1;
-}
-}
-.livingCardWrapper:active .holoSpotlight {
-    opacity: 1;
-}
-
 
 .scanLine {
     position: absolute;
@@ -174,24 +163,12 @@
     opacity: 0;
     transition: opacity 0.3s ease;
 }
-@media (hover: hover) {
-  .livingCardWrapper:hover .scanLine {
-    opacity: 1;
-    animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-}
-.livingCardWrapper:active .scanLine {
-    opacity: 1;
-    animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-
 
 @keyframes scan {
     0% { top: -30%; }
     100% { top: 130%; }
 }
 
-/* --- OVERLAYS --- */
 .titleOverlay {
     position: absolute;
     bottom: 0;
@@ -201,7 +178,7 @@
     background: linear-gradient(to top, rgba(5,6,8,0.98) 25%, rgba(5,6,8,0.7) 65%, transparent 100%);
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-end; 
     align-items: flex-start;
     text-align: right;
     pointer-events: none;
@@ -211,33 +188,48 @@
     border-bottom-right-radius: 16px;
 }
 
+.titleMaskWrapper {
+    width: 100%;
+    /* Ensure no scrollbars */
+    overflow: hidden; 
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+}
+
 .cardTitle {
     font-family: var(--font-heading);
     font-size: 1.8rem;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.35;
     color: #fff;
     margin: 0;
     text-shadow: 0 4px 20px rgba(0,0,0,0.7);
     white-space: normal;
     direction: rtl;
     width: 100%;
-    pointer-events: none; /* Let clicks pass */
-    transition: color 0.2s ease, text-shadow 0.2s ease;
-}
-@media (hover: hover) {
-  .livingCardWrapper:hover .cardTitle {
-    color: var(--accent);
-    text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
-}
-}
-.livingCardWrapper:active .cardTitle {
-    color: var(--accent);
-    text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent);
+    pointer-events: none;
+    transition: color 0.3s ease;
+    
+    /* DEFAULT STATE: Single line with Ellipsis */
+    /* This works on older Webkit and modern browsers for ellipsis */
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* 
+   EXPANDED STATE:
+   Controlled by JS state "isTextExpanded" to unclamp.
+   Removing line-clamp allows text to take full height.
+*/
+.cardTitle.expanded {
+    -webkit-line-clamp: unset;
+    display: block; 
+}
 
-/* --- BADGES --- */
 .scoreBadge {
     position: absolute;
     top: 1rem;
@@ -258,22 +250,10 @@
     letter-spacing: -1px;
     z-index: 30;
     box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-    transition: color 0.4s ease, background-color 0.4s ease;
+    transition: color 0.4s ease, background-color 0.4s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     pointer-events: none;
 }
-@media (hover: hover) {
-  .livingCardWrapper:hover .scoreBadge {
-    background-color: var(--accent);
-    color: var(--bg-primary);
-}
-}
-.livingCardWrapper:active .scoreBadge {
-    background-color: var(--accent);
-    color: var(--bg-primary);
-}
 
-
-/* --- INTERACTIVE ELEMENTS --- */
 .hudContainer {
     position: absolute;
     bottom: 0;
@@ -287,260 +267,35 @@
     z-index: 50; 
     pointer-events: none; 
 }
-
 .hudContainer > * {
     pointer-events: auto;
 }
 
-/* Credits Capsule Link */
-a.creditCapsule {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem; 
-    background: rgba(10, 11, 15, 0.8);
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 0; 
-    border-radius: 999px;
-    /* Updated transition time to 0.4s to match rating animation */
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    height: 32px; 
-    backdrop-filter: blur(8px);
-    text-decoration: none;
-    cursor: pointer;
-    position: relative;
-    z-index: 51;
-}
-
-/* Non-link Capsule */
-div.creditCapsule {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8rem; 
-    background: rgba(10, 11, 15, 0.8);
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 0; 
-    border-radius: 999px;
-    height: 32px; 
-    backdrop-filter: blur(8px);
-    pointer-events: none;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* Card Hover: Capsule turns cyan smoothly */
-.livingCardWrapper:hover .creditCapsule {
-    border-color: var(--accent);
-    background-color: var(--accent);
-    /* No shadow on generic hover, only specific */
-}
-
-/* Card Hover: Invert internal colors */
-.livingCardWrapper:hover .capsuleIcon {
-    background-color: var(--bg-primary);
-    color: var(--accent);
-}
-@media (hover: hover) {
-  .livingCardWrapper:hover .creditCapsule :global(span) {
-    color: var(--bg-primary);
-}
-}
-.livingCardWrapper:active .creditCapsule :global(span) {
-    color: var(--bg-primary);
-}
-
-
-
-/* Specific Capsule Hover (When interacting directly) */
-a.creditCapsule:hover {
-    transform: translateY(-4px) scale(1.05); /* "Stand up" */
-    box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent); /* Bloom */
-    z-index: 100;
-}
-a.creditCapsule:active {
-    transform: scale(0.95);
-}
-
-.capsuleIcon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--accent);
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    /* Smoothed transition */
-    transition: color 0.4s ease, background-color 0.4s ease;
-}
+a.creditCapsule { display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(10, 11, 15, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 999px; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); height: 32px; backdrop-filter: blur(8px); text-decoration: none; cursor: pointer; position: relative; z-index: 51; }
+div.creditCapsule { display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(10, 11, 15, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 999px; height: 32px; backdrop-filter: blur(8px); pointer-events: none; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+@media (hover: hover) { a.creditCapsule:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent); z-index: 100; } }
+a.creditCapsule:active { transform: scale(0.95); }
+.capsuleIcon { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color 0.4s ease, background-color 0.4s ease; }
 .capsuleIcon svg { width: 16px; height: 16px; }
-
-.creditCapsule :global(span) {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #fff;
-    max-width: 120px; 
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis;
-    padding-left: 1.2rem; 
-    padding-right: 0.8rem;
-    /* Smoothed transition */
-    transition: color 0.4s ease;
-}
-
-/* --- TAGS / SATELLITES --- */
-.satelliteField {
-    position: absolute;
-    inset: -100px;
-    pointer-events: none; 
-    z-index: 100;
-    overflow: visible; 
-    transform-style: preserve-3d;
-}
-
-.satelliteShard {
-    position: absolute;
-    padding: 0;
-    background: transparent;
-    pointer-events: none; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform-style: preserve-3d;
-}
-
-/* The actual link block for the tag */
-.satelliteShardLink {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.3rem 0.8rem; 
-    /* Default: Black fill, Cyan stroke */
-    background: #000; 
-    border: 2px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--font-ui);
-    font-size: 1.1rem; 
-    font-weight: 800;
-    border-radius: 6px;
-    white-space: nowrap;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-    filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
-    text-decoration: none;
-    /* Smooth transition for hover pop */
-    transition: 
-        background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-        color 0.3s ease, 
-        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-        box-shadow 0.3s ease;
-    cursor: pointer;
-    pointer-events: auto;
-    position: relative;
-    z-index: 101;
-}
-
-.satelliteShardLink::after { display: none !important; content: none !important; }
-
-/* Tag Hover: Turn Fully Cyan and Pop */
-.satelliteShardLink:hover {
-    background-color: var(--accent);
-    color: #000;
-    transform: scale(1.15) translateY(-3px);
-    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
-    z-index: 200;
-}
-
-.satelliteShardLink:active {
-    transform: scale(0.95);
-}
-
-.dateReadout {
-    font-family: var(--font-ui);
-    font-size: 1.1rem;
-    color: rgba(255,255,255,0.7);
-    font-weight: 500;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding-bottom: 0.5rem;
-    pointer-events: none;
-}
-
-.techDecoration {
-    display: flex;
-    gap: 5px;
-    padding: 0.5rem 0;
-    justify-content: flex-end;
-    pointer-events: none;
-}
-
-.techDot {
-    width: 4px;
-    height: 4px;
-    background-color: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    transition: background-color 0.3s ease;
-}
-@media (hover: hover) {
-  .livingCardWrapper:hover .techDot {
-    background-color: var(--accent);
-    animation: pulse-dot 1.2s infinite ease-in-out;
-}
-}
-.livingCardWrapper:active .techDot {
-    background-color: var(--accent);
-    animation: pulse-dot 1.2s infinite ease-in-out;
-}
-
-@media (hover: hover) {
-  .livingCardWrapper:hover .techDot:nth-child(2) { animation-delay: 0.2s; }
-}
-.livingCardWrapper:active .techDot:nth-child(2) { animation-delay: 0.2s; }
-
-@media (hover: hover) {
-  .livingCardWrapper:hover .techDot:nth-child(3) { animation-delay: 0.4s; }
-}
-.livingCardWrapper:active .techDot:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes pulse-dot {
-    0%, 100% { transform: scale(1); opacity: 0.6; }
-    50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); }
-}
-
+.creditCapsule :global(span) { font-size: 1.2rem; font-weight: 700; color: #fff; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1.2rem; padding-right: 0.8rem; transition: color 0.4s ease; }
+.satelliteField { position: absolute; inset: -100px; pointer-events: none; z-index: 100; overflow: visible; transform-style: preserve-3d; }
+.satelliteShard { position: absolute; padding: 0; background: transparent; pointer-events: none; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
+.satelliteShardLink { display: flex; align-items: center; justify-content: center; padding: 0.4rem 1rem; background: #000; border: 2px solid var(--accent); color: var(--accent); font-family: var(--font-ui); font-size: 1.2rem; font-weight: 800; border-radius: 6px; white-space: nowrap; box-shadow: 0 15px 40px rgba(0,0,0,0.8); filter: drop-shadow(0 0 10px rgba(0,255,240,0.3)); text-decoration: none; transition: background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; cursor: pointer; pointer-events: auto; position: relative; z-index: 101; }
+.satelliteShardLink.small { padding: 0.2rem 0.6rem; font-size: 1rem; border-width: 1px; }
+@media (hover: hover) { .satelliteShardLink:hover { background-color: var(--accent); color: #000; transform: scale(1.15) translateY(-3px); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent); z-index: 200; } }
+.satelliteShardLink:active { transform: scale(0.95); }
+.dateReadout { font-family: var(--font-ui); font-size: 1.1rem; color: rgba(255,255,255,0.7); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem; pointer-events: none; }
+.techDecoration { display: flex; gap: 5px; padding: 0.5rem 0; justify-content: flex-end; pointer-events: none; }
+.techDot { width: 4px; height: 4px; background-color: rgba(255,255,255,0.2); border-radius: 50%; transition: background-color 0.3s ease; }
+@keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); } }
 @media (max-width: 768px) {
-    .livingCardWrapper {
-        perspective: none;
-        overflow: hidden !important;
-        border-radius: 12px;
-        background: transparent;
-        margin-bottom: 2.5rem;
-    }
-    
-    .monolithFrame {
-        min-height: auto; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        transform: none !important;
-        mask-image: none;
-        -webkit-mask-image: none;
-    }
-    
+    .livingCardWrapper { perspective: none; overflow: visible !important; border-radius: 12px; background: transparent; margin-bottom: 2.5rem; }
+    .monolithFrame { min-height: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: none !important; mask-image: none; -webkit-mask-image: none; }
     .monolithFrame::before { display: none; }
-
     .cardTitle { font-size: 1.6rem; }
     .titleOverlay { padding: 4rem 1.5rem 6.5rem 1.5rem; }
-    
-    .hudContainer {
-        padding: 0 1rem 1rem 1rem;
-        z-index: 50; 
-        transform: none !important;
-    }
-
-    .scoreBadge {
-        width: 40px; height: 40px; font-size: 1.5rem;
-        transform: none !important;
-        top: 0.8rem; left: 0.8rem;
-    }
-    
+    .hudContainer { padding: 0 1rem 1rem 1rem; z-index: 50; transform: none !important; }
+    .scoreBadge { width: 40px; height: 40px; font-size: 1.5rem; transform: none !important; top: 0.8rem; left: 0.8rem; }
     .holoSpotlight, .satelliteField { display: none; }
+    .livingCardWrapper.activeState .satelliteField { display: block; }
 }

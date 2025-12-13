@@ -91,8 +91,14 @@
     background: transparent;
     transition: background-color 0.3s ease;
 }
-@media (hover: hover) {
-  .blackHoleLink:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .blackHoleLink:hover  {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+}
+
+  .blackHoleLink:active  {
     background-color: rgba(255, 255, 255, 0.03);
 }
 }
@@ -172,8 +178,16 @@
   stroke: currentColor;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-@media (hover: hover) {
-  .navSearch:hover svg {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .navSearch:hover svg  {
+  color: var(--accent);
+  transform: scale(1.15) rotate(-15deg);
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+}
+
+  .navSearch:active svg  {
   color: var(--accent);
   transform: scale(1.15) rotate(-15deg);
   filter: drop-shadow(0 0 8px var(--accent));
@@ -191,8 +205,12 @@
 .hamburgerButton { display: none; }
 .mobileNavOverlay { display: none; }
 .orbitalCenter { font-family: var(--font-heading); font-weight: 800; font-size: 8rem; color: var(--text-secondary); background-color: var(--bg-secondary); border: 1px solid var(--border-color); width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; line-height: 1; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: all 0.2s ease-out; }
-@media (hover: hover) {
-  .orbitalCenter:hover { transform: scale(1.05); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); }
+@media (hover: hover) {@media (hover: hover) {
+  
+  .orbitalCenter:hover  { transform: scale(1.05); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); }
+}
+
+  .orbitalCenter:active  { transform: scale(1.05); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); }
 }
 .orbitalCenter:active { transform: scale(1.05); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); }
 

@@ -1,7 +1,8 @@
 /* components/homepage/HomepageFeeds.module.css */
 .feedsGrid {
     display: grid;
-    grid-template-columns: 2fr 1.2fr;
+    /* Adjusted from 1.35fr to 1.15fr to shrink the articles block further */
+    grid-template-columns: 1.15fr 1fr;
     gap: 4rem;
     margin-top: 6rem;
 }
@@ -13,5 +14,3 @@
         margin-top: 4rem;
     }
 }
-
-

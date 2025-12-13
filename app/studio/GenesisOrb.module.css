@@ -81,8 +81,16 @@
 [data-theme="dark"] .satelliteOrb {
   color: var(--text-primary);
 }
-@media (hover: hover) {
-  .satelliteOrb:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .satelliteOrb:hover  {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.1);
+}
+}
+
+  .satelliteOrb:active  {
   border-color: var(--accent);
   color: var(--accent);
   transform: scale(1.1);
@@ -117,8 +125,14 @@
   pointer-events: none;
   transition: opacity 0.2s ease-out;
 }
-@media (hover: hover) {
-  .satelliteWrapper:hover .satelliteLabel {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .satelliteWrapper:hover .satelliteLabel  {
+  opacity: 1;
+}
+}
+
+  .satelliteWrapper:active .satelliteLabel  {
   opacity: 1;
 }
 }
@@ -133,8 +147,14 @@
 [data-theme="dark"] .closeIcon {
   color: var(--bg-primary) !important;
 }
-@media (hover: hover) {
-  .closeIcon:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .closeIcon:hover  {
+  filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
+}
+}
+
+  .closeIcon:active  {
   filter: drop-shadow(0 0 10px #DC2626); /* Red glow on hover */
 }
 }

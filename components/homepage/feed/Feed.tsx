@@ -7,7 +7,6 @@ import { CardProps } from '@/types';
 import KineticGlyphs from '@/components/effects/KineticGlyphs';
 import styles from './Feed.module.css';
 
-// THE FIX: Simplified ArrowIcon - it now points right (in LTR terms)
 const ArrowIcon = () => <svg width="16" height="16" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
 
 interface FeedProps {
@@ -30,14 +29,12 @@ const kineticCardVariant = {
     hidden: { 
         opacity: 0, 
         y: 50, 
-        rotateX: -20,
-        clipPath: "inset(100% 0% 0% 0%)"
+        rotateX: -20
     },
     visible: { 
         opacity: 1, 
         y: 0, 
         rotateX: 0,
-        clipPath: "inset(0% 0% 0% 0%)",
         transition: { 
             duration: 0.8, 
             ease: [0.22, 1, 0.36, 1] as const 
@@ -64,7 +61,7 @@ export default function Feed({
                     <AnimatePresence>{isTopSectionHovered && enableTopSectionHoverEffect && <KineticGlyphs />}</AnimatePresence>
                     <span className={styles.sectionLabel}>{topSectionLabel}</span>
                     <motion.div 
-                        layout /* THE FIX: Added layout prop here */
+                        layout 
                         className={`${styles.topItemsContainer} ${topItemsContainerClassName}`} 
                         style={{ perspective: '800px' }}
                     >
@@ -83,6 +80,7 @@ export default function Feed({
 
             <div className={styles.latestSection}>
                 <span className={styles.sectionLabel} style={{ alignSelf: 'flex-start' }}>
+                    {/* REVERTED: Standard single live indicator */}
                     <div className={styles.liveIndicator}></div>
                     <span>{latestSectionLabel}</span>
                 </span>
@@ -104,7 +102,6 @@ export default function Feed({
             
             <motion.div variants={kineticCardVariant}>
                 <Link href={viewAllLink} className={`${styles.viewAllLink} no-underline`} prefetch={false}>
-                    {/* THE FIX: Reordered the elements to put the icon first in LTR order (which translates to the left in RTL) */}
                     <ArrowIcon />
                     <span>{viewAllText}</span>
                 </Link>

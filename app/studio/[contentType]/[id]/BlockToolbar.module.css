@@ -46,8 +46,15 @@
     transition: opacity 0.2s ease-out, transform 0.2s ease-out;
     transform-origin: bottom center;
 }
-@media (hover: hover) {
-  .optionButtonWrapper:hover .optionTooltip {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .optionButtonWrapper:hover .optionTooltip  {
+    opacity: 1;
+    transform: translateY(-5px) translateX(-50%);
+}
+}
+
+  .optionButtonWrapper:active .optionTooltip  {
     opacity: 1;
     transform: translateY(-5px) translateX(-50%);
 }

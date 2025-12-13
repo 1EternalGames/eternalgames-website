@@ -71,8 +71,15 @@
     justify-content: center;
     transition: background-color 0.2s, color 0.2s;
 }
-@media (hover: hover) {
-  .controlButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .controlButton:hover  {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+}
+}
+
+  .controlButton:active  {
     background-color: var(--bg-primary);
     color: var(--accent);
 }
@@ -106,8 +113,16 @@
     z-index: 9999;
     transition: all 0.2s ease-out;
 }
-@media (hover: hover) {
-  .navButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .navButton:hover  {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-50%) scale(1.1);
+}
+}
+
+  .navButton:active  {
     border-color: var(--accent);
     color: var(--accent);
     transform: translateY(-50%) scale(1.1);

@@ -36,8 +36,15 @@
   height: 40px;
   transition: color 0.3s ease, transform 0.3s ease;
 }
-@media (hover: hover) {
-  .searchCloseButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .searchCloseButton:hover  {
+  transform: scale(1.1) rotate(90deg);
+  color: var(--accent);
+}
+}
+
+  .searchCloseButton:active  {
   transform: scale(1.1) rotate(90deg);
   color: var(--accent);
 }
@@ -91,8 +98,17 @@
   overflow: hidden;
   text-align: right; /* RTL */
 }
-@media (hover: hover) {
-  .searchResultLink:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .searchResultLink:hover  {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent);
+  transform: translateY(-3px) scale(1.005);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent), 0 5px 20px rgba(0,0,0,0.2);
+}
+}
+
+  .searchResultLink:active  {
   background-color: var(--bg-secondary);
   border-color: var(--accent);
   transform: translateY(-3px) scale(1.005);
@@ -131,8 +147,14 @@
   color: var(--text-primary);
   transition: color 0.2s ease;
 }
-@media (hover: hover) {
-  .searchResultLink:hover h4 {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .searchResultLink:hover h4  {
+  color: var(--accent);
+}
+}
+
+  .searchResultLink:active h4  {
   color: var(--accent);
 }
 }

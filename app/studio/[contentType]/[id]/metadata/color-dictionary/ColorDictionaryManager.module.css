@@ -59,8 +59,14 @@
   cursor: pointer; /* ADDED */
   transition: border-color 0.2s ease; /* ADDED */
 }
-@media (hover: hover) {
-  .colorInputWrapper:hover { /* ADDED */
+@media (hover: hover) {@media (hover: hover) {
+  
+  .colorInputWrapper:hover  { /* ADDED */
+  border-color: var(--accent);
+}
+}
+
+  .colorInputWrapper:active  { /* ADDED */
   border-color: var(--accent);
 }
 }
@@ -138,8 +144,15 @@
   justify-content: center;
   transition: color 0.2s, background-color 0.2s;
 }
-@media (hover: hover) {
-  .removeButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .removeButton:hover  {
+  color: #dc2626;
+  background-color: color-mix(in srgb, #dc2626 15%, transparent);
+}
+}
+
+  .removeButton:active  {
   color: #dc2626;
   background-color: color-mix(in srgb, #dc2626 15%, transparent);
 }

@@ -1,68 +1,11 @@
 // components/PaginatedCarousel.tsx
 'use client';
 
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { CardProps } from '@/types';
-import CreatorCredit from '@/components/CreatorCredit';
-import { Calendar03Icon } from '@/components/icons/index';
 import styles from './PaginatedCarousel.module.css';
-import feedStyles from './homepage/feed/Feed.module.css';
-import { useRouter } from 'next/navigation';
-import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
-
-const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
-    const router = useRouter();
-    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const layoutIdPrefix = "homepage-latest-articles";
-    const linkPath = `/articles/${article.slug}`;
-
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        if (e.ctrlKey || e.metaKey) return;
-        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
-        e.preventDefault();
-        setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
-    };
-
-    return (
-        <motion.a
-            href={linkPath}
-            onClick={handleClick}
-            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
-            className={`${feedStyles.latestArticleItem} no-underline`}
-            style={{ display: 'grid' }} 
-        >
-            <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
-                <Image 
-                    loader={sanityLoader} // <-- LOADER ADDED
-                    src={article.imageUrl} 
-                    alt={article.title} 
-                    fill 
-                    sizes="120px" 
-                    placeholder="blur" 
-                    blurDataURL={article.blurDataURL} 
-                    style={{ objectFit: 'cover' }} 
-                />
-            </motion.div>
-            <div className={feedStyles.latestArticleInfo}>
-                <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.latestArticleTitle}>{article.title}</motion.h4>
-                <div className={feedStyles.latestArticleMeta}>
-                    <CreatorCredit label="بقلم" creators={article.authors} />
-                    {article.date && (
-                        <div className={feedStyles.latestArticleDate}>
-                            <Calendar03Icon style={{ width: '16px', height: '16px', color: 'var(--accent)' }} />
-                            <span>{article.date}</span>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </motion.a>
-    );
-});
-LatestArticleListItem.displayName = "LatestArticleListItem";
+import NewsGridCard from '@/components/news/NewsGridCard';
 
 type PaginatedCarouselProps = {
     items: CardProps[];
@@ -119,12 +62,20 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
                         exit={{ opacity: 0, x: -30 }}
                         transition={{ duration: 0.4, ease: 'easeInOut' }}
                         className={styles.itemList}
+                        style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
                     >
                         {currentItems.map((item, index) => (
-                            <React.Fragment key={item.id}>
-                                <LatestArticleListItem article={item} />
-                                {index < currentItems.length - 1 && <div className={feedStyles.listDivider} />}
-                            </React.Fragment>
+                            <motion.div
+                                key={item.legacyId}
+                                style={{ height: 'auto', position: 'relative', zIndex: 1 }}
+                                whileHover={{ zIndex: 20 }}
+                            >
+                                <NewsGridCard 
+                                    item={item} 
+                                    layoutIdPrefix="homepage-latest-articles"
+                                    variant="compact" // MODIFIED: Pass compact variant for recent articles
+                                />
+                            </motion.div>
                         ))}
                     </motion.div>
                 </AnimatePresence>

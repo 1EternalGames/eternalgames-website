@@ -7,21 +7,24 @@
 
 .spotlightItem {
     position: relative;
-    /* overflow: hidden; <-- This was preventing the highlight from showing, removed. */
+    /* Ensure z-index context for the bar */
+    z-index: 1;
 }
 
+/* Remade Highlight Bar */
 .kineticHighlightBar {
     position: absolute;
-    top: 8;
-    bottom: 8;
-    right: 0; /* Aligned to the right for RTL */
-    left: auto;
-    width: 4px; /* INCREASED */
-    background: 
-        linear-gradient(
-            var(--accent), 
-            color-mix(in srgb, var(--accent) 60%, #00ffff)
-        ); /* ADDED GRADIENT */
-    box-shadow: 0 0 12px 8px var(--accent); /* INCREASED */
+    right: -2px; /* Slight overhang for depth */
+    top: 50%;
+    transform: translateY(-50%); /* Perfectly centered */
+    height: 70%; /* Sleek vertical strip, not full height */
+    width: 3px;
+    background-color: var(--accent);
     border-radius: 4px;
+    /* Cleaner, layered shadow for a crisp neon look */
+    box-shadow: 
+        0 0 10px 0px var(--accent),
+        -2px 0 20px 2px color-mix(in srgb, var(--accent) 30%, transparent);
+    z-index: 20;
+    pointer-events: none;
 }

@@ -20,6 +20,7 @@ type ArticleCardProps = {
     layoutIdPrefix: string;
     isPriority?: boolean;
     disableLivingEffect?: boolean; 
+    smallTags?: boolean;
 };
 
 const getCreatorName = (creators: any[]): string | null => {
@@ -27,19 +28,56 @@ const getCreatorName = (creators: any[]): string | null => {
     return creators[0]?.name || null;
 };
 
-const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false }: ArticleCardProps) => {
+const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false, smallTags = false }: ArticleCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
+    
     const [isHovered, setIsHovered] = useState(false);
+    
+    // Separate state to control text clamping vs container height
+    // This allows us to keep text expanded while the container shrinks, preventing the "snap"
+    const [isTextExpanded, setIsTextExpanded] = useState(false);
 
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
     
     const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
+
+    // --- INTERACTION HANDLERS ---
+
+    const setExpandedState = (expanded: boolean) => {
+        setIsHovered(expanded);
+        if (expanded) {
+            // Unclamp text immediately so container can measure 'auto' height correctly
+            setIsTextExpanded(true);
+        }
+        // If closing, we DO NOT set isTextExpanded to false yet.
+        // We wait for the animation to finish (see onAnimationComplete below).
+    };
+
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!disableLivingEffect) {
+            livingCardAnimation.onTouchStart(e);
+            setExpandedState(true);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (!disableLivingEffect) {
+            livingCardAnimation.onTouchEnd();
+            setExpandedState(false);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+         if (!disableLivingEffect) {
+             livingCardAnimation.onTouchMove(e);
+         }
+    };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!disableLivingEffect) {
@@ -53,14 +91,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const handleMouseEnter = () => {
         if (!disableLivingEffect) {
             livingCardAnimation.onMouseEnter();
-            setIsHovered(true);
+            setExpandedState(true);
         }
     };
     
     const handleMouseLeave = () => {
         if (!disableLivingEffect) {
             livingCardAnimation.onMouseLeave();
-            setIsHovered(false);
+            setExpandedState(false);
         }
     };
 
@@ -74,36 +112,20 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     };
     const linkPath = `${getLinkBasePath()}${article.slug}`;
 
-    const handleCardClick = (e: React.MouseEvent) => {
-        const target = e.target as HTMLElement;
-        // Safety check to prevent double navigation if propagation fails
-        if (target.closest('a') || target.closest('button')) {
-            return;
-        }
-
-        e.preventDefault();
-        setScrollPos(window.scrollY);
-        setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
-    };
-
     const hasScore = article.type === 'review' && typeof article.score === 'number';
     const authorName = getCreatorName(article.authors);
     const authorUsername = article.authors[0]?.username;
 
     const displayTags = article.tags.slice(0, 3);
     
-    // Config: X increased (spread), Y adjusted, Z negative (flat)
     const satelliteConfig = [
         { hoverX: -110, hoverY: -50, rotate: -12 },
-        { hoverX: 135, hoverY: -35, rotate: 12 },
-        { hoverX: 0, hoverY: -125, rotate: 5 }
+        { hoverX: 100, hoverY: -30, rotate: 12 }, 
+        { hoverX: 0, hoverY: -115, rotate: 5 } 
     ];
     
     const { boxShadow, ...otherAnimationStyles } = livingCardAnimation.style;
 
-    // --- RENDER HELPERS ---
-    
     const CreatorCapsule = () => {
         const content = (
             <>
@@ -136,11 +158,16 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
     return (
         <div
-            className={styles.livingCardWrapper}
+            className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
             ref={livingCardRef}
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            onTouchMove={handleTouchMove}
+            style={{ zIndex: isHovered ? 9999 : 1 }}
         >
             <motion.div
                 className="tilt-container flex flex-col"
@@ -156,10 +183,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     className="no-underline block w-full flex flex-col"
                     style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
                 >
-                    {/* --- MAIN CARD LINK (OVERLAY) --- */}
                     <Link 
                         href={linkPath} 
-                        // Added 'no-underline' to prevent global underline styles on the card itself
                         className={`${styles.cardOverlayLink} no-underline`}
                         prefetch={false}
                         onClick={() => {
@@ -197,22 +222,42 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         {hasScore && (
                              <motion.div 
                                 className={styles.scoreBadge}
-                                initial={{ scale: 0.9 }}
-                                animate={{ scale: isHovered ? 1.1 : 0.9, rotate: isHovered ? -10 : 0 }}
+                                initial={{ scale: 1, rotate: 0 }}
+                                animate={{ 
+                                    scale: isHovered ? 1.2 : 1, 
+                                    rotate: isHovered ? -12 : 0,
+                                    z: 50
+                                }}
                                 transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                                style={{ transform: 'translateZ(50px)' }}
                              >
                                  {article.score!.toFixed(1)}
                              </motion.div>
                         )}
 
                         <div className={styles.titleOverlay}>
-                            <motion.h3 
-                                layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`}
-                                className={styles.cardTitle}
+                            {/* 
+                                Title Animation Wrapper 
+                                - Uses 'animate' instead of 'layout' to avoid scale distortion 
+                                - Animates height to 'auto' to fit text
+                            */}
+                            <motion.div 
+                                className={styles.titleMaskWrapper}
+                                initial={{ height: '2.8rem' }} 
+                                animate={{ height: isHovered ? 'auto' : '2.8rem' }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                onAnimationComplete={() => {
+                                    // CRITICAL: Only clamp text AFTER the container has finished shrinking.
+                                    if (!isHovered) {
+                                        setIsTextExpanded(false);
+                                    }
+                                }}
                             >
-                                {article.title}
-                            </motion.h3>
+                                <h3 
+                                    className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}
+                                >
+                                    {article.title}
+                                </h3>
+                            </motion.div>
                         </div>
                         
                         <div className={styles.hudContainer} style={{ transform: 'translateZ(60px)' }}>
@@ -244,7 +289,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                     initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
                                     animate={isHovered ? {
                                         opacity: 1,
-                                        scale: 1,
+                                        scale: 1.15,
                                         x: satelliteConfig[i]?.hoverX || 0,
                                         y: satelliteConfig[i]?.hoverY || 0,
                                         rotate: satelliteConfig[i]?.rotate || 0,
@@ -269,7 +314,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                      <Link 
                                         href={`/tags/${tag.slug}`} 
                                         onClick={(e) => e.stopPropagation()}
-                                        className={`${styles.satelliteShardLink} no-underline`}
+                                        className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
                                         prefetch={false}
                                      >
                                          {translateTag(tag.title)}

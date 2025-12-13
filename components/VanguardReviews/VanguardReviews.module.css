@@ -41,34 +41,31 @@
     position: relative;
 }
 
+/* Active/Hover states for Vanguard Card */
 .vanguardContainer.manual-hover .cardWrapper {
     filter: brightness(0.6) saturate(0.8);
 }
+.vanguardContainer.manual-hover .cardSlot.activeState .cardWrapper {
+    filter: brightness(1) saturate(1);
+}
+
 @media (hover: hover) {
-  .vanguardContainer.manual-hover .cardSlot:hover .cardWrapper {
-    filter: brightness(1) saturate(1);
-}
-}
-.vanguardContainer.manual-hover .cardSlot:active .cardWrapper {
-    filter: brightness(1) saturate(1);
+    .vanguardContainer.manual-hover .cardSlot:hover .cardWrapper {
+        filter: brightness(1) saturate(1);
+    }
 }
 
-
-/* MODIFIED: Removed standard borders/bg, now relies on SVG frame */
 .vanguardCard {
     background-color: transparent;
     border-radius: 0; 
     overflow: visible;
     height: 100%;
     border: none;
-    box-shadow: none; /* Shadow handled by frame or living card hook */
+    box-shadow: none; 
     color: #fff;
     position: relative;
-    /* Use drop-shadow for irregular shape depth if needed, 
-       though useLivingCard hook provides the main 3D shadow */
 }
 
-/* NEW: Container for the SVG frame */
 .frameSvgContainer {
     position: absolute;
     inset: 0;
@@ -77,21 +74,18 @@
     pointer-events: none;
     z-index: 0;
 }
-
 .frameSvg {
     width: 100%;
     height: 100%;
     overflow: visible;
 }
 
-/* MODIFIED: Applied SVG clip-path */
 .cardImageContainer {
     position: absolute;
     inset: 0;
     overflow: hidden;
-    /* This connects to the ID defined in the TSX file */
     clip-path: url(#vg-cardClip);
-    z-index: 1; /* Above frame background, below content */
+    z-index: 1;
 }
 
 .cardImage {
@@ -100,15 +94,10 @@
     object-fit: cover;
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
-@media (hover: hover) {
-  .cardSlot:hover .cardImage {
-    transform: scale(1.05);
-}
-}
-.cardSlot:active .cardImage {
-    transform: scale(1.05);
-}
 
+/* Active State for Image Scale */
+.cardSlot.activeState .cardImage { transform: scale(1.05); }
+@media (hover: hover) { .cardSlot:hover .cardImage { transform: scale(1.05); } }
 
 .cardContent {
     position: absolute;
@@ -119,22 +108,12 @@
     justify-content: flex-end;
     text-align: right;
     pointer-events: none;
-    z-index: 2; /* Above image */
-    clip-path: url(#vg-cardClip); /* Ensures content doesn't bleed */
+    z-index: 2;
+    clip-path: url(#vg-cardClip);
 }
 
-.cardContent h3 { 
-    font-size: 2.4rem; 
-    line-height: 1.2; 
-    margin: 0 0 0.75rem 0; 
-    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-}
-.cardDate { 
-    font-size: 1.4rem; 
-    color: var(--accent); 
-    font-weight: 600;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
-}
+.cardContent h3 { font-size: 2.4rem; line-height: 1.2; margin: 0 0 0.75rem 0; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+.cardDate { font-size: 1.4rem; color: var(--accent); font-weight: 600; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
 
 .vanguardScoreBadge {
     position: absolute;
@@ -157,17 +136,10 @@
     transform: translateZ(60px);
     transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
-@media (hover: hover) {
-  .cardSlot:hover .vanguardScoreBadge {
-    transform: translateZ(80px) scale(1.05);
-    box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent);
-}
-}
-.cardSlot:active .vanguardScoreBadge {
-    transform: translateZ(80px) scale(1.05);
-    box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent);
-}
 
+/* Active State for Badge */
+.cardSlot.activeState .vanguardScoreBadge { transform: translateZ(80px) scale(1.05); box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent); }
+@media (hover: hover) { .cardSlot:hover .vanguardScoreBadge { transform: translateZ(80px) scale(1.05); box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent); } }
 
 .creatorBubbleContainer {
     position: absolute;
@@ -193,30 +165,27 @@
     cursor: pointer;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
-@media (hover: hover) {
-  .creatorBubble:hover, .creatorBubble.pressed {
-    background-color: var(--accent);
-    box-shadow: 0 0 15px -0.5px var(--accent);
-}
-}
-.creatorBubble:active,  .creatorBubble.pressed {
-    background-color: var(--accent);
-    box-shadow: 0 0 15px -0.5px var(--accent);
-}
 
+/* Creator Bubble Active State */
+.creatorBubble.activeState, 
+.creatorBubble.pressed {
+    background-color: var(--accent);
+    box-shadow: 0 0 15px -0.5px var(--accent);
+}
+@media (hover: hover) {
+    .creatorBubble:hover {
+        background-color: var(--accent);
+        box-shadow: 0 0 15px -0.5px var(--accent);
+    }
+}
 
 .creatorLabel { color: var(--text-secondary); font-size: 1rem; font-weight: 500; transition: color 0.3s ease; }
-@media (hover: hover) {
-  .creatorBubble:hover .creatorLabel, .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
-}
-.creatorBubble:active .creatorLabel,  .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+.creatorBubble.activeState .creatorLabel, .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
+@media (hover: hover) { .creatorBubble:hover .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); } }
 
 .creatorName { font-size: 1.2rem; font-weight: 600; transition: color 0.3s ease; }
-@media (hover: hover) {
-  .creatorBubble:hover .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
-}
-.creatorBubble:active .creatorName,  .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
-
+.creatorBubble.activeState .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
+@media (hover: hover) { .creatorBubble:hover .creatorName { color: var(--bg-primary); } }
 
 .creatorArrow { 
     position: absolute; 
@@ -227,124 +196,32 @@
     transition: opacity 0.3s ease, transform 0.3s ease; 
     opacity: 0; 
 }
-@media (hover: hover) {
-  .creatorBubble:hover .creatorArrow, .creatorBubble.pressed .creatorArrow { 
-    opacity: 1; 
-    transform: translateY(-50%) translateX(-8px);
-}
-}
-.creatorBubble:active .creatorArrow,  .creatorBubble.pressed .creatorArrow { 
-    opacity: 1; 
-    transform: translateY(-50%) translateX(-8px);
-}
+.creatorBubble.activeState .creatorArrow, .creatorBubble.pressed .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-8px); }
+@media (hover: hover) { .creatorBubble:hover .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-8px); } }
 
-
-.kineticNavigator {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.navTrack {
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
-    background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    z-index: 10;
-    max-width: 90vw;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
+.kineticNavigator { position: absolute; bottom: 0; width: 100%; display: flex; justify-content: center; }
+.navTrack { display: flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 8px; background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent); border: 1px solid var(--border-color); border-radius: 16px; backdrop-filter: blur(10px); z-index: 10; max-width: 90vw; overflow-x: auto; scrollbar-width: none; }
 .navTrack::-webkit-scrollbar { display: none; }
-
-.navItem {
-    position: relative;
-    border-radius: 8px;
-    cursor: pointer;
-    overflow: hidden;
-    border: 1px solid transparent;
-    transition: border-color 0.4s ease;
-}
-
-.navImage {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: filter 0.4s ease, transform 0.4s ease;
-}
-
-.navItem[data-active="false"] .navImage {
-    filter: grayscale(100%) brightness(0.7);
-}
-
-.navItem[data-active="true"] {
-    border-color: var(--accent);
-    box-shadow: 0 0 15px -2px var(--accent);
-}
-
-.navTitle {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 8px;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #fff;
-    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-    text-align: right;
-}
+.navItem { position: relative; border-radius: 8px; cursor: pointer; overflow: hidden; border: 1px solid transparent; transition: border-color 0.4s ease; }
+.navImage { display: block; width: 100%; height: 100%; object-fit: cover; transition: filter 0.4s ease, transform 0.4s ease; }
+.navItem[data-active="false"] .navImage { filter: grayscale(100%) brightness(0.7); }
+.navItem[data-active="true"] { border-color: var(--accent); box-shadow: 0 0 15px -2px var(--accent); }
+.navTitle { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px; font-size: 1.2rem; font-weight: 600; color: #fff; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%); text-align: right; }
 
 @media (max-width: 1024px) {
-    .vanguardContainer {
-        --center-width: 60vw;
-        --side-width: 40vw;
-        padding-bottom: 10rem;
-        padding-top: 4rem;
-    }
-    .cardSlot {
-        height: 380px;
-    }
+    .vanguardContainer { --center-width: 60vw; --side-width: 40vw; padding-bottom: 10rem; padding-top: 4rem; }
+    .cardSlot { height: 380px; }
 }
 
 @media (max-width: 768px) {
-    .vanguardContainer {
-        --center-width: 65vw;
-        --side-width: 45vw;
-        min-height: 420px;
-        padding-top: 5.5rem;
-        padding-bottom: 8rem;
-    }
+    .vanguardContainer { --center-width: 65vw; --side-width: 45vw; min-height: 420px; padding-top: 5.5rem; padding-bottom: 8rem; }
     .cardContent { padding: 1.5rem; }
     .cardContent h3 { font-size: 1.8rem; }
-    .vanguardScoreBadge {
-        width: 55px;
-        height: 55px;
-        font-size: 2rem;
-        top: 1rem;
-        right: 1rem;
-    }
-    .creatorBubbleContainer {
-        top: 30%;
-        right: -1.5rem;
-    }
-    .creatorBubble {
-        padding: 0.2rem 1rem;
-    }
+    .vanguardScoreBadge { width: 55px; height: 55px; font-size: 2rem; top: 1rem; right: 1rem; }
+    .creatorBubbleContainer { top: 30%; right: -1.5rem; }
+    .creatorBubble { padding: 0.2rem 1rem; }
     .creatorName { font-size: 1.1rem; }
 }
-
 @media (max-width: 480px) {
-    .vanguardContainer {
-        --center-width: 70vw;
-        --side-width: 50vw;
-    }
+    .vanguardContainer { --center-width: 70vw; --side-width: 50vw; }
 }

@@ -71,8 +71,14 @@
   opacity: 0;
   transition: opacity 0.2s ease-out;
 }
-@media (hover: hover) {
-  .dropzone:hover .dropzoneContent {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .dropzone:hover .dropzoneContent  {
+  opacity: 1;
+}
+}
+
+  .dropzone:active .dropzoneContent  {
   opacity: 1;
 }
 }

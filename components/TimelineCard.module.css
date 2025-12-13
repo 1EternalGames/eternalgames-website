@@ -4,6 +4,7 @@
     height: 100%;
 }
 
+/* Base style for card */
 .timelineCard {
     display: flex;
     flex-direction: column;
@@ -16,10 +17,10 @@
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     will-change: transform;
     transform-style: preserve-d;
-    position: relative; /* For glare positioning */
+    position: relative; 
 }
 
-/* --- NEW GLARE EFFECT STYLE --- */
+/* GLARE */
 .livingCardGlare {
     position: absolute;
     inset: 0;
@@ -33,16 +34,27 @@
     z-index: 1;
     pointer-events: none;
 }
+
+/* HOVER / ACTIVE STATE STYLES */
+/* Use .activeState class or :hover (desktop) */
+
+/* Desktop Hover */
 @media (hover: hover) {
-  .livingCardWrapper:hover .livingCardGlare {
-    opacity: 1;
-}
-}
-.livingCardWrapper:active .livingCardGlare {
-    opacity: 1;
+    .livingCardWrapper:hover .timelineCard {
+        border-color: var(--accent);
+        box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);
+    }
+    .livingCardWrapper:hover .livingCardGlare { opacity: 1; }
+    .livingCardWrapper:hover .image { transform: scale(1.05); }
 }
 
-/* --- END NEW STYLE --- */
+/* Manual Active State (Touch) */
+.livingCardWrapper.activeState .timelineCard {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.livingCardWrapper.activeState .livingCardGlare { opacity: 1; }
+.livingCardWrapper.activeState .image { transform: scale(1.05); }
 
 .imageContainer {
     position: relative;
@@ -60,15 +72,6 @@
     object-fit: cover;
     transition: transform 0.4s ease-out;
 }
-@media (hover: hover) {
-  .livingCardWrapper:hover .image {
-    transform: scale(1.05);
-}
-}
-.livingCardWrapper:active .image {
-    transform: scale(1.05);
-}
-
 
 @keyframes pulse-glow {
     0%, 100% {
@@ -149,24 +152,9 @@
 }
 
 @media (max-width: 768px) {
-    .cardContent {
-        padding: 1rem;
-    }
-    .cardHeader h4 {
-        font-size: 1.6rem;
-    }
-    .cardHeader p {
-        font-size: 1.2rem;
-    }
-    .platformIcons {
-        gap: 0.8rem;
-        padding-top: 0.8rem;
-        margin-top: 0.8rem;
-    }
-    .platformIcon {
-        width: 16px;
-        height: 16px;
-    }
+    .cardContent { padding: 1rem; }
+    .cardHeader h4 { font-size: 1.6rem; }
+    .cardHeader p { font-size: 1.2rem; }
+    .platformIcons { gap: 0.8rem; padding-top: 0.8rem; margin-top: 0.8rem; }
+    .platformIcon { width: 16px; height: 16px; }
 }
-
-

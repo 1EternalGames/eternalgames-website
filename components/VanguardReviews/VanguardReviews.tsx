@@ -1,7 +1,7 @@
 // components/VanguardReviews/VanguardReviews.tsx
 'use client';
 
-import { useState, useEffect, useRef, memo, useCallback } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence, useInView, animate, PanInfo } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -29,8 +29,6 @@ const ArrowIcon = () => (
     </svg>
 );
 
-// --- NEW FRAME COMPONENT ---
-// Replicates the "Monthly Games" game slot look (Chamfered, Notched, Glowing)
 const VanguardCardFrame = () => (
     <div className={styles.frameSvgContainer}>
         <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none">
@@ -42,43 +40,12 @@ const VanguardCardFrame = () => (
                         <feMergeNode in="SourceGraphic"></feMergeNode>
                     </feMerge>
                 </filter>
-                {/* 
-                   Normalized Clip Path (0..1 coordinates) to match the path shape below.
-                   Original Path:
-                   M 0,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 Z
-                   
-                   Conversion (X / 300, Y / 380):
-                   0,0
-                   1,0
-                   1, 0.315 (120/380)
-                   0.966, 0.329 (290/300, 125/380)
-                   1, 0.342 (130/380)
-                   1, 0.657 (250/380)
-                   0.966, 0.684 (260/380)
-                   0.966, 0.763 (290/380)
-                   1, 0.789 (300/380)
-                   1, 0.921 (350/380)
-                   0.9, 1 (270/300, 380/380)
-                   0.1, 1 (30/300, 380/380)
-                   0, 0.921 (350/380)
-                   0, 0.789 (300/380)
-                   0.033, 0.763 (10/300)
-                   0.033, 0.684
-                   0, 0.657
-                   0, 0.342
-                   0.033, 0.329
-                   0, 0.315
-                */}
                 <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox">
                      <path d="M 0,0 L 1,0 L 1,0.315 L 0.966,0.329 L 1,0.342 L 1,0.657 L 0.966,0.684 L 0.966,0.763 L 1,0.789 L 1,0.921 L 0.9,1 L 0.1,1 L 0,0.921 L 0,0.789 L 0.033,0.763 L 0.033,0.684 L 0,0.657 L 0,0.342 L 0.033,0.329 L 0,0.315 Z" />
                 </clipPath>
             </defs>
-
-            {/* Frame Background & Border */}
             <path d="M 0,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 Z" 
                   fill="var(--bg-secondary)" stroke="#556070" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-            
-            {/* Glowing Accents */}
             <path d="M 0,300 L 0,350 L 30,380" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
             <path d="M 300,300 L 300,350 L 270,380" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
             <path d="M 10,260 L 10,290" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
@@ -86,7 +53,6 @@ const VanguardCardFrame = () => (
         </svg>
     </div>
 );
-
 
 const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const [isPressed, setIsPressed] = useState(false);
@@ -123,7 +89,7 @@ const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAutho
     );
 };
 
-const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered, isInteractive }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean, isHovered: boolean, isInteractive: boolean }) => {
+const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered, isInteractive, onHoverChange }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean, isHovered: boolean, isInteractive: boolean, onHoverChange: (isHovering: boolean) => void }) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
@@ -156,12 +122,23 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     
     const livingCardHandlers = isInteractive ? {
         onMouseMove: livingCardAnimation.onMouseMove,
+        // TOUCH LOGIC: Trigger hover state
+        onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
+            livingCardAnimation.onTouchStart(e);
+            onHoverChange(true);
+        },
+        onTouchEnd: () => {
+            livingCardAnimation.onTouchEnd();
+            onHoverChange(false);
+        },
+        onTouchCancel: () => {
+             livingCardAnimation.onTouchCancel();
+             onHoverChange(false);
+        },
         onTouchMove: livingCardAnimation.onTouchMove,
-        onMouseEnter: livingCardAnimation.onMouseEnter,
-        onMouseLeave: livingCardAnimation.onMouseLeave,
-        onTouchStart: livingCardAnimation.onTouchStart,
-        onTouchEnd: livingCardAnimation.onTouchEnd,
-        onTouchCancel: livingCardAnimation.onTouchCancel,
+        // MOUSE LOGIC
+        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); onHoverChange(true); },
+        onMouseLeave: () => { livingCardAnimation.onMouseLeave(); onHoverChange(false); },
     } : {};
 
     return (
@@ -181,7 +158,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
                 >
-                    {/* SVG Frame Background */}
                     <VanguardCardFrame />
 
                     <AnimatePresence>
@@ -204,7 +180,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     
                     <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
                         <Image 
-                            loader={sanityLoader} // <-- LOADER ADDED
+                            loader={sanityLoader}
                             src={imageUrl} 
                             alt={review.title} 
                             fill 
@@ -246,7 +222,7 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                         >
                             <Image 
-                                loader={sanityLoader} // <-- LOADER ADDED
+                                loader={sanityLoader}
                                 src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} 
                                 alt={review.title} 
                                 fill 
@@ -294,6 +270,14 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             navigateToIndex((currentIndex - 1 + reviews.length) % reviews.length);
         }
     };
+    
+    // Explicit Hover State Management for Mobile compatibility
+    const handleCardHoverChange = (id: string, isHovering: boolean) => {
+        if (initialAnimHasRun) {
+            setHoveredId(isHovering ? id : null);
+            setIsManualHover(isHovering);
+        }
+    };
 
     if (reviews.length === 0) return null;
 
@@ -319,10 +303,9 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.1}
                 onDragEnd={handleDragEnd}
+                // Global fallback touches just in case
                 onTouchEnd={() => initialAnimHasRun && setHoveredId(null)}
                 onTouchCancel={() => initialAnimHasRun && setHoveredId(null)}
-                onMouseEnter={() => setIsManualHover(true)}
-                onMouseLeave={() => setIsManualHover(false)}
             >
                 {reviews.map((review, reviewIndex) => {
                     const { style, isCenter } = getCardState(reviewIndex, review.id);
@@ -331,10 +314,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                     return (
                         <motion.div 
                             key={review.id} 
-                            className={styles.cardSlot} 
-                            onMouseEnter={() => initialAnimHasRun && setHoveredId(review.id)} 
-                            onMouseLeave={() => initialAnimHasRun && setHoveredId(null)}
-                            onTouchStart={() => initialAnimHasRun && setHoveredId(review.id)}
+                            className={`${styles.cardSlot} ${isHovered ? styles.activeState : ''}`} 
                             initial={!initialAnimHasRun ? initialAnimationConfig : false}
                             animate={style}
                             transition={{
@@ -351,6 +331,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                                 isMobile={isMobile}
                                 isHovered={isHovered}
                                 isInteractive={initialAnimHasRun}
+                                onHoverChange={(val) => handleCardHoverChange(review.id, val)}
                             />
                         </motion.div>
                     );

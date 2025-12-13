@@ -18,8 +18,15 @@
     border-radius: 50%;
     transition: color 0.2s ease, background-color 0.2s ease;
 }
-@media (hover: hover) {
-  .bellButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .bellButton:hover  {
+    color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+}
+
+  .bellButton:active  {
     color: var(--accent);
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
 }
@@ -98,8 +105,14 @@
     border-radius: 4px;
     transition: background-color 0.2s ease;
 }
-@media (hover: hover) {
-  .markAllReadButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .markAllReadButton:hover  {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+}
+
+  .markAllReadButton:active  {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 }
@@ -127,8 +140,14 @@
 .notificationItem:last-child {
     border-bottom: none;
 }
-@media (hover: hover) {
-  .notificationItem:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .notificationItem:hover  {
+    background-color: var(--bg-primary);
+}
+}
+
+  .notificationItem:active  {
     background-color: var(--bg-primary);
 }
 }

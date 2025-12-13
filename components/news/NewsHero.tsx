@@ -10,7 +10,7 @@ import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader'; 
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
@@ -32,8 +32,8 @@ const typeLabelMap: Record<string, string> = {
 const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProps; isActive: boolean, layoutIdPrefix: string }) => {
     const newsType = item.newsType || 'official';
     const label = typeLabelMap[newsType] || 'أخبار';
-
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const [isPressed, setIsPressed] = useState(false);
     
     const handleClick = () => {
         setPrefix(layoutIdPrefix);
@@ -50,7 +50,11 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <div className={styles.textContent}>
+                    <div 
+                        className={`${styles.textContent} ${isPressed ? styles.activeState : ''}`}
+                        onTouchStart={() => setIsPressed(true)}
+                        onTouchEnd={() => setIsPressed(false)}
+                    >
                         <p className={`${styles.storyCategory} ${styles[newsType]}`}>
                             {label}
                         </p>
@@ -112,7 +116,7 @@ const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix
                 layoutId={`${layoutIdPrefix}-card-image-${legacyId}`} 
              >
                 <Image
-                    loader={sanityLoader} // <-- LOADER ADDED
+                    loader={sanityLoader} 
                     src={imageUrl}
                     alt={alt}
                     fill
@@ -149,6 +153,8 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
             className={styles.heroContainer}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
         >
             <AnimatePresence>
                  <HeroBackground 

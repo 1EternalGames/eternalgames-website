@@ -64,8 +64,15 @@
   z-index: 20;
   transition: color 0.2s ease-out, transform 0.2s ease-out;
 }
-@media (hover: hover) {
-  .authBackButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .authBackButton:hover  {
+  color: var(--text-primary);
+  transform: translateX(2px);
+}
+}
+
+  .authBackButton:active  {
   color: var(--text-primary);
   transform: translateX(2px);
 }
@@ -146,8 +153,15 @@
   box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
-@media (hover: hover) {
-  .authSubmitButton:hover:not(:disabled) {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .authSubmitButton:hover:not(:disabled)  {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+}
+
+  .authSubmitButton:active:not(:disabled)  {
   transform: scale(1.05);
   box-shadow: 0 0 25px color-mix(in srgb, var(--accent) 50%, transparent);
 }
@@ -191,8 +205,14 @@
   transform-origin: bottom right;
   transition: transform 0.3s ease-out;
 }
-@media (hover: hover) {
-  .linkButton:hover::after {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .linkButton:hover::after  {
+  transform: scaleX(1);
+}
+}
+
+  .linkButton:active::after  {
   transform: scaleX(1);
 }
 }

@@ -18,8 +18,18 @@
     /* MODIFIED: Add max-width to constrain the button on small screens */
     max-width: 100%;
 }
-@media (hover: hover) {
-  .kineticGameTag:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .kineticGameTag:hover  {
+    transform: translateY(-2px);
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #FFFFFF;
+    box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+}
+
+  .kineticGameTag:active  {
     transform: translateY(-2px);
     background-color: var(--accent);
     border-color: var(--accent);
@@ -35,8 +45,14 @@
     box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-@media (hover: hover) {
-  [data-theme="dark"] .kineticGameTag:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  [data-theme="dark"] .kineticGameTag:hover  {
+    color: var(--bg-primary);
+}
+}
+
+  [data-theme="dark"] .kineticGameTag:active  {
     color: var(--bg-primary);
 }
 }
@@ -51,8 +67,15 @@
     transform: translateX(8px);
     transition: opacity 0.25s ease-out, transform 0.25s ease-out;
 }
-@media (hover: hover) {
-  .kineticGameTag:hover .gameTagArrow {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .kineticGameTag:hover .gameTagArrow  {
+    opacity: 1;
+    transform: translateX(-0);
+}
+}
+
+  .kineticGameTag:active .gameTagArrow  {
     opacity: 1;
     transform: translateX(-0);
 }

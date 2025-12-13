@@ -45,8 +45,18 @@
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
     text-decoration: none; /* Failsafe against global link styles */
 }
-@media (hover: hover) {
-  .directorGateButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .directorGateButton:hover  {
+    background-color: #FFD700;
+    color: #121212; /* Dark text for contrast against gold */
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+    border-color: #FFD700;
+}
+}
+
+  .directorGateButton:active  {
     background-color: #FFD700;
     color: #121212; /* Dark text for contrast against gold */
     transform: translateY(-3px) scale(1.05);
@@ -68,8 +78,14 @@
     height: 24px;
     transition: transform 0.3s ease;
 }
-@media (hover: hover) {
-  .directorGateButton:hover svg {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .directorGateButton:hover svg  {
+    transform: rotate(-15deg) scale(1.1);
+}
+}
+
+  .directorGateButton:active svg  {
     transform: rotate(-15deg) scale(1.1);
 }
 }

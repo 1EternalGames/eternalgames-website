@@ -49,6 +49,7 @@
 .textContent {
     position: relative; 
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* --- Ribbon Styling --- */
@@ -56,7 +57,6 @@
     font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: 1px;
-    /* Lifted up away from title */
     margin-bottom: 1.5rem; 
     padding: 0.4rem 1.2rem;
     display: inline-block;
@@ -66,7 +66,6 @@
     transition: color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Ribbon Background Element */
 .storyCategory::before {
     content: '';
     position: absolute;
@@ -74,38 +73,44 @@
     border-radius: 4px;
     z-index: -1;
     transform: scaleX(0);
-    transform-origin: right; /* RTL expansion */
+    transform-origin: right;
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Hover Effects - Triggered by the parent container */
-.textContent:hover .storyCategory {
-    color: #fff !important; /* Force white text on hover for contrast */
-    transform: translateY(-3px); /* Lift effect */
+/* HOVER / ACTIVE LOGIC */
+.textContent.activeState .storyCategory {
+    color: #fff !important; 
+    transform: translateY(-3px);
     text-shadow: none;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
+.textContent.activeState .storyCategory::before {
+    transform: scaleX(1);
+}
+.textContent.activeState .storyLink {
+    color: var(--accent);
+}
+
 @media (hover: hover) {
-  .textContent:hover .storyCategory::before {
-    transform: scaleX(1);
-}
-}
-.textContent:active .storyCategory::before {
-    transform: scaleX(1);
+    .textContent:hover .storyCategory {
+        color: #fff !important;
+        transform: translateY(-3px);
+        text-shadow: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .textContent:hover .storyCategory::before { transform: scaleX(1); }
+    .textContent:hover .storyLink { color: var(--accent); }
+    .progressDot:hover { transform: scale(1.6); }
 }
 
-
-/* Color Variations */
-/* Base Text Colors */
+/* Colors */
 .storyCategory.official { color: var(--accent); }
 .storyCategory.rumor { color: #F59E0B; }
 .storyCategory.leak { color: #DC2626; }
 
-/* Ribbon Background Colors */
 .storyCategory.official::before { background-color: var(--accent); }
 .storyCategory.rumor::before { background-color: #F59E0B; }
 .storyCategory.leak::before { background-color: #DC2626; }
-
 
 .storyTitle {
     font-size: clamp(2.8rem, 4.5vw, 4.5rem);
@@ -132,17 +137,7 @@
     text-decoration: none;
     transition: color 0.2s ease;
 }
-@media (hover: hover) {
-  .textContent:hover .storyLink {
-    color: var(--accent);
-}
-}
-.textContent:active .storyLink {
-    color: var(--accent);
-}
 
-
-/* --- Controls/Pagination --- */
 .controlsContainer {
     position: absolute;
     right: 4rem;
@@ -166,15 +161,6 @@
     border: none;
     padding: 0;
 }
-@media (hover: hover) {
-  .progressDot:hover {
-    transform: scale(1.6);
-}
-}
-.progressDot:active {
-    transform: scale(1.6);
-}
-
 
 .progressDot.active {
     background-color: var(--accent);
@@ -182,30 +168,10 @@
     box-shadow: 0 0 10px var(--accent);
 }
 
-/* --- Media Queries --- */
-
 @media (max-width: 1024px) {
-    .heroContainer {
-        height: 60vh;
-        min-height: 450px;
-    }
-    .storyTitle {
-        font-size: clamp(2.4rem, 6vw, 3.6rem);
-    }
-    .controlsContainer {
-        flex-direction: row;
-        left: 50%;
-        right: auto; 
-        transform: translateX(-50%);
-        bottom: 2rem;
-        top: auto;
-    }
-    .activeStoryContainer {
-        max-width: 90%;
-        text-align: center;
-        margin: 0 auto;
-    }
-    .storyMeta {
-        justify-content: center;
-    }
+    .heroContainer { height: 60vh; min-height: 450px; }
+    .storyTitle { font-size: clamp(2.4rem, 6vw, 3.6rem); }
+    .controlsContainer { flex-direction: row; left: 50%; right: auto; transform: translateX(-50%); bottom: 2rem; top: auto; }
+    .activeStoryContainer { max-width: 90%; text-align: center; margin: 0 auto; }
+    .storyMeta { justify-content: center; }
 }

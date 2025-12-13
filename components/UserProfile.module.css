@@ -17,8 +17,14 @@
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-@media (hover: hover) {
-  .userAvatarButton:hover .userAvatar {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .userAvatarButton:hover .userAvatar  {
+  border-color: var(--accent);
+}
+}
+
+  .userAvatarButton:active .userAvatar  {
   border-color: var(--accent);
 }
 }
@@ -42,8 +48,14 @@
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-@media (hover: hover) {
-  .userAvatarButton:hover .userAvatarFallback {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .userAvatarButton:hover .userAvatarFallback  {
+  border-color: var(--accent);
+}
+}
+
+  .userAvatarButton:active .userAvatarFallback  {
   border-color: var(--accent);
 }
 }
@@ -133,8 +145,15 @@
     color: var(--text-secondary);
     transition: color 0.2s ease;
 }
-@media (hover: hover) {
-  .userDropdownItem:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .userDropdownItem:hover  {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+}
+
+  .userDropdownItem:active  {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
 }
@@ -144,8 +163,14 @@
   color: var(--accent);
 }
 
-@media (hover: hover) {
-  .userDropdownItem:hover .dropdownItemIcon {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .userDropdownItem:hover .dropdownItemIcon  {
+    color: var(--accent);
+}
+}
+
+  .userDropdownItem:active .dropdownItemIcon  {
     color: var(--accent);
 }
 }
@@ -157,8 +182,15 @@
 .userDropdownItem.signout {
   color: #DC2626;
 }
-@media (hover: hover) {
-  .userDropdownItem.signout:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .userDropdownItem.signout:hover  {
+  background-color: color-mix(in srgb, #DC2626 15%, transparent);
+  color: #DC2626;
+}
+}
+
+  .userDropdownItem.signout:active  {
   background-color: color-mix(in srgb, #DC2626 15%, transparent);
   color: #DC2626;
 }
@@ -168,8 +200,14 @@
   color: #DC2626;
 }
 
-@media (hover: hover) {
-  .userDropdownItem.signout:hover .dropdownItemIcon {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .userDropdownItem.signout:hover .dropdownItemIcon  {
+    color: #DC2626;
+}
+}
+
+  .userDropdownItem.signout:active .dropdownItemIcon  {
     color: #DC2626;
 }
 }
@@ -195,8 +233,15 @@
 [data-theme="dark"] .signInButton {
   color: var(--bg-primary);
 }
-@media (hover: hover) {
-  .signInButton:hover {
+@media (hover: hover) {@media (hover: hover) {
+  
+  .signInButton:hover  {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+}
+
+  .signInButton:active  {
   opacity: 0.85;
   transform: scale(1.05);
 }

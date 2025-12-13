@@ -101,7 +101,13 @@ const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
 const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableLink?: boolean }) => {
     const [isHovered, setIsHovered] = useState(false);
     
-    const handleTouch = (e: React.TouchEvent) => {
+    // THE FIX: Explicit touch handling to prevent bubbling
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        e.stopPropagation();
+        // Allow default behavior (navigation) to proceed
+    };
+    
+    const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
     };
 
@@ -119,9 +125,10 @@ const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableL
                 <Link 
                     href={`/creators/${creator.username}`} 
                     className="creator-credit-link no-underline"
-                    onClick={(e) => e.stopPropagation()}
-                    onTouchStart={handleTouch}
+                    onClick={handleClick}
+                    onTouchEnd={handleTouchEnd} 
                     prefetch={false} 
+                    style={{ position: 'relative', zIndex: 100 }} // Ensure it sits above overlays
                 >
                     {creator.name}
                 </Link>

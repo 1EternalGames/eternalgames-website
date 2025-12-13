@@ -5,12 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { SanityGameRelease } from '@/types/sanity';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { urlFor } from '@/sanity/lib/image';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './TimelineCard.module.css';
 
 import PCIcon from '@/components/icons/platforms/PCIcon';
@@ -32,6 +32,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const [isHovered, setIsHovered] = useState(false);
     
     // Glare effect logic
     const mouseX = useMotionValue(0.5);
@@ -54,6 +55,22 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
         livingCardAnimation.onMouseLeave();
         mouseX.set(0.5);
         mouseY.set(0.5);
+        setIsHovered(false);
+    };
+
+    // Touch Handlers for Instant Interaction
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        livingCardAnimation.onTouchStart(e);
+        setIsHovered(true);
+    };
+
+    const handleTouchEnd = () => {
+        livingCardAnimation.onTouchEnd();
+        setIsHovered(false);
+    };
+    
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        livingCardAnimation.onTouchMove(e);
     };
 
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -77,9 +94,13 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
         <motion.div 
             ref={livingCardRef} 
             onMouseMove={handleMouseMove} 
-            onMouseEnter={livingCardAnimation.onMouseEnter} 
+            onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }}
             onMouseLeave={handleMouseLeave}
-            className={styles.livingCardWrapper} 
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            onTouchMove={handleTouchMove}
+            className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
             style={livingCardAnimation.style}
             layoutId={`${layoutIdKey}-container`}
         >
