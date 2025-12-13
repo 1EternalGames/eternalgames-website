@@ -1,10 +1,10 @@
 // components/effects/KineticGlyphs.tsx
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import styles from './KineticGlyphs.module.css';
 
-const draw = {
+const draw: Variants = {
   hidden: { pathLength: 0, opacity: 0 },
   visible: {
     pathLength: 1,

@@ -1,14 +1,23 @@
 /* components/effects/KineticGlyphs.module.css */
 .glyphContainer {
     position: absolute;
-    /* Adjust inset to control how tight the frame is to the card */
-    inset: -6px; 
+    inset: 0;
     pointer-events: none;
-    z-index: 0;
+    z-index: 2;
 }
 
 .glyphSvg {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     overflow: visible;
 }
+
+.glyphPath {
+    stroke: var(--accent);
+    stroke-width: 1;
+    fill: none;
+}
+
+
