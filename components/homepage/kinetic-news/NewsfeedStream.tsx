@@ -1,84 +1,32 @@
 // components/homepage/kinetic-news/NewsfeedStream.tsx
 'use client';
 
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import { CardProps } from '@/types';
-import { Calendar03Icon } from '@/components/icons/index';
-import { translateTag } from '@/lib/translations';
-import feedStyles from '../feed/Feed.module.css';
-import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import Image from 'next/image';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import styles from './NewsfeedStream.module.css';
+import NewsGridCard from '@/components/news/NewsGridCard';
 
-const LatestNewsListItem = memo(({ item }: { item: CardProps }) => {
-    const primaryTag = item.tags && item.tags.length > 0 ? translateTag(item.tags[0].title) : 'أخبار';
-    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const layoutIdPrefix = "homepage-news-stream";
-    const linkPath = `/news/${item.slug}`;
-    
-    const handleClick = () => {
-        setPrefix(layoutIdPrefix);
-    };
+interface NewsfeedStreamProps {
+    items: CardProps[];
+    isExpanded?: boolean;
+}
 
-    return (
-        <Link
-            href={linkPath}
-            onClick={handleClick}
-            prefetch={false}
-            className="no-underline"
-            style={{ display: 'block' }}
-        >
-            <motion.div
-                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
-                className={feedStyles.newsListItem}
-            >
-                <motion.div layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} className={feedStyles.newsListThumbnail}>
-                    <Image 
-                        loader={sanityLoader} // <-- LOADER ADDED
-                        src={item.imageUrl} 
-                        alt={item.title} 
-                        fill 
-                        sizes="60px" 
-                        placeholder="blur" 
-                        blurDataURL={item.blurDataURL} 
-                        style={{ objectFit: 'cover' }} 
-                    />
-                </motion.div>
-                <div className={feedStyles.newsListInfo}>
-                    <p className={feedStyles.newsListCategory}>{primaryTag}</p>
-                    <motion.h5 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className={feedStyles.newsListTitle}>{item.title}</motion.h5>
-                    {item.date && (
-                        <div style={{ margin: '0.25rem 0 0', fontSize: '1.2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Calendar03Icon style={{width: '14px', height: '14px', color: 'var(--accent)'}} />
-                            <span>{item.date.split(' - ')[0]}</span>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-        </Link>
-    );
-});
-LatestNewsListItem.displayName = "LatestNewsListItem";
-
-export default function NewsfeedStream({ items }: { items: CardProps[] }) {
+export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedStreamProps) {
     const [listItems, setListItems] = useState(items);
     const [isHovered, setIsHovered] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Sync state with props
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+        setListItems(items);
+    }, [items]);
 
+    // Auto-scroll logic (Active only when NOT expanded and NOT hovered)
     useEffect(() => {
-        if (!isHovered && items.length > 5 && !isMobile) {
+        if (!isExpanded && !isHovered && listItems.length > 5) {
             intervalRef.current = setInterval(() => {
-                setListItems(prevItems => {
+                setListItems((prevItems) => {
                     const newItems = [...prevItems];
                     const firstItem = newItems.shift();
                     if (firstItem) {
@@ -86,35 +34,50 @@ export default function NewsfeedStream({ items }: { items: CardProps[] }) {
                     }
                     return newItems;
                 });
-            }, 3000);
+            }, 3500);
         }
 
         return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
+            if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [isHovered, items.length, isMobile]);
+    }, [isHovered, listItems.length, isExpanded]);
 
-    const hoverHandlers = isMobile ? {} : {
-        onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
-    };
+    // Display logic:
+    // If expanded, show 15 items.
+    // If collapsed, show top 5 items (which rotate).
+    const displayItems = isExpanded ? items.slice(0, 15) : listItems.slice(0, 5);
 
     return (
-        <div {...hoverHandlers}>
-            <AnimatePresence initial={false}>
-                {listItems.slice(0, 5).map((item, index) => (
+        <div 
+            className={styles.streamContainer}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {/* 
+               Use LayoutGroup or AnimatePresence mode="popLayout" 
+               popLayout is crucial for the stack effect when items leave the DOM 
+            */}
+            <AnimatePresence mode="popLayout" initial={false}>
+                {displayItems.map((item) => (
                     <motion.div
-                        key={item.id}
-                        layout
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -50 }}
-                        transition={{ type: 'spring', stiffness: 350, damping: 35 }}
+                        key={item.legacyId}
+                        layout // Animate layout changes for smooth reordering
+                        className={styles.streamItemWrapper}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -20, transition: { duration: 0.3 } }}
+                        transition={{ 
+                            type: "spring", 
+                            stiffness: 120, // Smoother, less snap
+                            damping: 20, 
+                            mass: 1
+                        }}
                     >
-                        <LatestNewsListItem item={item} />
-                        {index < 4 && <div className={feedStyles.newsListDivider} />}
+                        <NewsGridCard 
+                            item={item} 
+                            layoutIdPrefix="homepage-stream"
+                            variant="mini"
+                        />
                     </motion.div>
                 ))}
             </AnimatePresence>

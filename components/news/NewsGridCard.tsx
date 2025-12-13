@@ -9,7 +9,7 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
 import { sanityLoader } from '@/lib/sanity.loader'; 
-import { Calendar03Icon } from '@/components/icons';
+import { Calendar03Icon, PenEdit02Icon } from '@/components/icons';
 import styles from './NewsGridCard.module.css';
 import { translateTag } from '@/lib/translations';
 
@@ -17,7 +17,7 @@ type NewsGridCardProps = {
     item: CardProps;
     isPriority?: boolean;
     layoutIdPrefix: string;
-    variant?: 'default' | 'compact';
+    variant?: 'default' | 'compact' | 'mini'; // Added 'mini'
 };
 
 const typeLabelMap: Record<string, string> = {
@@ -67,9 +67,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     const newsType = item.newsType || 'official';
     
     const authorName = item.authors && item.authors.length > 0 ? item.authors[0].name : 'محرر';
-    const authorImage = item.authors && item.authors.length > 0 && item.authors[0].image 
-        ? item.authors[0].image 
-        : null;
     const authorUsername = item.authors && item.authors.length > 0 ? item.authors[0].username : null;
 
     const flyingItems = useMemo(() => {
@@ -118,18 +115,18 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         { hoverX: 0, hoverY: -85, rotate: -2 } 
     ];
 
-    // UPDATED: New tighter configuration for compact desktop cards
+    // Compact Config
     const compactConfig = [
-        { hoverX: -110, hoverY: 30, rotate: -5 },   // Pulled in
-        { hoverX: 70, hoverY: 35, rotate: 4 },      // Pulled in
-        { hoverX: -20, hoverY: -65, rotate: -2 }    // Pulled in
+        { hoverX: -110, hoverY: 30, rotate: -5 },
+        { hoverX: 70, hoverY: 35, rotate: 4 },
+        { hoverX: -20, hoverY: -65, rotate: -2 }
     ];
 
     // Selection logic
     let satelliteConfig;
     if (isMobile) {
         satelliteConfig = mobileConfig;
-    } else if (variant === 'compact') {
+    } else if (variant === 'compact' || variant === 'mini') {
         satelliteConfig = compactConfig;
     } else {
         satelliteConfig = desktopConfig;
@@ -137,13 +134,8 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
     const capsuleContent = (
         <>
-            <div style={{ position: 'relative', width: '20px', height: '20px', borderRadius: '50%', overflow: 'hidden' }}>
-                <Image 
-                    src={typeof authorImage === 'string' ? authorImage : '/default-avatar.svg'} 
-                    alt={authorName}
-                    fill
-                    className={styles.capsuleAvatar}
-                />
+            <div className={styles.capsuleIcon}>
+                <PenEdit02Icon style={{ width: 14, height: 14 }} />
             </div>
             <span>{authorName}</span>
         </>
@@ -183,7 +175,8 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         >
             <motion.div
                 layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
-                className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''}`}
+                // Add mini class if variant is mini
+                className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
             >
                 <Link 
                     href={linkPath} 
@@ -263,6 +256,14 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     <AnimatePresence>
                          {isHovered && flyingItems.map((sat, i) => {
                              if (!sat) return null;
+                             
+                             const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
+                             const isLeft = config.hoverX < 0;
+                             
+                             const positionStyle = isLeft 
+                                ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
+                                : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
+
                              return (
                                  <motion.div
                                     key={`${item.id}-sat-${i}`}
@@ -271,9 +272,9 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                     animate={{
                                         opacity: 1,
                                         scale: 1.15,
-                                        x: satelliteConfig[i]?.hoverX || 0,
-                                        y: satelliteConfig[i]?.hoverY || 0,
-                                        rotate: satelliteConfig[i]?.rotate || 0,
+                                        x: config.hoverX,
+                                        y: config.hoverY,
+                                        rotate: config.rotate,
                                         z: -30 
                                     }}
                                     exit={{
@@ -285,21 +286,24 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         z: 0
                                     }}
                                     transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                    style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                                    style={{ 
+                                        position: 'absolute', 
+                                        ...positionStyle, 
+                                        transformStyle: 'preserve-3d' 
+                                    }}
                                     onClick={(e) => e.stopPropagation()}
                                  >
                                      {sat.link ? (
                                          <Link 
                                             href={sat.link} 
                                             onClick={(e) => e.stopPropagation()}
-                                            // Apply smaller tag style if compact variant
-                                            className={`${styles.satelliteShardLink} ${styles.clickable} ${variant === 'compact' ? styles.small : ''} no-underline`}
+                                            className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
                                             prefetch={false}
                                          >
                                              {sat.label}
                                          </Link>
                                      ) : (
-                                         <span className={`${styles.satelliteShardLink} ${styles.static} ${variant === 'compact' ? styles.small : ''}`}>
+                                         <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
                                              {sat.label}
                                          </span>
                                      )}

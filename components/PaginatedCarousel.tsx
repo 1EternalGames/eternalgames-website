@@ -31,9 +31,10 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
     useEffect(() => {
         resetTimeout();
         if (!isHovered && totalPages > 1) {
+            // Increased from 3500 to 3800ms
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
-                3500
+                3800
             );
         }
         return () => resetTimeout();
@@ -57,10 +58,14 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentPage}
-                        initial={{ opacity: 0, x: 30 }}
+                        // ENTER: Faded and shifted left
+                        initial={{ opacity: 0, x: -50 }}
+                        // CENTER: Fully visible
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -30 }}
-                        transition={{ duration: 0.4, ease: 'easeInOut' }}
+                        // EXIT: Fade out moving right
+                        exit={{ opacity: 0, x: 50 }} 
+                        // Consistent easing for both opacity and transform
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         className={styles.itemList}
                         style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
                     >
@@ -73,7 +78,7 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
                                 <NewsGridCard 
                                     item={item} 
                                     layoutIdPrefix="homepage-latest-articles"
-                                    variant="compact" // MODIFIED: Pass compact variant for recent articles
+                                    variant="compact"
                                 />
                             </motion.div>
                         ))}

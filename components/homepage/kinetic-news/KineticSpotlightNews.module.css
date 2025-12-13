@@ -1,30 +1,20 @@
 /* components/homepage/kinetic-news/KineticSpotlightNews.module.css */
 
-.spotlightContainer {
-    display: flex;
-    flex-direction: column;
+.spotlightGrid {
+    display: grid;
+    /* 1 Column for the spotlight to make them big and impactful */
+    grid-template-columns: 1fr; 
+    gap: 2rem;
+    width: 100%;
+    margin-bottom: 3rem; /* Spacing before the stream starts */
 }
 
-.spotlightItem {
-    position: relative;
-    /* Ensure z-index context for the bar */
-    z-index: 1;
-}
+/* On larger screens, if we have enough space, maybe 2 columns? 
+   Given the sidebar constraint in HomepageFeeds, 1 column is safer/better 
+   for "Spotlight" impact. */
 
-/* Remade Highlight Bar */
-.kineticHighlightBar {
-    position: absolute;
-    right: -2px; /* Slight overhang for depth */
-    top: 50%;
-    transform: translateY(-50%); /* Perfectly centered */
-    height: 70%; /* Sleek vertical strip, not full height */
-    width: 3px;
-    background-color: var(--accent);
-    border-radius: 4px;
-    /* Cleaner, layered shadow for a crisp neon look */
-    box-shadow: 
-        0 0 10px 0px var(--accent),
-        -2px 0 20px 2px color-mix(in srgb, var(--accent) 30%, transparent);
-    z-index: 20;
-    pointer-events: none;
+@media (max-width: 768px) {
+    .spotlightGrid {
+        gap: 2rem;
+    }
 }

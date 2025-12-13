@@ -14,8 +14,9 @@ interface FeedProps {
     latestSectionLabel: string;
     topItems: CardProps[];
     latestItems?: CardProps[];
-    viewAllLink: string;
+    viewAllLink?: string; // Made optional
     viewAllText: string;
+    onViewAll?: () => void; // New prop for custom action
     topItemsContainerClassName?: string;
     renderTopItem: (item: CardProps, index: number) => React.ReactNode;
     renderListItem?: (item: CardProps, index: number) => React.ReactNode;
@@ -44,7 +45,7 @@ const kineticCardVariant = {
 
 export default function Feed({
     topSectionLabel, latestSectionLabel, topItems, latestItems = [],
-    viewAllLink, viewAllText, topItemsContainerClassName = '',
+    viewAllLink, viewAllText, onViewAll, topItemsContainerClassName = '',
     renderTopItem, renderListItem, listDividerClassName = styles.listDivider,
     enableTopSectionHoverEffect = false, latestSectionContent, topSectionContent
 }: FeedProps) {
@@ -80,7 +81,6 @@ export default function Feed({
 
             <div className={styles.latestSection}>
                 <span className={styles.sectionLabel} style={{ alignSelf: 'flex-start' }}>
-                    {/* REVERTED: Standard single live indicator */}
                     <div className={styles.liveIndicator}></div>
                     <span>{latestSectionLabel}</span>
                 </span>
@@ -101,10 +101,21 @@ export default function Feed({
             </div>
             
             <motion.div variants={kineticCardVariant}>
-                <Link href={viewAllLink} className={`${styles.viewAllLink} no-underline`} prefetch={false}>
-                    <ArrowIcon />
-                    <span>{viewAllText}</span>
-                </Link>
+                {onViewAll ? (
+                    <button 
+                        onClick={onViewAll} 
+                        className={`${styles.viewAllLink} no-underline`}
+                        style={{ width: '100%', background: 'none', border: 'none', borderTop: '1px solid var(--border-color)', cursor: 'pointer', fontSize: 'inherit' }}
+                    >
+                         <ArrowIcon />
+                         <span>{viewAllText}</span>
+                    </button>
+                ) : (
+                    <Link href={viewAllLink || '#'} className={`${styles.viewAllLink} no-underline`} prefetch={false}>
+                        <ArrowIcon />
+                        <span>{viewAllText}</span>
+                    </Link>
+                )}
             </motion.div>
         </div>
     );
