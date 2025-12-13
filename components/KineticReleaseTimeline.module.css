@@ -14,9 +14,6 @@
   width: 2px;
   height: 100%;
   z-index: 1;
-  /* CRITICAL FIX: Force GPU acceleration and ensure rendering */
-  will-change: transform;
-  backface-visibility: visible;
 }
 
 .timelineSpineTrack {
@@ -31,24 +28,20 @@
   top: 0;
   right: 0;
   width: 100%;
-  height: 100%;
+  /* Removed height: 100% since it's controlled by JS now */
   background-color: var(--accent);
   border-radius: 2px;
-  transform-origin: top;
   box-shadow: 0 0 10px 0 var(--accent);
-  /* CRITICAL FIX: Ensure progress bar renders */
-  will-change: transform;
+  /* Removed transform-origin and will-change to improve rendering quality */
 }
 
 .timelineItemsWrapper {
   display: flex;
   flex-direction: column;
-  /* CRITICAL FIX: Create new stacking context */
   position: relative;
   z-index: 2;
 }
 
-/* --- REVISED LAYOUT LOGIC --- */
 .timelineItemWrapper {
   display: flex;
   justify-content: space-between;
@@ -57,8 +50,6 @@
   position: relative;
   margin-bottom: 4rem;
   gap: 80px;
-  /* CRITICAL FIX: Remove z-index that was conflicting */
-  /* z-index: 2; REMOVED */
 }
 
 .timelineItemWrapper.left {
@@ -109,7 +100,6 @@
   width: 100%;
   height: 100%;
   z-index: 10;
-  /* CRITICAL FIX: Force rendering */
   pointer-events: none;
 }
 
@@ -122,9 +112,6 @@
   border-radius: 50%;
   transform: translateX(-50%) translateY(-50%);
   transition: background-color 0.2s ease-in-out, box-shadow 0.3s ease-in-out;
-  /* CRITICAL FIX: Ensure dots render */
-  will-change: background-color, box-shadow;
-  backface-visibility: visible;
 }
 
 .releasedIndicator {
@@ -173,22 +160,19 @@
   transition: all 0.15s ease-out;
   box-shadow: 0 5px 20px -5px rgba(0,0,0,0.1);
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .timelineTerminusButton:hover  {
-  color: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent);
-}
-}
-
+    color: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
   .timelineTerminusButton:active  {
-  color: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent);
-}
+    color: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
 }
 .timelineTerminusButton:active {
   color: var(--accent);
@@ -196,7 +180,6 @@
   transform: translateY(-3px);
   box-shadow: 0 8px 25px -5px color-mix(in srgb, var(--accent) 30%, transparent);
 }
-
 
 .terminusIcon {
   width: 20px;

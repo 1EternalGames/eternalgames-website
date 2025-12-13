@@ -1,8 +1,8 @@
 // components/homepage/kinetic-news/NewsfeedStream.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { CardProps } from '@/types';
 import styles from './NewsfeedStream.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
@@ -16,15 +16,18 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     const [listItems, setListItems] = useState(items);
     const [isHovered, setIsHovered] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // Intersection observer to prevent animating when not visible
+    const containerRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(containerRef, { amount: 0.1 });
 
-    // Sync state with props
     useEffect(() => {
         setListItems(items);
     }, [items]);
 
-    // Auto-scroll logic (Active only when NOT expanded and NOT hovered)
     useEffect(() => {
-        if (!isExpanded && !isHovered && listItems.length > 5) {
+        // Only scroll if: Not expanded, Not hovered, and IS in view
+        if (!isExpanded && !isHovered && isInView && listItems.length > 5) {
             intervalRef.current = setInterval(() => {
                 setListItems((prevItems) => {
                     const newItems = [...prevItems];
@@ -40,36 +43,33 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [isHovered, listItems.length, isExpanded]);
+    }, [isHovered, listItems.length, isExpanded, isInView]);
 
-    // Display logic:
-    // If expanded, show 15 items.
-    // If collapsed, show top 5 items (which rotate).
-    const displayItems = isExpanded ? items.slice(0, 15) : listItems.slice(0, 5);
+    const displayItems = useMemo(() => 
+        isExpanded ? items.slice(0, 15) : listItems.slice(0, 5),
+    [isExpanded, items, listItems]);
 
     return (
         <div 
+            ref={containerRef}
             className={styles.streamContainer}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            style={{ minHeight: isExpanded ? 'auto' : '400px' }} // Prevent layout snap
         >
-            {/* 
-               Use LayoutGroup or AnimatePresence mode="popLayout" 
-               popLayout is crucial for the stack effect when items leave the DOM 
-            */}
             <AnimatePresence mode="popLayout" initial={false}>
                 {displayItems.map((item) => (
                     <motion.div
                         key={item.legacyId}
-                        layout // Animate layout changes for smooth reordering
+                        layout 
                         className={styles.streamItemWrapper}
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -20, transition: { duration: 0.3 } }}
+                        exit={{ opacity: 0, scale: 0.98, y: -10 }}
                         transition={{ 
                             type: "spring", 
-                            stiffness: 120, // Smoother, less snap
-                            damping: 20, 
+                            stiffness: 120, 
+                            damping: 25, 
                             mass: 1
                         }}
                     >

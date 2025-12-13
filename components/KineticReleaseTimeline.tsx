@@ -42,8 +42,12 @@ const SynopsisDisplay = ({ synopsis, isLeft, isInView }: { synopsis: string; isL
 
 const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const itemRef = useRef(null);
-    const cardIsInView = useInView(itemRef, { once: true, amount: 0.5 });
+    // MODIFIED: Increased threshold to 0.55 (55%)
+    // This triggers the animation after the image (top ~60%) is mostly visible,
+    // but before the user scrolls past the entire card content.
+    const cardIsInView = useInView(itemRef, { once: true, amount: 0.55 });
     const isLeft = index % 2 === 0;
+    
     const variants = {
         hidden: { opacity: 0, x: isLeft ? -50 : 50, scale: 0.9 },
         visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } }
@@ -52,7 +56,11 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     return (
         <div ref={itemRef} className={`${styles.timelineItemWrapper} ${isLeft ? styles.left : styles.right}`}>
             <SynopsisDisplay synopsis={release.synopsis} isLeft={isLeft} isInView={cardIsInView} />
-            <motion.div variants={variants} initial="hidden" animate={cardIsInView ? "visible" : "hidden"}>
+            <motion.div 
+                variants={variants} 
+                initial="hidden" 
+                animate={cardIsInView ? "visible" : "hidden"}
+            >
                 <TimelineCard release={release} />
             </motion.div>
         </div>
@@ -80,7 +88,10 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
     const terminusRef = useRef(null);
     const isTerminusInView = useInView(terminusRef, { once: true, amount: 0.8 });
     const [dotPositions, setDotPositions] = useState<number[]>([]);
+    
     const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 50%", "end 50%"], });
+    
+    const height = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
     
     const releasesForThisMonth = useMemo(() => {
         if (!allReleases) return [];
@@ -120,7 +131,7 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                 <div className={styles.timelineSpineTrack} />
                 <motion.div 
                     className={styles.timelineSpineProgress} 
-                    style={{ scaleY: scrollYProgress }}
+                    style={{ height }}
                 />
                 <div className={styles.dotsContainer}>
                     {dotPositions.map((pos, index) => ( 
@@ -161,7 +172,7 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                         <Link 
                             href="/releases" 
                             className={`${styles.timelineTerminusButton} no-underline`}
-                            prefetch={false} // FIX: Disable auto-prefetch
+                            prefetch={false}
                         >
                             <ViewAllIcon className={styles.terminusIcon} />
                             <span>عرض كل الإصدارات</span>

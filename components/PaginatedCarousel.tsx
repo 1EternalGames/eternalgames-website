@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { CardProps } from '@/types';
 import styles from './PaginatedCarousel.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
@@ -19,6 +19,10 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
 
+    // Intersection observer to prevent flipping when not visible
+    const containerRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(containerRef, { amount: 0.1 });
+
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 768);
         checkMobile();
@@ -30,15 +34,15 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
 
     useEffect(() => {
         resetTimeout();
-        if (!isHovered && totalPages > 1) {
-            // Increased from 3500 to 3800ms
+        // Only flip if: Not hovered, IS in view, and has more than 1 page
+        if (!isHovered && isInView && totalPages > 1) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
                 3800
             );
         }
         return () => resetTimeout();
-    }, [currentPage, isHovered, totalPages]);
+    }, [currentPage, isHovered, totalPages, isInView]);
 
     const startIndex = currentPage * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -51,6 +55,7 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
 
     return (
         <div 
+            ref={containerRef}
             className={styles.paginatedContainer}
             {...hoverHandlers}
         >
@@ -58,18 +63,14 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentPage}
-                        // ENTER: Faded and shifted left
                         initial={{ opacity: 0, x: -50 }}
-                        // CENTER: Fully visible
                         animate={{ opacity: 1, x: 0 }}
-                        // EXIT: Fade out moving right
                         exit={{ opacity: 0, x: 50 }} 
-                        // Consistent easing for both opacity and transform
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         className={styles.itemList}
                         style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
                     >
-                        {currentItems.map((item, index) => (
+                        {currentItems.map((item) => (
                             <motion.div
                                 key={item.legacyId}
                                 style={{ height: 'auto', position: 'relative', zIndex: 1 }}
