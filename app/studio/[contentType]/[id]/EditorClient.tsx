@@ -21,9 +21,14 @@ import styles from './Editor.module.css';
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import type { SaveStatus } from './SaveStatusIcons';
 
+// Updated type definition
 type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
     newsType?: 'official' | 'rumor' | 'leak';
+    price?: string; 
+    developer?: { _id: string, title: string } | null; // UPDATED to object
+    publisher?: { _id: string, title: string } | null; // UPDATED to object
+    isTBA?: boolean; 
 };
 
 type ColorMapping = {
@@ -62,6 +67,10 @@ const getInitialEditorState = (doc: EditorDocument) => {
         synopsis: doc.synopsis || '',
         category: doc.category || null,
         newsType: doc.newsType || 'official',
+        price: doc.price || '', 
+        developer: doc.developer || null, // UPDATED
+        publisher: doc.publisher || null, // UPDATED
+        isTBA: doc.isTBA || false, 
     };
 };
 
@@ -122,6 +131,17 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (sourceOfTruth._type === 'news' && normalize(currentState.newsType, 'official') !== normalize(sourceOfTruth.newsType, 'official')) {
         patch.newsType = currentState.newsType;
     }
+    
+    // NEW: Compare using reference _id for dev/pub
+    if (normalize(currentState.price, '') !== normalize(sourceOfTruth.price, '')) patch.price = currentState.price;
+    if (normalize(currentState.developer?._id, null) !== normalize(sourceOfTruth.developer?._id, null)) {
+        patch.developer = currentState.developer ? { _type: 'reference', _ref: currentState.developer._id } : undefined;
+    }
+    if (normalize(currentState.publisher?._id, null) !== normalize(sourceOfTruth.publisher?._id, null)) {
+        patch.publisher = currentState.publisher ? { _type: 'reference', _ref: currentState.publisher._id } : undefined;
+    }
+    
+    if (normalize(currentState.isTBA, false) !== normalize(sourceOfTruth.isTBA, false)) patch.isTBA = currentState.isTBA;
 
     if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
     if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
@@ -149,6 +169,8 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     return patch;
 };
 
+// ... Rest of the file (EditorClient component) is identical, just using the new types and logic ...
+// (Omitting full repetition of EditorClient body for brevity unless requested, as only the types and Diff logic needed change to support objects)
 export function EditorClient({ 
     document: initialDocument, 
     colorDictionary: initialColorDictionary,
@@ -184,7 +206,6 @@ export function EditorClient({
     const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
     
-    // NEW STATE: Auto Save Enabled (Default: false)
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
 
     const stateRef = useRef(state);
@@ -340,7 +361,7 @@ export function EditorClient({
         checkSlug();
     }, [debouncedSlug, state._id, state._type, sourceOfTruth.slug?.current]);
 
-    const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && releaseDate.trim() && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
+    const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category, isTBA } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && (isTBA || releaseDate.trim()) && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
     const saveWorkingCopy = useCallback(async (): Promise<boolean> => { 
         const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
@@ -371,6 +392,10 @@ export function EditorClient({
             synopsis: state.synopsis,
             category: state.category,
             newsType: state.newsType,
+            price: state.price, 
+            developer: state.developer, // UPDATED
+            publisher: state.publisher, // UPDATED
+            isTBA: state.isTBA,
             content: tiptapToPortableText(JSON.parse(editorContentJson)),
             _updatedAt: new Date().toISOString(),
         };
@@ -398,7 +423,6 @@ export function EditorClient({
     }, [state, sourceOfTruth, editorContentJson, slugValidationStatus, toast]);
     
     useEffect(() => {
-        // UPDATED: Only trigger auto-save if hasChanges AND isAutoSaveEnabled
         if (hasChanges && isAutoSaveEnabled) {
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
 
@@ -412,7 +436,7 @@ export function EditorClient({
                 }
             }, 30000); 
         }
-    }, [hasChanges, saveWorkingCopy, isAutoSaveEnabled]); // Added isAutoSaveEnabled dependency
+    }, [hasChanges, saveWorkingCopy, isAutoSaveEnabled]); 
 
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => { 
         const didSave = await saveWorkingCopy(); 
@@ -479,7 +503,6 @@ export function EditorClient({
                         colorDictionary={colorDictionary}
                         clientSaveStatus={clientSaveStatus}
                         serverSaveStatus={serverSaveStatus}
-                        // NEW PROPS
                         isAutoSaveEnabled={isAutoSaveEnabled}
                         onToggleAutoSave={() => setIsAutoSaveEnabled(prev => !prev)}
                     />

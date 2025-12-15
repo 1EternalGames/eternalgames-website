@@ -31,6 +31,19 @@ export interface SanityGame {
     mainImage?: SanityImage;
 }
 
+// New Types
+export interface SanityDeveloper {
+    _id: string;
+    title: string;
+    slug: string;
+}
+
+export interface SanityPublisher {
+    _id: string;
+    title: string;
+    slug: string;
+}
+
 export interface SanityReview {
     _id: string;
     _type: 'review';
@@ -82,7 +95,7 @@ export interface SanityNews {
     legacyId: number;
     title: string;
     slug: string;
-    newsType: 'official' | 'rumor' | 'leak'; // Added Field
+    newsType: 'official' | 'rumor' | 'leak'; 
     reporters: SanityAuthor[];
     designers?: SanityAuthor[];
     mainImage: SanityImage;
@@ -98,9 +111,14 @@ export interface SanityGameRelease {
     title: string;
     slug: string;
     releaseDate: string;
+    isTBA?: boolean;       
+    price?: string;        
+    developer?: SanityDeveloper; 
+    publisher?: SanityPublisher; 
     platforms: ('PC' | 'PlayStation' | 'PlayStation 5' | 'Xbox' | 'Switch')[];
     synopsis: string;
     mainImage: SanityImage;
+    tags?: SanityTag[]; // Updated to full SanityTag interface
 }
 
 export interface SanitySearchResult {

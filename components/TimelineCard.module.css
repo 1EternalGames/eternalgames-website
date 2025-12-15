@@ -1,160 +1,381 @@
 /* components/TimelineCard.module.css */
+
+/* --- CORE CONTAINER --- */
 .livingCardWrapper {
-    transform-style: preserve-d;
+    transform-style: preserve-3d;
     height: 100%;
+    position: relative;
+    z-index: 1;
+    perspective: 1000px;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Base style for card */
+.livingCardWrapper.activeState {
+    z-index: 100;
+}
+
+@media (hover: hover) {
+    .livingCardWrapper:hover {
+        z-index: 100;
+    }
+}
+
+/* --- THE CARD FRAME --- */
 .timelineCard {
     display: flex;
     flex-direction: column;
     height: 100%;
     text-decoration: none;
     background-color: var(--bg-secondary);
-    border-radius: 8px;
-    overflow: hidden;
+    border-radius: 16px;
+    overflow: visible; 
     border: 1px solid var(--border-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                box-shadow 0.4s ease, 
+                border-color 0.4s ease;
     will-change: transform;
-    transform-style: preserve-d;
-    position: relative; 
+    transform-style: preserve-3d;
+    position: relative;
 }
 
-/* GLARE */
-.livingCardGlare {
+.timelineCard::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 40px;
+    height: 40px;
+    border-top: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 16px 0 0 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 20;
+    pointer-events: none;
+}
+
+/* --- HOVER / ACTIVE STATES --- */
+.livingCardWrapper.activeState .timelineCard {
+    transform: translateZ(20px) translateY(-5px);
+    box-shadow: 
+        0 25px 60px -12px rgba(0,0,0,0.7),
+        0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+    border-color: var(--accent);
+}
+.livingCardWrapper.activeState .timelineCard::before {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    border-color: var(--accent);
+    box-shadow: inset 0 0 20px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.livingCardWrapper.activeState .cardImage {
+    transform: scale(1.08);
+}
+.livingCardWrapper.activeState .glare {
+    opacity: 1;
+}
+
+@media (hover: hover) {
+    .livingCardWrapper:hover .timelineCard {
+        transform: translateZ(20px) translateY(-5px);
+        box-shadow: 
+            0 25px 60px -12px rgba(0,0,0,0.7),
+            0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+        border-color: var(--accent);
+    }
+    .livingCardWrapper:hover .timelineCard::before {
+        width: 100%;
+        height: 100%;
+        border-radius: 16px;
+        border-color: var(--accent);
+        box-shadow: inset 0 0 20px color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    .livingCardWrapper:hover .cardImage {
+        transform: scale(1.08);
+    }
+    .livingCardWrapper:hover .glare {
+        opacity: 1;
+    }
+}
+
+/* --- IMAGE AREA --- */
+.imageFrame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    border-bottom: 1px solid var(--border-color);
+    transform: translateZ(0);
+}
+
+.cardImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.glare {
     position: absolute;
     inset: 0;
     background: radial-gradient(
         circle at var(--mouse-x) var(--mouse-y),
-        rgba(255, 255, 255, 0.2),
+        rgba(255, 255, 255, 0.15),
         transparent 40%
     );
     opacity: 0;
-    transition: opacity 0.4s ease-out;
-    z-index: 1;
+    transition: opacity 0.4s ease;
     pointer-events: none;
+    z-index: 10;
+    mix-blend-mode: overlay;
 }
 
-/* HOVER / ACTIVE STATE STYLES */
-/* Use .activeState class or :hover (desktop) */
-
-/* Desktop Hover */
-@media (hover: hover) {
-    .livingCardWrapper:hover .timelineCard {
-        border-color: var(--accent);
-        box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);
-    }
-    .livingCardWrapper:hover .livingCardGlare { opacity: 1; }
-    .livingCardWrapper:hover .image { transform: scale(1.05); }
-}
-
-/* Manual Active State (Touch) */
-.livingCardWrapper.activeState .timelineCard {
-    border-color: var(--accent);
-    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);
-}
-.livingCardWrapper.activeState .livingCardGlare { opacity: 1; }
-.livingCardWrapper.activeState .image { transform: scale(1.05); }
-
-.imageContainer {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio */
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.image {
+/* --- BADGES --- */
+.statusBadge {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.4s ease-out;
-}
-
-@keyframes pulse-glow {
-    0%, 100% {
-        box-shadow: 0 0 10px 0px color-mix(in srgb, var(--accent) 50%, transparent);
-        transform: scale(1);
-    }
-    50% {
-        box-shadow: 0 0 16px 2px color-mix(in srgb, var(--accent) 70%, transparent);
-        transform: scale(1.03);
-    }
-}
-
-.releasedBadge {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background-color: color-mix(in srgb, var(--accent) 95%, black 20%);
-    backdrop-filter: blur(5px);
-    color: #fff;
+    top: 1rem;
+    right: 1rem;
+    left: auto; 
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.4rem 1rem;
     border-radius: 999px;
     font-family: var(--font-ui);
     font-size: 1.2rem;
-    font-weight: 600;
+    font-weight: 700;
+    backdrop-filter: blur(8px);
+    z-index: 20;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
-    z-index: 2;
-    animation: pulse-glow 3s infinite ease-in-out;
+    transform: translateZ(20px);
 }
 
-.checkIcon {
+.statusBadge.released {
+    background-color: var(--accent);
+    color: #000;
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.statusBadge.upcoming {
+    background-color: rgba(20, 20, 25, 0.85);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+.iconSvg {
     width: 14px;
     height: 14px;
-    filter: drop-shadow(0 0 5px #fff);
 }
 
-.cardContent {
+/* --- CONTENT AREA (HUD) --- */
+.cardBody {
     padding: 1.5rem;
-    flex-grow: 1;
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, color-mix(in srgb, var(--bg-secondary) 95%, black) 100%);
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    background-color: var(--bg-secondary);
+    gap: 1rem;
+    transform: translateZ(10px);
 }
 
-.cardHeader h4 {
-    font-family: var(--font-heading);
-    font-size: 1.8rem;
-    line-height: 1.3;
-    color: var(--text-primary);
-    margin: 0 0 0.4rem 0;
-}
-
-.cardHeader p {
-    font-family: var(--font-ui);
-    font-size: 1.4rem;
-    color: var(--text-secondary);
-    margin: 0;
-}
-
-.platformIcons {
+.titleRow {
     display: flex;
-    gap: 1.2rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.cardTitle {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin: 0;
+    transition: color 0.3s ease;
+}
+
+.livingCardWrapper.activeState .cardTitle { color: var(--accent); }
+@media (hover: hover) { .livingCardWrapper:hover .cardTitle { color: var(--accent); } }
+
+/* --- METADATA GRID --- */
+.metaGrid {
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--border-color);
 }
 
-.platformIcon {
-    width: 20px;
-    height: 20px;
+.dateBlock {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
     color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 1.4rem;
+}
+
+.platformRow {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-height: 24px; 
+}
+
+/* Base style for platform items */
+.platformTagBase {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 0;
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    
+    /* Disable pointer events on the base state so they don't block clicks */
+    pointer-events: none; 
+}
+
+/* Interactive state when flying */
+.platformTagBase.flying {
+    pointer-events: auto;
+    cursor: default;
+}
+
+.platformIcon {
+    width: 18px;
+    height: 18px;
+}
+
+/* --- FLYING TAGS CONTAINER --- */
+.flyingTagsContainer {
+    position: absolute;
+    /* Create a large invisible aura so mouse doesn't "leave" the card when reaching for tags */
+    inset: -100px; 
+    pointer-events: none; /* Allow clicks to pass through the empty space */
+    z-index: 100;
+    transform-style: preserve-3d;
+    overflow: visible;
+}
+
+/* --- SATELLITES (FLYING SHARDS) --- */
+.satelliteField {
+    position: absolute;
+    inset: -50px;
+    pointer-events: none;
+    z-index: 50; 
+    transform-style: preserve-3d;
+}
+
+.satelliteShard {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) translateZ(0px);
+    pointer-events: auto;
+    z-index: 100;
+}
+
+.shardPill {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1.2rem;
+    background-color: rgba(10, 10, 15, 0.9);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1.2rem;
+    font-weight: 700;
+    
+    /* FIX: Force single line and handle overflow */
+    white-space: nowrap;
+    width: max-content;
+    max-width: 240px; /* Reasonable limit for extremely long titles */
+    text-overflow: ellipsis;
+    overflow: hidden;
+    
+    text-decoration: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: default;
+}
+
+/* --- Countdown Colors --- */
+.statusPill.golden { border-color: #FFD700; color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+.statusPill.red { border-color: #DC2626; color: #DC2626; box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
+.statusPill.orange { border-color: #F97316; color: #F97316; box-shadow: 0 0 15px rgba(249, 115, 22, 0.2); }
+.statusPill.cyan { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* --- Metadata Colors --- */
+.pricePill {
+    border-color: #FFD700; /* Golden */
+    color: #FFD700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.devPill {
+    border-color: var(--accent); /* Cyan */
+    color: var(--accent);
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+.genrePill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    padding: 0.4rem 1rem;
+    background-color: rgba(0, 0, 0, 0.85);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
+    
+    /* FIX: Force single line and handle overflow */
+    white-space: nowrap;
+    width: max-content;
+    max-width: 200px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+    /* FIX: Flip direction so Icon is on Left, Text on Right (better for Left-anchored tags) */
+    flex-direction: row-reverse; 
+}
+
+.shardPill.interactive:hover, .genrePill:hover {
+    background-color: var(--accent);
+    color: #000;
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.shardIcon {
+    width: 14px;
+    height: 14px;
 }
 
 @media (max-width: 768px) {
-    .cardContent { padding: 1rem; }
-    .cardHeader h4 { font-size: 1.6rem; }
-    .cardHeader p { font-size: 1.2rem; }
-    .platformIcons { gap: 0.8rem; padding-top: 0.8rem; margin-top: 0.8rem; }
+    .cardTitle { font-size: 1.8rem; }
+    .statusBadge { font-size: 1.1rem; padding: 0.3rem 0.8rem; }
+    .dateBlock { font-size: 1.3rem; }
     .platformIcon { width: 16px; height: 16px; }
+    .satelliteField { display: none; }
+    .flyingTagsContainer { display: none; }
 }

@@ -6,6 +6,8 @@ import article from './articleType'
 import news from './newsType'
 import game from './gameType'
 import gameRelease from './gameReleaseType'
+import developer from './developerType' // NEW
+import publisher from './publisherType' // NEW
 import imageCompare from './imageCompareType'
 import twoImageGrid from './twoImageGridType'
 import fourImageGrid from './fourImageGridType'
@@ -26,13 +28,15 @@ export const schemaTypes = [
   game,
   gameRelease,
   tag,
+  developer, // NEW
+  publisher, // NEW
   // Creators
   author,
   designer,
   reporter,
   reviewer,
   // Singleton Documents
-  colorDictionary, // ADDED
+  colorDictionary,
   // Objects & Custom Inputs
   blockContent,
   imageCompare,

@@ -247,6 +247,30 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
     } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
 
+// NEW: Developer Creation Action
+export async function createDeveloperAction(title: string): Promise<{_id: string, title: string} | null> {
+    const session = await getAuthenticatedSession();
+    const userRoles = session.user.roles;
+    if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR'].includes(role))) return null;
+    try { 
+        const newDev = await sanityWriteClient.create({ _type: 'developer', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
+        revalidateTag('studio-metadata', 'max');
+        return { _id: newDev._id, title: newDev.title }; 
+    } catch (error) { console.error("Failed to create developer:", error); return null; }
+}
+
+// NEW: Publisher Creation Action
+export async function createPublisherAction(title: string): Promise<{_id: string, title: string} | null> {
+    const session = await getAuthenticatedSession();
+    const userRoles = session.user.roles;
+    if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR'].includes(role))) return null;
+    try { 
+        const newPub = await sanityWriteClient.create({ _type: 'publisher', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
+        revalidateTag('studio-metadata', 'max');
+        return { _id: newPub._id, title: newPub.title }; 
+    } catch (error) { console.error("Failed to create publisher:", error); return null; }
+}
+
 export async function validateSlugAction(slug: string, docId: string): Promise<{ isValid: boolean; message: string }> {
     if (!docId) return { isValid: false, message: 'بانتظار مُعرِّف الوثيقة...' };
     if (!slug || slug.trim() === '') return { isValid: false, message: 'لا يكُن المُعرِّفُ خاويًا.' };

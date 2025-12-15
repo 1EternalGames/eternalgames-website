@@ -40,7 +40,6 @@ export const articleBySlugQuery = groq`*[_type == "article" && slug.current == $
 export const newsBySlugQuery = groq`*[_type == "news" && slug.current == $slug && ${publishedFilter}][0] { ..., "reporters": reporters[]->{${creatorFields}}, "designers": designers[]->{${creatorFields}}, "game": game->{${gameFields}}, "mainImage": mainImage{${mainImageFields}}, "category": category->{_id, title, "slug": slug.current}, "relatedNews": coalesce(relatedNews[${publishedFilter}]->${relatedContentProjection}, *[_type == "news" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}), ${contentProjection} }`
 
 // --- OPTIMIZED QUERIES ---
-// NEW: Lightweight metadata query to avoid fetching 10MB content bodies just for SEO tags
 export const minimalMetadataQuery = groq`
   *[_type in ["review", "article", "news"] && slug.current == $slug][0] {
     title,
@@ -78,6 +77,8 @@ const editorDocProjection = groq`
   "game": game->{_id, title}, 
   "tags": tags[]->{_id, title}, 
   "category": category->{_id, title}, 
+  "developer": developer->{_id, title}, 
+  "publisher": publisher->{_id, title},
   "mainImage": mainImage.asset->{ "_ref": _id, "url": url, "metadata": metadata }, 
   content[]{ 
     ..., 
@@ -92,10 +93,13 @@ const editorDocProjection = groq`
 `
 export const editorDocumentQuery = groq`*[_id in [$id, 'drafts.' + $id]] | order(_updatedAt desc)[0]{ ${editorDocProjection} }`
 
+// UPDATED: Include Developers and Publishers lists
 export const studioMetadataQuery = groq`{
   "games": *[_type == "game"] | order(title asc){_id, title},
   "tags": *[_type == "tag"] | order(title asc){_id, title, category},
-  "creators": *[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}
+  "creators": *[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId},
+  "developers": *[_type == "developer"] | order(title asc){_id, title},
+  "publishers": *[_type == "publisher"] | order(title asc){_id, title}
 }`
 
 export const editorDataQuery = groq`{
@@ -150,14 +154,24 @@ export const featuredReviewsQuery = groq`*[_type == "review" && ${publishedFilte
 export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] { _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt, "authors": authors[]->{name}, "reporters": reporters[]->{name}, "gameTitle": game->title, "tags": tags[]->{title} }`
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
-export const allReleasesQuery = groq`*[_type == "gameRelease" && defined(releaseDate) && releaseDate >= "2023-01-01"] | order(releaseDate asc) { _id, legacyId, title, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, "game": game->{ "slug": slug.current }, "slug": game->slug.current }`
+
+// UPDATED: Release Query with new expanded references
+export const allReleasesQuery = groq`*[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { 
+    _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
+    "developer": developer->{title, "slug": slug.current}, 
+    "publisher": publisher->{title, "slug": slug.current}, 
+    "mainImage": mainImage{${mainImageFields}}, 
+    "game": game->{ "slug": slug.current }, 
+    "slug": game->slug.current, 
+    "tags": tags[]->{${tagFields}} 
+}`
+
 export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`
 export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`
 export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`
 export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`
 export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`
 
-// UPDATED: 20 items per batch for all index queries
 export const newsIndexQuery = groq`{
   "hero": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] { ${cardProjection}, synopsis },
   "grid": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...20] { ${cardListProjection} },
@@ -184,10 +198,17 @@ export const consolidatedHomepageQuery = groq`{
   "reviews": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] { ${cardProjection} },
   "articles": *[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} },
   "news": *[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} },
-  "releases": *[_type == "gameRelease" && defined(releaseDate) && releaseDate >= "2023-01-01"] | order(releaseDate asc) { _id, legacyId, title, releaseDate, platforms, synopsis, "mainImage": mainImage{${mainImageFields}}, "game": game->{ "slug": slug.current }, "slug": game->slug.current }
+  "releases": *[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { 
+      _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
+      "developer": developer->{title, "slug": slug.current}, 
+      "publisher": publisher->{title, "slug": slug.current},
+      "mainImage": mainImage{${mainImageFields}}, 
+      "game": game->{ "slug": slug.current }, 
+      "slug": game->slug.current, 
+      "tags": tags[]->{${tagFields}} 
+  }
 }`
 
-// --- Re-exported Filter Queries ---
 export const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category}`
 export const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}`
 export const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}`
