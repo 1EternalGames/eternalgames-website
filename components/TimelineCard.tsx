@@ -51,7 +51,7 @@ const PRICE_FLY_CONFIG = {
 // --- CONFIGURATION FOR DEVELOPER (Top Center) ---
 const DEV_FLY_CONFIG = {
     X: 0,
-    Y: -155,
+    Y: -150, // UPDATED
     ROT: 0
 };
 
@@ -64,9 +64,9 @@ const STATUS_FLY_CONFIG = {
 
 // --- CONFIGURATION FOR PUBLISHER (Top Left) ---
 const PUBLISHER_FLY_CONFIG = {
-    X: 130, 
-    Y: -110, 
-    ROT: -5,
+    X: -55, // UPDATED
+    Y: -150, // UPDATED
+    ROT: 0, // UPDATED
     anchor: 'right' // Anchored right pushes it left
 };
 
@@ -176,7 +176,8 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                  x: STATUS_FLY_CONFIG.X, 
                  y: STATUS_FLY_CONFIG.Y, 
                  rotate: STATUS_FLY_CONFIG.ROT,
-                 anchor: 'center'
+                 anchor: 'center',
+                 link: null
              });
         }
 
@@ -201,7 +202,8 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                 x: PRICE_FLY_CONFIG.X, 
                 y: PRICE_FLY_CONFIG.Y, 
                 rotate: PRICE_FLY_CONFIG.ROT,
-                anchor: 'left' 
+                anchor: 'left',
+                link: null
             });
         }
         
@@ -258,7 +260,6 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
              const targetBottom = GENRE_FLY_CONFIG.TARGET_BOTTOM + (i * GENRE_FLY_CONFIG.BOTTOM_STEP);
              const rot = GENRE_FLY_CONFIG.BASE_ROT + (i * GENRE_FLY_CONFIG.ROT_STEP);
              
-             // Safely handle potentially missing slug for legacy tags using explicit casting
              const slug = typeof g.slug === 'string' ? g.slug : ((g.slug as any)?.current || '');
 
              return {
@@ -408,17 +409,20 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                             animate={{ opacity: 1, x: 0, rotate: g.rotate, scale: 1.2 }}
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ ...morphTransition, delay: i * 0.05 }}
-                            className={styles.genrePill}
                             style={{ 
                                 position: 'absolute', 
                                 right: g.right, 
                                 bottom: g.bottom, 
                                 zIndex: 100, 
                                 transformOrigin: 'center',
-                                cursor: 'pointer'
+                                cursor: 'pointer' // FIX: Ensure cursor is pointer here too
                             }}
                         >
-                            <Link href={g.link || '#'} onClick={(e) => e.stopPropagation()} className="no-underline" style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit'}}>
+                            <Link 
+                                href={g.link || '#'} 
+                                onClick={(e) => e.stopPropagation()} 
+                                className={`${styles.genrePill} no-underline`} 
+                            >
                                 <TagIcon style={{ width: '14px', height: '14px' }} />
                                 <span style={{ fontSize: '1.1rem' }}>{g.name}</span>
                             </Link>
@@ -443,6 +447,11 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                             if (item.type === 'status') pillStyleClass = `${styles.shardPill} ${styles.statusPill} ${styles[item.colorClass!]}`; 
                             else if (item.type === 'price') pillStyleClass = `${styles.shardPill} ${styles.pricePill}`;
                             else if (item.type === 'dev') pillStyleClass = `${styles.shardPill} ${styles.devPill}`;
+                            
+                            // Add interactive class if it has a link
+                            if (item.link) {
+                                pillStyleClass += ` ${styles.interactive}`;
+                            }
 
                             const content = <span>{item.label}</span>;
 
@@ -454,10 +463,15 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                                     animate={{ opacity: 1, scale: 1.1, x: item.x, y: item.y, rotate: item.rotate, z: 40 }}
                                     exit={{ opacity: 0, scale: 0.4, x: 0, y: 0 }}
                                     transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                    style={{ ...positionStyle }}
+                                    style={{ ...positionStyle, cursor: item.link ? 'pointer' : 'default' }} // FIX: Cursor here as well
                                 >
                                     {item.link ? (
-                                         <Link href={item.link} onClick={(e) => e.stopPropagation()} className={`${pillStyleClass} no-underline interactive`}>
+                                         <Link 
+                                            href={item.link} 
+                                            onClick={(e) => e.stopPropagation()} 
+                                            className={`${pillStyleClass} no-underline`}
+                                            prefetch={false}
+                                         >
                                              {content}
                                          </Link>
                                     ) : (

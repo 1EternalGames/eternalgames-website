@@ -41,7 +41,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
     return (
         <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
             <h1 className="page-title">أعمال الاستوديو: {studioName}</h1>
-            <ReleasePageClient releases={releases} />
+            <ReleasePageClient releases={releases} hideHeader={true} />
         </div>
     );
 }

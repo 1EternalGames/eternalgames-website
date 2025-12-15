@@ -1,11 +1,12 @@
 // app/studio/[contentType]/[id]/metadata/PublisherInput.tsx
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createPublisherAction } from '../../../actions';
+import { createPublisherAction, deleteMetadataAction } from '../../../actions';
 import { AddPublisherModal } from './AddPublisherModal';
 import ActionButton from '@/components/ActionButton';
+import { useToast } from '@/lib/toastStore';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
 
@@ -17,11 +18,14 @@ interface PublisherInputProps {
 }
 
 const popoverVariants = { hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 }, };
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 export function PublisherInput({ allPublishers, selectedPublisher, onPublisherSelect }: PublisherInputProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDeleting, startDeleteTransition] = useTransition();
+    const toast = useToast();
     
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +55,25 @@ export function PublisherInput({ allPublishers, selectedPublisher, onPublisherSe
         setIsPopoverOpen(false); 
     };
     
+    const handleDelete = async (e: React.MouseEvent, pub: Publisher) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        if (window.confirm(`هل أنت متأكد من حذف الناشر "${pub.title}"؟`)) {
+            startDeleteTransition(async () => {
+                const result = await deleteMetadataAction(pub._id);
+                if (result.success) {
+                    toast.success('تم حذف الناشر.');
+                    if (selectedPublisher?._id === pub._id) {
+                        onPublisherSelect(null);
+                    }
+                } else {
+                    toast.error(result.message || 'فشل الحذف.');
+                }
+            });
+        }
+    };
+
     const handleOpenModal = () => { setIsPopoverOpen(false); setIsAddModalOpen(true); };
     const handleCreate = async (title: string) => { const newPub = await createPublisherAction(title); if (newPub) { onPublisherSelect(newPub); } setIsAddModalOpen(false); setSearchTerm(''); };
     
@@ -97,19 +120,30 @@ export function PublisherInput({ allPublishers, selectedPublisher, onPublisherSe
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ابحث..." className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
                                     {filteredPubs.length > 0 ? filteredPubs.map(pub => (
-                                        <button 
-                                            type="button" 
-                                            key={pub._id} 
-                                            onMouseDown={(e) => { 
-                                                e.preventDefault(); 
-                                                e.stopPropagation();
-                                                handleSelect(pub); 
-                                            }}
-                                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
-                                            className={styles.popoverItemButton}
-                                        >
-                                            {pub.title}
-                                        </button>
+                                        <div key={pub._id} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                            <button 
+                                                type="button" 
+                                                onMouseDown={(e) => { 
+                                                    e.preventDefault(); 
+                                                    e.stopPropagation();
+                                                    handleSelect(pub); 
+                                                }}
+                                                style={{ flexGrow: 1, textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
+                                                className={styles.popoverItemButton}
+                                            >
+                                                {pub.title}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => handleDelete(e, pub)}
+                                                disabled={isDeleting}
+                                                style={{ padding: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', opacity: 0.6 }}
+                                                title="حذف الناشر"
+                                                className={styles.popoverItemButton}
+                                            >
+                                                <TrashIcon />
+                                            </button>
+                                        </div>
                                     ))
                                      : searchTerm.length > 1 && <p style={{padding:'0.5rem', color:'var(--text-secondary)'}}>لا نتائج.</p>
                                     }

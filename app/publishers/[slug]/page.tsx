@@ -39,7 +39,7 @@ export default async function PublisherPage({ params }: { params: Promise<{ slug
     return (
         <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
             <h1 className="page-title">أعمال الناشر: {publisherName}</h1>
-            <ReleasePageClient releases={releases} />
+            <ReleasePageClient releases={releases} hideHeader={true} />
         </div>
     );
 }

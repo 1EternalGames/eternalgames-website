@@ -304,7 +304,7 @@
     /* FIX: Force single line and handle overflow */
     white-space: nowrap;
     width: max-content;
-    max-width: 240px; /* Reasonable limit for extremely long titles */
+    max-width: 240px; 
     text-overflow: ellipsis;
     overflow: hidden;
     
@@ -313,6 +313,8 @@
     backdrop-filter: blur(4px);
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     cursor: default;
+    
+    pointer-events: auto; /* Ensure pill captures events */
 }
 
 /* --- Countdown Colors --- */
@@ -354,17 +356,36 @@
     max-width: 200px;
     text-overflow: ellipsis;
     overflow: hidden;
-
-    /* FIX: Flip direction so Icon is on Left, Text on Right (better for Left-anchored tags) */
-    flex-direction: row-reverse; 
+    
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: auto; /* Ensure pill captures events */
 }
 
-.shardPill.interactive:hover, .genrePill:hover {
+/* INTERACTIVE HOVER STATES */
+@media (hover: hover) {
+    /* For Genre Pills and Interactive Shard Pills (Linked) */
+    .genrePill:hover,
+    .shardPill.interactive:hover {
+        background-color: var(--accent);
+        color: #000; /* Black Text */
+        border-color: var(--accent);
+        transform: scale(1.15) translateY(-4px); /* Larger scale and lift */
+        box-shadow: 
+            0 0 20px color-mix(in srgb, var(--accent) 60%, transparent),
+            0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
+        z-index: 200; /* Ensure overlap */
+    }
+}
+
+/* Active State for Touch/Click */
+.genrePill:active,
+.shardPill.interactive:active {
+    transform: scale(0.95);
     background-color: var(--accent);
     color: #000;
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
+
 
 .shardIcon {
     width: 14px;

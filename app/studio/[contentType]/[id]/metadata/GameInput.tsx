@@ -1,11 +1,12 @@
 // app/studio/[contentType]/[id]/metadata/GameInput.tsx
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createGameAction } from '../../../actions';
+import { createGameAction, deleteMetadataAction } from '../../../actions';
 import { AddGameModal } from './AddGameModal';
 import ActionButton from '@/components/ActionButton';
+import { useToast } from '@/lib/toastStore';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
 
@@ -17,11 +18,14 @@ interface GameInputProps {
 }
 
 const popoverVariants = { hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 }, };
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDeleting, startDeleteTransition] = useTransition();
+    const toast = useToast();
     
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +53,26 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
     const handleSelect = (game: Game) => { 
         onGameSelect(game); 
         setIsPopoverOpen(false); 
+    };
+    
+    const handleDelete = async (e: React.MouseEvent, game: Game) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        if (window.confirm(`هل أنت متأكد من حذف اللعبة "${game.title}"؟ قد يؤثر هذا على المحتوى المرتبط بها.`)) {
+            startDeleteTransition(async () => {
+                const result = await deleteMetadataAction(game._id);
+                if (result.success) {
+                    toast.success('تم حذف اللعبة.');
+                    // If the deleted game was selected, clear selection
+                    if (selectedGame?._id === game._id) {
+                        onGameSelect(null);
+                    }
+                } else {
+                    toast.error(result.message || 'فشل الحذف.');
+                }
+            });
+        }
     };
     
     const handleOpenModal = () => { setIsPopoverOpen(false); setIsAddGameModalOpen(true); };
@@ -97,20 +121,33 @@ export function GameInput({ allGames, selectedGame, onGameSelect }: GameInputPro
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ابحث..." className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
                                     {filteredGames.length > 0 ? filteredGames.map(game => (
-                                        <button 
-                                            type="button" 
-                                            key={game._id} 
-                                            // FIX: Use onMouseDown for reliable selection
-                                            onMouseDown={(e) => { 
-                                                e.preventDefault(); 
-                                                e.stopPropagation();
-                                                handleSelect(game); 
-                                            }}
-                                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
-                                            className={styles.popoverItemButton}
+                                        <div 
+                                            key={game._id}
+                                            style={{ display: 'flex', alignItems: 'center', width: '100%' }}
                                         >
-                                            {game.title}
-                                        </button>
+                                            <button 
+                                                type="button" 
+                                                onMouseDown={(e) => { 
+                                                    e.preventDefault(); 
+                                                    e.stopPropagation();
+                                                    handleSelect(game); 
+                                                }}
+                                                style={{ flexGrow: 1, textAlign: 'left', padding: '0.8rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} 
+                                                className={styles.popoverItemButton}
+                                            >
+                                                {game.title}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => handleDelete(e, game)}
+                                                disabled={isDeleting}
+                                                style={{ padding: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', opacity: 0.6 }}
+                                                title="حذف اللعبة"
+                                                className={styles.popoverItemButton}
+                                            >
+                                                <TrashIcon />
+                                            </button>
+                                        </div>
                                     ))
                                      : searchTerm.length > 1 && <p style={{padding:'0.5rem', color:'var(--text-secondary)'}}>لا نتائج.</p>
                                     }

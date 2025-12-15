@@ -1,16 +1,20 @@
 /* components/HubPage.module.css */
+
 .hubPageContainer {
-  /* padding-top: var(--nav-height-scrolled); <-- REMOVED */
+  /* No top padding here as the hero handles transparency */
 }
 
+/* --- HERO SECTION --- */
 .hubHero {
-  height: 40vh; /* <-- REDUCED HEIGHT */
+  /* Increased height for comprehensive metadata display */
+  height: 70vh; 
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  margin-bottom: -8rem; /* <-- PULLS CONTENT UP */
+  margin-bottom: -4rem; 
+  padding-top: var(--nav-height-scrolled);
 }
 
 .heroBg {
@@ -22,22 +26,155 @@
 .heroOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%); /* Adjusted gradient */
+  /* Deep gradient to make sure white metadata pops over any image */
+  background: linear-gradient(to top, rgba(5,6,8,1) 5%, rgba(5,6,8,0.7) 40%, rgba(5,6,8,0.4) 100%);
   z-index: -1;
 }
 
 .heroTitle {
   font-size: 6.4rem;
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  margin: 0;
+}
+
+.heroContentContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    z-index: 5;
+    /* REDUCED PADDING to lift content up */
+    padding: 0 2rem 4rem 2rem; 
+}
+
+/* --- SYNOPSIS (NABDA) --- */
+.synopsis {
+    max-width: 800px;
+    text-align: center;
+    font-size: 1.8rem;
+    line-height: 1.7;
+    color: #E2E8F0; /* High contrast off-white */
+    margin: 0 auto;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.synopsisFirstWord {
+    color: var(--accent);
+    font-weight: 800;
+}
+
+/* --- METADATA ROW & PILLS --- */
+.metadataRow {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Base Pill Style (Static by default) */
+.hubPill {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    font-family: var(--font-ui), sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: default;
+    background-color: rgba(10, 10, 15, 0.85);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    backdrop-filter: blur(8px);
+    text-decoration: none !important; /* Ensure no underline */
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative; /* For pseudo-element handling */
+}
+
+/* Remove any global link pseudo-element underlines */
+.hubPill::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* Specific Metadata Colors */
+.hubPill.price { 
+    border-color: #FFD700; 
+    color: #FFD700; 
+}
+
+.hubPill.platform { 
+    border-color: #fff; 
+    color: #fff; 
+}
+
+.hubPill.genre {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* INTERACTIVE PILLS (Developer / Publisher) */
+.hubPill.interactive {
+    cursor: pointer;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+@media (hover: hover) {
+    .hubPill.interactive:hover {
+        background-color: var(--accent);
+        color: #000; /* Text turns black against cyan background */
+        border-color: var(--accent);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+        z-index: 10;
+        text-decoration: none !important;
+    }
+    /* Ensure no underline on hover specifically */
+    .hubPill.interactive:hover::after {
+        display: none !important;
+    }
+}
+
+.hubPill.interactive:active {
+    transform: scale(0.95);
+    background-color: var(--accent);
+    color: #000;
+    text-decoration: none !important;
+}
+
+/* --- RESPONSIVENESS --- */
+@media (max-width: 1024px) {
+    .heroTitle {
+        font-size: 4.8rem;
+    }
 }
 
 @media (max-width: 768px) {
   .hubHero {
-    height: 35vh;
+    height: auto;
+    min-height: 85vh;
+    padding-bottom: 6rem;
   }
+  
   .heroTitle {
-    font-size: 4.8rem;
+    font-size: 3.6rem;
+  }
+  
+  .synopsis {
+      font-size: 1.5rem;
+      padding: 0 1rem;
+  }
+  
+  .metadataRow {
+      gap: 0.75rem;
+  }
+  
+  .hubPill {
+      padding: 0.5rem 1.1rem;
+      font-size: 1.3rem;
   }
 }
-
-

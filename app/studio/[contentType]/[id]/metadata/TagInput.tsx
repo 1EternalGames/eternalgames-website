@@ -1,12 +1,13 @@
 // app/studio/[contentType]/[id]/metadata/TagInput.tsx
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createTagAction } from '../../../actions';
+import { createTagAction, deleteMetadataAction } from '../../../actions';
 import { AddTagModal } from './AddTagModal';
 import ActionButton from '@/components/ActionButton';
 import { translateTag } from '@/lib/translations';
+import { useToast } from '@/lib/toastStore';
 import styles from '../Editor.module.css';
 import metadataStyles from './Metadata.module.css';
 
@@ -26,6 +27,7 @@ const popoverVariants = {
     visible: { opacity: 1, y: 0, scale: 1 }, 
     exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.1 } }, 
 };
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 
 const AnimatedTag = ({ tag, onRemove }: { tag: Tag, onRemove: (tagId: string) => void }) => {
     if (!tag || typeof tag.title !== 'string') return null;
@@ -51,6 +53,8 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDeleting, startDeleteTransition] = useTransition();
+    const toast = useToast();
     
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -58,19 +62,15 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
     const safeSelectedTags = (selectedTags || []).filter(Boolean);
 
     const filteredTags = useMemo(() => {
-        // 1. Filter out tags that are already selected
-        // We use a relaxed check to handle 'drafts.' prefixes (e.g. id 'drafts.123' vs '123')
         let available = allTags.filter(t => {
             const cleanId = t._id.replace('drafts.', '');
             return !safeSelectedTags.some(st => st._id.replace('drafts.', '') === cleanId);
         });
         
-        // 2. Filter by Category
         if (categoryForCreation) {
             available = available.filter(t => t.category === categoryForCreation);
         }
 
-        // 3. Filter by Search Term
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             available = available.filter(t => 
@@ -79,9 +79,6 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
             );
         }
 
-        // 4. Deduplicate by Display Name
-        // This prevents showing multiple tags that look identical in the UI
-        // (e.g. duplicates in DB, or draft+published versions of same tag)
         const seenNames = new Set<string>();
         const uniqueTags: Tag[] = [];
 
@@ -126,6 +123,26 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
     const handleRemoveTag = (tagIdToRemove: string) => {
         if (singleSelection) { onTagsChange([]); } 
         else { onTagsChange(safeSelectedTags.filter(tag => tag._id !== tagIdToRemove)); }
+    };
+    
+    const handleDeleteTag = async (e: React.MouseEvent, tag: Tag) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        if (window.confirm(`هل أنت متأكد من حذف الوسم "${translateTag(tag.title)}"?`)) {
+            startDeleteTransition(async () => {
+                const result = await deleteMetadataAction(tag._id);
+                if (result.success) {
+                    toast.success('تم حذف الوسم.');
+                    // If deleted tag was selected, remove it
+                    if (safeSelectedTags.some(t => t._id === tag._id)) {
+                        onTagsChange(safeSelectedTags.filter(t => t._id !== tag._id));
+                    }
+                } else {
+                    toast.error(result.message || 'فشل الحذف.');
+                }
+            });
+        }
     };
     
     const handleOpenModal = () => { setIsPopoverOpen(false); setIsAddTagModalOpen(true); };
@@ -181,20 +198,31 @@ export function TagInput({ label, allTags, selectedTags = [], onTagsChange, plac
                                 <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className={styles.sidebarInput} style={{ marginBottom: '0.5rem' }} />
                                 <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
                                     {filteredTags.length > 0 ? filteredTags.map(tag => ( 
-                                        <button 
-                                            type="button" 
-                                            key={tag._id} 
-                                            // FIX: Use onMouseDown for reliable selection
-                                            onMouseDown={(e) => { 
-                                                e.preventDefault(); 
-                                                e.stopPropagation();
-                                                handleSelectTag(tag); 
-                                            }}
-                                            style={{ display: 'block', width: '100%', textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
-                                            className={styles.popoverItemButton}
-                                        > 
-                                            {translateTag(tag.title)} 
-                                        </button> 
+                                        <div key={tag._id} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                            <button 
+                                                type="button" 
+                                                // FIX: Use onMouseDown for reliable selection
+                                                onMouseDown={(e) => { 
+                                                    e.preventDefault(); 
+                                                    e.stopPropagation();
+                                                    handleSelectTag(tag); 
+                                                }}
+                                                style={{ flexGrow: 1, textAlign: 'right', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', borderRadius: '4px' }} 
+                                                className={styles.popoverItemButton}
+                                            > 
+                                                {translateTag(tag.title)} 
+                                            </button> 
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => handleDeleteTag(e, tag)}
+                                                disabled={isDeleting}
+                                                style={{ padding: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', opacity: 0.6 }}
+                                                title="حذف الوسم"
+                                                className={styles.popoverItemButton}
+                                            >
+                                                <TrashIcon />
+                                            </button>
+                                        </div>
                                     ))
                                      : <div style={{padding:'0.5rem'}}>لا نتائج.</div>
                                     }

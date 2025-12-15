@@ -61,7 +61,7 @@ const PlatformFilters = ({ activeFilter, onFilterChange }: { activeFilter: Platf
   );
 };
 
-export default function ReleasePageClient({ releases }: { releases: SanityGameRelease[] }) {
+export default function ReleasePageClient({ releases, hideHeader = false }: { releases: SanityGameRelease[], hideHeader?: boolean }) {
   const [activeFilter, setActiveFilter] = useState<Platform>('الكل');
   const mainRef = useRef(null);
   const isInView = useInView(mainRef, { once: true, amount: 0.1 });
@@ -70,7 +70,13 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
-    const sortedReleases = [...releases].sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+    // Sort by Date (and prioritize TBA at the end if desired, currently query handles basic sorting)
+    const sortedReleases = [...releases].sort((a, b) => {
+         // TBAs last
+         if (a.isTBA && !b.isTBA) return 1;
+         if (!a.isTBA && b.isTBA) return -1;
+         return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
+    });
     
     const isFilteringActive = activeFilter !== 'الكل';
     const filteredReleases = isFilteringActive 
@@ -88,13 +94,18 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
     let flatList: { type: 'header' | 'card', key: string, data: SanityGameRelease | string }[] = [];
 
     filteredReleases.forEach(release => {
-      const date = new Date(release.releaseDate);
-      const monthIndex = date.getUTCMonth();
-      const monthLabel = `${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}`;
+      let monthLabel = '';
+      if (release.isTBA) {
+          monthLabel = 'TBA';
+      } else {
+          const date = new Date(release.releaseDate);
+          const monthIndex = date.getUTCMonth();
+          monthLabel = `${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}`;
+      }
       
       if (monthLabel !== currentMonth) {
         currentMonth = monthLabel;
-        flatList.push({ type: 'header', key: `header-${monthLabel}-${date.getFullYear()}`, data: monthLabel });
+        flatList.push({ type: 'header', key: `header-${monthLabel}-${release.legacyId}`, data: monthLabel });
       }
       flatList.push({ type: 'card', key: `card-${release._id}`, data: release });
     });
@@ -107,9 +118,13 @@ export default function ReleasePageClient({ releases }: { releases: SanityGameRe
   return (
     <div className={styles.chronoStreamLayoutWrapper}>
       <div className={styles.chronoContentWrapper}>
-          <h1 className="page-title">إصدارات 2025 المُرتقبة</h1>
+          {/* Only hide the H1 if hideHeader is true, keep filters visible */}
+          {!hideHeader && (
+              <h1 className="page-title">إصدارات 2025 المُرتقبة</h1>
+          )}
           <PlatformFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
       </div>
+      
       <div ref={mainRef} className={styles.chronoTimelineSections} style={{ position: 'relative' }}>
           <motion.div layout className={styles.chronoGamesGrid} initial="hidden" animate={isInView ? "visible" : "hidden"} transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
             <AnimatePresence>

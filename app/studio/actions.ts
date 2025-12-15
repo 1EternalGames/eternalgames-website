@@ -162,6 +162,25 @@ export async function deleteDocumentAction(docId: string): Promise<{ success: bo
     } catch (error) { console.error("Delete failed:", error); return { success: false, message: 'تأبى الحذف.' }; }
 }
 
+// NEW: Generic Delete Action for Metadata (Games, Tags, Devs, Pubs)
+export async function deleteMetadataAction(id: string): Promise<{ success: boolean; message?: string }> {
+    const session = await getAuthenticatedSession();
+    const userRoles = session.user.roles;
+    // Strictly restrict metadata deletion to Admins/Directors to prevent chaos
+    if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR'].includes(role))) {
+        return { success: false, message: 'غير مُصرَّح به. الحذف متاح للمدراء فقط.' };
+    }
+    
+    try {
+        await sanityWriteClient.delete(id);
+        revalidateTag('studio-metadata', 'max');
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete metadata:", error);
+        return { success: false, message: 'فشل الحذف. قد يكون العنصر مستخدمًا.' };
+    }
+}
+
 export async function publishDocumentAction(docId: string, publishTime?: string | null): Promise<{ success: boolean; updatedDocument?: any; message?: string }> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
@@ -247,7 +266,6 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
     } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
 
-// NEW: Developer Creation Action
 export async function createDeveloperAction(title: string): Promise<{_id: string, title: string} | null> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
@@ -259,7 +277,6 @@ export async function createDeveloperAction(title: string): Promise<{_id: string
     } catch (error) { console.error("Failed to create developer:", error); return null; }
 }
 
-// NEW: Publisher Creation Action
 export async function createPublisherAction(title: string): Promise<{_id: string, title: string} | null> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
