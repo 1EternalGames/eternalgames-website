@@ -155,35 +155,45 @@
     border-color: var(--accent);
 }
 
-/* --- PLAY BUTTON --- */
+/* --- PLAY BUTTON (Matches .satelliteShardLink style from ArticleCard) --- */
 .playButtonContainer {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
-    background: rgba(0,0,0,0.8);
+    
+    /* Matching Style to Article Card Tags exactly */
+    padding: 0.6rem 1.4rem;
+    font-family: var(--font-ui);
+    font-size: 1.3rem;
+    font-weight: 700;
+    border-radius: 999px; /* Round/Pill shape */
+    
+    /* Dark glass background with neon accent border */
+    background: rgba(10, 10, 15, 0.95);
     backdrop-filter: blur(4px);
-    border-radius: 999px;
-    padding: 0.6rem 1.6rem;
-    cursor: pointer;
     border: 1.5px solid var(--accent);
     color: var(--accent);
-    z-index: 40;
-    pointer-events: auto; /* CRITICAL */
-    transition: all 0.2s ease;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+    
+    cursor: pointer;
+    z-index: 200;
+    pointer-events: auto; /* CRITICAL: Enables click */
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 @media (hover: hover) {
     .playButtonContainer:hover {
         background-color: var(--accent);
         color: #000000;
-        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
-        transform: translateX(-50%) scale(1.05);
+        box-shadow: 
+            0 0 20px color-mix(in srgb, var(--accent) 60%, transparent),
+            0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
+        /* Note: Scale and transform are handled by Framer Motion in the TSX now to match the tag animation */
     }
+}
+.playButtonContainer:active {
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 /* --- IMAGE AREA --- */

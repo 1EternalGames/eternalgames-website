@@ -33,6 +33,8 @@ scroll-behavior:smooth;
 scrollbar-width:thin;
 scrollbar-color:var(--accent) transparent;
 direction: rtl;
+/* THE FIX: Prevent layout shift when scrollbar appears/disappears */
+scrollbar-gutter: stable;
 }
 body::-webkit-scrollbar{width:8px;}
 body::-webkit-scrollbar-track{background:transparent;}

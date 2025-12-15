@@ -1,184 +1,53 @@
 /* components/releases/ReleasesControlBar.module.css */
 
-.controlBar {
-    position: sticky;
-    top: calc(var(--nav-height-scrolled) + 1rem);
-    z-index: 90; /* High but under modals */
-    background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.2rem;
-    margin-bottom: 4rem;
+/* Custom layout for the Search + Year row */
+.searchYearRow {
     display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
-}
-
-.mainControlsRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 1.5rem;
     width: 100%;
-    gap: 1rem;
-}
-
-.rightControls, .leftControls {
-    display: flex;
     align-items: center;
-    gap: 1rem;
 }
 
-/* Search */
-.searchWrapper {
-    position: relative;
-    width: 220px;
-}
-.searchIcon {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-secondary);
-    pointer-events: none;
-}
-.searchInput {
-    width: 100%;
-    padding: 0.7rem 3.5rem 0.7rem 1rem;
-    border-radius: 999px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: var(--font-main);
-    font-size: 1.4rem;
-}
-.searchInput:focus {
-    outline: none;
-    border-color: var(--accent);
-}
-
-/* Platform Toggles */
-.platformToggles {
-    display: flex;
-    gap: 0.5rem;
-    background-color: var(--bg-primary);
-    padding: 0.3rem;
-    border-radius: 999px;
-    border: 1px solid var(--border-color);
-}
-.filterChip {
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    padding: 0.4rem 1rem;
-    border-radius: 999px;
-    cursor: pointer;
-    font-family: var(--font-ui);
-    font-size: 1.2rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-.filterChip:hover { color: var(--text-primary); }
-.filterChip.active {
-    background-color: var(--accent);
-    color: #fff;
-}
-
-/* Action Buttons */
-.controlButton {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.controlButton:hover { border-color: var(--accent); color: var(--accent); }
-.controlButton.active { background-color: var(--accent); border-color: var(--accent); color: #fff; }
-
-/* Time Row */
-.timeControlsRow {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    width: 100%;
-    border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
-}
-
-.yearSelect {
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-primary);
-    color: var(--accent);
-    font-family: var(--font-ui);
-    font-weight: 700;
-    font-size: 1.4rem;
-    cursor: pointer;
-}
-
-.monthStrip {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: none;
+/* Make search take available space, Year take necessary space */
+.searchInputWrapper {
     flex-grow: 1;
-    padding-bottom: 2px; /* For focus ring space */
-}
-.monthChip {
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-secondary);
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: var(--font-ui);
-    font-size: 1.2rem;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-}
-.monthChip:hover { border-color: var(--accent); color: var(--accent); }
-.monthChip.active { background-color: color-mix(in srgb, var(--accent) 15%, transparent); border-color: var(--accent); color: var(--accent); }
-
-.mobileMonthSelect {
-    display: none; /* Hidden on desktop */
 }
 
-@media (max-width: 1024px) {
-    .monthStrip { display: none; }
-    .mobileMonthSelect {
-        display: block;
-        width: 100%;
-        padding: 0.6rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
-        font-family: var(--font-ui);
-    }
+.yearInputWrapper {
+    flex-shrink: 0;
+    width: 120px; /* Fixed width for year button */
 }
 
+/* Container for the scrollable month strip on Desktop */
+.monthStripContainer {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 5px; /* Space for focus rings/shadows */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    /* REMOVED: mask-image to eliminate edge darkening/fade */
+}
+.monthStripContainer::-webkit-scrollbar {
+    display: none;
+}
+
+.monthGroup {
+    display: flex;
+    gap: 0.8rem;
+    padding: 0 0.5rem; /* Slight padding for visual balance */
+    min-width: max-content;
+}
+
+/* Hide the strip on mobile, show popover logic instead */
 @media (max-width: 768px) {
-    .mainControlsRow {
-        flex-direction: column;
-        align-items: stretch;
+    .monthStripContainer {
+        display: none;
     }
-    .rightControls, .leftControls {
-        justify-content: space-between;
-        width: 100%;
+    .searchYearRow {
+        flex-direction: column; /* Stack on very small screens if needed, or keep row */
+        gap: 1rem;
     }
-    .searchWrapper { width: 100%; }
-    .platformToggles {
-        overflow-x: auto;
-        width: 100%;
-        justify-content: flex-start;
+    .yearInputWrapper {
+        width: 100%; /* Full width on mobile */
     }
-    .yearSelect { flex-grow: 1; }
 }

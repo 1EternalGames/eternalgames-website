@@ -1,41 +1,43 @@
 /* components/releases/AdminPinButton.module.css */
 
 .pinButton {
-    position: absolute;
-    top: 1rem;
-    left: 1rem; /* Positioning top-left, mirroring the status badge */
+    /* Removed absolute positioning to allow flex layout in parent */
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background-color: rgba(0,0,0,0.6);
+    
+    /* Inactive State: Cyan Outline, Dark Glass BG, Cyan Icon */
+    background-color: rgba(0, 0, 0, 0.6); /* Slightly darker glass for better contrast */
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    
     backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
     cursor: pointer;
     z-index: 50;
     transition: all 0.2s ease;
 }
 
 .pinButton:hover {
-    background-color: var(--accent);
-    color: #000;
     transform: scale(1.1);
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .pinButton.pinned {
+    /* Active State: Cyan Fill, Black Icon */
     background-color: var(--accent);
-    color: #000;
+    color: #000000;
     border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
 }
 
 .spinner {
     width: 16px;
     height: 16px;
     border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
+    border-top-color: currentColor;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }

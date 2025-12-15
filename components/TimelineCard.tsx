@@ -10,7 +10,6 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
-import { translateTag } from '@/lib/translations';
 import { useUserStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
 import AdminPinButton from '@/components/releases/AdminPinButton';
@@ -28,7 +27,24 @@ import styles from './TimelineCard.module.css';
 // --- ICONS ---
 const YoutubeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>;
 const CloseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-const HeartIcon = ({ filled }: { filled: boolean }) => <svg width="20" height="20" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>;
+
+// New Wishlist Icons
+const AddToListStrokeIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3.5 9V20C3.5 21.1046 4.39543 22 5.5 22H18.5C19.6046 22 20.5 21.1046 20.5 20V4C20.5 2.89543 19.6046 2 18.5 2H12"></path>
+        <path d="M13.5 17H17.5"></path>
+        <path d="M13.5 7H17.5"></path>
+        <path d="M13.5 12H17.5"></path>
+        <path d="M6.5 16.5L8 18L11 14"></path>
+        <path d="M10 5H3.5M10 5L7.08333 2M10 5L7.08333 8"></path>
+    </svg>
+);
+
+const AddToListSolidIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path fillRule="evenodd" clipRule="evenodd" d="M8.05033 1.55292C7.66534 1.15694 7.03224 1.14802 6.63626 1.53301C6.24027 1.91799 6.23135 2.55109 6.61634 2.94708L7.88307 4.25H3.75C3.19772 4.25 2.75 4.69772 2.75 5.25C2.75 5.80229 3.19772 6.25 3.75 6.25H7.88307L6.61634 7.55292C6.23135 7.94891 6.24027 8.58201 6.63625 8.967C7.03224 9.35198 7.66534 9.34306 8.05033 8.94708L10.967 5.94708C11.3443 5.55896 11.3443 4.94104 10.967 4.55292L8.05033 1.55292ZM2.75 20V7.5H5.21144C4.92844 8.30226 5.11492 9.23131 5.76491 9.86324C6.65587 10.7295 8.08035 10.7094 8.94657 9.81843L11.8632 6.81843C12.7123 5.94516 12.7123 4.55485 11.8632 3.68158L9.49921 1.25H18.5C20.0188 1.25 21.25 2.48122 21.25 4V20C21.25 21.5188 20.0188 22.75 18.5 22.75H5.5C3.98122 22.75 2.75 21.5188 2.75 20ZM13.5 16.25C13.0858 16.25 12.75 16.5858 12.75 17C12.75 17.4142 13.0858 17.75 13.5 17.75H17.5C17.9142 17.75 18.25 17.4142 18.25 17C18.25 16.5858 17.9142 16.25 17.5 16.25H13.5ZM12.75 7C12.75 6.58579 13.0858 6.25 13.5 6.25H17.5C17.9142 6.25 18.25 6.58579 18.25 7C18.25 7.41421 17.9142 7.75 17.5 7.75H13.5C13.0858 7.75 12.75 7.41421 12.75 7ZM13.5 11.25C13.0858 11.25 12.75 11.5858 12.75 12C12.75 12.4142 13.0858 12.75 13.5 12.75H17.5C17.9142 12.75 18.25 12.4142 18.25 12C18.25 11.5858 17.9142 11.25 17.5 11.25H13.5ZM11.45 13.4C11.7814 13.6486 11.8485 14.1187 11.6 14.45L8.6 18.45C8.46955 18.624 8.27004 18.7327 8.05317 18.7482C7.8363 18.7636 7.62341 18.6841 7.46967 18.5304L5.96967 17.0304C5.67678 16.7375 5.67678 16.2626 5.96967 15.9697C6.26256 15.6768 6.73744 15.6768 7.03033 15.9697L7.91885 16.8582L10.4 13.55C10.6485 13.2187 11.1186 13.1515 11.45 13.4Z" fill="currentColor"></path>
+    </svg>
+);
 
 // --- CONFIGURATION FOR FLYING PLATFORM TAGS (Right Side) ---
 const PLATFORM_FLY_CONFIG = {
@@ -73,6 +89,14 @@ const SECONDARY_HEAD_CONFIG = {
     BASE_ROT: 0
 };
 
+// --- CONFIGURATION FOR PLAY BUTTON (Centered on Image) ---
+const PLAY_BUTTON_CONFIG = {
+    OFFSET_X: 0,   // Center relative
+    OFFSET_Y: 70,   // Center relative
+    ROTATE: 0,
+    INITIAL_SCALE: 1
+};
+
 export const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
     'PC': PCIcon,
     'PlayStation': PS5Icon,
@@ -96,14 +120,13 @@ const PLATFORM_SORT_WEIGHTS: Record<string, number> = {
 
 const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clipRule="evenodd" /></svg> );
 const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> );
-const TagIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg> );
 
-// Faster spring for snappier hover response
+// Smoother/Slower spring for floating animation
 const morphTransition: Transition = {
     type: "spring",
-    stiffness: 250, 
-    damping: 18,
-    mass: 0.8
+    stiffness: 120, 
+    damping: 20,
+    mass: 1.0
 };
 
 const TimelineCardComponent = ({ 
@@ -401,66 +424,62 @@ const TimelineCardComponent = ({
                         </div>
                     )}
                     
-                    {/* Controls (Pins, Wishlist) */}
-                    <div style={{ pointerEvents: 'auto' }}>
-                         {showAdminControls && (
-                            <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} />
-                        )}
+                    {/* Controls (Wishlist, Pins) */}
+                    <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 30, display: 'flex', gap: '0.8rem', pointerEvents: 'auto' }}>
+                        
+                        {/* 1. Wishlist Button */}
                         <motion.button
                             className={styles.wishlistButton}
                             onClick={toggleWishlist}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             style={{ 
-                                position: 'absolute', top: '1rem', left: '4rem', zIndex: 30,
-                                background: isBookmarked ? 'var(--accent)' : 'rgba(0,0,0,0.6)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                borderRadius: '50%', width: '36px', height: '36px',
+                                width: '32px', height: '32px',
+                                borderRadius: '50%',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isBookmarked ? '#fff' : '#fff',
+                                cursor: 'pointer',
+                                // Uniform Styling Logic
+                                border: '1px solid var(--accent)', 
+                                backgroundColor: isBookmarked ? 'var(--accent)' : 'rgba(0, 0, 0, 0.6)',
+                                color: isBookmarked ? '#000000' : 'var(--accent)',
                                 backdropFilter: 'blur(4px)',
-                                cursor: 'pointer'
+                                boxShadow: isBookmarked ? '0 0 10px var(--accent)' : 'none',
+                                transition: 'all 0.2s ease'
                             }}
+                            title={isBookmarked ? "إزالة من المحفوظات" : "حفظ"}
                         >
-                            <HeartIcon filled={isBookmarked} />
+                            {isBookmarked ? <AddToListSolidIcon /> : <AddToListStrokeIcon />}
                         </motion.button>
+
+                        {/* 2. Admin Pin Button */}
+                         {showAdminControls && (
+                            <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} />
+                        )}
+
                     </div>
 
                     {/* Play Button */}
-                    {!isVideoActive && isHovered && trailerId && (
-                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
-                            <motion.button 
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className={styles.playButtonContainer}
-                                style={{
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'center',
-                                    gap: '0.6rem',
-                                    background: 'rgba(0,0,0,0.7)', 
-                                    backdropFilter: 'blur(4px)',
-                                    borderRadius: '999px',
-                                    padding: '0.5rem 1.4rem',
-                                    cursor: 'pointer',
-                                    border: '1.5px solid var(--accent)',
-                                    color: 'var(--accent)', 
-                                    zIndex: 200,
-                                    pointerEvents: 'auto'
-                                }}
-                                whileHover={{ 
-                                    backgroundColor: 'var(--accent)', 
-                                    color: '#000000', 
-                                    scale: 1.05 
-                                }}
-                                onClick={handleWatchClick}
-                            >
-                                <span style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-main)' }}>الإعلان</span>
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <YoutubeIcon />
-                                </div>
-                            </motion.button>
+                    {!isVideoActive && trailerId && (
+                         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
+                            <AnimatePresence>
+                                {isHovered && (
+                                    <motion.button 
+                                        key="play-button"
+                                        initial={{ opacity: 0, scale: PLAY_BUTTON_CONFIG.INITIAL_SCALE, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y + 20 }}
+                                        animate={{ opacity: 1, scale: 1, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y, rotate: PLAY_BUTTON_CONFIG.ROTATE }}
+                                        exit={{ opacity: 0, scale: PLAY_BUTTON_CONFIG.INITIAL_SCALE, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y + 20 }}
+                                        transition={morphTransition}
+                                        className={styles.playButtonContainer}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleWatchClick}
+                                    >
+                                        <span style={{ marginLeft: '0.4rem' }}>الإعلان</span>
+                                        <YoutubeIcon />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
                         </div>
                     )}
                 </div>
