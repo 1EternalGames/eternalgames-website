@@ -38,6 +38,10 @@
     position: relative;
 }
 
+.timelineCard.autoHeight {
+    height: auto;
+}
+
 .timelineCard::before {
     content: '';
     position: absolute;
@@ -95,6 +99,90 @@
     }
     .livingCardWrapper:hover .glare {
         opacity: 1;
+    }
+}
+
+/* --- INTERACTIVE LAYER (OVERLAY) --- */
+.interactiveLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 200; /* Above the Link */
+    pointer-events: none; /* Pass clicks through by default */
+    border-radius: 16px;
+    overflow: hidden; /* Ensure video respects corners */
+}
+
+/* Buttons inside interactive layer need pointer-events: auto */
+.interactiveElement {
+    pointer-events: auto;
+}
+
+.overlayImageFrame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    /* Match card layout */
+}
+
+.videoContainer {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: #000;
+}
+
+.videoCloseButton {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(0,0,0,0.6);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 60;
+    pointer-events: auto;
+    transition: all 0.2s ease;
+}
+.videoCloseButton:hover {
+    background-color: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+}
+
+/* --- PLAY BUTTON --- */
+.playButtonContainer {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    border-radius: 999px;
+    padding: 0.6rem 1.6rem;
+    cursor: pointer;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    z-index: 40;
+    pointer-events: auto; /* CRITICAL */
+    transition: all 0.2s ease;
+}
+
+@media (hover: hover) {
+    .playButtonContainer:hover {
+        background-color: var(--accent);
+        color: #000000;
+        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
+        transform: translateX(-50%) scale(1.05);
     }
 }
 
@@ -181,6 +269,8 @@
     flex-direction: column;
     gap: 1rem;
     transform: translateZ(10px);
+    /* FIX: Flex grow to fill height, unless autoHeight is used */
+    flex-grow: 1; 
 }
 
 .titleRow {

@@ -15,22 +15,23 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// FIX: Updated query to include ALL release metadata (price, dev, pub, platforms)
+// FIX: Updated query to include ALL release metadata (price, dev, pub, platforms) AND subscription status
 const getEnrichedGameData = unstable_cache(
     async (slug: string) => {
-        // 1. Fetch Basic Game Data & Content (Reviews/News/Articles)
         const data = await getCachedGamePageData(slug);
         if (!data) return null;
         
         const enrichedItems = await enrichContentList(data.items || []);
         
-        // 2. Fetch the release document associated with this game to get metadata
         const releaseQuery = groq`*[_type == "gameRelease" && game->slug.current == $slug][0]{ 
             synopsis,
             price,
             "developer": developer->title,
             "publisher": publisher->title,
             platforms,
+            // UPDATED: Added subscription fields
+            "onGamePass": coalesce(onGamePass, false),
+            "onPSPlus": coalesce(onPSPlus, false),
             tags[]->{title, "slug": slug.current},
             "releaseImage": mainImage
         }`;
@@ -41,12 +42,13 @@ const getEnrichedGameData = unstable_cache(
             items: enrichedItems, 
             releaseTags: releaseData?.tags || [],
             synopsis: releaseData?.synopsis || null,
-            // Pass new metadata
             price: releaseData?.price,
             developer: releaseData?.developer,
             publisher: releaseData?.publisher,
             platforms: releaseData?.platforms,
-            // Use release image as fallback if game doc image is missing
+            // Pass subscription info
+            onGamePass: releaseData?.onGamePass,
+            onPSPlus: releaseData?.onPSPlus,
             mainImage: data.mainImage || releaseData?.releaseImage 
         };
     },
@@ -102,7 +104,7 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
         notFound();
     }
 
-    const { title: gameTitle, items: allItems, synopsis, releaseTags, mainImage, price, developer, publisher, platforms } = data;
+    const { title: gameTitle, items: allItems, synopsis, releaseTags, mainImage, price, developer, publisher, platforms, onGamePass, onPSPlus } = data;
 
     return (
         <HubPageClient
@@ -112,11 +114,13 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
             synopsis={synopsis}
             tags={releaseTags}
             fallbackImage={mainImage} 
-            // Pass new props
             price={price}
             developer={developer}
             publisher={publisher}
             platforms={platforms}
+            // Pass subscription info to HubPageClient (you'll need to update HubPageClient to accept/render these)
+            onGamePass={onGamePass}
+            onPSPlus={onPSPlus}
         />
     );
 }

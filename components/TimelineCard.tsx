@@ -1,7 +1,7 @@
 // components/TimelineCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo } from 'react';
+import React, { memo, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { SanityGameRelease } from '@/types/sanity';
@@ -11,6 +11,10 @@ import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
 import { translateTag } from '@/lib/translations';
+import { useUserStore } from '@/lib/store';
+import { useSession } from 'next-auth/react';
+import AdminPinButton from '@/components/releases/AdminPinButton';
+import ActionButton from './ActionButton';
 
 // Icons
 import { Calendar03Icon } from '@/components/icons';
@@ -21,98 +25,105 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 import styles from './TimelineCard.module.css';
 
+// --- ICONS ---
+const YoutubeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>;
+const CloseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+const HeartIcon = ({ filled }: { filled: boolean }) => <svg width="20" height="20" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>;
+
 // --- CONFIGURATION FOR FLYING PLATFORM TAGS (Right Side) ---
 const PLATFORM_FLY_CONFIG = {
-    TARGET_RIGHT: 60,
-    RIGHT_STEP: -7,
-    TARGET_BOTTOM: 160,
-    BOTTOM_STEP: 42,
-    BASE_ROT: -7,     
+    LEFT_ANCHOR: '85%', 
+    TARGET_BOTTOM: 280, 
+    BOTTOM_STEP: -38,   
+    BASE_ROT: -5,     
     ROT_STEP: 0    
 };
 
-// --- CONFIGURATION FOR GENRE TAGS (Left Side) ---
-const GENRE_FLY_CONFIG = {
-    TARGET_RIGHT_PCT: 92, 
-    RIGHT_STEP: 2,       // Stagger percentage
+// --- CONFIGURATION FOR SUBSCRIPTION TAGS (Left Side) ---
+const SUB_FLY_CONFIG = {
+    TARGET_RIGHT_PCT: 85, 
+    RIGHT_STEP: 2,       
     TARGET_BOTTOM: 200,
-    BOTTOM_STEP: 42,
-    BASE_ROT: 7, 
+    BOTTOM_STEP: 40,
+    BASE_ROT: 5, 
     ROT_STEP: 0
 };
 
-// --- CONFIGURATION FOR PRICE (Top Right) ---
-const PRICE_FLY_CONFIG = {
-    X: -130,
-    Y: -110,
-    ROT: 7
-};
-
-// --- CONFIGURATION FOR DEVELOPER (Top Center) ---
-const DEV_FLY_CONFIG = {
-    X: 0,
-    Y: -150, // UPDATED
-    ROT: 0
-};
-
 // --- CONFIGURATION FOR STATUS/COUNTDOWN (Bottom Center) ---
-const STATUS_FLY_CONFIG = {
-    X: 0,
-    Y: 140,
-    ROT: -3
+const STATUS_FLY_CONFIG = { X: 0, Y: 140, ROT: -3 };
+
+// --- CONFIGURATION FOR PRICE (Top Right) ---
+const PRICE_FLY_CONFIG = { 
+    X: -200, 
+    Y: -70, 
+    ROT: 5 
 };
 
-// --- CONFIGURATION FOR PUBLISHER (Top Left) ---
-const PUBLISHER_FLY_CONFIG = {
-    X: -55, // UPDATED
-    Y: -150, // UPDATED
-    ROT: 0, // UPDATED
-    anchor: 'right' // Anchored right pushes it left
+// --- CONFIGURATION FOR DEVELOPER (Top Left - Primary Position) ---
+const PRIMARY_HEAD_CONFIG = { 
+    LEFT_ANCHOR: 55, 
+    TARGET_BOTTOM: 365, 
+    BASE_ROT: 0
 };
 
-// Define sorting weights. 
-const PLATFORM_SORT_WEIGHTS: Record<string, number> = {
-    'Switch': 4,
-    'Xbox': 3,
-    'PlayStation': 2,
-    'PlayStation 5': 2,
-    'PC': 1,
+// --- CONFIGURATION FOR PUBLISHER (Top Left - Secondary Position) ---
+const SECONDARY_HEAD_CONFIG = { 
+    LEFT_ANCHOR: 55, 
+    TARGET_BOTTOM: 405, 
+    BASE_ROT: 0
 };
 
-const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
+export const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
     'PC': PCIcon,
     'PlayStation': PS5Icon,
-    'PlayStation 5': PS5Icon,
     'Xbox': XboxIcon,
     'Switch': SwitchIcon,
 };
 
-const PlatformNames: Record<string, string> = {
+export const PlatformNames: Record<string, string> = {
     'PC': 'PC',
     'PlayStation': 'PS5',
-    'PlayStation 5': 'PS5',
     'Xbox': 'Xbox',
     'Switch': 'Switch',
+};
+
+const PLATFORM_SORT_WEIGHTS: Record<string, number> = {
+    'Switch': 4,
+    'Xbox': 3,
+    'PlayStation': 2,
+    'PC': 1,
 };
 
 const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clipRule="evenodd" /></svg> );
 const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> );
 const TagIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg> );
 
-// Common transition for smooth morphing both ways
+// Faster spring for snappier hover response
 const morphTransition: Transition = {
     type: "spring",
-    stiffness: 150, 
-    damping: 22,
-    mass: 1
+    stiffness: 250, 
+    damping: 18,
+    mass: 0.8
 };
 
-const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { game?: { slug?: string, title?: string }, tags?: any[] } }) => {
+const TimelineCardComponent = ({ 
+    release, 
+    autoHeight = false,
+    showAdminControls = false
+}: { 
+    release: SanityGameRelease & { game?: { slug?: string, title?: string }, tags?: any[], onGamePass?: boolean, onPSPlus?: boolean },
+    autoHeight?: boolean,
+    showAdminControls?: boolean
+}) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const { data: session } = useSession();
+    const { toggleBookmark, bookmarks, setSignInModalOpen } = useUserStore();
+    
     const [isHovered, setIsHovered] = useState(false);
+    const [isVideoActive, setIsVideoActive] = useState(false);
+    const videoRef = useRef<HTMLIFrameElement>(null);
 
-    // --- Glare Logic ---
     const mouseX = useMotionValue(0.5);
     const mouseY = useMotionValue(0.5);
     const smoothMouseX = useSpring(mouseX, { damping: 20, stiffness: 150 });
@@ -131,10 +142,46 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     const handleMouseLeave = () => {
         livingCardAnimation.onMouseLeave();
         setIsHovered(false);
+        // Don't stop video on leave to allow viewing without hover if clicked
         mouseX.set(0.5); mouseY.set(0.5);
     };
+    
+    const handleMouseEnter = () => {
+        livingCardAnimation.onMouseEnter();
+        setIsHovered(true);
+    };
 
-    // --- Data ---
+    const toggleWishlist = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!session) {
+            setSignInModalOpen(true);
+            return;
+        }
+        toggleBookmark(release.legacyId, 'release'); 
+    };
+
+    const isBookmarked = bookmarks.includes(`release-${release.legacyId}`);
+
+    const trailerId = useMemo(() => {
+        if (!release.trailer) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = release.trailer.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }, [release.trailer]);
+
+    const handleWatchClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); // Stops link navigation
+        setIsVideoActive(true);
+    };
+
+    const handleCloseVideo = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsVideoActive(false);
+    };
+
     const releaseDate = new Date(release.releaseDate);
     const isReleased = releaseDate < new Date();
     const isTBA = release.isTBA;
@@ -145,133 +192,20 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     const mainHref = gameLink || '/releases'; 
     const layoutIdPrefix = `timeline-${release._id}`;
     
-    const platforms = release.platforms || [];
+    const platforms = useMemo(() => {
+        const raw = release.platforms || [];
+        const normalizedSet = new Set<string>();
+        raw.forEach(p => {
+            if (p === 'PlayStation 5') normalizedSet.add('PlayStation');
+            else normalizedSet.add(p);
+        });
+        return Array.from(normalizedSet);
+    }, [release.platforms]);
 
     const handleClick = (e: React.MouseEvent) => {
-        if (!gameLink) return;
+        if (!gameLink || isVideoActive) return; // Prevent navigation if video is open
         setPrefix(layoutIdPrefix);
     };
-
-    // --- Flying Satellites (General) ---
-    const flyingItems = useMemo(() => {
-        const satellites = [];
-
-        // 1. Countdown (Bottom Center)
-        if (!isReleased && !isTBA) {
-             const msPerDay = 1000 * 60 * 60 * 24;
-             const daysLeft = Math.ceil((releaseDate.getTime() - new Date().getTime()) / msPerDay);
-             
-             let label = `باقي ${daysLeft} يوم`;
-             let colorClass = "cyan";
-
-             if (daysLeft <= 3) colorClass = "golden";
-             else if (daysLeft <= 10) colorClass = "red";
-             else if (daysLeft <= 20) colorClass = "orange";
-             else colorClass = "cyan";
-
-             satellites.push({
-                 type: 'status',
-                 label: label,
-                 colorClass: colorClass,
-                 x: STATUS_FLY_CONFIG.X, 
-                 y: STATUS_FLY_CONFIG.Y, 
-                 rotate: STATUS_FLY_CONFIG.ROT,
-                 anchor: 'center',
-                 link: null
-             });
-        }
-
-        // 2. DEVELOPER (Top Center)
-        if (release.developer && release.developer.title) {
-            satellites.push({
-                type: 'dev',
-                label: release.developer.title,
-                link: `/developers/${release.developer.slug}`, 
-                x: DEV_FLY_CONFIG.X,
-                y: DEV_FLY_CONFIG.Y, 
-                rotate: DEV_FLY_CONFIG.ROT,
-                anchor: 'center'
-            });
-        }
-
-        // 3. PRICE (Top Right)
-        if (release.price) {
-            satellites.push({
-                type: 'price',
-                label: release.price,
-                x: PRICE_FLY_CONFIG.X, 
-                y: PRICE_FLY_CONFIG.Y, 
-                rotate: PRICE_FLY_CONFIG.ROT,
-                anchor: 'left',
-                link: null
-            });
-        }
-        
-        // 4. PUBLISHER (Top Left)
-        if (release.publisher && release.publisher.title) {
-            satellites.push({
-                type: 'dev', 
-                label: release.publisher.title,
-                link: `/publishers/${release.publisher.slug}`,
-                x: PUBLISHER_FLY_CONFIG.X,
-                y: PUBLISHER_FLY_CONFIG.Y,
-                rotate: PUBLISHER_FLY_CONFIG.ROT,
-                anchor: 'right'
-            });
-        }
-
-        return satellites;
-    }, [isReleased, isTBA, releaseDate, release.developer, release.price, release.publisher]);
-
-    // --- Flying Platforms (Right Side) ---
-    const platformConfig = useMemo(() => {
-        const validPlatforms = platforms.filter(p => PlatformIcons[p]);
-        validPlatforms.sort((a, b) => {
-            const weightA = PLATFORM_SORT_WEIGHTS[a] || 0;
-            const weightB = PLATFORM_SORT_WEIGHTS[b] || 0;
-            return weightA - weightB;
-        });
-
-        return validPlatforms.map((p, i) => {
-            const Icon = PlatformIcons[p];
-            const targetRight = PLATFORM_FLY_CONFIG.TARGET_RIGHT + (i * PLATFORM_FLY_CONFIG.RIGHT_STEP);
-            const targetBottom = PLATFORM_FLY_CONFIG.TARGET_BOTTOM + (i * PLATFORM_FLY_CONFIG.BOTTOM_STEP); 
-            const rot = PLATFORM_FLY_CONFIG.BASE_ROT + (i * PLATFORM_FLY_CONFIG.ROT_STEP);
-
-            return {
-                key: p,
-                name: PlatformNames[p] || p,
-                Icon: Icon,
-                right: targetRight,
-                bottom: targetBottom,
-                rotate: rot
-            };
-        });
-    }, [platforms]);
-
-    // --- Flying Genres (Left Side) ---
-    const genreConfig = useMemo(() => {
-        if (!release.tags || release.tags.length === 0) return [];
-        // Take top 3 genres max
-        const genres = release.tags.slice(0, 3);
-        
-        return genres.map((g, i) => {
-             const targetRightPct = GENRE_FLY_CONFIG.TARGET_RIGHT_PCT + (i * GENRE_FLY_CONFIG.RIGHT_STEP);
-             const targetBottom = GENRE_FLY_CONFIG.TARGET_BOTTOM + (i * GENRE_FLY_CONFIG.BOTTOM_STEP);
-             const rot = GENRE_FLY_CONFIG.BASE_ROT + (i * GENRE_FLY_CONFIG.ROT_STEP);
-             
-             const slug = typeof g.slug === 'string' ? g.slug : ((g.slug as any)?.current || '');
-
-             return {
-                 key: g._id || i,
-                 name: translateTag(g.title),
-                 link: slug ? `/tags/${slug}` : '#', 
-                 right: `${targetRightPct}%`, 
-                 bottom: targetBottom,
-                 rotate: rot
-             }
-        });
-    }, [release.tags]);
 
     const imageUrl = release.mainImage 
         ? urlFor(release.mainImage).width(800).height(450).fit('crop').auto('format').url()
@@ -279,17 +213,156 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
     
     const blurDataURL = release.mainImage?.blurDataURL;
 
+    // --- Flying Satellites (Price, Status) ---
+    const flyingItems = useMemo(() => {
+        const satellites = [];
+
+        // 1. Countdown
+        if (!isReleased && !isTBA) {
+             const msPerDay = 1000 * 60 * 60 * 24;
+             const daysLeft = Math.ceil((releaseDate.getTime() - new Date().getTime()) / msPerDay);
+             
+             let label = `باقي ${daysLeft} يوم`;
+             let colorClass = "cyan";
+             if (daysLeft <= 3) colorClass = "golden";
+             else if (daysLeft <= 10) colorClass = "red";
+             else if (daysLeft <= 20) colorClass = "orange";
+
+             satellites.push({
+                 type: 'status', label: label, colorClass: colorClass,
+                 x: STATUS_FLY_CONFIG.X, y: STATUS_FLY_CONFIG.Y, rotate: STATUS_FLY_CONFIG.ROT,
+                 anchor: 'center', link: null
+             });
+        }
+
+        // 2. PRICE (Top Right)
+        if (release.price) {
+            satellites.push({
+                type: 'price', label: release.price,
+                x: PRICE_FLY_CONFIG.X, y: PRICE_FLY_CONFIG.Y, rotate: PRICE_FLY_CONFIG.ROT,
+                anchor: 'left', link: null, colorClass: 'pricePill'
+            });
+        }
+        
+        return satellites;
+    }, [isReleased, isTBA, releaseDate, release.price]);
+
+    // --- Flying Platforms (Right Side) ---
+    const platformConfig = useMemo(() => {
+        const validPlatforms = platforms.filter(p => PlatformIcons[p]);
+        validPlatforms.sort((a, b) => {
+            const weightA = PLATFORM_SORT_WEIGHTS[a] || 0;
+            const weightB = PLATFORM_SORT_WEIGHTS[b] || 0;
+            return weightB - weightA; 
+        });
+
+        return validPlatforms.map((p, i) => {
+            const Icon = PlatformIcons[p];
+            const bottom = PLATFORM_FLY_CONFIG.TARGET_BOTTOM + (i * PLATFORM_FLY_CONFIG.BOTTOM_STEP);
+            
+            return {
+                key: p,
+                name: PlatformNames[p] || p,
+                Icon: Icon,
+                left: PLATFORM_FLY_CONFIG.LEFT_ANCHOR, 
+                bottom, 
+                rotate: PLATFORM_FLY_CONFIG.BASE_ROT
+            };
+        });
+    }, [platforms]);
+
+    // --- Developer & Publisher (Left Side - Aligned Left) ---
+    const devPubConfig = useMemo(() => {
+        const items = [];
+        let hasDev = release.developer && release.developer.title;
+
+        if (hasDev) {
+            items.push({
+                key: 'dev',
+                label: release.developer!.title,
+                link: `/developers/${release.developer!.slug}`,
+                left: PRIMARY_HEAD_CONFIG.LEFT_ANCHOR,
+                bottom: PRIMARY_HEAD_CONFIG.TARGET_BOTTOM,
+                rotate: PRIMARY_HEAD_CONFIG.BASE_ROT,
+                colorClass: 'devPill'
+            });
+        }
+
+        if (release.publisher && release.publisher.title) {
+            const config = hasDev ? SECONDARY_HEAD_CONFIG : PRIMARY_HEAD_CONFIG;
+            items.push({
+                key: 'pub',
+                label: release.publisher.title,
+                link: `/publishers/${release.publisher.slug}`,
+                left: config.LEFT_ANCHOR,
+                bottom: config.TARGET_BOTTOM,
+                rotate: config.BASE_ROT,
+                colorClass: 'devPill'
+            });
+        }
+        return items;
+    }, [release.developer, release.publisher]);
+
+    // --- Flying Subscription Tags (Left Side - Replaces Genres) ---
+    const subConfig = useMemo(() => {
+        const items = [];
+        let index = 0;
+
+        if (release.onGamePass) {
+            const rightPct = SUB_FLY_CONFIG.TARGET_RIGHT_PCT + (index * SUB_FLY_CONFIG.RIGHT_STEP);
+            const bottom = SUB_FLY_CONFIG.TARGET_BOTTOM + (index * SUB_FLY_CONFIG.BOTTOM_STEP);
+            const rotate = SUB_FLY_CONFIG.BASE_ROT + (index * SUB_FLY_CONFIG.ROT_STEP);
+            items.push({
+                key: 'gp',
+                name: 'Game Pass',
+                Icon: XboxIcon,
+                right: `${rightPct}%`, bottom, rotate
+            });
+            index++;
+        }
+
+        if (release.onPSPlus) {
+            const rightPct = SUB_FLY_CONFIG.TARGET_RIGHT_PCT + (index * SUB_FLY_CONFIG.RIGHT_STEP);
+            const bottom = SUB_FLY_CONFIG.TARGET_BOTTOM + (index * SUB_FLY_CONFIG.BOTTOM_STEP);
+            const rotate = SUB_FLY_CONFIG.BASE_ROT + (index * SUB_FLY_CONFIG.ROT_STEP);
+            items.push({
+                key: 'ps',
+                name: 'PS Plus',
+                Icon: PS5Icon,
+                right: `${rightPct}%`, bottom, rotate
+            });
+        }
+        return items;
+    }, [release.onGamePass, release.onPSPlus]);
+
     // Touch
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => { livingCardAnimation.onTouchStart(e); setIsHovered(true); };
     const handleTouchEnd = () => { livingCardAnimation.onTouchEnd(); setIsHovered(false); };
     const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { livingCardAnimation.onTouchMove(e); };
+
+    // --- INVISIBLE BRIDGE RENDERER ---
+    const renderHoverBridge = (style: any) => {
+        if (!isHovered) return null;
+        return (
+            <div 
+                style={{
+                    position: 'absolute',
+                    backgroundColor: 'transparent',
+                    pointerEvents: 'auto',
+                    zIndex: 90,
+                    ...style
+                }}
+                onMouseEnter={() => setIsHovered(true)}
+            />
+        );
+    };
 
     return (
         <motion.div
             ref={livingCardRef}
             className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
             onMouseMove={handleMouseMove}
-            onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }}
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -297,12 +370,108 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
             onTouchMove={handleTouchMove}
             style={livingCardAnimation.style}
         >
-            <div className={styles.timelineCard}>
+            <div className={`${styles.timelineCard} ${autoHeight ? styles.autoHeight : ''}`} style={{ position: 'relative' }}>
+                
+                {/* --- INTERACTIVE LAYER (OVERLAY) --- */}
+                {/* This layer sits on top of everything. The wrapper has pointer-events: none, but children have auto. */}
+                <div style={{ position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none' }}>
+                    
+                    {/* Video Player */}
+                    {isVideoActive && trailerId && (
+                         <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', zIndex: 110, pointerEvents: 'auto' }}>
+                             <iframe 
+                                ref={videoRef}
+                                src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
+                                title="Trailer"
+                                style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover', borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }}
+                                allow="autoplay; encrypted-media; fullscreen"
+                                allowFullScreen
+                            />
+                            <button 
+                                onClick={handleCloseVideo}
+                                style={{ 
+                                    position: 'absolute', top: '1rem', right: '1rem', 
+                                    background: 'rgba(0,0,0,0.6)', color: '#fff', 
+                                    border: 'none', borderRadius: '50%', width: '32px', height: '32px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 120
+                                }}
+                            >
+                                <CloseIcon />
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Controls (Pins, Wishlist) */}
+                    <div style={{ pointerEvents: 'auto' }}>
+                         {showAdminControls && (
+                            <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} />
+                        )}
+                        <motion.button
+                            className={styles.wishlistButton}
+                            onClick={toggleWishlist}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            whileTap={{ scale: 0.9 }}
+                            style={{ 
+                                position: 'absolute', top: '1rem', left: '4rem', zIndex: 30,
+                                background: isBookmarked ? 'var(--accent)' : 'rgba(0,0,0,0.6)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '50%', width: '36px', height: '36px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: isBookmarked ? '#fff' : '#fff',
+                                backdropFilter: 'blur(4px)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <HeartIcon filled={isBookmarked} />
+                        </motion.button>
+                    </div>
+
+                    {/* Play Button */}
+                    {!isVideoActive && isHovered && trailerId && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
+                            <motion.button 
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className={styles.playButtonContainer}
+                                style={{
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    gap: '0.6rem',
+                                    background: 'rgba(0,0,0,0.7)', 
+                                    backdropFilter: 'blur(4px)',
+                                    borderRadius: '999px',
+                                    padding: '0.5rem 1.4rem',
+                                    cursor: 'pointer',
+                                    border: '1.5px solid var(--accent)',
+                                    color: 'var(--accent)', 
+                                    zIndex: 200,
+                                    pointerEvents: 'auto'
+                                }}
+                                whileHover={{ 
+                                    backgroundColor: 'var(--accent)', 
+                                    color: '#000000', 
+                                    scale: 1.05 
+                                }}
+                                onClick={handleWatchClick}
+                            >
+                                <span style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-main)' }}>الإعلان</span>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <YoutubeIcon />
+                                </div>
+                            </motion.button>
+                        </div>
+                    )}
+                </div>
+
+                {/* --- MAIN CARD LINK (BACKGROUND) --- */}
                 <Link 
                     href={mainHref} 
                     className="no-underline block h-full"
                     onClick={handleClick}
                     prefetch={false}
+                    style={{ position: 'relative', zIndex: 1 }}
                 >
                     <motion.div className={styles.glare} style={{ '--mouse-x': glareX, '--mouse-y': glareY } as any} />
 
@@ -320,7 +489,8 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                         )}
 
                         <motion.div layoutId={`${layoutIdPrefix}-image`} className="relative w-full h-full">
-                            <Image
+                             {/* Image Always Rendered underneath */}
+                             <Image
                                 loader={sanityLoader}
                                 src={imageUrl}
                                 alt={release.title}
@@ -329,6 +499,7 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                                 className={styles.cardImage}
                                 placeholder={blurDataURL ? 'blur' : 'empty'}
                                 blurDataURL={blurDataURL}
+                                style={{ opacity: isVideoActive ? 0 : 1 }} // Hide image if video playing
                             />
                         </motion.div>
                     </div>
@@ -350,26 +521,27 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                                 <span>{formattedDate}</span>
                             </div>
                             
-                            {/* PLATFORM ICONS (FOOTER ROW) */}
                             <div className={styles.platformRow}>
                                 {platformConfig.map(p => {
                                     if (!p) return null;
                                     const lid = `plat-${release._id}-${p.key}`;
-                                    
+                                    if (isHovered) return null;
+
                                     return (
                                         <div key={p.key} style={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                                            {!isHovered && (
-                                                <motion.div
-                                                    layoutId={lid}
-                                                    className={styles.platformTagBase}
-                                                    transition={morphTransition}
-                                                    initial={{ rotate: 0, scale: 1, backgroundColor: "rgba(0,0,0,0)", borderColor: "rgba(0,0,0,0)" }}
-                                                    animate={{ rotate: 0, scale: 1, backgroundColor: "rgba(0,0,0,0)", borderColor: "rgba(0,0,0,0)" }}
-                                                    style={{ color: "var(--text-secondary)", padding: 0 }}
-                                                >
-                                                    <p.Icon className={styles.platformIcon} style={{ width: '16px', height: '16px' }} />
-                                                </motion.div>
-                                            )}
+                                            <motion.div
+                                                layoutId={lid}
+                                                className={styles.platformTagBase}
+                                                initial={false}
+                                                animate={{ 
+                                                    rotate: 0, scale: 1, 
+                                                    backgroundColor: "rgba(0,0,0,0)", borderColor: "rgba(0,0,0,0)", 
+                                                    color: "var(--text-secondary)"
+                                                }}
+                                                style={{ padding: 0 }}
+                                            >
+                                                <p.Icon className={styles.platformIcon} style={{ width: '16px', height: '16px' }} />
+                                            </motion.div>
                                         </div>
                                     );
                                 })}
@@ -378,8 +550,14 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                     </div>
                 </Link>
 
-                {/* --- FLYING PLATFORM TAGS (RIGHT) --- */}
-                <div className={styles.flyingTagsContainer}>
+                {/* --- HOVER BRIDGES --- */}
+                {renderHoverBridge({ right: -60, top: '25%', bottom: '20%', width: '80px' })}
+                {renderHoverBridge({ left: -40, top: '-20%', bottom: '50%', width: '120px' })}
+                {renderHoverBridge({ left: -60, top: '60%', bottom: '15%', width: '80px' })}
+                {renderHoverBridge({ left: -80, top: -40, height: '80px', width: '100px' })}
+
+                {/* --- FLYING PLATFORM TAGS --- */}
+                <div className={styles.flyingTagsContainer} style={{ right: 'auto', left: 0, width: '100%' }}>
                     {isHovered && platformConfig.map(p => {
                         const lid = `plat-${release._id}-${p.key}`;
                         return (
@@ -387,10 +565,28 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                                 key={p.key}
                                 layoutId={lid}
                                 className={`${styles.platformTagBase} ${styles.flying}`}
-                                transition={{ layout: morphTransition, rotate: morphTransition, scale: morphTransition, backgroundColor: morphTransition, borderColor: morphTransition, color: morphTransition }}
-                                initial={{ rotate: 0, scale: 1 }}
-                                animate={{ rotate: p.rotate, scale: 1.2, backgroundColor: "rgba(0, 0, 0, 0.85)", borderColor: "var(--accent)", color: "var(--accent)" }}
-                                style={{ position: 'absolute', right: p.right, bottom: p.bottom, padding: "0.4rem 1rem", zIndex: 100, boxShadow: "0 0 15px color-mix(in srgb, var(--accent) 30%, transparent)", transformOrigin: 'center' }}
+                                transition={morphTransition}
+                                initial={false}
+                                animate={{ 
+                                    rotate: p.rotate, 
+                                    scale: 1.2, 
+                                    backgroundColor: "rgba(0, 0, 0, 0.85)", 
+                                    borderColor: "var(--accent)", 
+                                    color: "var(--accent)",
+                                    x: 15,
+                                    z: 60  
+                                }}
+                                whileHover={{ zIndex: 500, scale: 1.3 }}
+                                style={{ 
+                                    position: 'absolute', 
+                                    left: p.left, 
+                                    bottom: p.bottom, 
+                                    padding: "0.4rem 1rem", 
+                                    zIndex: 100, 
+                                    boxShadow: "0 0 15px color-mix(in srgb, var(--accent) 30%, transparent)", 
+                                    transformOrigin: 'center',
+                                    flexDirection: 'row-reverse' 
+                                }}
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <p.Icon className={styles.platformIcon} style={{ width: '16px', height: '16px' }} />
@@ -400,83 +596,93 @@ const TimelineCardComponent = ({ release }: { release: SanityGameRelease & { gam
                     })}
                 </div>
 
-                {/* --- FLYING GENRE TAGS (LEFT) --- */}
-                <div className={styles.flyingTagsContainer} style={{ left: 0, right: 'auto', width: '100%' }}>
-                    {isHovered && genreConfig.map((g, i) => (
-                        <motion.div
-                            key={g.key}
-                            initial={{ opacity: 0, x: -20, rotate: 0 }}
-                            animate={{ opacity: 1, x: 0, rotate: g.rotate, scale: 1.2 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ ...morphTransition, delay: i * 0.05 }}
-                            style={{ 
-                                position: 'absolute', 
-                                right: g.right, 
-                                bottom: g.bottom, 
-                                zIndex: 100, 
+                {/* --- FLYING DEV/PUB TAGS --- */}
+                <div className={styles.flyingTagsContainer} style={{ right: 0, left: 'auto', width: '100%' }}>
+                     {isHovered && devPubConfig.map((item, i) => (
+                         <motion.div
+                            key={item.key}
+                            initial={{ opacity: 0, x: 0, rotate: 0 }}
+                            animate={{ 
+                                opacity: 1, 
+                                rotate: item.rotate, 
+                                scale: 1.15,
+                                x: -20, 
+                                z: 60 
+                            }}
+                            whileHover={{ zIndex: 500, scale: 1.2 }}
+                            exit={{ opacity: 0, x: 0 }}
+                            transition={{ ...morphTransition, delay: i * 0.03 }}
+                            style={{
+                                position: 'absolute',
+                                left: item.left, 
+                                bottom: item.bottom,
                                 transformOrigin: 'center',
-                                cursor: 'pointer' // FIX: Ensure cursor is pointer here too
+                                cursor: 'pointer',
+                                zIndex: 100
+                            }}
+                         >
+                            <Link 
+                                href={item.link}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`${styles.shardPill} ${styles.devPill} ${styles.interactive} no-underline`}
+                                prefetch={false}
+                                style={{ justifyContent: 'flex-start', textAlign: 'left' }}
+                            >
+                                <span>{item.label}</span>
+                            </Link>
+                         </motion.div>
+                     ))}
+                </div>
+
+                {/* --- FLYING SUBSCRIPTION TAGS --- */}
+                <div className={styles.flyingTagsContainer} style={{ left: 0, right: 'auto', width: '100%' }}>
+                    {isHovered && subConfig.map((sub, i) => (
+                        <motion.div
+                            key={sub.key}
+                            initial={{ opacity: 0, x: 0, rotate: 0 }}
+                            animate={{ 
+                                opacity: 1, rotate: sub.rotate, scale: 1.2,
+                                x: -15, z: 60 
+                            }}
+                            whileHover={{ zIndex: 500, scale: 1.3 }}
+                            exit={{ opacity: 0, x: 0 }}
+                            transition={{ ...morphTransition, delay: i * 0.03 }}
+                            style={{ 
+                                position: 'absolute', right: sub.right, bottom: sub.bottom, 
+                                transformOrigin: 'center', cursor: 'default' 
                             }}
                         >
-                            <Link 
-                                href={g.link || '#'} 
-                                onClick={(e) => e.stopPropagation()} 
-                                className={`${styles.genrePill} no-underline`} 
-                            >
-                                <TagIcon style={{ width: '14px', height: '14px' }} />
-                                <span style={{ fontSize: '1.1rem' }}>{g.name}</span>
-                            </Link>
+                            <div className={`${styles.genrePill} no-underline`}>
+                                <sub.Icon style={{ width: '16px', height: '16px' }} />
+                                <span style={{ fontSize: '1.1rem' }}>{sub.name}</span>
+                            </div>
                         </motion.div>
                     ))}
                 </div>
 
+                {/* --- FLYING SATELLITES --- */}
                 <div className={styles.satelliteField}>
                     <AnimatePresence>
                         {isHovered && flyingItems.map((item, i) => {
                             if (!item) return null;
-                            const isLeft = item.anchor === 'right' || item.x < 0; 
-                            const positionStyle = isLeft 
-                                ? { right: '50%', left: 'auto', transformOrigin: 'center right' }
-                                : { left: '50%', right: 'auto', transformOrigin: 'center left' };
-                            
-                            if (item.anchor === 'center') {
-                                positionStyle.left = '50%'; positionStyle.right = 'auto'; positionStyle.transformOrigin = 'center';
-                            }
-                            
-                            let pillStyleClass = styles.shardPill;
-                            if (item.type === 'status') pillStyleClass = `${styles.shardPill} ${styles.statusPill} ${styles[item.colorClass!]}`; 
-                            else if (item.type === 'price') pillStyleClass = `${styles.shardPill} ${styles.pricePill}`;
-                            else if (item.type === 'dev') pillStyleClass = `${styles.shardPill} ${styles.devPill}`;
-                            
-                            // Add interactive class if it has a link
-                            if (item.link) {
-                                pillStyleClass += ` ${styles.interactive}`;
-                            }
-
-                            const content = <span>{item.label}</span>;
+                            const pillStyleClass = `${styles.shardPill} ${styles.statusPill} ${styles[item.colorClass]}`;
 
                             return (
                                 <motion.div
                                     key={`shard-${i}`}
                                     className={styles.satelliteShard}
-                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 0, z: 0 }}
-                                    animate={{ opacity: 1, scale: 1.1, x: item.x, y: item.y, rotate: item.rotate, z: 40 }}
-                                    exit={{ opacity: 0, scale: 0.4, x: 0, y: 0 }}
-                                    transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                    style={{ ...positionStyle, cursor: item.link ? 'pointer' : 'default' }} // FIX: Cursor here as well
+                                    initial={{ opacity: 0, scale: 0.4, y: 0, z: 0 }}
+                                    animate={{ 
+                                        opacity: 1, scale: 1.1, x: item.x, y: item.y, rotate: item.rotate, z: 60 
+                                    }}
+                                    whileHover={{ zIndex: 500, scale: 1.2 }}
+                                    exit={{ opacity: 0, scale: 0.4, y: 0 }}
+                                    transition={{ type: "spring", stiffness: 180, damping: 20 }}
+                                    style={{ 
+                                        position: 'absolute', left: '50%', right: 'auto', transformOrigin: 'center', cursor: 'default', zIndex: 100
+                                    }}
                                 >
-                                    {item.link ? (
-                                         <Link 
-                                            href={item.link} 
-                                            onClick={(e) => e.stopPropagation()} 
-                                            className={`${pillStyleClass} no-underline`}
-                                            prefetch={false}
-                                         >
-                                             {content}
-                                         </Link>
-                                    ) : (
-                                        <div className={pillStyleClass}>{content}</div>
-                                    )}
+                                    <div className={pillStyleClass}>{item.label}</div>
                                 </motion.div>
                             );
                         })}

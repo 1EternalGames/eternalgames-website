@@ -9,78 +9,59 @@
 .chronoContentWrapper {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 2rem;
 }
 
 .chronoTimelineSections {
   padding-top: 2rem;
   padding-right: 2rem;
   padding-left: 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
 }
 
-.platformFilters {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 2rem 2rem 3rem 2rem;
-  font-family: var(--font-ui);
-}
-
-.platformFilters > span {
-  font-size: 1.6rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+/* Updated Sticky Header Logic */
+.stickyHeaderWrapper {
+    grid-column: 1 / -1;
+    position: sticky;
+    top: calc(var(--nav-height-scrolled) + 8rem); /* Adjust based on nav + control bar height */
+    z-index: 50;
+    padding: 1rem 0;
+    /* Create a blur backdrop for the sticky header so text doesn't clash */
+    background: linear-gradient(to bottom, var(--bg-primary) 80%, transparent);
+    backdrop-filter: blur(5px);
+    margin-bottom: 1.5rem;
+    pointer-events: none; /* Let clicks pass through if needed */
 }
 
 .timelineMonthTitle {
-  font-size: 3.6rem;
-  border-bottom: none;
-  padding-bottom: 0.5rem;
+  font-size: 3.2rem;
+  font-weight: 800;
   display: block;
-  text-align: left;
+  text-align: right;
   margin: 0;
-  width: max-content;
-  border-bottom: 2px solid var(--accent);
-  color: var(--text-primary);
-  text-shadow: none;
+  color: var(--accent);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .chronoGamesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); /* Slightly wider cards */
   gap: 3rem;
   margin: 0 auto;
   width: 100%;
 }
 
-.chronoGamesGrid > div[style*="grid-column: 1 / -1"] {
-    margin-bottom: 1.5rem; 
-}
-
-/* --- NEW MOBILE FILTER LAYOUT STYLES --- */
-.filterLayout {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
-    width: 100%;
-    justify-content: center;
-}
-
-.allButtonContainer {
-    flex-shrink: 0;
-}
-
 @media (max-width: 768px) {
     .chronoGamesGrid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: 1fr;
         gap: 2rem;
     }
     .chronoTimelineSections {
-        padding-right: 1rem;
-        padding-left: 1rem;
+        padding-right: 1.5rem;
+        padding-left: 1.5rem;
     }
-    .filterLayout {
-        flex-direction: column;
+    .stickyHeaderWrapper {
+        top: calc(var(--nav-height-scrolled) + 7rem);
     }
 }

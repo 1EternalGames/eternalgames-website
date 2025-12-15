@@ -1,4 +1,4 @@
-// components/studio/[contentType]/[id/EditorSidebar.tsx]
+// components/studio/[contentType]/[id]/EditorSidebar.tsx
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,8 +12,8 @@ import { CreatorInput } from './metadata/CreatorInput';
 import { PlatformInput } from './metadata/PlatformInput';
 import { SlugInput } from './metadata/SlugInput';
 import { NewsTypeInput } from './metadata/NewsTypeInput'; 
-import { DeveloperInput } from './metadata/DeveloperInput'; // NEW
-import { PublisherInput } from './metadata/PublisherInput'; // NEW
+import { DeveloperInput } from './metadata/DeveloperInput'; 
+import { PublisherInput } from './metadata/PublisherInput'; 
 import ColorDictionaryManager from './metadata/color-dictionary/ColorDictionaryManager';
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './Editor.module.css';
@@ -29,7 +29,7 @@ export function EditorSidebar({
     colorDictionary,
     studioMetadata 
 }: any) {
-    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual, newsType, price, developer, publisher, isTBA } = documentState;
+    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual, newsType, price, developer, publisher, isTBA, trailer, isPinned, onGamePass, onPSPlus } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
     const [isSaving, startSaveTransition] = useTransition();
     const [isPublishing, startPublishTransition] = useTransition();
@@ -140,6 +140,24 @@ export function EditorSidebar({
                             <motion.div variants={itemVariants}><GameInput allGames={studioMetadata?.games || []} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></motion.div>
                             
                             <motion.div className={styles.sidebarSection} variants={itemVariants}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                    <label className={styles.sidebarLabel} style={{marginBottom: 0}}>تثبيت في المقدمة</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <ToggleSwitch name="isPinned" checked={isPinned} onChange={(val) => handleFieldChange('isPinned', val)} />
+                                    </div>
+                                </div>
+                                <label className={styles.sidebarLabel}>رابط العرض الدعائي (YouTube)</label>
+                                <input 
+                                    type="url" 
+                                    value={trailer || ''} 
+                                    onChange={(e) => handleFieldChange('trailer', e.target.value)} 
+                                    placeholder="https://youtube.com/..." 
+                                    className={styles.sidebarInput} 
+                                    dir="ltr"
+                                />
+                            </motion.div>
+
+                            <motion.div className={styles.sidebarSection} variants={itemVariants}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <label className={styles.sidebarLabel}>تاريخ الإصدار</label>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -162,7 +180,20 @@ export function EditorSidebar({
                                 <input type="text" placeholder="$69.99 أو Free" value={price || ''} onChange={(e) => handleFieldChange('price', e.target.value)} className={styles.sidebarInput} />
                             </motion.div>
 
-                            {/* UPDATED: New Developer Input */}
+                            <motion.div className={styles.sidebarSection} variants={itemVariants}>
+                                <label className={styles.sidebarLabel} style={{marginBottom: '1rem'}}>خدمات الاشتراك</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '1.4rem', color: 'var(--text-primary)' }}>Game Pass</span>
+                                        <ToggleSwitch name="onGamePass" checked={onGamePass} onChange={(val) => handleFieldChange('onGamePass', val)} />
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '1.4rem', color: 'var(--text-primary)' }}>PlayStation Plus</span>
+                                        <ToggleSwitch name="onPSPlus" checked={onPSPlus} onChange={(val) => handleFieldChange('onPSPlus', val)} />
+                                    </div>
+                                </div>
+                            </motion.div>
+
                             <motion.div variants={itemVariants}>
                                 <DeveloperInput 
                                     allDevelopers={studioMetadata?.developers || []} 
@@ -171,7 +202,6 @@ export function EditorSidebar({
                                 />
                             </motion.div>
 
-                            {/* UPDATED: New Publisher Input */}
                             <motion.div variants={itemVariants}>
                                 <PublisherInput 
                                     allPublishers={studioMetadata?.publishers || []} 
@@ -181,7 +211,7 @@ export function EditorSidebar({
                             </motion.div>
 
                             <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div>
-                             <motion.div variants={itemVariants}><TagInput allTags={studioMetadata?.tags || []} label="الوسوم (Genres)" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></motion.div>
+                            <motion.div variants={itemVariants}><TagInput allTags={studioMetadata?.tags || []} label="الوسوم (Genres)" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></motion.div>
                             <motion.div variants={itemVariants}><CreatorInput allCreators={studioMetadata?.creators || []} role="DESIGNER" label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></motion.div>
                             <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> 
                         </> ) : ( <> 

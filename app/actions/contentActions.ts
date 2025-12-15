@@ -27,8 +27,8 @@ async function setEngagement(userId: string, contentId: number, contentType: str
 export async function setBookmarkAction(contentId: number, contentType: string, isBookmarked: boolean) {
     try {
         const session = await getAuthenticatedSession();
+        // NOTE: We use the 'BOOKMARK' type for Wishlist behavior on 'release' items as well.
         await setEngagement(session.user.id, contentId, contentType, 'BOOKMARK', isBookmarked);
-        // Bookmarks don't affect viral score, so no revalidation needed here.
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setBookmarkAction failed:", error);
@@ -40,10 +40,7 @@ export async function setLikeAction(contentId: number, contentType: string, cont
     try {
         const session = await getAuthenticatedSession();
         await setEngagement(session.user.id, contentId, contentType, 'LIKE', isLiked);
-        
-        // THE FIX: Added 'max' profile argument
         revalidateTag('engagement-scores', 'max');
-        
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setLikeAction failed:", error);
@@ -59,8 +56,6 @@ export async function recordShareAction(contentId: number, contentType: string, 
         await prisma.share.create({
             data: { userId, contentId, contentType },
         });
-
-        // THE FIX: Added 'max' profile argument
         revalidateTag('engagement-scores', 'max');
         
         const updatedShares = await prisma.share.findMany({

@@ -27,12 +27,15 @@ interface HubPageClientProps {
     hubType: 'اللعبة' | 'وسم' | 'أعمال';
     headerAction?: React.ReactNode;
     synopsis?: string | null;      
-    tags?: { title: string }[];    
+    tags?: { title: string, slug?: string }[];    
     fallbackImage?: any; 
     price?: string;
     developer?: string;
     publisher?: string;
     platforms?: string[];
+    // NEW PROPS
+    onGamePass?: boolean;
+    onPSPlus?: boolean;
 }
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -58,7 +61,7 @@ const MetadataDivider = () => (
 
 export default function HubPageClient({ 
     initialItems, hubTitle, hubType, headerAction, synopsis, tags, fallbackImage,
-    price, developer, publisher, platforms
+    price, developer, publisher, platforms, onGamePass, onPSPlus
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
@@ -191,6 +194,7 @@ export default function HubPageClient({
                     </motion.div>
                 )}
                 
+                {/* --- METADATA ROW --- */}
                 <motion.div 
                     className={styles.metadataRow}
                     initial={{ opacity: 0, y: 10 }}
@@ -199,6 +203,22 @@ export default function HubPageClient({
                 >
                     {/* Price */}
                     {price && <div className={`${styles.hubPill} ${styles.price}`}>{price}</div>}
+                    
+                    {/* Game Pass Badge */}
+                    {onGamePass && (
+                        <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#10B981', color: '#10B981' }}>
+                            <XboxIcon style={{ width: 14, height: 14 }} />
+                            <span>Game Pass</span>
+                        </div>
+                    )}
+                    
+                    {/* PS Plus Badge */}
+                    {onPSPlus && (
+                        <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#3B82F6', color: '#3B82F6' }}>
+                            <PS5Icon style={{ width: 16, height: 16 }} />
+                            <span>PS Plus</span>
+                        </div>
+                    )}
                     
                     {price && (developer || publisher) && <MetadataDivider />}
 
@@ -240,9 +260,16 @@ export default function HubPageClient({
 
                     {platforms && platforms.length > 0 && tags && tags.length > 0 && <MetadataDivider />}
 
-                    {/* Tags / Genres */}
-                    {tags && tags.map(t => (
-                        <div key={t.title} className={`${styles.hubPill} ${styles.genre}`}>{translateTag(t.title)}</div>
+                     {/* UPDATE: Tag Rendering */}
+                     {tags && tags.map(t => (
+                        <Link 
+                            key={t.title} 
+                            href={t.slug ? `/tags/${t.slug}` : '#'}
+                            className={`${styles.hubPill} ${styles.genre} ${styles.interactive}`}
+                            prefetch={false}
+                        >
+                            {translateTag(t.title)}
+                        </Link>
                     ))}
                 </motion.div>
 

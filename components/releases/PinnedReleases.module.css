@@ -1,0 +1,83 @@
+/* components/releases/PinnedReleases.module.css */
+
+.pinnedContainer {
+    width: 100%;
+    margin-bottom: 4rem;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-right: 1rem;
+}
+
+.sectionTitle {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.pinIcon {
+    color: var(--accent);
+    transform: rotate(45deg);
+}
+
+.pinnedGrid {
+    display: grid;
+    /* Smart responsive layout: 
+       - Desktop: 3 columns.
+       - If 4 items: Top 3, Bottom 1 centered.
+       - If 5 items: Top 3, Bottom 2 centered.
+    */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    width: 100%;
+    align-items: start; /* FIX: Prevents cards from stretching vertically */
+}
+
+/* 
+   FIX: Removed fixed height.
+   Let the TimelineCard size itself. TimelineCard will now support auto-height.
+*/
+.pinnedItem {
+    width: 100%;
+}
+
+/* Centering logic for overflowing items */
+.pinnedGrid:has(> :nth-child(4):last-child) > :nth-child(4) {
+    grid-column: 2 / 3;
+}
+
+/* If there are 5 items, items 4 & 5 are centered below */
+.pinnedGrid:has(> :nth-child(5):last-child) > :nth-child(4) {
+    grid-column: 1 / span 1;
+    transform: translateX(50%); /* Push right by half a column */
+}
+.pinnedGrid:has(> :nth-child(5):last-child) > :nth-child(5) {
+    grid-column: 2 / span 1;
+    transform: translateX(50%); /* Push right by half a column */
+}
+
+@media (max-width: 1024px) {
+    .pinnedGrid {
+        grid-template-columns: 1fr 1fr; /* 2 columns on tablet */
+    }
+    .pinnedGrid:has(> :nth-child(4):last-child) > :nth-child(4) {
+        grid-column: auto; /* Reset */
+    }
+}
+
+@media (max-width: 768px) {
+    .pinnedGrid {
+        grid-template-columns: 1fr; /* Stack on mobile */
+    }
+    /* Reset all specialized grid placement */
+    .pinnedGrid:has(> :nth-child(5):last-child) > :nth-child(4),
+    .pinnedGrid:has(> :nth-child(5):last-child) > :nth-child(5) {
+        grid-column: auto;
+        transform: none;
+    }
+}

@@ -155,9 +155,13 @@ export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFil
 export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] { _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt, "authors": authors[]->{name}, "reporters": reporters[]->{name}, "gameTitle": game->title, "tags": tags[]->{title} }`
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
 
-// UPDATED: Release Query with new expanded references
+// UPDATED: Release Query with new expanded references and fields
 export const allReleasesQuery = groq`*[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { 
     _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
+    "isPinned": coalesce(isPinned, false),
+    "trailer": trailer,
+    "onGamePass": coalesce(onGamePass, false),
+    "onPSPlus": coalesce(onPSPlus, false),
     "developer": developer->{title, "slug": slug.current}, 
     "publisher": publisher->{title, "slug": slug.current}, 
     "mainImage": mainImage{${mainImageFields}}, 

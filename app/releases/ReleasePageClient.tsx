@@ -1,142 +1,206 @@
 // app/releases/ReleasePageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { SanityGameRelease } from '@/types/sanity';
 import TimelineCard from '@/components/TimelineCard';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import styles from './ReleasesPage.module.css';
-import filterStyles from '@/components/filters/Filters.module.css';
-
-type Platform = 'الكل' | 'PC' | 'PlayStation' | 'Xbox' | 'Switch';
-const PLATFORMS: Platform[] = ['الكل', 'PC', 'PlayStation', 'Xbox', 'Switch'];
-const PLATFORM_LABELS: Record<Platform, string> = { 'الكل': 'الكل', 'PC': 'PC', 'PlayStation': 'PlayStation', 'Xbox': 'Xbox', 'Switch': 'Switch' };
-
-const PlatformFilters = ({ activeFilter, onFilterChange }: { activeFilter: Platform, onFilterChange: (platform: Platform) => void }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.5 });
-  const animationVariants = { 
-    hidden: { opacity: 0, y: 50 }, 
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } } 
-  };
-  
-  const allButton = PLATFORMS[0];
-  const otherPlatforms = PLATFORMS.slice(1);
-
-  return (
-    <motion.div ref={ref} variants={animationVariants} initial="hidden" animate={isInView ? 'visible' : 'hidden'} className={styles.platformFilters}>
-      <span>تصفية حسب المنصة:</span>
-      <div className={styles.filterLayout}>
-        <div className={`${filterStyles.filterButtonsGroup} ${styles.allButtonContainer}`}>
-            <motion.button 
-                key={allButton} 
-                onClick={() => onFilterChange(allButton)} 
-                className={`${filterStyles.filterButton} ${activeFilter === allButton ? filterStyles.active : ''}`} 
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.95 }}
-            >
-              {PLATFORM_LABELS[allButton]}
-              {activeFilter === allButton && ( <motion.div layoutId="release-filter-highlight" className={filterStyles.filterHighlight} transition={{ type: 'spring', stiffness: 300, damping: 25 }}/> )}
-            </motion.button>
-        </div>
-        <div className={filterStyles.filterButtonsGroup}>
-            {otherPlatforms.map(platform => {
-              const isActive = activeFilter === platform;
-              return (
-                <motion.button 
-                    key={platform} 
-                    onClick={() => onFilterChange(platform)} 
-                    className={`${filterStyles.filterButton} ${isActive ? filterStyles.active : ''}`} 
-                    whileHover={{ scale: 1.05 }} 
-                    whileTap={{ scale: 0.95 }}
-                >
-                  {PLATFORM_LABELS[platform as Platform]}
-                  {isActive && ( <motion.div layoutId="release-filter-highlight" className={filterStyles.filterHighlight} transition={{ type: 'spring', stiffness: 300, damping: 25 }}/> )}
-                </motion.button>
-              );
-            })}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+import ReleasesControlBar from '@/components/releases/ReleasesControlBar';
+import PinnedReleases from '@/components/releases/PinnedReleases';
+import { useUserStore } from '@/lib/store';
+import { useSession } from 'next-auth/react';
 
 export default function ReleasePageClient({ releases, hideHeader = false }: { releases: SanityGameRelease[], hideHeader?: boolean }) {
-  const [activeFilter, setActiveFilter] = useState<Platform>('الكل');
+  const { data: session } = useSession();
+  const { bookmarks, setSignInModalOpen } = useUserStore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showWishlistOnly, setShowWishlistOnly] = useState(false);
+
+  // New Filters
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
+  const [selectedPlatform, setSelectedPlatform] = useState<string | 'all'>('all');
+  
   const mainRef = useRef(null);
   const isInView = useInView(mainRef, { once: true, amount: 0.1 });
   
+  const handleToggleWishlist = () => {
+    if (!session) { setSignInModalOpen(true); return; }
+    setShowWishlistOnly(prev => !prev);
+  };
+  
+  const userRoles = (session?.user as any)?.roles || [];
+  const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('DIRECTOR');
+
+  const handleJumpToNow = () => {
+      const now = new Date();
+      const monthIdx = now.getMonth();
+      const year = now.getFullYear();
+      
+      // Update filters to current time
+      setSelectedYear(year);
+      if (selectedMonth !== 'all' && selectedMonth !== monthIdx) {
+          setSelectedMonth(monthIdx);
+      } else {
+          const elements = document.querySelectorAll(`[id^="month-header-${monthIdx}"]`);
+          if (elements.length > 0) { elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      }
+  };
+
+  // 1. Compute Available Years
+  const availableYears = useMemo(() => {
+      const years = new Set(releases.map(r => new Date(r.releaseDate).getFullYear()));
+      return Array.from(years).sort((a, b) => b - a);
+  }, [releases]);
+
+  // 2. Separate Pinned Games
+  const { pinnedGames, timelineGames } = useMemo(() => {
+      const explicitPins = releases.filter(r => r.isPinned);
+      let pinned: SanityGameRelease[] = [];
+      let timeline: SanityGameRelease[] = [];
+
+      if (explicitPins.length > 0) {
+          pinned = explicitPins;
+          timeline = releases.filter(r => !r.isPinned);
+      } else {
+          // If nothing pinned, take top 3 upcoming non-TBA
+          const upcoming = releases.filter(r => !r.isTBA && new Date(r.releaseDate) >= new Date()).sort((a,b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+          pinned = upcoming.slice(0, 3);
+          const pinnedIds = new Set(pinned.map(p => p._id));
+          // REMOVE PINNED FROM TIMELINE so they aren't duplicated at the top
+          // The previous code had `timeline = releases` here to NOT remove them.
+          // But your prompt said "pinned releases will not get filtered like the others, they'll stay even when filtering and searching".
+          // AND "don't make the pinned releases disappear from the list down, it will appear two times".
+          // SO: timeline should include EVERYTHING (except maybe exact duplicates if logic changes, but here we KEEP them in timeline)
+          timeline = releases; 
+      }
+      return { pinnedGames: pinned, timelineGames: timeline };
+  }, [releases]);
+
+  // 3. Filter Timeline Games
+  const filteredTimeline = useMemo(() => {
+      let filtered = timelineGames;
+
+      // Year Filter
+      filtered = filtered.filter(r => new Date(r.releaseDate).getFullYear() === selectedYear);
+
+      // Month Filter
+      if (selectedMonth !== 'all') {
+          filtered = filtered.filter(r => new Date(r.releaseDate).getMonth() === selectedMonth);
+      }
+
+      // Platform Filter
+      if (selectedPlatform !== 'all') {
+          filtered = filtered.filter(r => {
+              if (!r.platforms) return false;
+              if (selectedPlatform === 'PlayStation') {
+                  return r.platforms.includes('PlayStation') || r.platforms.includes('PlayStation 5');
+              }
+              return r.platforms.includes(selectedPlatform as any);
+          });
+      }
+
+      // Search Filter
+      if (searchTerm) {
+          const lowerTerm = searchTerm.toLowerCase();
+          filtered = filtered.filter(r => r.title.toLowerCase().includes(lowerTerm));
+      }
+
+      // Wishlist Filter
+      if (showWishlistOnly) {
+          filtered = filtered.filter(r => bookmarks.includes(`release-${r.legacyId}`));
+      }
+
+      return filtered;
+  }, [timelineGames, selectedYear, selectedMonth, selectedPlatform, searchTerm, showWishlistOnly, bookmarks]);
+  
+  // 4. Group by Month for Rendering
   const flatAnimatedContent = useMemo(() => {
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
-    // Sort by Date (and prioritize TBA at the end if desired, currently query handles basic sorting)
-    const sortedReleases = [...releases].sort((a, b) => {
-         // TBAs last
+    // Sort
+    const sortedReleases = [...filteredTimeline].sort((a, b) => {
          if (a.isTBA && !b.isTBA) return 1;
          if (!a.isTBA && b.isTBA) return -1;
          return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
     });
     
-    const isFilteringActive = activeFilter !== 'الكل';
-    const filteredReleases = isFilteringActive 
-        ? sortedReleases.filter(release => {
-            if (!release.platforms) return false;
-            // THE DEFINITIVE FIX: Check for both "PlayStation" and the legacy "PlayStation 5" value.
-            if (activeFilter === 'PlayStation') {
-                return release.platforms.includes('PlayStation') || release.platforms.includes('PlayStation 5');
-            }
-            return release.platforms.includes(activeFilter);
-        }) 
-        : sortedReleases;
-    
     let currentMonth = '';
-    let flatList: { type: 'header' | 'card', key: string, data: SanityGameRelease | string }[] = [];
+    let flatList: { type: 'header' | 'card', key: string, data: SanityGameRelease | string, monthIndex?: number }[] = [];
 
-    filteredReleases.forEach(release => {
+    sortedReleases.forEach(release => {
       let monthLabel = '';
+      let monthIdx = -1;
+
       if (release.isTBA) {
           monthLabel = 'TBA';
       } else {
           const date = new Date(release.releaseDate);
-          const monthIndex = date.getUTCMonth();
-          monthLabel = `${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}`;
+          monthIdx = date.getMonth();
+          monthLabel = `${arabicMonths[monthIdx]} - ${englishMonths[monthIdx]}`;
       }
       
       if (monthLabel !== currentMonth) {
         currentMonth = monthLabel;
-        flatList.push({ type: 'header', key: `header-${monthLabel}-${release.legacyId}`, data: monthLabel });
+        flatList.push({ type: 'header', key: `header-${monthLabel}`, data: monthLabel, monthIndex: monthIdx });
       }
       flatList.push({ type: 'card', key: `card-${release._id}`, data: release });
     });
     return flatList;
-  }, [releases, activeFilter]);
+  }, [filteredTimeline]);
 
-  const cardVariants = { initial: { opacity: 0, scale: 0.8 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.8 }, };
-  const isListEmpty = flatAnimatedContent.length === 0 && activeFilter !== 'الكل';
+  const cardVariants = { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.9 } };
 
   return (
     <div className={styles.chronoStreamLayoutWrapper}>
       <div className={styles.chronoContentWrapper}>
-          {/* Only hide the H1 if hideHeader is true, keep filters visible */}
           {!hideHeader && (
-              <h1 className="page-title">إصدارات 2025 المُرتقبة</h1>
+              <h1 className="page-title">إصدارات 2025</h1>
           )}
-          <PlatformFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+          
+          {/* Pinned Section: Now always visible, ignores filters */}
+          <PinnedReleases items={pinnedGames} />
+
+          {/* Control Bar */}
+          <ReleasesControlBar 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              showWishlistOnly={showWishlistOnly}
+              onToggleWishlist={handleToggleWishlist}
+              onJumpToNow={handleJumpToNow}
+              isAuthenticated={!!session}
+              
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+              selectedPlatform={selectedPlatform}
+              onPlatformChange={setSelectedPlatform}
+              availableYears={availableYears}
+          />
       </div>
       
-      <div ref={mainRef} className={styles.chronoTimelineSections} style={{ position: 'relative' }}>
-          <motion.div layout className={styles.chronoGamesGrid} initial="hidden" animate={isInView ? "visible" : "hidden"} transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
-            <AnimatePresence>
-              {isListEmpty ? (
-                <motion.p key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0', gridColumn: '1 / -1'}}>
-                  لا إصدارات لهذه المنصة بعد.
+      <div ref={mainRef} className={styles.chronoTimelineSections}>
+          <motion.div layout className={styles.chronoGamesGrid} initial="hidden" animate={isInView ? "visible" : "hidden"}>
+            <AnimatePresence mode="popLayout">
+              {flatAnimatedContent.length === 0 ? (
+                <motion.p key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0', gridColumn: '1 / -1', fontSize: '1.6rem'}}>
+                  لا توجد إصدارات تطابق بحثك.
                 </motion.p>
               ) : (
                 flatAnimatedContent.map(item => {
                   if (item.type === 'header') {
                     return (
-                      <motion.div key={item.key} layout style={{ gridColumn: '1 / -1', padding: '1rem 0 0 0', display: 'flex', justifyContent: 'flex-start' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                      <motion.div 
+                        key={item.key} 
+                        layout 
+                        id={item.monthIndex !== undefined ? `month-header-${item.monthIndex}` : undefined}
+                        className={styles.stickyHeaderWrapper} 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      >
                         <h2 className={styles.timelineMonthTitle}>{item.data as string}</h2>
                       </motion.div>
                     );
@@ -144,7 +208,11 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
                   const release = item.data as SanityGameRelease;
                   return (
                     <motion.div key={item.key} layout variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
-                      <TimelineCard release={release} />
+                      <TimelineCard 
+                        release={release} 
+                        showAdminControls={isAdmin} 
+                        autoHeight={false} 
+                      />
                     </motion.div>
                   );
                 })

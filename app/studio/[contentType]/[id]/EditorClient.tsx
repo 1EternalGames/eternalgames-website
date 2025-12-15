@@ -26,9 +26,13 @@ type EditorDocument = {
     _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
     newsType?: 'official' | 'rumor' | 'leak';
     price?: string; 
-    developer?: { _id: string, title: string } | null; // UPDATED to object
-    publisher?: { _id: string, title: string } | null; // UPDATED to object
+    developer?: { _id: string, title: string } | null; 
+    publisher?: { _id: string, title: string } | null; 
     isTBA?: boolean; 
+    trailer?: string; // NEW
+    isPinned?: boolean; // NEW
+    onGamePass?: boolean; // NEW
+    onPSPlus?: boolean; // NEW
 };
 
 type ColorMapping = {
@@ -39,6 +43,7 @@ type ColorMapping = {
 
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 
+// THE FIX: Initialize all fields with explicit defaults, avoiding undefined.
 const getInitialEditorState = (doc: EditorDocument) => {
     const currentSlug = doc.slug?.current ?? '';
     return {
@@ -68,9 +73,13 @@ const getInitialEditorState = (doc: EditorDocument) => {
         category: doc.category || null,
         newsType: doc.newsType || 'official',
         price: doc.price || '', 
-        developer: doc.developer || null, // UPDATED
-        publisher: doc.publisher || null, // UPDATED
+        developer: doc.developer || null,
+        publisher: doc.publisher || null, 
         isTBA: doc.isTBA || false, 
+        trailer: doc.trailer || '', // Default empty string
+        isPinned: doc.isPinned || false, // Default false
+        onGamePass: doc.onGamePass || false, // Default false
+        onPSPlus: doc.onPSPlus || false // Default false
     };
 };
 
@@ -132,7 +141,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
         patch.newsType = currentState.newsType;
     }
     
-    // NEW: Compare using reference _id for dev/pub
     if (normalize(currentState.price, '') !== normalize(sourceOfTruth.price, '')) patch.price = currentState.price;
     if (normalize(currentState.developer?._id, null) !== normalize(sourceOfTruth.developer?._id, null)) {
         patch.developer = currentState.developer ? { _type: 'reference', _ref: currentState.developer._id } : undefined;
@@ -140,6 +148,10 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (normalize(currentState.publisher?._id, null) !== normalize(sourceOfTruth.publisher?._id, null)) {
         patch.publisher = currentState.publisher ? { _type: 'reference', _ref: currentState.publisher._id } : undefined;
     }
+    if (normalize(currentState.trailer, '') !== normalize(sourceOfTruth.trailer, '')) patch.trailer = currentState.trailer;
+    if (normalize(currentState.isPinned, false) !== normalize(sourceOfTruth.isPinned, false)) patch.isPinned = currentState.isPinned;
+    if (normalize(currentState.onGamePass, false) !== normalize(sourceOfTruth.onGamePass, false)) patch.onGamePass = currentState.onGamePass;
+    if (normalize(currentState.onPSPlus, false) !== normalize(sourceOfTruth.onPSPlus, false)) patch.onPSPlus = currentState.onPSPlus;
     
     if (normalize(currentState.isTBA, false) !== normalize(sourceOfTruth.isTBA, false)) patch.isTBA = currentState.isTBA;
 
@@ -170,7 +182,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
 };
 
 // ... Rest of the file (EditorClient component) is identical, just using the new types and logic ...
-// (Omitting full repetition of EditorClient body for brevity unless requested, as only the types and Diff logic needed change to support objects)
 export function EditorClient({ 
     document: initialDocument, 
     colorDictionary: initialColorDictionary,
@@ -396,6 +407,10 @@ export function EditorClient({
             developer: state.developer, // UPDATED
             publisher: state.publisher, // UPDATED
             isTBA: state.isTBA,
+            trailer: state.trailer,
+            isPinned: state.isPinned,
+            onGamePass: state.onGamePass,
+            onPSPlus: state.onPSPlus,
             content: tiptapToPortableText(JSON.parse(editorContentJson)),
             _updatedAt: new Date().toISOString(),
         };

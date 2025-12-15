@@ -118,7 +118,10 @@ export interface SanityGameRelease {
     platforms: ('PC' | 'PlayStation' | 'PlayStation 5' | 'Xbox' | 'Switch')[];
     synopsis: string;
     mainImage: SanityImage;
-    tags?: SanityTag[]; // Updated to full SanityTag interface
+    tags?: SanityTag[]; 
+    // UPDATED
+    isPinned?: boolean;
+    trailer?: string;
 }
 
 export interface SanitySearchResult {
