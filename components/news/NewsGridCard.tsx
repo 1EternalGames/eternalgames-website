@@ -1,7 +1,7 @@
 // components/news/NewsGridCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo, useEffect } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,12 +12,13 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { Calendar03Icon, PenEdit02Icon } from '@/components/icons';
 import styles from './NewsGridCard.module.css';
 import { translateTag } from '@/lib/translations';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 type NewsGridCardProps = {
     item: CardProps;
     isPriority?: boolean;
     layoutIdPrefix: string;
-    variant?: 'default' | 'compact' | 'mini'; // Added 'mini'
+    variant?: 'default' | 'compact' | 'mini';
 };
 
 const typeLabelMap: Record<string, string> = {
@@ -34,17 +35,11 @@ const typeDisplayMap: Record<string, string> = {
 
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default' }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
+    const isMobile = useIsMobile();
+    // PERF: Disable ref on mobile
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     
     const [isHovered, setIsHovered] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     const getLinkPath = () => {
         switch (item.type) {
@@ -57,7 +52,9 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
-        setPrefix(layoutIdPrefix);
+        if (!isMobile) {
+            setPrefix(layoutIdPrefix);
+        }
     };
 
     const imageSource = item.imageUrl;
@@ -71,34 +68,17 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
     const flyingItems = useMemo(() => {
         const satellites = [];
-
         if (item.game && item.gameSlug) {
-            satellites.push({
-                label: item.game,
-                link: `/games/${item.gameSlug}`,
-            });
-        } else {
-             satellites.push(null);
-        }
+            satellites.push({ label: item.game, link: `/games/${item.gameSlug}` });
+        } else { satellites.push(null); }
 
         if (item.category) {
-            satellites.push({
-                label: translateTag(item.category),
-                link: undefined, 
-            });
+            satellites.push({ label: translateTag(item.category), link: undefined });
         } else if (item.tags && item.tags.length > 0) {
-             satellites.push({
-                label: translateTag(item.tags[0].title),
-                link: `/tags/${item.tags[0].slug}`,
-            });
-        } else {
-            satellites.push(null);
-        }
+             satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}` });
+        } else { satellites.push(null); }
 
-        satellites.push({ 
-            label: typeDisplayMap[item.type] || 'محتوى', 
-            link: undefined, 
-        });
+        satellites.push({ label: typeDisplayMap[item.type] || 'محتوى', link: undefined });
 
         return satellites;
     }, [item.type, item.category, item.tags, item.game, item.gameSlug]);
@@ -109,29 +89,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         { hoverX: -50, hoverY: -100, rotate: -3 }   
     ];
 
-    const mobileConfig = [
-        { hoverX: -90, hoverY: 20, rotate: -4 },
-        { hoverX: 70, hoverY: 40, rotate: 4 },
-        { hoverX: 0, hoverY: -85, rotate: -2 } 
-    ];
-
-    // Compact Config
-    const compactConfig = [
-        { hoverX: -110, hoverY: 30, rotate: -5 },
-        { hoverX: 70, hoverY: 35, rotate: 4 },
-        { hoverX: -20, hoverY: -65, rotate: -2 }
-    ];
-
-    // Selection logic
-    let satelliteConfig;
-    if (isMobile) {
-        satelliteConfig = mobileConfig;
-    } else if (variant === 'compact' || variant === 'mini') {
-        satelliteConfig = compactConfig;
-    } else {
-        satelliteConfig = desktopConfig;
-    }
-
     const capsuleContent = (
         <>
             <div className={styles.capsuleIcon}>
@@ -141,41 +98,23 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         </>
     );
     
-    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-        livingCardAnimation.onTouchStart(e);
-        setIsHovered(true);
-    };
-    const handleTouchEnd = () => {
-        livingCardAnimation.onTouchEnd();
-        setIsHovered(false);
-    };
-    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-        livingCardAnimation.onTouchMove(e);
-    };
-
-    const mouseHandlers = isMobile ? {} : {
+    // PERF: Only attach handlers on Desktop
+    const handlers = !isMobile ? {
         onMouseEnter: () => { livingCardAnimation.onMouseEnter(); setIsHovered(true); },
         onMouseLeave: () => { livingCardAnimation.onMouseLeave(); setIsHovered(false); },
         onMouseMove: livingCardAnimation.onMouseMove,
-    };
-    const touchHandlers = isMobile ? {
-        onTouchStart: handleTouchStart,
-        onTouchEnd: handleTouchEnd,
-        onTouchCancel: handleTouchEnd,
-        onTouchMove: handleTouchMove
     } : {};
 
     return (
         <motion.div
-            ref={livingCardRef}
-            {...mouseHandlers}
-            {...touchHandlers}
+            ref={!isMobile ? livingCardRef : undefined}
+            {...handlers}
             className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''}`}
-            style={livingCardAnimation.style}
+            style={!isMobile ? livingCardAnimation.style : {}}
         >
             <motion.div
-                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
-                // Add mini class if variant is mini
+                // PERF: No layoutId on mobile
+                layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${item.legacyId}` : undefined}
                 className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
             >
                 <Link 
@@ -187,7 +126,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
                             className={styles.imageContainer} 
-                            layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`}
+                            layoutId={!isMobile ? `${layoutIdPrefix}-card-image-${item.legacyId}` : undefined}
                         >
                             {isNews && (
                                 <span className={`${styles.imageBadge} ${styles[newsType]}`}>
@@ -200,7 +139,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                 src={imageSource}
                                 alt={item.title}
                                 fill
-                                sizes="(max-width: 768px) 150px, 260px"
+                                sizes="(max-width: 768px) 130px, 260px"
                                 className={styles.cardImage}
                                 style={{ objectFit: 'cover' }}
                                 placeholder="blur" 
@@ -212,7 +151,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                         <div className={styles.cardInfoColumn}>
                             <motion.h3 
                                 className={styles.cardTitle}
-                                layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
+                                layoutId={!isMobile ? `${layoutIdPrefix}-card-title-${item.legacyId}` : undefined}
                             >
                                 {item.title}
                             </motion.h3>
@@ -252,66 +191,61 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     </div>
                 </Link>
 
-                <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
-                    <AnimatePresence>
-                         {isHovered && flyingItems.map((sat, i) => {
-                             if (!sat) return null;
-                             
-                             const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
-                             const isLeft = config.hoverX < 0;
-                             
-                             const positionStyle = isLeft 
-                                ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
-                                : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
+                {!isMobile && (
+                    <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                        <AnimatePresence>
+                             {isHovered && flyingItems.map((sat, i) => {
+                                 if (!sat) return null;
+                                 
+                                 const config = desktopConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
+                                 const isLeft = config.hoverX < 0;
+                                 
+                                 const positionStyle = isLeft 
+                                    ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
+                                    : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
 
-                             return (
-                                 <motion.div
-                                    key={`${item.id}-sat-${i}`}
-                                    className={styles.satelliteShard}
-                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                    animate={{
-                                        opacity: 1,
-                                        scale: 1.15,
-                                        x: config.hoverX,
-                                        y: config.hoverY,
-                                        rotate: config.rotate,
-                                        z: -30 
-                                    }}
-                                    exit={{
-                                        opacity: 0,
-                                        scale: 0.4,
-                                        x: 0,
-                                        y: 50,
-                                        rotate: 0,
-                                        z: 0
-                                    }}
-                                    transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                    style={{ 
-                                        position: 'absolute', 
-                                        ...positionStyle, 
-                                        transformStyle: 'preserve-3d' 
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                 >
-                                     {sat.link ? (
-                                         <Link 
-                                            href={sat.link} 
-                                            onClick={(e) => e.stopPropagation()}
-                                            className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                            prefetch={false}
-                                         >
-                                             {sat.label}
-                                         </Link>
-                                     ) : (
-                                         <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
-                                             {sat.label}
-                                         </span>
-                                     )}
-                                 </motion.div>
-                             );
-                         })}
-                    </AnimatePresence>
-                </div>
+                                 return (
+                                     <motion.div
+                                        key={`${item.id}-sat-${i}`}
+                                        className={styles.satelliteShard}
+                                        initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                        animate={{
+                                            opacity: 1,
+                                            scale: 1.15,
+                                            x: config.hoverX,
+                                            y: config.hoverY,
+                                            rotate: config.rotate,
+                                            z: -30 
+                                        }}
+                                        exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
+                                        transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
+                                        style={{ 
+                                            position: 'absolute', 
+                                            ...positionStyle, 
+                                            transformStyle: 'preserve-3d' 
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                     >
+                                         {sat.link ? (
+                                             <Link 
+                                                href={sat.link} 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
+                                                prefetch={false}
+                                             >
+                                                 {sat.label}
+                                             </Link>
+                                         ) : (
+                                             <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
+                                                 {sat.label}
+                                             </span>
+                                         )}
+                                     </motion.div>
+                                 );
+                             })}
+                        </AnimatePresence>
+                    </div>
+                )}
             </motion.div>
         </motion.div>
     );

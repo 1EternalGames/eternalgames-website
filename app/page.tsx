@@ -60,11 +60,12 @@ const getCachedEngagementScoresMap = unstable_cache(
 // OPTIMIZATION: Infinite cache for Homepage content.
 // Revalidated when Sanity publishes any content via webhook.
 // Added 'gameRelease' tag so it updates when a release is modified.
+// FIX: Updated cache key to 'v2' to force refresh of new fields (onGamePass, etc.)
 const getCachedHomepageContent = unstable_cache(
     async () => {
         return await client.fetch(consolidatedHomepageQuery);
     },
-    ['homepage-content-consolidated'],
+    ['homepage-content-consolidated-v2'],
     {
         revalidate: false, // Infinite cache
         tags: ['review', 'article', 'news', 'content', 'gameRelease', 'releases']

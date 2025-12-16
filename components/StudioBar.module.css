@@ -17,6 +17,14 @@
   padding: 0.5rem;
 }
 
+/* Mobile Opt */
+@media (max-width: 768px) {
+    .studioBar {
+        backdrop-filter: none !important;
+        background-color: rgba(10, 11, 15, 0.95);
+    }
+}
+
 .studioBarContent {
   display: flex;
   align-items: center;
@@ -38,18 +46,15 @@
   cursor: pointer;
   transition: background-color 0.2s ease-out, color 0.2s ease-out;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .studioBarButton:hover  {
-  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
-}
-
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
   .studioBarButton:active  {
-  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
 }
 .studioBarButton:active {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
@@ -60,26 +65,14 @@
 .brand {
   color: var(--accent);
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .brand:hover  {
-  color: var(--accent); /* Ensure hover doesn't change color from accent */
-}
-}
-
+    color: var(--accent); /* Ensure hover doesn't change color from accent */
+  }
   .brand:active  {
-  color: var(--accent); /* Ensure hover doesn't change color from accent */
-}
+    color: var(--accent); /* Ensure hover doesn't change color from accent */
+  }
 }
 .brand:active {
   color: var(--accent); /* Ensure hover doesn't change color from accent */
 }
-
-
-
-
-
-
-
-
-

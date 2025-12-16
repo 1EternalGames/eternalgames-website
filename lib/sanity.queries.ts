@@ -27,6 +27,21 @@ score,
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}
 `
 
+// --- SHARED RELEASE PROJECTION ---
+const gameReleaseProjection = groq`
+    _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
+    "isPinned": coalesce(isPinned, false),
+    "trailer": trailer,
+    "onGamePass": coalesce(onGamePass, false),
+    "onPSPlus": coalesce(onPSPlus, false),
+    "developer": developer->{title, "slug": slug.current}, 
+    "publisher": publisher->{title, "slug": slug.current}, 
+    "mainImage": mainImage{${mainImageFields}}, 
+    "game": game->{ "slug": slug.current }, 
+    "slug": game->slug.current, 
+    "tags": tags[]->{${tagFields}}
+`
+
 // --- Standard Queries ---
 export const newsHeroQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] { ${cardProjection}, synopsis }`
 export const newsGridInitialQuery = groq`*[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...20] { ${cardListProjection} }`
@@ -93,7 +108,6 @@ const editorDocProjection = groq`
 `
 export const editorDocumentQuery = groq`*[_id in [$id, 'drafts.' + $id]] | order(_updatedAt desc)[0]{ ${editorDocProjection} }`
 
-// UPDATED: Include Developers and Publishers lists
 export const studioMetadataQuery = groq`{
   "games": *[_type == "game"] | order(title asc){_id, title},
   "tags": *[_type == "tag"] | order(title asc){_id, title, category},
@@ -138,7 +152,7 @@ export const vanguardReviewsQuery = groq`*[_type == "review" && ${publishedFilte
 export const featuredHeroReviewQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection} }`
 export const featuredShowcaseArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...7] { ${cardProjection} }`
 
-// UPDATED: 20 items per batch
+// LIST QUERIES
 export const allReviewsListQuery = groq`*[_type == "review" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
 export const allArticlesListQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc) [0...20] { ${cardListProjection} }`
 
@@ -155,27 +169,12 @@ export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFil
 export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] { _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt, "authors": authors[]->{name}, "reporters": reporters[]->{name}, "gameTitle": game->title, "tags": tags[]->{title} }`
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
 
-// UPDATED: Release Query with new expanded references and fields
+// RELEASES
 export const allReleasesQuery = groq`*[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { 
-    _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
-    "isPinned": coalesce(isPinned, false),
-    "trailer": trailer,
-    "onGamePass": coalesce(onGamePass, false),
-    "onPSPlus": coalesce(onPSPlus, false),
-    "developer": developer->{title, "slug": slug.current}, 
-    "publisher": publisher->{title, "slug": slug.current}, 
-    "mainImage": mainImage{${mainImageFields}}, 
-    "game": game->{ "slug": slug.current }, 
-    "slug": game->slug.current, 
-    "tags": tags[]->{${tagFields}} 
+    ${gameReleaseProjection}
 }`
 
-export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`
-export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`
-export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`
-export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`
-export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`
-
+// PAGE INDEX QUERIES
 export const newsIndexQuery = groq`{
   "hero": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...4] { ${cardProjection}, synopsis },
   "grid": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc, _updatedAt desc)[0...20] { ${cardListProjection} },
@@ -198,21 +197,21 @@ export const articlesIndexQuery = groq`{
   "typeTags": *[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}
 }`
 
+// HOMEPAGE
 export const consolidatedHomepageQuery = groq`{
   "reviews": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] { ${cardProjection} },
   "articles": *[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} },
   "news": *[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} },
   "releases": *[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { 
-      _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
-      "developer": developer->{title, "slug": slug.current}, 
-      "publisher": publisher->{title, "slug": slug.current},
-      "mainImage": mainImage{${mainImageFields}}, 
-      "game": game->{ "slug": slug.current }, 
-      "slug": game->slug.current, 
-      "tags": tags[]->{${tagFields}} 
+      ${gameReleaseProjection}
   }
 }`
 
 export const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category}`
 export const allArticleTypeTagsQuery = groq`*[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}`
 export const allNewsTagsQuery = groq`*[_type == "tag" && category == "News"] | order(title asc) {_id, title, "slug": slug.current, category}`
+export const allGamesForStudioQuery = groq`*[_type == "game"] | order(title asc){_id, title, "slug": slug.current}`
+export const allTagsForStudioQuery = groq`*[_type == "tag"] | order(title asc){_id, title, category}`
+export const allCreatorsForStudioQuery = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] | order(name asc){_id, name, _type, prismaUserId}`
+export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...12] { ${cardListProjection} }`
+export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] | order(publishedAt desc)[0...18] { ${cardListProjection} }`

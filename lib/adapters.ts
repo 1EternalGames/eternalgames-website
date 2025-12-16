@@ -76,5 +76,11 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         content: item.content || [],
         relatedReviewIds: item.relatedReviewIds || [],
         synopsis: item.synopsis,
+
+        // NEW: Release specific mappings (using coalescing for safety)
+        onGamePass: item.onGamePass || false,
+        onPSPlus: item.onPSPlus || false,
+        trailer: item.trailer || '',
+        isPinned: item.isPinned || false,
     };
 };

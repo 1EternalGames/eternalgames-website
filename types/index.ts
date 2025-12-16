@@ -28,6 +28,12 @@ export type CardProps = {
     content?: any[];
     relatedReviewIds?: any[];
     synopsis?: string;
+    
+    // NEW: Release Specific Fields (Optional for other types)
+    onGamePass?: boolean;
+    onPSPlus?: boolean;
+    trailer?: string;
+    isPinned?: boolean;
 };
 
 export type EngagementScore = { id: number; engagementScore: number };

@@ -13,7 +13,6 @@ const springConfig = { stiffness: 250, damping: 25 };
  * @param {boolean} options.isLead - If true, applies a more subtle rotation effect.
  * @returns An object containing the ref and motion props to apply to a Framer Motion component.
  */
-// THE FIX: Made the hook generic to support HTMLAnchorElement, HTMLDivElement, etc.
 export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead = false } = {}) {
     const ref = useRef<T>(null);
     const { resolvedTheme } = useTheme();
@@ -48,8 +47,13 @@ export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead =
         }
     );
 
-    // THE FIX: Updated event type to accept the generic T
     const handlePointerMove = (e: React.MouseEvent<T> | React.TouchEvent<T>) => {
+        // OPTIMIZATION: Return early on mobile/touch devices to avoid expensive recalculations.
+        // We detect this via window.matchMedia if available to ensure we don't break SSR.
+        if (typeof window !== 'undefined' && window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+            return;
+        }
+
         if (!ref.current) return;
         const { left, top, width, height } = ref.current.getBoundingClientRect();
         
@@ -81,7 +85,6 @@ export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead =
             onTouchMove: handlePointerMove,
             onMouseEnter: onPointerEnter,
             onMouseLeave: onPointerLeave,
-            // THE FIX: Updated event type to accept the generic T
             onTouchStart: (e: React.TouchEvent<T>) => {
                 onPointerEnter();
                 handlePointerMove(e);

@@ -94,6 +94,14 @@
     position: relative; /* For pseudo-element handling */
 }
 
+/* Mobile Opt */
+@media (max-width: 768px) {
+    .hubPill {
+        backdrop-filter: none !important;
+        background-color: rgba(10, 10, 15, 0.95);
+    }
+}
+
 /* Remove any global link pseudo-element underlines */
 .hubPill::after {
     display: none !important;

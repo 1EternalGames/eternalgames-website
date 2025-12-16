@@ -532,7 +532,11 @@
 
 @media (max-width: 768px) {
     .cardTitle { font-size: 1.8rem; }
-    .statusBadge { font-size: 1.1rem; padding: 0.3rem 0.8rem; }
+    
+    /* MOBILE OPTIMIZATION: Disable expensive effects */
+    .statusBadge { font-size: 1.1rem; padding: 0.3rem 0.8rem; backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
+    .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
+    
     .dateBlock { font-size: 1.3rem; }
     .platformIcon { width: 16px; height: 16px; }
     /* ENABLE Flying elements on mobile now */

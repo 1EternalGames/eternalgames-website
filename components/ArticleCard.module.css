@@ -288,6 +288,7 @@ a.creditCapsule:active { transform: scale(0.95); }
 .techDecoration { display: flex; gap: 5px; padding: 0.5rem 0; justify-content: flex-end; pointer-events: none; }
 .techDot { width: 4px; height: 4px; background-color: rgba(255,255,255,0.2); border-radius: 50%; transition: background-color 0.3s ease; }
 @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); } }
+
 @media (max-width: 768px) {
     .livingCardWrapper { perspective: none; overflow: visible !important; border-radius: 12px; background: transparent; margin-bottom: 2.5rem; }
     .monolithFrame { min-height: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: none !important; mask-image: none; -webkit-mask-image: none; }
@@ -295,7 +296,15 @@ a.creditCapsule:active { transform: scale(0.95); }
     .cardTitle { font-size: 1.6rem; }
     .titleOverlay { padding: 4rem 1.5rem 6.5rem 1.5rem; }
     .hudContainer { padding: 0 1rem 1rem 1rem; z-index: 50; transform: none !important; }
-    .scoreBadge { width: 40px; height: 40px; font-size: 1.5rem; transform: none !important; top: 0.8rem; left: 0.8rem; }
+    
+    /* MOBILE OPTIMIZATION: Disable expensive effects */
+    .scoreBadge { width: 40px; height: 40px; font-size: 1.5rem; transform: none !important; top: 0.8rem; left: 0.8rem; backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
     .holoSpotlight, .satelliteField { display: none; }
     .livingCardWrapper.activeState .satelliteField { display: block; }
+
+    /* Disable glassmorphism on capsules */
+    a.creditCapsule, div.creditCapsule {
+        backdrop-filter: none !important;
+        background-color: rgba(10, 11, 15, 0.95);
+    }
 }

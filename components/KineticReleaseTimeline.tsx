@@ -16,50 +16,27 @@ const ViewAllIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const SynopsisDisplay = ({ synopsis, isLeft, isInView }: { synopsis: string; isLeft: boolean; isInView: boolean; }) => {
-    const [firstWord, ...rest] = synopsis.split(' ');
-    const restOfText = rest.join(' ');
-
-    return (
-        <AnimatePresence>
-            {isInView && (
-                <motion.div
-                    className={`${styles.synopsisContainer} ${isLeft ? styles.left : styles.right}`}
-                    initial={{ opacity: 0, x: isLeft ? 20 : -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: isLeft ? 20 : -20 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                >
-                    <p>
-                        <span className={styles.synopsisFirstWord}>{firstWord}</span>
-                        {' '}{restOfText}
-                    </p>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-};
-
 const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const itemRef = useRef(null);
-    // MODIFIED: Increased threshold to 0.55 (55%)
-    // This triggers the animation after the image (top ~60%) is mostly visible,
-    // but before the user scrolls past the entire card content.
     const cardIsInView = useInView(itemRef, { once: true, amount: 0.55 });
     const isLeft = index % 2 === 0;
     
+    // Adjusted variants for cleaner entry without the synopsis text distractions
     const variants = {
-        hidden: { opacity: 0, x: isLeft ? -50 : 50, scale: 0.9 },
+        hidden: { opacity: 0, x: isLeft ? -30 : 30, scale: 0.95 },
         visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } }
     };
 
     return (
         <div ref={itemRef} className={`${styles.timelineItemWrapper} ${isLeft ? styles.left : styles.right}`}>
-            <SynopsisDisplay synopsis={release.synopsis} isLeft={isLeft} isInView={cardIsInView} />
+            {/* Empty spacer to maintain the alternating layout structure if needed, or just let CSS handle alignment */}
+            <div className={styles.spacer} /> 
+            
             <motion.div 
                 variants={variants} 
                 initial="hidden" 
                 animate={cardIsInView ? "visible" : "hidden"}
+                className={styles.cardContainer}
             >
                 <TimelineCard release={release} />
             </motion.div>
@@ -101,7 +78,9 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
         
         return allReleases
             .filter(release => {
-                const releaseDate = new Date(release.releaseDate + 'T00:00:00Z');
+                // Ensure date parsing works safely
+                if (!release.releaseDate) return false;
+                const releaseDate = new Date(release.releaseDate);
                 return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; 
             })
             .sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
@@ -116,6 +95,7 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                 const itemElements = Array.from(containerEl.querySelectorAll(`.${styles.timelineItemWrapper}`));
                 const positions = itemElements.map(el => { 
                     const item = el as HTMLElement; 
+                    // Calculate dot position based on the Card's vertical center
                     const top = item.offsetTop + (item.offsetHeight / 2); 
                     return top / containerHeight; 
                 });
@@ -146,10 +126,10 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                     ))
                 ) : (
                     <motion.div 
-                        style={{ paddingTop: '20vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} 
+                        style={{ paddingTop: '10vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
-                        transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' as const }}
+                        transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' as const }}
                     >
                         لا إصدارات مجدولة لهذا الشهر.
                     </motion.div>
