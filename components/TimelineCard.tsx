@@ -1,7 +1,7 @@
 // components/TimelineCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo, useRef } from 'react';
+import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { SanityGameRelease } from '@/types/sanity';
@@ -12,6 +12,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
 import { useUserStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
+import { useClickOutside } from '@/hooks/useClickOutside'; 
 import AdminPinButton from '@/components/releases/AdminPinButton';
 import ActionButton from './ActionButton';
 
@@ -24,11 +25,14 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 import styles from './TimelineCard.module.css';
 
+// --- GLOBAL TAG SCALES ---
+const DESKTOP_TAG_SCALE = 0.8; 
+const MOBILE_TAG_SCALE = 0.8; 
+
 // --- ICONS ---
 const YoutubeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>;
 const CloseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
-// New Wishlist Icons
 const AddToListStrokeIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3.5 9V20C3.5 21.1046 4.39543 22 5.5 22H18.5C19.6046 22 20.5 21.1046 20.5 20V4C20.5 2.89543 19.6046 2 18.5 2H12"></path>
@@ -48,44 +52,81 @@ const AddToListSolidIcon = () => (
 
 // --- CONFIGURATION FOR FLYING PLATFORM TAGS (Right Side) ---
 const PLATFORM_FLY_CONFIG = {
-    LEFT_ANCHOR: '85%', 
+    LEFT_ANCHOR: '80%', 
     TARGET_BOTTOM: 280, 
-    BOTTOM_STEP: -38,   
+    BOTTOM_STEP: -33,   
     BASE_ROT: -5,     
     ROT_STEP: 0    
+};
+// MOBILE: Platforms on bottom-right of image (Image height ~200px)
+const MOBILE_PLATFORM_FLY_CONFIG = {
+    LEFT_ANCHOR: '75%',
+    TARGET_BOTTOM: 290, // Bottom edge of image
+    BOTTOM_STEP: 35, // Stack upwards
+    BASE_ROT: 0,
+    ROT_STEP: 0
 };
 
 // --- CONFIGURATION FOR SUBSCRIPTION TAGS (Left Side) ---
 const SUB_FLY_CONFIG = {
-    TARGET_RIGHT_PCT: 85, 
+    TARGET_RIGHT_PCT: 80, 
     RIGHT_STEP: 2,       
-    TARGET_BOTTOM: 200,
-    BOTTOM_STEP: 40,
+    TARGET_BOTTOM: 210,
+    BOTTOM_STEP: 33,
     BASE_ROT: 5, 
+    ROT_STEP: 0
+};
+// MOBILE: Subscriptions on bottom-left of image
+// Modified to use LEFT alignment for vertical stacking of icons
+const MOBILE_SUB_FLY_CONFIG = {
+    TARGET_LEFT: 15, // Fixed pixel distance from left edge
+    TARGET_BOTTOM: 203, // Bottom edge of image
+    BOTTOM_STEP: 28, // Stack upwards
+    BASE_ROT: 0,
     ROT_STEP: 0
 };
 
 // --- CONFIGURATION FOR STATUS/COUNTDOWN (Bottom Center) ---
 const STATUS_FLY_CONFIG = { X: 0, Y: 140, ROT: -3 };
+// MOBILE: Center of card (below image)
+const MOBILE_STATUS_FLY_CONFIG = { X: 0, Y: 100, ROT: 0 };
 
 // --- CONFIGURATION FOR PRICE (Top Right) ---
 const PRICE_FLY_CONFIG = { 
     X: -200, 
-    Y: -70, 
+    Y: -80, 
     ROT: 5 
+};
+// MOBILE: Stacked above subscriptions on bottom-left
+const MOBILE_PRICE_FLY_CONFIG = { 
+    X: -160, // Left side
+    Y: -80, // Above subs
+    ROT: 0
 };
 
 // --- CONFIGURATION FOR DEVELOPER (Top Left - Primary Position) ---
 const PRIMARY_HEAD_CONFIG = { 
-    LEFT_ANCHOR: 55, 
-    TARGET_BOTTOM: 365, 
+    LEFT_ANCHOR: 200, 
+    TARGET_BOTTOM: 380, 
+    BASE_ROT: 0
+};
+// MOBILE: Top-left of image
+const MOBILE_PRIMARY_HEAD_CONFIG = { 
+    LEFT_ANCHOR: 166, 
+    TARGET_BOTTOM: 360, // Top of image
     BASE_ROT: 0
 };
 
 // --- CONFIGURATION FOR PUBLISHER (Top Left - Secondary Position) ---
 const SECONDARY_HEAD_CONFIG = { 
-    LEFT_ANCHOR: 55, 
-    TARGET_BOTTOM: 405, 
+    LEFT_ANCHOR: 70, 
+    TARGET_BOTTOM: 380, 
+    BASE_ROT: 0
+};
+// MOBILE: Below developer at top-left
+const MOBILE_SECONDARY_HEAD_CONFIG = { 
+    LEFT_ANCHOR: 60, 
+    TARGET_BOTTOM: 360, 
     BASE_ROT: 0
 };
 
@@ -145,7 +186,31 @@ const TimelineCardComponent = ({
     
     const [isHovered, setIsHovered] = useState(false);
     const [isVideoActive, setIsVideoActive] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    
+    // Timer ref for delaying hover state on touch
     const videoRef = useRef<HTMLIFrameElement>(null);
+    
+    // Track whether the next click should be blocked (because it was just used to 'wake' the card)
+    const blockNextClickRef = useRef(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
+        setIsMobile(mediaQuery.matches);
+        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
+
+    // Hook to close the card if clicking outside on mobile
+    useClickOutside(livingCardRef, () => {
+        if (isMobile) {
+            setIsHovered(false);
+            blockNextClickRef.current = false;
+        }
+    });
+
+    const activeTagScale = isMobile ? MOBILE_TAG_SCALE : DESKTOP_TAG_SCALE;
 
     const mouseX = useMotionValue(0.5);
     const mouseY = useMotionValue(0.5);
@@ -154,7 +219,9 @@ const TimelineCardComponent = ({
     const glareX = useTransform(smoothMouseX, [0, 1], ['0%', '100%']);
     const glareY = useTransform(smoothMouseY, [0, 1], ['0%', '100%']);
 
+    // --- MOUSE HANDLERS (Desktop) ---
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isMobile) return; 
         livingCardAnimation.onMouseMove(e);
         if (!livingCardRef.current) return;
         const { left, top, width, height } = livingCardRef.current.getBoundingClientRect();
@@ -163,6 +230,7 @@ const TimelineCardComponent = ({
     };
 
     const handleMouseLeave = () => {
+        if (isMobile) return;
         livingCardAnimation.onMouseLeave();
         setIsHovered(false);
         // Don't stop video on leave to allow viewing without hover if clicked
@@ -170,18 +238,52 @@ const TimelineCardComponent = ({
     };
     
     const handleMouseEnter = () => {
+        if (isMobile) return;
         livingCardAnimation.onMouseEnter();
         setIsHovered(true);
     };
 
-    const toggleWishlist = (e: React.MouseEvent) => {
+    // --- TOUCH HANDLERS (Mobile) ---
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        // Immediate Wake-up on touch
+        livingCardAnimation.onTouchStart(e);
+        
+        if (!isHovered) {
+            // First tap: Just Wake Up
+            setIsHovered(true);
+            blockNextClickRef.current = true;
+        } else {
+            // Already Woken: Allow normal click behavior (handled in handleClick)
+            blockNextClickRef.current = false;
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        // Just pass movement to tilt logic
+        livingCardAnimation.onTouchMove(e);
+    };
+
+    const handleTouchEnd = () => {
+        livingCardAnimation.onTouchEnd();
+        // Do NOT set isHovered(false) here to allow buttons to be pressed
+        // We rely on useClickOutside to close it or navigation to unmount it
+    };
+
+    const toggleWishlist = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
-        e.stopPropagation();
+        e.stopPropagation(); // Stops tilt effect and navigation
         if (!session) {
             setSignInModalOpen(true);
             return;
         }
         toggleBookmark(release.legacyId, 'release'); 
+    };
+    
+    // Admin Pin Toggle needs similar stopPropagation
+    const handleAdminPinToggle = (e: React.MouseEvent | React.TouchEvent) => {
+        // The AdminPinButton component handles the logic, but we need to ensure
+        // the click doesn't bubble up to the card wrapper here.
+        // Since AdminPinButton is a child, we wrap it in a div that stops propagation.
     };
 
     const isBookmarked = bookmarks.includes(`release-${release.legacyId}`);
@@ -193,13 +295,13 @@ const TimelineCardComponent = ({
         return (match && match[2].length === 11) ? match[2] : null;
     }, [release.trailer]);
 
-    const handleWatchClick = (e: React.MouseEvent) => {
+    const handleWatchClick = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
-        e.stopPropagation(); // Stops link navigation
+        e.stopPropagation(); // Stops link navigation & tilt
         setIsVideoActive(true);
     };
 
-    const handleCloseVideo = (e: React.MouseEvent) => {
+    const handleCloseVideo = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setIsVideoActive(false);
@@ -226,7 +328,14 @@ const TimelineCardComponent = ({
     }, [release.platforms]);
 
     const handleClick = (e: React.MouseEvent) => {
-        if (!gameLink || isVideoActive) return; // Prevent navigation if video is open
+        // If mobile and this click was used to 'wake' the card, stop navigation
+        if (isMobile && blockNextClickRef.current) {
+            e.preventDefault();
+            blockNextClickRef.current = false;
+            return;
+        }
+
+        if (!gameLink || isVideoActive) return; 
         setPrefix(layoutIdPrefix);
     };
 
@@ -239,6 +348,10 @@ const TimelineCardComponent = ({
     // --- Flying Satellites (Price, Status) ---
     const flyingItems = useMemo(() => {
         const satellites = [];
+        
+        // Select config based on device
+        const STATUS_CFG = isMobile ? MOBILE_STATUS_FLY_CONFIG : STATUS_FLY_CONFIG;
+        const PRICE_CFG = isMobile ? MOBILE_PRICE_FLY_CONFIG : PRICE_FLY_CONFIG;
 
         // 1. Countdown
         if (!isReleased && !isTBA) {
@@ -253,7 +366,7 @@ const TimelineCardComponent = ({
 
              satellites.push({
                  type: 'status', label: label, colorClass: colorClass,
-                 x: STATUS_FLY_CONFIG.X, y: STATUS_FLY_CONFIG.Y, rotate: STATUS_FLY_CONFIG.ROT,
+                 x: STATUS_CFG.X, y: STATUS_CFG.Y, rotate: STATUS_CFG.ROT,
                  anchor: 'center', link: null
              });
         }
@@ -262,13 +375,13 @@ const TimelineCardComponent = ({
         if (release.price) {
             satellites.push({
                 type: 'price', label: release.price,
-                x: PRICE_FLY_CONFIG.X, y: PRICE_FLY_CONFIG.Y, rotate: PRICE_FLY_CONFIG.ROT,
+                x: PRICE_CFG.X, y: PRICE_CFG.Y, rotate: PRICE_CFG.ROT,
                 anchor: 'left', link: null, colorClass: 'pricePill'
             });
         }
         
         return satellites;
-    }, [isReleased, isTBA, releaseDate, release.price]);
+    }, [isReleased, isTBA, releaseDate, release.price, isMobile]);
 
     // --- Flying Platforms (Right Side) ---
     const platformConfig = useMemo(() => {
@@ -278,41 +391,48 @@ const TimelineCardComponent = ({
             const weightB = PLATFORM_SORT_WEIGHTS[b] || 0;
             return weightB - weightA; 
         });
+        
+        const CFG = isMobile ? MOBILE_PLATFORM_FLY_CONFIG : PLATFORM_FLY_CONFIG;
 
         return validPlatforms.map((p, i) => {
             const Icon = PlatformIcons[p];
-            const bottom = PLATFORM_FLY_CONFIG.TARGET_BOTTOM + (i * PLATFORM_FLY_CONFIG.BOTTOM_STEP);
+            // On Mobile we stack upwards from bottom-right (inside image)
+            // On Desktop we stack upwards from 280 (outside image)
+            const bottom = CFG.TARGET_BOTTOM + (i * CFG.BOTTOM_STEP * (isMobile ? 1 : 1)); // Step is negative on desktop
             
             return {
                 key: p,
                 name: PlatformNames[p] || p,
                 Icon: Icon,
-                left: PLATFORM_FLY_CONFIG.LEFT_ANCHOR, 
+                left: CFG.LEFT_ANCHOR, 
                 bottom, 
-                rotate: PLATFORM_FLY_CONFIG.BASE_ROT
+                rotate: CFG.BASE_ROT
             };
         });
-    }, [platforms]);
+    }, [platforms, isMobile]);
 
     // --- Developer & Publisher (Left Side - Aligned Left) ---
     const devPubConfig = useMemo(() => {
         const items = [];
         let hasDev = release.developer && release.developer.title;
+        
+        const PRIMARY = isMobile ? MOBILE_PRIMARY_HEAD_CONFIG : PRIMARY_HEAD_CONFIG;
+        const SECONDARY = isMobile ? MOBILE_SECONDARY_HEAD_CONFIG : SECONDARY_HEAD_CONFIG;
 
         if (hasDev) {
             items.push({
                 key: 'dev',
                 label: release.developer!.title,
                 link: `/developers/${release.developer!.slug}`,
-                left: PRIMARY_HEAD_CONFIG.LEFT_ANCHOR,
-                bottom: PRIMARY_HEAD_CONFIG.TARGET_BOTTOM,
-                rotate: PRIMARY_HEAD_CONFIG.BASE_ROT,
+                left: PRIMARY.LEFT_ANCHOR,
+                bottom: PRIMARY.TARGET_BOTTOM,
+                rotate: PRIMARY.BASE_ROT,
                 colorClass: 'devPill'
             });
         }
 
         if (release.publisher && release.publisher.title) {
-            const config = hasDev ? SECONDARY_HEAD_CONFIG : PRIMARY_HEAD_CONFIG;
+            const config = hasDev ? SECONDARY : PRIMARY;
             items.push({
                 key: 'pub',
                 label: release.publisher.title,
@@ -324,56 +444,86 @@ const TimelineCardComponent = ({
             });
         }
         return items;
-    }, [release.developer, release.publisher]);
+    }, [release.developer, release.publisher, isMobile]);
 
     // --- Flying Subscription Tags (Left Side - Replaces Genres) ---
     const subConfig = useMemo(() => {
         const items = [];
         let index = 0;
-
+        
+        // Select config based on device
         if (release.onGamePass) {
-            const rightPct = SUB_FLY_CONFIG.TARGET_RIGHT_PCT + (index * SUB_FLY_CONFIG.RIGHT_STEP);
-            const bottom = SUB_FLY_CONFIG.TARGET_BOTTOM + (index * SUB_FLY_CONFIG.BOTTOM_STEP);
-            const rotate = SUB_FLY_CONFIG.BASE_ROT + (index * SUB_FLY_CONFIG.ROT_STEP);
+            let left: string | number | undefined;
+            let right: string | number | undefined = undefined;
+            let bottom: number;
+            let rotate: number;
+
+            if (isMobile) {
+                // Mobile: Align LEFT using fixed pixels
+                left = MOBILE_SUB_FLY_CONFIG.TARGET_LEFT;
+                bottom = MOBILE_SUB_FLY_CONFIG.TARGET_BOTTOM + (index * MOBILE_SUB_FLY_CONFIG.BOTTOM_STEP);
+                rotate = MOBILE_SUB_FLY_CONFIG.BASE_ROT + (index * MOBILE_SUB_FLY_CONFIG.ROT_STEP);
+            } else {
+                // Desktop: Align RIGHT using percentages
+                const rightPct = SUB_FLY_CONFIG.TARGET_RIGHT_PCT + (index * SUB_FLY_CONFIG.RIGHT_STEP);
+                right = `${rightPct}%`;
+                bottom = SUB_FLY_CONFIG.TARGET_BOTTOM + (index * SUB_FLY_CONFIG.BOTTOM_STEP);
+                rotate = SUB_FLY_CONFIG.BASE_ROT + (index * SUB_FLY_CONFIG.ROT_STEP);
+            }
+
             items.push({
                 key: 'gp',
                 name: 'Game Pass',
                 Icon: XboxIcon,
-                right: `${rightPct}%`, bottom, rotate
+                left, right, bottom, rotate
             });
             index++;
         }
 
         if (release.onPSPlus) {
-            const rightPct = SUB_FLY_CONFIG.TARGET_RIGHT_PCT + (index * SUB_FLY_CONFIG.RIGHT_STEP);
-            const bottom = SUB_FLY_CONFIG.TARGET_BOTTOM + (index * SUB_FLY_CONFIG.BOTTOM_STEP);
-            const rotate = SUB_FLY_CONFIG.BASE_ROT + (index * SUB_FLY_CONFIG.ROT_STEP);
+            let left: string | number | undefined;
+            let right: string | number | undefined = undefined;
+            let bottom: number;
+            let rotate: number;
+
+            if (isMobile) {
+                // Mobile: Align LEFT using fixed pixels
+                left = MOBILE_SUB_FLY_CONFIG.TARGET_LEFT;
+                bottom = MOBILE_SUB_FLY_CONFIG.TARGET_BOTTOM + (index * MOBILE_SUB_FLY_CONFIG.BOTTOM_STEP);
+                rotate = MOBILE_SUB_FLY_CONFIG.BASE_ROT + (index * MOBILE_SUB_FLY_CONFIG.ROT_STEP);
+            } else {
+                // Desktop: Align RIGHT using percentages
+                const rightPct = SUB_FLY_CONFIG.TARGET_RIGHT_PCT + (index * SUB_FLY_CONFIG.RIGHT_STEP);
+                right = `${rightPct}%`;
+                bottom = SUB_FLY_CONFIG.TARGET_BOTTOM + (index * SUB_FLY_CONFIG.BOTTOM_STEP);
+                rotate = SUB_FLY_CONFIG.BASE_ROT + (index * SUB_FLY_CONFIG.ROT_STEP);
+            }
+
             items.push({
                 key: 'ps',
                 name: 'PS Plus',
                 Icon: PS5Icon,
-                right: `${rightPct}%`, bottom, rotate
+                left, right, bottom, rotate
             });
         }
         return items;
-    }, [release.onGamePass, release.onPSPlus]);
-
-    // Touch
-    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => { livingCardAnimation.onTouchStart(e); setIsHovered(true); };
-    const handleTouchEnd = () => { livingCardAnimation.onTouchEnd(); setIsHovered(false); };
-    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { livingCardAnimation.onTouchMove(e); };
+    }, [release.onGamePass, release.onPSPlus, isMobile]);
 
     // --- INVISIBLE BRIDGE RENDERER ---
-    const renderHoverBridge = (style: any) => {
-        if (!isHovered) return null;
+    const renderHoverBridge = () => {
+        if (!isHovered || isMobile) return null; // FIX: Disabled on mobile
         return (
             <div 
                 style={{
                     position: 'absolute',
+                    // Targeted bridge for Dev/Publisher tags (Top)
+                    bottom: '95%', // Starts just inside the top edge to catch exit
+                    left: '10%', 
+                    width: '80%', 
+                    height: '140px', // Reach up to cover the tags area
                     backgroundColor: 'transparent',
                     pointerEvents: 'auto',
-                    zIndex: 90,
-                    ...style
+                    zIndex: 90
                 }}
                 onMouseEnter={() => setIsHovered(true)}
             />
@@ -412,6 +562,7 @@ const TimelineCardComponent = ({
                             />
                             <button 
                                 onClick={handleCloseVideo}
+                                onTouchStart={(e) => e.stopPropagation()} // Stop bubbling for touch
                                 style={{ 
                                     position: 'absolute', top: '1rem', right: '1rem', 
                                     background: 'rgba(0,0,0,0.6)', color: '#fff', 
@@ -431,6 +582,7 @@ const TimelineCardComponent = ({
                         <motion.button
                             className={styles.wishlistButton}
                             onClick={toggleWishlist}
+                            onTouchStart={(e) => e.stopPropagation()} // Stop bubbling for touch
                             initial={{ scale: 0.9 }}
                             animate={{ scale: 1 }}
                             whileHover={{ scale: 1.1 }}
@@ -455,7 +607,9 @@ const TimelineCardComponent = ({
 
                         {/* 2. Admin Pin Button */}
                          {showAdminControls && (
-                            <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} />
+                            <div onTouchStart={(e) => e.stopPropagation()}>
+                                <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} />
+                            </div>
                         )}
 
                     </div>
@@ -468,12 +622,13 @@ const TimelineCardComponent = ({
                                     <motion.button 
                                         key="play-button"
                                         initial={{ opacity: 0, scale: PLAY_BUTTON_CONFIG.INITIAL_SCALE, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y + 20 }}
-                                        animate={{ opacity: 1, scale: 1, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y, rotate: PLAY_BUTTON_CONFIG.ROTATE }}
+                                        animate={{ opacity: 1, scale: activeTagScale, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y, rotate: PLAY_BUTTON_CONFIG.ROTATE }}
                                         exit={{ opacity: 0, scale: PLAY_BUTTON_CONFIG.INITIAL_SCALE, x: PLAY_BUTTON_CONFIG.OFFSET_X, y: PLAY_BUTTON_CONFIG.OFFSET_Y + 20 }}
                                         transition={morphTransition}
                                         className={styles.playButtonContainer}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleWatchClick}
+                                        onTouchStart={(e) => e.stopPropagation()} // Stop bubbling for touch
                                     >
                                         <span style={{ marginLeft: '0.4rem' }}>الإعلان</span>
                                         <YoutubeIcon />
@@ -544,7 +699,8 @@ const TimelineCardComponent = ({
                                 {platformConfig.map(p => {
                                     if (!p) return null;
                                     const lid = `plat-${release._id}-${p.key}`;
-                                    if (isHovered) return null;
+                                    // FIX: Only hide static icons if hovered AND NOT mobile
+                                    if (isHovered && !isMobile) return null;
 
                                     return (
                                         <div key={p.key} style={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -570,32 +726,32 @@ const TimelineCardComponent = ({
                 </Link>
 
                 {/* --- HOVER BRIDGES --- */}
-                {renderHoverBridge({ right: -60, top: '25%', bottom: '20%', width: '80px' })}
-                {renderHoverBridge({ left: -40, top: '-20%', bottom: '50%', width: '120px' })}
-                {renderHoverBridge({ left: -60, top: '60%', bottom: '15%', width: '80px' })}
-                {renderHoverBridge({ left: -80, top: -40, height: '80px', width: '100px' })}
+                {renderHoverBridge()}
 
                 {/* --- FLYING PLATFORM TAGS --- */}
                 <div className={styles.flyingTagsContainer} style={{ right: 'auto', left: 0, width: '100%' }}>
-                    {isHovered && platformConfig.map(p => {
+                    {isHovered && !isMobile && platformConfig.map(p => { // FIX: Don't render if mobile
                         const lid = `plat-${release._id}-${p.key}`;
                         return (
                             <motion.div
                                 key={p.key}
                                 layoutId={lid}
                                 className={`${styles.platformTagBase} ${styles.flying}`}
-                                transition={morphTransition}
+                                transition={{ 
+                                    ...morphTransition, 
+                                    rotate: { duration: 0 } // Snap rotation immediately
+                                }}
                                 initial={false}
                                 animate={{ 
                                     rotate: p.rotate, 
-                                    scale: 1.2, 
+                                    scale: 1.2 * activeTagScale, 
                                     backgroundColor: "rgba(0, 0, 0, 0.85)", 
                                     borderColor: "var(--accent)", 
                                     color: "var(--accent)",
                                     x: 15,
                                     z: 60  
                                 }}
-                                whileHover={{ zIndex: 500, scale: 1.3 }}
+                                whileHover={{ zIndex: 500, scale: 1.3 * activeTagScale }}
                                 style={{ 
                                     position: 'absolute', 
                                     left: p.left, 
@@ -624,11 +780,11 @@ const TimelineCardComponent = ({
                             animate={{ 
                                 opacity: 1, 
                                 rotate: item.rotate, 
-                                scale: 1.15,
-                                x: -20, 
+                                scale: 1.15 * activeTagScale,
+                                x: isMobile ? 0 : -20, 
                                 z: 60 
                             }}
-                            whileHover={{ zIndex: 500, scale: 1.2 }}
+                            whileHover={{ zIndex: 500, scale: 1.2 * activeTagScale }}
                             exit={{ opacity: 0, x: 0 }}
                             transition={{ ...morphTransition, delay: i * 0.03 }}
                             style={{
@@ -643,6 +799,7 @@ const TimelineCardComponent = ({
                             <Link 
                                 href={item.link}
                                 onClick={(e) => e.stopPropagation()}
+                                onTouchStart={(e) => e.stopPropagation()} // Stop bubbling for touch
                                 className={`${styles.shardPill} ${styles.devPill} ${styles.interactive} no-underline`}
                                 prefetch={false}
                                 style={{ justifyContent: 'flex-start', textAlign: 'left' }}
@@ -660,18 +817,24 @@ const TimelineCardComponent = ({
                             key={sub.key}
                             initial={{ opacity: 0, x: 0, rotate: 0 }}
                             animate={{ 
-                                opacity: 1, rotate: sub.rotate, scale: 1.2,
-                                x: -15, z: 60 
+                                opacity: 1, rotate: sub.rotate, scale: 1.2 * activeTagScale,
+                                x: isMobile ? 0 : -15, z: 60 
                             }}
-                            whileHover={{ zIndex: 500, scale: 1.3 }}
+                            whileHover={{ zIndex: 500, scale: 1.3 * activeTagScale }}
                             exit={{ opacity: 0, x: 0 }}
                             transition={{ ...morphTransition, delay: i * 0.03 }}
                             style={{ 
-                                position: 'absolute', right: sub.right, bottom: sub.bottom, 
+                                position: 'absolute', 
+                                right: sub.right,
+                                left: sub.left,
+                                bottom: sub.bottom, 
                                 transformOrigin: 'center', cursor: 'default' 
                             }}
                         >
-                            <div className={`${styles.genrePill} no-underline`}>
+                            <div className={`${styles.genrePill} no-underline`} style={{ 
+                                direction: isMobile ? 'ltr' : undefined,
+                                flexDirection: 'row' // Force row layout
+                            }}>
                                 <sub.Icon style={{ width: '16px', height: '16px' }} />
                                 <span style={{ fontSize: '1.1rem' }}>{sub.name}</span>
                             </div>
@@ -692,9 +855,9 @@ const TimelineCardComponent = ({
                                     className={styles.satelliteShard}
                                     initial={{ opacity: 0, scale: 0.4, y: 0, z: 0 }}
                                     animate={{ 
-                                        opacity: 1, scale: 1.1, x: item.x, y: item.y, rotate: item.rotate, z: 60 
+                                        opacity: 1, scale: 1.1 * activeTagScale, x: item.x, y: item.y, rotate: item.rotate, z: 60 
                                     }}
-                                    whileHover={{ zIndex: 500, scale: 1.2 }}
+                                    whileHover={{ zIndex: 500, scale: 1.2 * activeTagScale }}
                                     exit={{ opacity: 0, scale: 0.4, y: 0 }}
                                     transition={{ type: "spring", stiffness: 180, damping: 20 }}
                                     style={{ 

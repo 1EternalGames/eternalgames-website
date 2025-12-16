@@ -38,6 +38,18 @@
     min-width: max-content;
 }
 
+/* New class for mobile action buttons to fix width and layout */
+.actionButtonMobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    width: 100%; /* Make them take full available width in the group */
+    white-space: nowrap; /* Prevent text wrapping */
+    font-family: var(--font-main);
+    padding: 1.2rem;
+}
+
 /* Hide the strip on mobile, show popover logic instead */
 @media (max-width: 768px) {
     .monthStripContainer {

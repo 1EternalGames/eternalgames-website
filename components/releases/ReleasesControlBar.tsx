@@ -92,19 +92,12 @@ export default function ReleasesControlBar({
     // Handle "This Month" click with precise scroll calculation
     const handleJump = () => {
         onJumpToNow();
-        // The parent onJumpToNow handles logical selection. 
-        // We add scroll correction here if needed, but usually onJumpToNow handles it.
-        // If we need to scroll to the *exact top*:
         const now = new Date();
         const monthIdx = now.getMonth();
         const el = document.getElementById(`month-header-${monthIdx}`);
         if (el) {
-            // Get element position relative to viewport
             const rect = el.getBoundingClientRect();
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Calculate absolute position
-            // Offset ~160px for Navbar (60-80px) + ControlBar (80px-100px)
             const offset = 180; 
             const targetY = rect.top + scrollTop - offset;
             
@@ -179,8 +172,9 @@ export default function ReleasesControlBar({
                                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                             >
                                 {isActive && <motion.div layoutId="plat-highlight" className={styles.filterHighlight} />}
-                                <Icon width={16} height={16} />
+                                {/* SWAPPED ORDER: Text First, Icon Second (Left in RTL) */}
                                 <span>{p === 'PlayStation' ? 'PS5' : p}</span>
+                                <Icon width={16} height={16} />
                             </motion.button>
                         );
                     })}
@@ -194,11 +188,11 @@ export default function ReleasesControlBar({
                         whileTap={{ scale: 0.95 }}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
-                         {/* Down Icon shifted slightly down for alignment */}
+                        {/* Down Icon shifted slightly down for alignment */}
+                        <span>الإنتقال لهذا الشهر</span>
                         <div style={{ transform: 'translateY(2px)' }}>
                             <ArrowDownIcon />
                         </div>
-                        <span>الإنتقال لهذا الشهر</span>
                     </motion.button>
 
                     <motion.button 
@@ -210,10 +204,10 @@ export default function ReleasesControlBar({
                     >
                         {showWishlistOnly && <motion.div layoutId="wishlist-highlight" className={styles.filterHighlight} />}
                          {/* Wishlist Icon shifted slightly down */}
+                        <span>قائمة الأمنيات</span>
                         <div style={{ transform: 'translateY(2px)' }}>
                             {showWishlistOnly ? <AddToListSolidIcon /> : <AddToListStrokeIcon />}
                         </div>
-                        <span>قائمة الأمنيات</span>
                     </motion.button>
                 </FilterGroup>
             </div>
@@ -303,24 +297,31 @@ export default function ReleasesControlBar({
                                 return (
                                     <motion.button key={p} onClick={() => onPlatformChange(p)} className={`${styles.filterButton} ${selectedPlatform === p ? styles.active : ''}`} style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
                                         {selectedPlatform === p && <motion.div layoutId="mobile-plat-hl" className={styles.filterHighlight} />}
+                                        <span>{p === 'PlayStation' ? 'PS5' : p}</span>
                                         <Icon width={16} height={16}/>
-                                        {p === 'PlayStation' ? 'PS5' : p}
                                     </motion.button>
                                 );
                             })}
                         </FilterGroup>
 
                         <FilterGroup label="إجراءات:">
-                            <motion.button onClick={() => { handleJump(); setIsMobileFiltersOpen(false); }} className={styles.filterButton}>
-                                <div style={{ transform: 'translateY(2px)' }}><ArrowDownIcon /></div>
+                            <motion.button 
+                                onClick={() => { handleJump(); setIsMobileFiltersOpen(false); }} 
+                                className={`${styles.filterButton} ${releaseStyles.actionButtonMobile}`}
+                            >
                                 <span>الإنتقال لهذا الشهر</span>
+                                <div style={{ transform: 'translateY(2px)' }}><ArrowDownIcon /></div>
                             </motion.button>
-                            <motion.button onClick={onToggleWishlist} disabled={!isAuthenticated} className={`${styles.filterButton} ${showWishlistOnly ? styles.active : ''}`}>
+                            <motion.button 
+                                onClick={onToggleWishlist} 
+                                disabled={!isAuthenticated} 
+                                className={`${styles.filterButton} ${releaseStyles.actionButtonMobile} ${showWishlistOnly ? styles.active : ''}`}
+                            >
                                 {showWishlistOnly && <motion.div layoutId="mobile-wish-hl" className={styles.filterHighlight} />}
+                                <span>قائمة الأمنيات</span>
                                 <div style={{ transform: 'translateY(2px)' }}>
                                     {showWishlistOnly ? <AddToListSolidIcon /> : <AddToListStrokeIcon />}
                                 </div>
-                                <span>قائمة الأمنيات</span>
                             </motion.button>
                         </FilterGroup>
                     </motion.div>

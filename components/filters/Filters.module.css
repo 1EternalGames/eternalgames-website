@@ -57,18 +57,15 @@
   position: relative;
   overflow: hidden;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .filterButton:hover  {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-}
-
+    border-color: var(--accent);
+    color: var(--accent);
+  }
   .filterButton:active  {
-  border-color: var(--accent);
-  color: var(--accent);
-}
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 .filterButton:active {
   border-color: var(--accent);
@@ -89,18 +86,15 @@
   align-items: center;
   gap: 0.75rem;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .filterButton.clear:hover  {
-  background-color: var(--border-color);
-  color: var(--text-primary);
-}
-}
-
+    background-color: var(--border-color);
+    color: var(--text-primary);
+  }
   .filterButton.clear:active  {
-  background-color: var(--border-color);
-  color: var(--text-primary);
-}
+    background-color: var(--border-color);
+    color: var(--text-primary);
+  }
 }
 .filterButton.clear:active {
   background-color: var(--border-color);
@@ -127,6 +121,7 @@
   background-color: var(--bg-primary);
   color: var(--text-primary);
   text-align: right; /* RTL */
+  font-family: var(--font-main);
 }
 .searchInput:focus {
   outline: none;
@@ -167,6 +162,7 @@
   color: var(--text-primary);
   margin-bottom: 0.5rem;
   text-align: right; /* RTL */
+  font-family: var(--font-main);
 }
 .popoverSearchInput:focus {
   outline: none;
@@ -193,16 +189,13 @@
   font-family: var(--font-main);
   transition: background-color 0.1s ease-out;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .popoverItemButton:hover  {
-  background-color: var(--bg-primary);
-}
-}
-
+    background-color: var(--bg-primary);
+  }
   .popoverItemButton:active  {
-  background-color: var(--bg-primary);
-}
+    background-color: var(--bg-primary);
+  }
 }
 .popoverItemButton:active {
   background-color: var(--bg-primary);
@@ -237,16 +230,13 @@
   justify-content: center;
   z-index: 2;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .gameClearButton:hover  {
-  opacity: 1;
-}
-}
-
+    opacity: 1;
+  }
   .gameClearButton:active  {
-  opacity: 1;
-}
+    opacity: 1;
+  }
 }
 .gameClearButton:active {
   opacity: 1;
@@ -285,6 +275,7 @@
     display: flex;
     gap: 1rem;
     align-items: center;
+    width: 100%;
   }
   .filterGroup {
     flex-direction: row;
@@ -298,5 +289,9 @@
   .filterPopover {
     right: auto;
     left: 0;
+  }
+  /* Fix overflow of search input on mobile */
+  .searchInput {
+      min-width: 0;
   }
 }

@@ -346,6 +346,12 @@
     
     /* Disable pointer events on the base state so they don't block clicks */
     pointer-events: none; 
+    
+    /* THE FIX: Improve text rendering quality */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translateZ(0); /* Promote to layer */
+    backface-visibility: hidden;
 }
 
 /* Interactive state when flying */
@@ -412,9 +418,22 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     backdrop-filter: blur(4px);
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    cursor: default;
+    
+    /* THE FIX: Explicitly set cursor to pointer here for interactive pills */
+    cursor: pointer;
     
     pointer-events: auto; /* Ensure pill captures events */
+
+    /* THE FIX: Improve text rendering quality */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Non-interactive shards (like countdowns) should have default cursor */
+.shardPill.static {
+    cursor: default;
 }
 
 /* --- Countdown Colors --- */
@@ -459,6 +478,12 @@
     
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     pointer-events: auto; /* Ensure pill captures events */
+
+    /* THE FIX: Improve text rendering quality */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 /* INTERACTIVE HOVER STATES */
@@ -492,11 +517,25 @@
     height: 14px;
 }
 
+/* --- TARGETED HOVER BRIDGE (Top) --- */
+.topBridge {
+    position: absolute;
+    bottom: 95%; /* Start slightly inside the card top */
+    left: 10%; 
+    width: 80%; /* Centered strip */
+    height: 140px; 
+    background: transparent;
+    pointer-events: auto;
+    z-index: 90;
+}
+
+
 @media (max-width: 768px) {
     .cardTitle { font-size: 1.8rem; }
     .statusBadge { font-size: 1.1rem; padding: 0.3rem 0.8rem; }
     .dateBlock { font-size: 1.3rem; }
     .platformIcon { width: 16px; height: 16px; }
-    .satelliteField { display: none; }
-    .flyingTagsContainer { display: none; }
+    /* ENABLE Flying elements on mobile now */
+    .satelliteField { display: block; }
+    .flyingTagsContainer { display: block; }
 }
