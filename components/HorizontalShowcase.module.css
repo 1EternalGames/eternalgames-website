@@ -44,10 +44,10 @@
 .horizontalShowcaseList {
   display: flex;
   align-items: center;
-  /* MODIFIED: Reduced size */
   --showcase-card-width: 40vw;
   --showcase-card-max-width: 480px; 
-  --showcase-card-gap: 2rem;
+  /* MODIFIED: Increased gap to make them "farer from each other" */
+  --showcase-card-gap: 8rem;
 }
 
 .showcaseItemWrapper {
@@ -57,50 +57,44 @@
   margin-right: var(--showcase-card-gap);
   perspective: 1000px; 
   z-index: 1;
+  transition: opacity 0.4s ease, filter 0.4s ease; /* Smooth transition for dimming */
 }
 .showcaseItemWrapper:first-child {
   margin-left: var(--showcase-card-gap);
 }
 
-/* --- NEW WRAPPERS FOR STABILITY --- */
-
-/* 1. Scale Wrapper (Carousel Logic) */
+/* Scale Wrapper */
 .showcaseCardWrapper {
   width: 100%;
   height: 100%;
   position: relative;
   z-index: 1;
-  /* Transform origin center for scaling */
   transform-origin: center center;
 }
 
-/* 2. Living Tilt Container (3D Logic) */
+/* Living Tilt Container */
 .livingCardContainer {
     width: 100%;
-    height: 100%; /* Fix height to fill wrapper */
-    aspect-ratio: 16 / 9; /* Enforce aspect ratio here */
+    height: 100%;
+    aspect-ratio: 16 / 9;
     position: relative;
     transform-style: preserve-3d;
 }
 
-/* 3. The Link (Click Target) */
+/* The Link */
 .showcaseCardLink {
   display: block;
   position: relative;
   width: 100%;
   height: 100%;
   border-radius: 12px;
-  
-  /* Remove conflicting styles */
   background: transparent;
   border: none;
   box-shadow: none;
-  
   transform-style: preserve-3d;
-  /* Remove transition here, handled by livingCardContainer */
 }
 
-/* Monolith Frame Look (Visuals) */
+/* Monolith Frame Look */
 .monolithFrame {
     position: absolute;
     inset: 0;
@@ -118,7 +112,6 @@
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-/* Corner Accent */
 .monolithFrame::before {
     content: '';
     position: absolute;
@@ -133,9 +126,7 @@
     z-index: 20;
 }
 
-/* --- HOVER EFFECTS (Applied via .livingCardContainer hover state in JS or CSS) --- */
-/* We rely on the JS hover state passed down or simple CSS hover on link */
-
+/* --- HOVER EFFECTS --- */
 .showcaseCardLink:hover .monolithFrame {
     box-shadow: 
         0 35px 70px -15px rgba(0,0,0,0.8),
@@ -237,8 +228,14 @@
 }
 .hudContainer > * { pointer-events: auto; }
 
-.techDecoration { display: flex; gap: 5px; padding: 0.5rem 0; justify-content: flex-end; pointer-events: none; }
-.techDot { width: 4px; height: 4px; background-color: rgba(255,255,255,0.2); border-radius: 50%; transition: background-color 0.3s ease; }
+/* MODIFIED: Tech Decoration Alignment */
+.techDecoration { 
+    display: flex; 
+    gap: 6px; 
+    align-items: center;
+    pointer-events: none; 
+}
+.techDot { width: 5px; height: 5px; background-color: rgba(255,255,255,0.2); border-radius: 50%; transition: background-color 0.3s ease; }
 @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); } }
 
 /* Reusing Capsule Styles */
@@ -246,7 +243,7 @@
 .capsuleIcon { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.4s ease; }
 .creditCapsule span { font-size: 1.2rem; font-weight: 700; color: #fff; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1.2rem; padding-right: 0.8rem; transition: color 0.4s ease; }
 
-.dateReadout { font-family: var(--font-ui); font-size: 1.1rem; color: rgba(255,255,255,0.7); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem; pointer-events: none; }
+.dateReadout { font-family: var(--font-ui); font-size: 1.2rem; color: rgba(255,255,255,0.7); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; pointer-events: none; }
 
 .satelliteField { position: absolute; inset: -80px; pointer-events: none; z-index: 50; overflow: visible; transform-style: preserve-3d; }
 .satelliteShard { position: absolute; padding: 0; background: transparent; pointer-events: none; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
@@ -257,7 +254,7 @@
 .showcaseArrow {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  /* Removed transform: translateY here, handled in Framer motion component */
   z-index: 100;
   width: 50px;
   height: 50px;

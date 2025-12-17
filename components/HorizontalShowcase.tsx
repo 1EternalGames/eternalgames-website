@@ -37,6 +37,7 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
+    if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return; // Check for creator link too
     setPrefix(layoutIdPrefix);
     router.push(`/articles/${article.slug}`, { scroll: false });
   };
@@ -45,14 +46,19 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   if (!imageSource) return null;
   
   const displayTags = article.tags.slice(0, 3);
-  const authorName = article.authors?.[0]?.name;
+  
+  // Get author details
+  const author = article.authors?.[0];
+  const authorName = author?.name;
+  const authorUsername = author?.username;
 
   return (
     <motion.div
        className={styles.showcaseCardWrapper}
        animate={{ 
          scale: isActive ? 1 : 0.9, 
-         opacity: isActive ? 1 : 1 // Full opacity to avoid "gray" look
+         opacity: isActive ? 1 : (isHovered ? 1 : 0.4),
+         filter: isActive ? 'grayscale(0%)' : (isHovered ? 'grayscale(0%)' : 'grayscale(100%) brightness(0.6)')
        }}
        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
        style={{ zIndex: isActive || isHovered ? 100 : 1 }}
@@ -97,12 +103,28 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                 {/* HUD / Meta */}
                 <div className={styles.hudContainer} style={{ transform: 'translateZ(40px)' }}>
                     {authorName ? (
-                         <div className={styles.creditCapsule}>
-                            <div className={styles.capsuleIcon}>
-                                <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                        authorUsername ? (
+                            <Link 
+                                href={`/creators/${authorUsername}`}
+                                onClick={(e) => e.stopPropagation()} 
+                                className={`${styles.creditCapsule} no-underline`}
+                                // FLIP CREDITS: Row Reverse for Icon on Right (since wrapper is LTR)
+                                style={{ flexDirection: 'row-reverse' }} 
+                                prefetch={false}
+                            >
+                                <div className={styles.capsuleIcon}>
+                                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                                </div>
+                                <span title={authorName}>{authorName}</span>
+                            </Link>
+                        ) : (
+                            <div className={styles.creditCapsule} style={{ flexDirection: 'row-reverse' }}>
+                                <div className={styles.capsuleIcon}>
+                                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                                </div>
+                                <span title={authorName}>{authorName}</span>
                             </div>
-                            <span title={authorName}>{authorName}</span>
-                        </div>
+                        )
                     ) : <div />}
 
                     <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
@@ -214,14 +236,30 @@ export default function HorizontalShowcase({ articles, onActiveIndexChange }: { 
     <div ref={wrapperRef} className={styles.horizontalShowcaseWrapper} dir="ltr">
       <AnimatePresence>
         {isCalculated && activeIndex > 0 && (
-          <motion.button className={`${styles.showcaseArrow} ${styles.left}`} onClick={handlePrev} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <motion.button 
+              className={`${styles.showcaseArrow} ${styles.left}`} 
+              onClick={handlePrev} 
+              initial={{ opacity: 0, translateY: "-50%" }}
+              animate={{ opacity: 1, translateY: "-50%" }} 
+              exit={{ opacity: 0, translateY: "-50%" }} 
+              whileHover={{ scale: 1.1 }} 
+              whileTap={{ scale: 0.9 }}
+            >
             <ArrowIcon direction="left" />
           </motion.button>
         )}
       </AnimatePresence>
       <AnimatePresence>
         {isCalculated && activeIndex < articles.length - 1 && (
-          <motion.button className={`${styles.showcaseArrow} ${styles.right}`} onClick={handleNext} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <motion.button 
+              className={`${styles.showcaseArrow} ${styles.right}`} 
+              onClick={handleNext} 
+              initial={{ opacity: 0, translateY: "-50%" }}
+              animate={{ opacity: 1, translateY: "-50%" }} 
+              exit={{ opacity: 0, translateY: "-50%" }} 
+              whileHover={{ scale: 1.1 }} 
+              whileTap={{ scale: 0.9 }}
+            >
             <ArrowIcon direction="right" />
           </motion.button>
         )}

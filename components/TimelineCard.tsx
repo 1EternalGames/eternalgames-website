@@ -45,11 +45,17 @@ const CheckmarkCircleIcon = () => (
 );
 
 // --- DESKTOP CONFIGS ---
-const PLATFORM_FLY_CONFIG = { LEFT_ANCHOR: '80%', TARGET_TOP: 220, TOP_STEP: 33, BASE_ROT: -5, ROT_STEP: 0, SCALE: 0.8 };
-const PRICE_FLY_CONFIG = { X: -170, Y: -70, ROT: 5, SCALE: 0.8 }; 
+const PLATFORM_FLY_CONFIG = { LEFT_ANCHOR: '80%', TARGET_TOP: 170, TOP_STEP: 33, BASE_ROT: -5, ROT_STEP: 0, SCALE: 0.8 };
+const PRICE_FLY_CONFIG = { X: -180, Y: -60, ROT: 5, SCALE: 0.8 }; 
 const STATUS_FLY_CONFIG = { X: 0, Y: 140, ROT: -3, SCALE: 0.8 };
 const PLAY_BUTTON_CONFIG = { OFFSET_X: 0, OFFSET_Y: 70, ROTATE: 0, INITIAL_SCALE: 1 };
-const CLICK_MORE_CONFIG = { X: 0, Y: -160, ROT: 0, SCALE: 0.8 };
+const CLICK_MORE_CONFIG = { X: -65, Y: -170, ROT: 0, SCALE: 0.75 };
+// NEW: Publisher and Developer Configs (Desktop)
+const DEV_FLY_CONFIG = { X: 40, Y: -155, ROT: 0, SCALE: 0.7 };
+const PUB_FLY_CONFIG = { X: -155, Y: -155, ROT: 0, SCALE: 0.7 };
+// NEW: Desktop Subscription Configs
+const DESKTOP_GP_CONFIG = { LEFT: '-8%', TOP: 257, ROT: 5, SCALE: 0.75 };
+const DESKTOP_PS_CONFIG = { LEFT: '-8%', TOP: 225, ROT: 5, SCALE: 0.75 };
 
 // ========================================================
 //    MOBILE CONFIGS (Split: Standard vs Homepage)
@@ -82,13 +88,23 @@ const PLATFORM_SORT_WEIGHTS: Record<string, number> = { 'Switch': 4, 'Xbox': 3, 
 
 const morphTransition: Transition = { type: "spring", stiffness: 300, damping: 25, mass: 1.0 };
 
+// Extended props type to include developer and publisher slugs
+type ExtendedRelease = SanityGameRelease & { 
+    game?: { slug?: string, title?: string }, 
+    tags?: any[], 
+    onGamePass?: boolean, 
+    onPSPlus?: boolean,
+    developer?: { title: string, slug?: string },
+    publisher?: { title: string, slug?: string }
+};
+
 const TimelineCardComponent = ({ 
     release, 
     autoHeight = false,
     showAdminControls = false,
     variant = 'default'
 }: { 
-    release: SanityGameRelease & { game?: { slug?: string, title?: string }, tags?: any[], onGamePass?: boolean, onPSPlus?: boolean },
+    release: ExtendedRelease,
     autoHeight?: boolean,
     showAdminControls?: boolean,
     variant?: 'default' | 'homepage'
@@ -102,13 +118,11 @@ const TimelineCardComponent = ({
     
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isVideoActive, setIsVideoActive] = useState(false);
-    // New state to control the portal/modal
     const [showVideoModal, setShowVideoModal] = useState(false);
     
     const videoRef = useRef<HTMLIFrameElement>(null);
     const isHovered = isMobile ? activeCardId === release._id : isHoveredLocal;
 
-    // --- Dynamic Mobile Config Selection ---
     const mobileConfig = useMemo(() => {
         if (variant === 'homepage') {
             return {
@@ -118,7 +132,7 @@ const TimelineCardComponent = ({
                 clickMore: MOBILE_HOMEPAGE_CLICK_MORE_CONFIG,
                 gp: MOBILE_HOMEPAGE_GP_CONFIG,
                 ps: MOBILE_HOMEPAGE_PS_CONFIG,
-                play: MOBILE_HOMEPAGE_PLAY_BUTTON_CONFIG // Added
+                play: MOBILE_HOMEPAGE_PLAY_BUTTON_CONFIG 
             };
         }
         return {
@@ -128,11 +142,10 @@ const TimelineCardComponent = ({
             clickMore: MOBILE_STANDARD_CLICK_MORE_CONFIG,
             gp: MOBILE_STANDARD_GP_CONFIG,
             ps: MOBILE_STANDARD_PS_CONFIG,
-            play: MOBILE_STANDARD_PLAY_BUTTON_CONFIG // Added
+            play: MOBILE_STANDARD_PLAY_BUTTON_CONFIG 
         };
     }, [variant]);
     
-    // Desktop play config (unchanged)
     const playConfig = isMobile ? mobileConfig.play : PLAY_BUTTON_CONFIG;
 
     useClickOutside(livingCardRef, () => {
@@ -194,13 +207,9 @@ const TimelineCardComponent = ({
 
     const handleWatchClick = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault(); e.stopPropagation();
-        
-        // NEW LOGIC: Check variant for behavior
         if (variant === 'homepage') {
-            // Pop out logic
             setShowVideoModal(true);
         } else {
-            // Default inline logic
             setIsVideoActive(true);
         }
     };
@@ -208,7 +217,7 @@ const TimelineCardComponent = ({
     const handleCloseVideo = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault(); e.stopPropagation();
         setIsVideoActive(false);
-        setShowVideoModal(false); // Ensure modal closes too
+        setShowVideoModal(false); 
     };
 
     const releaseDate = new Date(release.releaseDate);
@@ -250,13 +259,14 @@ const TimelineCardComponent = ({
         const CLICK_CFG = isMobile ? mobileConfig.clickMore : CLICK_MORE_CONFIG;
 
         // 1. "Click for More" (New)
+        // LINK ADDED HERE
         satellites.push({ 
             type: 'clickHint', 
             label: 'اضغط للمزيد', 
             icon: <ArrowDownIcon />,
-            colorClass: 'cyan', 
+            colorClass: 'cyan', // This makes it .statusPill.cyan -> we will ensure .clickable adds hover
             x: CLICK_CFG.X, y: CLICK_CFG.Y, rotate: CLICK_CFG.ROT, scale: CLICK_CFG.SCALE, 
-            anchor: 'center', link: null 
+            anchor: 'center', link: mainHref 
         });
 
         // 2. Countdown/Status
@@ -274,8 +284,23 @@ const TimelineCardComponent = ({
         if (release.price) {
             satellites.push({ type: 'price', label: release.price, x: PRICE_CFG.X, y: PRICE_CFG.Y, rotate: PRICE_CFG.ROT, scale: PRICE_CFG.SCALE, anchor: 'left', link: null, colorClass: 'pricePill' });
         }
+        
+        // 4. Publisher & Developer (Desktop Only)
+        if (!isMobile) {
+            if (release.publisher?.title) {
+                const pubSlug = release.publisher.slug;
+                const pubLink = pubSlug ? `/publishers/${pubSlug}` : null;
+                satellites.push({ type: 'publisher', label: release.publisher.title, x: PUB_FLY_CONFIG.X, y: PUB_FLY_CONFIG.Y, rotate: PUB_FLY_CONFIG.ROT, scale: PUB_FLY_CONFIG.SCALE, anchor: 'left', link: pubLink, colorClass: 'devPill' });
+            }
+            if (release.developer?.title && release.developer.title !== release.publisher?.title) {
+                const devSlug = release.developer.slug;
+                const devLink = devSlug ? `/developers/${devSlug}` : null;
+                satellites.push({ type: 'developer', label: release.developer.title, x: DEV_FLY_CONFIG.X, y: DEV_FLY_CONFIG.Y, rotate: DEV_FLY_CONFIG.ROT, scale: DEV_FLY_CONFIG.SCALE, anchor: 'right', link: devLink, colorClass: 'devPill' });
+            }
+        }
+        
         return satellites;
-    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig]);
+    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, mainHref]);
 
     const platformConfig = useMemo(() => {
         const validPlatforms = platforms.filter(p => PlatformIcons[p]);
@@ -291,7 +316,27 @@ const TimelineCardComponent = ({
     const subConfig = useMemo(() => {
         const items = [];
         
-        // Subscription Logic: GamePass Left, PS Plus Right
+        // PS Plus (Top on Desktop)
+        if (release.onPSPlus) {
+            let left, top, rotate, scale;
+            if (isMobile) { 
+                left = 'auto'; 
+                const cfg = mobileConfig.ps;
+                left = 'auto'; 
+                top = cfg.TOP;
+                rotate = cfg.ROT;
+                scale = cfg.SCALE;
+            } else {
+                // Desktop: Left side, Top
+                left = DESKTOP_PS_CONFIG.LEFT; 
+                top = DESKTOP_PS_CONFIG.TOP;
+                rotate = DESKTOP_PS_CONFIG.ROT;
+                scale = DESKTOP_PS_CONFIG.SCALE;
+            }
+            items.push({ key: 'ps', name: 'PS Plus', Icon: PS5Icon, left: isMobile ? 'auto' : left, right: isMobile ? mobileConfig.ps.RIGHT : 'auto', top, rotate, scale });
+        }
+
+        // Game Pass (Bottom on Desktop)
         if (release.onGamePass) {
             let left, top, rotate, scale;
             if (isMobile) { 
@@ -300,30 +345,13 @@ const TimelineCardComponent = ({
                 rotate = mobileConfig.gp.ROT; 
                 scale = mobileConfig.gp.SCALE;
             } else {
-                 // Desktop (Left Side)
-                 left = '5%'; // Approx
-                 top = 230; 
-                 rotate = -2;
-                 scale = 0.8;
+                 // Desktop: Left side, Below PS
+                 left = DESKTOP_GP_CONFIG.LEFT;
+                 top = DESKTOP_GP_CONFIG.TOP;
+                 rotate = DESKTOP_GP_CONFIG.ROT;
+                 scale = DESKTOP_GP_CONFIG.SCALE;
             }
             items.push({ key: 'gp', name: 'Game Pass', Icon: XboxIcon, left, right: 'auto', top, rotate, scale });
-        }
-
-        if (release.onPSPlus) {
-            let right, top, rotate, scale;
-             if (isMobile) { 
-                right = mobileConfig.ps.RIGHT; 
-                top = mobileConfig.ps.TOP; 
-                rotate = mobileConfig.ps.ROT; 
-                scale = mobileConfig.ps.SCALE;
-            } else {
-                // Desktop (Right Side)
-                right = '5%'; 
-                top = 230;
-                rotate = 2;
-                scale = 0.8;
-            }
-            items.push({ key: 'ps', name: 'PS Plus', Icon: PS5Icon, left: 'auto', right, top, rotate, scale });
         }
 
         return items;
@@ -506,14 +534,14 @@ const TimelineCardComponent = ({
                         </div>
                     )}
                     
-                    {/* 2. Subscriptions (Separate Sides) */}
+                    {/* 2. Subscriptions (Desktop: Left Side Stacked, Mobile: Separate) */}
                     <div className={styles.flyingTagsContainer} style={{ left: 0, right: 0, width: '100%' }}>
                         <AnimatePresence>
                             {isHovered && subConfig.map((sub, i) => ( 
                                 <motion.div 
                                     key={sub.key} 
                                     initial={{ opacity: 0, x: 0, rotate: 0 }} 
-                                    animate={{ opacity: 1, rotate: sub.rotate, scale: 1.2 * sub.scale, x: sub.key === 'gp' ? -15 : 15, z: 60 }} 
+                                    animate={{ opacity: 1, rotate: sub.rotate, scale: 1.2 * sub.scale, x: !isMobile ? 15 : (sub.key === 'gp' ? -15 : 15), z: 60 }} 
                                     whileHover={{ zIndex: 500, scale: 1.3 * sub.scale }} 
                                     exit={{ opacity: 0, x: 0 }} 
                                     transition={{ ...morphTransition, delay: i * 0.03 }} 
@@ -534,6 +562,20 @@ const TimelineCardComponent = ({
                             {isHovered && flyingItems.map((item, i) => {
                                 if (!item) return null;
                                 const pillStyleClass = item.colorClass ? `${styles.shardPill} ${styles.statusPill} ${styles[item.colorClass]}` : styles.shardPill;
+                                
+                                // All items now have coordinates in them
+                                const config = { hoverX: item.x, hoverY: item.y, rotate: item.rotate }; 
+                                
+                                // Determine positioning logic
+                                let positionStyle = { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center' };
+                                if (item.anchor === 'left') {
+                                    // Origin from Left side
+                                    positionStyle = { right: 'auto', left: '0%', top: '50%', transformOrigin: 'center left' };
+                                } else if (item.anchor === 'right') {
+                                     // Origin from Right side
+                                    positionStyle = { right: '0%', left: 'auto', top: '50%', transformOrigin: 'center right' };
+                                }
+
                                 return ( 
                                     <motion.div 
                                         key={`shard-${i}`} 
@@ -543,12 +585,31 @@ const TimelineCardComponent = ({
                                         whileHover={{ zIndex: 500, scale: 1.2 * item.scale }} 
                                         exit={{ opacity: 0, scale: 0.4, y: 0 }} 
                                         transition={{ type: "spring", stiffness: 180, damping: 20 }} 
-                                        style={{ position: 'absolute', left: '50%', right: 'auto', transformOrigin: 'center', cursor: 'default', zIndex: 100 }}
+                                        style={{ 
+                                            position: 'absolute', 
+                                            // ...positionStyle,
+                                            left: '50%', right: 'auto', transformOrigin: 'center', // Stick to center origin for simplicity unless specific anchor requested
+                                            cursor: 'default', 
+                                            zIndex: 100 
+                                        }}
                                     > 
-                                        <div className={pillStyleClass} style={{ gap: '0.4rem' }}>
-                                            {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
-                                            {item.label}
-                                        </div> 
+                                        {item.link ? (
+                                             <Link 
+                                                href={item.link} 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`${pillStyleClass} no-underline`}
+                                                style={{ gap: '0.4rem', cursor: 'pointer' }}
+                                                prefetch={false}
+                                            >
+                                                {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
+                                                {item.label}
+                                            </Link>
+                                        ) : (
+                                            <div className={pillStyleClass} style={{ gap: '0.4rem' }}>
+                                                {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
+                                                {item.label}
+                                            </div> 
+                                        )}
                                     </motion.div> 
                                 );
                             })}
