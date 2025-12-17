@@ -44,7 +44,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
 
-    // Mobile Unlock logic
     useClickOutside(livingCardRef, () => {
         if (isMobile && activeCardId === item.id) {
             setActiveCardId(null);
@@ -138,15 +137,16 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             if (activeCardId !== item.id) {
                 setActiveCardId(item.id);
-                livingCardAnimation.onTouchStart(e);
             }
+            livingCardAnimation.onTouchStart(e);
         },
+        onTouchMove: livingCardAnimation.onTouchMove,
         onTouchEnd: livingCardAnimation.onTouchEnd,
     };
 
     return (
         <motion.div
-            ref={livingCardRef}
+            ref={livingCardRef} // FIX: Attached unconditionally
             {...handlers}
             className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''}`}
             style={livingCardAnimation.style}

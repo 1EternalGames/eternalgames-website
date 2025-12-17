@@ -36,19 +36,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const isMobile = useIsMobile();
     
-    // Enable living card on mobile
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
-    
-    // Global Mobile Lock
     const { activeCardId, setActiveCardId } = useActiveCardStore();
 
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
 
-    // Derive actual hover state based on device
     const isHovered = isMobile ? activeCardId === article.id : isHoveredLocal;
 
-    // Use Click Outside for mobile unlocking
     useClickOutside(livingCardRef, () => {
         if (isMobile && activeCardId === article.id) {
             setActiveCardId(null);
@@ -90,17 +85,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                      setActiveCardId(article.id);
                      setIsTextExpanded(true);
                 }
-                // Pass touch event to living card to enable tilt
                 livingCardAnimation.onTouchStart(e);
             }
         },
         onTouchMove: livingCardAnimation.onTouchMove,
         onTouchEnd: livingCardAnimation.onTouchEnd,
-    };
-
-    const setExpandedState = (expanded: boolean) => {
-        // Helper function (if needed for logic reuse)
-        if (expanded) setIsTextExpanded(true);
     };
 
     const getLinkBasePath = () => {
@@ -159,7 +148,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     return (
         <div
             className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
-            ref={livingCardRef}
+            ref={livingCardRef} // FIX: Attached unconditionally
             {...handlers}
             style={{ zIndex: isHovered ? 9999 : 1 }}
         >
@@ -271,25 +260,18 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                     <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                         <AnimatePresence>
-                            {displayTags.map((tag, i) => (
+                            {isHovered && displayTags.map((tag, i) => (
                                  <motion.div
                                     key={`${article.id}-${tag.slug}`}
                                     className={styles.satelliteShard}
                                     initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                    animate={isHovered ? {
+                                    animate={{
                                         opacity: 1,
                                         scale: 1.15,
                                         x: satelliteConfig[i]?.hoverX || 0,
                                         y: satelliteConfig[i]?.hoverY || 0,
                                         rotate: satelliteConfig[i]?.rotate || 0,
                                         z: -30 
-                                    } : {
-                                        opacity: 0,
-                                        scale: 0.4,
-                                        x: 0,
-                                        y: 50,
-                                        rotate: 0,
-                                        z: 0
                                     }}
                                     transition={{
                                         type: "spring",

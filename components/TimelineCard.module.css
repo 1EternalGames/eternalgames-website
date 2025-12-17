@@ -28,53 +28,88 @@
 .timelineCard.homepage {
     /* -- HOMEPAGE SIZES -- */
     --tl-card-padding: 1.2rem;
-    --tl-title-size: 1.6rem;       /* Smaller Title */
-    --tl-date-size: 1.2rem;        /* Smaller Date */
-    --tl-icon-size: 14px;          /* Smaller Platform Icons */
-    --tl-cal-icon-size: 11px;      /* Smaller Calendar (11px requested) */
-    --tl-badge-font: 1rem;         /* Smaller Badge Text */
-    --tl-badge-pad: 0.3rem 0.8rem;
-    --tl-badge-height: 24px;
-    --tl-btn-size: 28px;           /* Smaller Action Buttons */
-    --tl-btn-icon-size: 14px;
-    --tl-play-btn-font: 1.1rem;
-    --tl-play-btn-pad: 0.4rem 1rem;
-    --tl-pill-font: 1.1rem;        /* Smaller Flying Tags */
-    --tl-pill-pad: 0.4rem 0.8rem;
-
-    /* Layout Overrides */
-    --tl-meta-direction: column;   /* Stack Date & Platforms */
-    --tl-meta-align: flex-start;   /* Align left */
+    --tl-title-size: 1.7rem;
+    --tl-date-size: 1.2rem;
+    --tl-icon-size: 16px;
+    --tl-cal-icon-size: 12px;
+    --tl-badge-font: 1.1rem;
+    --tl-badge-pad: 0.3rem 0.9rem;
+    --tl-pill-font: 1.1rem;
+    --tl-pill-pad: 0.4rem 1rem;
+    
+    /* Stack date/platforms on timeline view */
+    --tl-meta-direction: column;
+    --tl-meta-align: flex-start;
     --tl-meta-gap: 0.5rem;
 }
 
-/* --- MOBILE GLOBAL OVERRIDES (Force homepage styling on mobile) --- */
+/* =========================================
+   3. MOBILE CONFIGURATION
+   ========================================= */
 @media (max-width: 768px) {
+    
+    /* A. MOBILE - /RELEASES PAGE (Standard) */
     .timelineCard {
-        /* Force smaller sizes everywhere on mobile */
-        --tl-card-padding: 1rem;
-        --tl-title-size: 1.5rem;
-        --tl-date-size: 1.1rem;
-        --tl-icon-size: 14px;
-        --tl-cal-icon-size: 11px;
-        --tl-badge-font: 1rem;
-        --tl-badge-pad: 0.3rem 0.8rem;
-        --tl-badge-height: 24px;
-        --tl-btn-size: 28px;
-        --tl-btn-icon-size: 14px;
-        --tl-play-btn-font: 1.1rem;
-        --tl-play-btn-pad: 0.4rem 1rem;
-        --tl-pill-font: 1rem;
-        --tl-pill-pad: 0.3rem 0.8rem;
+        --tl-card-padding: 1.5rem;
+        --tl-title-size: 1.8rem;       /* Readable Title */
+        --tl-date-size: 1.3rem;
+        --tl-icon-size: 16px;          /* Standard Icon */
+        --tl-cal-icon-size: 13px;      /* Standard Calendar */
+        
+        --tl-badge-font: 1.1rem;
+        --tl-badge-pad: 0.3rem 1rem;
+        --tl-badge-height: 28px;
+        
+        --tl-pill-font: 1.2rem;        /* Readable Tags */
+        --tl-pill-pad: 0.4rem 1rem;
+        
+        --tl-btn-size: 36px;           /* Larger touch targets */
+        --tl-btn-icon-size: 18px;
+        
+        --tl-play-btn-font: 1.2rem;
+        --tl-play-btn-pad: 0.5rem 1.2rem;
 
-        /* Force stacked layout on mobile */
-        --tl-meta-direction: column;
-        --tl-meta-align: flex-start;
-        --tl-meta-gap: 0.4rem;
+        /* Layout */
+        --tl-meta-direction: row;      /* Side by Side */
+        --tl-meta-align: center;
+        --tl-meta-gap: 1rem;
     }
+
+    /* B. MOBILE - HOMEPAGE TIMELINE (Compact) */
+    .timelineCard.homepage {
+        --tl-card-padding: 1rem;
+        --tl-title-size: 1.4rem;       /* Smaller Title */
+        --tl-date-size: 1.1rem;        /* Tiny Date */
+        --tl-icon-size: 14px;          /* Tiny Icons */
+        --tl-cal-icon-size: 11px;      /* Requested 11px */
+        
+        --tl-badge-font: 0.9rem;       /* Tiny Badge */
+        --tl-badge-pad: 0.2rem 0.6rem;
+        --tl-badge-height: 22px;
+        
+        --tl-pill-font: 1rem;          /* Tiny Tags */
+        --tl-pill-pad: 0.3rem 0.7rem;
+        
+        --tl-btn-size: 28px;           /* Smaller Buttons */
+        --tl-btn-icon-size: 14px;
+        
+        --tl-play-btn-font: 1rem;
+        --tl-play-btn-pad: 0.3rem 0.8rem;
+
+        /* Layout */
+        --tl-meta-direction: column;   /* Stacked */
+        --tl-meta-align: flex-start;
+        --tl-meta-gap: 0.3rem;
+    }
+    
+    /* Disable glass effects globally on mobile for performance */
+    .statusBadge { backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
+    .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
 }
 
-/* --- CORE CONTAINER --- */
+
+/* --- CSS IMPLEMENTATION (Do not change below) --- */
+
 .livingCardWrapper {
     transform-style: preserve-3d;
     height: 100%;
@@ -94,7 +129,6 @@
     }
 }
 
-/* --- THE CARD FRAME --- */
 .timelineCard {
     display: flex;
     flex-direction: column;
@@ -131,7 +165,7 @@
     pointer-events: none;
 }
 
-/* --- HOVER / ACTIVE STATES --- */
+/* Active State */
 .livingCardWrapper.activeState .timelineCard {
     transform: translateZ(20px) translateY(-5px);
     box-shadow: 
@@ -158,7 +192,7 @@
         transform: translateZ(20px) translateY(-5px);
         box-shadow: 
             0 25px 60px -12px rgba(0,0,0,0.7),
-            0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+        0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
         border-color: var(--accent);
     }
     .livingCardWrapper:hover .timelineCard::before {
@@ -176,7 +210,7 @@
     }
 }
 
-/* --- CONTROLS (Wishlist, Video Close) --- */
+/* --- CONTROLS --- */
 .controlBtn {
     width: var(--tl-btn-size);
     height: var(--tl-btn-size);
@@ -193,7 +227,6 @@
 }
 
 .wishlistButton {
-    /* Specific overrides for wishlist */
     composes: controlBtn;
 }
 
@@ -214,7 +247,6 @@
     border-color: var(--accent);
 }
 
-/* --- PLAY BUTTON --- */
 .playButtonContainer {
     display: flex;
     align-items: center;
@@ -285,7 +317,6 @@
     mix-blend-mode: overlay;
 }
 
-/* --- BADGES --- */
 .statusBadge {
     position: absolute;
     top: 1rem;
@@ -327,7 +358,6 @@
     height: var(--tl-cal-icon-size);
 }
 
-/* --- CONTENT AREA (HUD) --- */
 .cardBody {
     padding: var(--tl-card-padding);
     background: linear-gradient(180deg, var(--bg-secondary) 0%, color-mix(in srgb, var(--bg-secondary) 95%, black) 100%);
@@ -360,11 +390,9 @@
 .livingCardWrapper.activeState .cardTitle { color: var(--accent); }
 @media (hover: hover) { .livingCardWrapper:hover .cardTitle { color: var(--accent); } }
 
-/* --- METADATA GRID --- */
 .metaGrid {
     display: flex;
     justify-content: space-between;
-    /* Uses variables for direction to support stacking */
     flex-direction: var(--tl-meta-direction);
     align-items: var(--tl-meta-align);
     gap: var(--tl-meta-gap);
@@ -398,7 +426,6 @@
     min-height: 24px; 
 }
 
-/* Base style for platform items */
 .platformTagBase {
     display: flex;
     align-items: center;
@@ -420,7 +447,6 @@
     backface-visibility: hidden;
 }
 
-/* Interactive state when flying */
 .platformTagBase.flying {
     pointer-events: auto;
     cursor: default;
@@ -431,7 +457,6 @@
     height: var(--tl-icon-size);
 }
 
-/* --- SATELLITES (FLYING SHARDS) --- */
 .satelliteField { position: absolute; inset: -50px; pointer-events: none; z-index: 50; overflow: visible; transform-style: preserve-3d; }
 .satelliteShard { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) translateZ(0px); pointer-events: auto; z-index: 100; }
 .flyingTagsContainer { position: absolute; inset: -100px; pointer-events: none; z-index: 100; transform-style: preserve-3d; overflow: visible; }
@@ -467,7 +492,6 @@
 
 .shardPill.static { cursor: default; }
 
-/* Colors */
 .statusPill.golden { border-color: #FFD700; color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
 .statusPill.red { border-color: #DC2626; color: #DC2626; box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
 .statusPill.orange { border-color: #F97316; color: #F97316; box-shadow: 0 0 15px rgba(249, 115, 22, 0.2); }
