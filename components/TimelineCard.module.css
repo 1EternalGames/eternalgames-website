@@ -9,8 +9,9 @@
     --tl-icon-size: 18px;          /* Platform Icons */
     --tl-cal-icon-size: 14px;      /* Calendar Icon */
     --tl-badge-font: 1.2rem;
-    --tl-badge-pad: 0.4rem 1rem;
-    --tl-badge-height: auto;
+    --tl-badge-pad: 0;             /* Removed padding for icon-only button style */
+    --tl-badge-height: 32px;       /* Fixed height matching buttons */
+    --tl-badge-width: 32px;        /* Fixed width matching buttons */
     --tl-btn-size: 32px;           /* Wishlist/Close Buttons */
     --tl-btn-icon-size: 16px;
     --tl-play-btn-font: 1.3rem;
@@ -33,7 +34,8 @@
     --tl-icon-size: 16px;
     --tl-cal-icon-size: 12px;
     --tl-badge-font: 1.1rem;
-    --tl-badge-pad: 0.3rem 0.9rem;
+    --tl-badge-height: 28px;
+    --tl-badge-width: 28px;
     --tl-pill-font: 1.1rem;
     --tl-pill-pad: 0.4rem 1rem;
     
@@ -56,9 +58,8 @@
         --tl-icon-size: 16px;          /* Standard Icon */
         --tl-cal-icon-size: 13px;      /* Standard Calendar */
         
-        --tl-badge-font: 1.1rem;
-        --tl-badge-pad: 0.3rem 1rem;
-        --tl-badge-height: 28px;
+        --tl-badge-height: 36px;       /* Larger touch target */
+        --tl-badge-width: 36px;
         
         --tl-pill-font: 1.2rem;        /* Readable Tags */
         --tl-pill-pad: 0.4rem 1rem;
@@ -83,9 +84,8 @@
         --tl-icon-size: 14px;          /* Tiny Icons */
         --tl-cal-icon-size: 11px;      /* Requested 11px */
         
-        --tl-badge-font: 0.9rem;       /* Tiny Badge */
-        --tl-badge-pad: 0.2rem 0.6rem;
-        --tl-badge-height: 22px;
+        --tl-badge-height: 28px;
+        --tl-badge-width: 28px;
         
         --tl-pill-font: 1rem;          /* Tiny Tags */
         --tl-pill-pad: 0.3rem 0.7rem;
@@ -317,6 +317,7 @@
     mix-blend-mode: overlay;
 }
 
+/* --- STATUS BADGE (ICON ONLY) --- */
 .statusBadge {
     position: absolute;
     top: 1rem;
@@ -324,19 +325,18 @@
     left: auto; 
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
     
-    padding: var(--tl-badge-pad);
-    font-size: var(--tl-badge-font);
+    width: var(--tl-badge-width);
     height: var(--tl-badge-height);
+    padding: 0; /* Icon only */
     
-    border-radius: 999px;
+    border-radius: 50%;
     font-family: var(--font-ui);
     font-weight: 700;
     backdrop-filter: blur(8px);
     z-index: 20;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    text-transform: uppercase;
     transform: translateZ(20px);
 }
 
@@ -348,9 +348,14 @@
 }
 
 .statusBadge.upcoming {
-    background-color: rgba(20, 20, 25, 0.85);
+    background-color: rgba(0, 0, 0, 0.6);
     color: var(--accent);
     border: 1px solid var(--accent);
+}
+
+.statusBadge svg {
+    width: 16px; /* FIXED: Matching wishlist icon size */
+    height: 16px;
 }
 
 .iconSvg {
@@ -543,8 +548,47 @@
     box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
-@media (max-width: 768px) {
-    /* Mobile Opts */
-    .statusBadge { backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
-    .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
+/* --- VIDEO OVERLAY (HOMEPAGE) --- */
+.videoOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.videoModal {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(0, 229, 255, 0.2);
+    border: 1px solid var(--border-color);
+}
+
+.modalCloseButton {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.4rem;
+}
+.modalCloseButton svg {
+    width: 32px;
+    height: 32px;
 }
