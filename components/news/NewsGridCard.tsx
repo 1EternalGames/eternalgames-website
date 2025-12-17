@@ -1,7 +1,7 @@
 // components/news/NewsGridCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo } from 'react';
+import React, { memo, useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,8 @@ import { Calendar03Icon, PenEdit02Icon } from '@/components/icons';
 import styles from './NewsGridCard.module.css';
 import { translateTag } from '@/lib/translations';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useActiveCardStore } from '@/lib/activeCardStore';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 type NewsGridCardProps = {
     item: CardProps;
@@ -36,10 +38,18 @@ const typeDisplayMap: Record<string, string> = {
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default' }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const isMobile = useIsMobile();
-    // PERF: Disable ref on mobile
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
+    const { activeCardId, setActiveCardId } = useActiveCardStore();
     
-    const [isHovered, setIsHovered] = useState(false);
+    const [isHoveredLocal, setIsHoveredLocal] = useState(false);
+    const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
+
+    // Mobile Unlock logic
+    useClickOutside(livingCardRef, () => {
+        if (isMobile && activeCardId === item.id) {
+            setActiveCardId(null);
+        }
+    });
 
     const getLinkPath = () => {
         switch (item.type) {
@@ -89,6 +99,28 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         { hoverX: -50, hoverY: -100, rotate: -3 }   
     ];
 
+    const mobileConfig = [
+        { hoverX: -90, hoverY: 20, rotate: -4 },
+        { hoverX: 70, hoverY: 40, rotate: 4 },
+        { hoverX: 0, hoverY: -85, rotate: -2 } 
+    ];
+
+    // Compact Config
+    const compactConfig = [
+        { hoverX: -110, hoverY: 30, rotate: -5 },
+        { hoverX: 70, hoverY: 35, rotate: 4 },
+        { hoverX: -20, hoverY: -65, rotate: -2 }
+    ];
+
+    let satelliteConfig;
+    if (isMobile) {
+        satelliteConfig = mobileConfig;
+    } else if (variant === 'compact' || variant === 'mini') {
+        satelliteConfig = compactConfig;
+    } else {
+        satelliteConfig = desktopConfig;
+    }
+
     const capsuleContent = (
         <>
             <div className={styles.capsuleIcon}>
@@ -98,22 +130,28 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         </>
     );
     
-    // PERF: Only attach handlers on Desktop
     const handlers = !isMobile ? {
-        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); setIsHovered(true); },
-        onMouseLeave: () => { livingCardAnimation.onMouseLeave(); setIsHovered(false); },
+        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); setIsHoveredLocal(true); },
+        onMouseLeave: () => { livingCardAnimation.onMouseLeave(); setIsHoveredLocal(false); },
         onMouseMove: livingCardAnimation.onMouseMove,
-    } : {};
+    } : {
+        onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
+            if (activeCardId !== item.id) {
+                setActiveCardId(item.id);
+                livingCardAnimation.onTouchStart(e);
+            }
+        },
+        onTouchEnd: livingCardAnimation.onTouchEnd,
+    };
 
     return (
         <motion.div
-            ref={!isMobile ? livingCardRef : undefined}
+            ref={livingCardRef}
             {...handlers}
             className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''}`}
-            style={!isMobile ? livingCardAnimation.style : {}}
+            style={livingCardAnimation.style}
         >
             <motion.div
-                // PERF: No layoutId on mobile
                 layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${item.legacyId}` : undefined}
                 className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
             >
@@ -191,61 +229,66 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     </div>
                 </Link>
 
-                {!isMobile && (
-                    <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
-                        <AnimatePresence>
-                             {isHovered && flyingItems.map((sat, i) => {
-                                 if (!sat) return null;
-                                 
-                                 const config = desktopConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
-                                 const isLeft = config.hoverX < 0;
-                                 
-                                 const positionStyle = isLeft 
-                                    ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
-                                    : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
+                <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                    <AnimatePresence>
+                         {isHovered && flyingItems.map((sat, i) => {
+                             if (!sat) return null;
+                             
+                             const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
+                             const isLeft = config.hoverX < 0;
+                             
+                             const positionStyle = isLeft 
+                                ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
+                                : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
 
-                                 return (
-                                     <motion.div
-                                        key={`${item.id}-sat-${i}`}
-                                        className={styles.satelliteShard}
-                                        initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                        animate={{
-                                            opacity: 1,
-                                            scale: 1.15,
-                                            x: config.hoverX,
-                                            y: config.hoverY,
-                                            rotate: config.rotate,
-                                            z: -30 
-                                        }}
-                                        exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
-                                        transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                        style={{ 
-                                            position: 'absolute', 
-                                            ...positionStyle, 
-                                            transformStyle: 'preserve-3d' 
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                     >
-                                         {sat.link ? (
-                                             <Link 
-                                                href={sat.link} 
-                                                onClick={(e) => e.stopPropagation()}
-                                                className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                                prefetch={false}
-                                             >
-                                                 {sat.label}
-                                             </Link>
-                                         ) : (
-                                             <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
-                                                 {sat.label}
-                                             </span>
-                                         )}
-                                     </motion.div>
-                                 );
-                             })}
-                        </AnimatePresence>
-                    </div>
-                )}
+                             return (
+                                 <motion.div
+                                    key={`${item.id}-sat-${i}`}
+                                    className={styles.satelliteShard}
+                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                    animate={{
+                                        opacity: 1,
+                                        scale: 1.15,
+                                        x: config.hoverX,
+                                        y: config.hoverY,
+                                        rotate: config.rotate,
+                                        z: -30 
+                                    }}
+                                    exit={{
+                                        opacity: 0,
+                                        scale: 0.4,
+                                        x: 0,
+                                        y: 50,
+                                        rotate: 0,
+                                        z: 0
+                                    }}
+                                    transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
+                                    style={{ 
+                                        position: 'absolute', 
+                                        ...positionStyle, 
+                                        transformStyle: 'preserve-3d' 
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                 >
+                                     {sat.link ? (
+                                         <Link 
+                                            href={sat.link} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
+                                            prefetch={false}
+                                         >
+                                             {sat.label}
+                                         </Link>
+                                     ) : (
+                                         <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
+                                             {sat.label}
+                                         </span>
+                                     )}
+                                 </motion.div>
+                             );
+                         })}
+                    </AnimatePresence>
+                </div>
             </motion.div>
         </motion.div>
     );

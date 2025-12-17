@@ -49,16 +49,8 @@
   width: 100%;
   position: relative;
   margin-bottom: 4rem;
-  gap: 60px; /* Gap between card and spine/spacer */
-}
-
-/* 
-   We use a spacer div to occupy the empty side of the timeline, 
-   ensuring the card is pushed to the correct side relative to the center spine.
-*/
-.spacer {
-    flex: 1;
-    height: 1px; /* Minimal height */
+  /* Gap handles distance from center spine */
+  gap: 60px; 
 }
 
 /* Card Container width logic */
@@ -66,28 +58,66 @@
     flex: 1;
     max-width: 340px; /* Match standard grid card size */
     width: 100%;
+    min-width: 0;
+    /* Default Z-index for card */
+    z-index: 10;
 }
+
+/* Synopsis Styles - Desktop */
+.synopsisContainer {
+  flex: 1;
+  max-width: 340px; /* Match Card width */
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  pointer-events: none;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 5px 20px -5px rgba(0,0,0,0.1);
+  z-index: 5;
+}
+
+/* Layout Directions */
+
+/* Left: [Card] [Spine] [Synopsis] (Visual Right to Left in RTL)
+   Actually in DOM: [Synopsis] [Card].
+   RTL Flex: 
+   Row: Right item is 1st in DOM (Synopsis), Left Item is 2nd (Card).
+   Wait, in RTL: 
+   flex-direction: row -> 1st child is on Right, 2nd on Left.
+   
+   If index is even (Left side visually in LTR terms, Right side in RTL terms?):
+   User wants alternating sides.
+   
+   Let's stick to flex-direction logic.
+*/
 
 .timelineItemWrapper.left {
-  flex-direction: row-reverse;
+    /* Card Left, Synopsis Right */
+    flex-direction: row-reverse; 
 }
-/* In Left mode: Card is on Left, Spacer is on Right. Spine is between them. */
 
 .timelineItemWrapper.right {
-  flex-direction: row;
-}
-/* In Right mode: Card is on Right, Spacer is on Left. Spine is between them. */
-
-/* Align card content towards the spine */
-.timelineItemWrapper.left .cardContainer {
-    margin-right: auto;
-    margin-left: 0;
-}
-.timelineItemWrapper.right .cardContainer {
-    margin-left: auto;
-    margin-right: 0;
+    /* Card Right, Synopsis Left */
+    flex-direction: row;
 }
 
+/* Text Alignments */
+.timelineItemWrapper.left .synopsisContainer {
+    text-align: right; 
+}
+.timelineItemWrapper.right .synopsisContainer {
+    text-align: left;
+}
+
+.synopsisFirstWord {
+  font-weight: 700;
+  color: var(--accent);
+}
 
 .dotsContainer {
   position: absolute;
@@ -162,28 +192,46 @@
 /* --- MOBILE OVERRIDES --- */
 @media (max-width: 768px) {
   .timelineContainer {
-    padding: 4rem 1rem;
+    padding: 4rem 0.5rem; 
   }
-  /* On mobile, we might want to stack everything vertically or simplify */
-  .timelineItemWrapper {
-      gap: 0;
-      justify-content: center;
-  }
-  
+
   .timelineSpine {
-      display: none; /* Hide spine on small mobile to save space */
+      display: block;
+      /* On mobile, spine is still center, but cards and synopsis squeeze around it */
   }
-  
-  .spacer {
-      display: none;
+
+  .timelineItemWrapper {
+      gap: 0; /* Remove gap, use space-between */
+      margin-bottom: 3rem;
   }
-  
+
   .cardContainer {
-      max-width: 100%;
+      flex: 0 0 42%; /* Fix width to ~42% to allow spine space */
+      max-width: none;
+  }
+
+  .synopsisContainer {
+      flex: 0 0 42%; /* Fix width to ~42% */
+      max-width: none;
+      
+      padding: 1rem;
+      font-size: 1.1rem; /* Smaller Font */
+      line-height: 1.4;
+      border-radius: 8px;
   }
   
-  .timelineItemWrapper.left,
-  .timelineItemWrapper.right {
-      flex-direction: row; /* Reset direction */
+  /* On mobile, ensure Synopsis text clamps */
+  .synopsisContainer p {
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+  }
+
+  /* Reduce Dot size */
+  .dot {
+      width: 8px;
+      height: 8px;
   }
 }

@@ -1,5 +1,79 @@
 /* components/TimelineCard.module.css */
 
+/* --- CONFIGURATION PARAMETERS (CSS VARIABLES) --- */
+.timelineCard {
+    /* -- DEFAULT SIZES -- */
+    --tl-card-padding: 1.5rem;
+    --tl-title-size: 2rem;
+    --tl-date-size: 1.4rem;
+    --tl-icon-size: 18px;          /* Platform Icons */
+    --tl-cal-icon-size: 14px;      /* Calendar Icon */
+    --tl-badge-font: 1.2rem;
+    --tl-badge-pad: 0.4rem 1rem;
+    --tl-badge-height: auto;
+    --tl-btn-size: 32px;           /* Wishlist/Close Buttons */
+    --tl-btn-icon-size: 16px;
+    --tl-play-btn-font: 1.3rem;
+    --tl-play-btn-pad: 0.6rem 1.4rem;
+    --tl-pill-font: 1.2rem;        /* Flying Tags */
+    --tl-pill-pad: 0.5rem 1.2rem;
+    
+    /* Layout Variables */
+    --tl-meta-gap: 1rem;
+    --tl-meta-direction: row;      /* Default: Side by side */
+    --tl-meta-align: center;
+}
+
+/* --- HOMEPAGE VARIANT OVERRIDES (Smaller) --- */
+.timelineCard.homepage {
+    /* -- HOMEPAGE SIZES -- */
+    --tl-card-padding: 1.2rem;
+    --tl-title-size: 1.6rem;       /* Smaller Title */
+    --tl-date-size: 1.2rem;        /* Smaller Date */
+    --tl-icon-size: 14px;          /* Smaller Platform Icons */
+    --tl-cal-icon-size: 11px;      /* Smaller Calendar (11px requested) */
+    --tl-badge-font: 1rem;         /* Smaller Badge Text */
+    --tl-badge-pad: 0.3rem 0.8rem;
+    --tl-badge-height: 24px;
+    --tl-btn-size: 28px;           /* Smaller Action Buttons */
+    --tl-btn-icon-size: 14px;
+    --tl-play-btn-font: 1.1rem;
+    --tl-play-btn-pad: 0.4rem 1rem;
+    --tl-pill-font: 1.1rem;        /* Smaller Flying Tags */
+    --tl-pill-pad: 0.4rem 0.8rem;
+
+    /* Layout Overrides */
+    --tl-meta-direction: column;   /* Stack Date & Platforms */
+    --tl-meta-align: flex-start;   /* Align left */
+    --tl-meta-gap: 0.5rem;
+}
+
+/* --- MOBILE GLOBAL OVERRIDES (Force homepage styling on mobile) --- */
+@media (max-width: 768px) {
+    .timelineCard {
+        /* Force smaller sizes everywhere on mobile */
+        --tl-card-padding: 1rem;
+        --tl-title-size: 1.5rem;
+        --tl-date-size: 1.1rem;
+        --tl-icon-size: 14px;
+        --tl-cal-icon-size: 11px;
+        --tl-badge-font: 1rem;
+        --tl-badge-pad: 0.3rem 0.8rem;
+        --tl-badge-height: 24px;
+        --tl-btn-size: 28px;
+        --tl-btn-icon-size: 14px;
+        --tl-play-btn-font: 1.1rem;
+        --tl-play-btn-pad: 0.4rem 1rem;
+        --tl-pill-font: 1rem;
+        --tl-pill-pad: 0.3rem 0.8rem;
+
+        /* Force stacked layout on mobile */
+        --tl-meta-direction: column;
+        --tl-meta-align: flex-start;
+        --tl-meta-gap: 0.4rem;
+    }
+}
+
 /* --- CORE CONTAINER --- */
 .livingCardWrapper {
     transform-style: preserve-3d;
@@ -102,52 +176,37 @@
     }
 }
 
-/* --- INTERACTIVE LAYER (OVERLAY) --- */
-.interactiveLayer {
-    position: absolute;
-    inset: 0;
-    z-index: 200; /* Above the Link */
-    pointer-events: none; /* Pass clicks through by default */
-    border-radius: 16px;
-    overflow: hidden; /* Ensure video respects corners */
-}
-
-/* Buttons inside interactive layer need pointer-events: auto */
-.interactiveElement {
-    pointer-events: auto;
-}
-
-.overlayImageFrame {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    /* Match card layout */
-}
-
-.videoContainer {
-    position: absolute;
-    inset: 0;
-    z-index: 50;
-    background: #000;
-}
-
-.videoCloseButton {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 32px;
-    height: 32px;
+/* --- CONTROLS (Wishlist, Video Close) --- */
+.controlBtn {
+    width: var(--tl-btn-size);
+    height: var(--tl-btn-size);
     border-radius: 50%;
-    background-color: rgba(0,0,0,0.6);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+.controlBtn svg {
+    width: var(--tl-btn-icon-size);
+    height: var(--tl-btn-icon-size);
+}
+
+.wishlistButton {
+    /* Specific overrides for wishlist */
+    composes: controlBtn;
+}
+
+.videoCloseButton {
+    composes: controlBtn;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: rgba(0,0,0,0.6);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
     z-index: 60;
     pointer-events: auto;
-    transition: all 0.2s ease;
 }
 .videoCloseButton:hover {
     background-color: var(--accent);
@@ -155,21 +214,19 @@
     border-color: var(--accent);
 }
 
-/* --- PLAY BUTTON (Matches .satelliteShardLink style from ArticleCard) --- */
+/* --- PLAY BUTTON --- */
 .playButtonContainer {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
     
-    /* Matching Style to Article Card Tags exactly */
-    padding: 0.6rem 1.4rem;
+    padding: var(--tl-play-btn-pad);
+    font-size: var(--tl-play-btn-font);
     font-family: var(--font-ui);
-    font-size: 1.3rem;
     font-weight: 700;
-    border-radius: 999px; /* Round/Pill shape */
+    border-radius: 999px;
     
-    /* Dark glass background with neon accent border */
     background: rgba(10, 10, 15, 0.95);
     backdrop-filter: blur(4px);
     border: 1.5px solid var(--accent);
@@ -178,10 +235,9 @@
     
     cursor: pointer;
     z-index: 200;
-    pointer-events: auto; /* CRITICAL: Enables click */
+    pointer-events: auto; 
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-
 @media (hover: hover) {
     .playButtonContainer:hover {
         background-color: var(--accent);
@@ -189,7 +245,6 @@
         box-shadow: 
             0 0 20px color-mix(in srgb, var(--accent) 60%, transparent),
             0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
-        /* Note: Scale and transform are handled by Framer Motion in the TSX now to match the tag animation */
     }
 }
 .playButtonContainer:active {
@@ -239,10 +294,13 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.4rem 1rem;
+    
+    padding: var(--tl-badge-pad);
+    font-size: var(--tl-badge-font);
+    height: var(--tl-badge-height);
+    
     border-radius: 999px;
     font-family: var(--font-ui);
-    font-size: 1.2rem;
     font-weight: 700;
     backdrop-filter: blur(8px);
     z-index: 20;
@@ -265,13 +323,13 @@
 }
 
 .iconSvg {
-    width: 14px;
-    height: 14px;
+    width: var(--tl-cal-icon-size);
+    height: var(--tl-cal-icon-size);
 }
 
 /* --- CONTENT AREA (HUD) --- */
 .cardBody {
-    padding: 1.5rem;
+    padding: var(--tl-card-padding);
     background: linear-gradient(180deg, var(--bg-secondary) 0%, color-mix(in srgb, var(--bg-secondary) 95%, black) 100%);
     border-bottom-left-radius: 16px;
     border-bottom-right-radius: 16px;
@@ -279,7 +337,6 @@
     flex-direction: column;
     gap: 1rem;
     transform: translateZ(10px);
-    /* FIX: Flex grow to fill height, unless autoHeight is used */
     flex-grow: 1; 
 }
 
@@ -292,7 +349,7 @@
 
 .cardTitle {
     font-family: var(--font-heading);
-    font-size: 2rem;
+    font-size: var(--tl-title-size);
     font-weight: 800;
     line-height: 1.2;
     color: var(--text-primary);
@@ -305,9 +362,13 @@
 
 /* --- METADATA GRID --- */
 .metaGrid {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    /* Uses variables for direction to support stacking */
+    flex-direction: var(--tl-meta-direction);
+    align-items: var(--tl-meta-align);
+    gap: var(--tl-meta-gap);
+    
     padding-top: 1rem;
     border-top: 1px solid var(--border-color);
 }
@@ -319,7 +380,15 @@
     color: var(--text-secondary);
     font-family: var(--font-ui);
     font-weight: 600;
-    font-size: 1.4rem;
+    font-size: var(--tl-date-size);
+}
+.dateIconWrapper {
+    width: var(--tl-cal-icon-size);
+    height: var(--tl-cal-icon-size);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .platformRow {
@@ -343,14 +412,11 @@
     background-color: transparent;
     border: 1px solid transparent;
     color: var(--text-secondary);
-    
-    /* Disable pointer events on the base state so they don't block clicks */
     pointer-events: none; 
     
-    /* THE FIX: Improve text rendering quality */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transform: translateZ(0); /* Promote to layer */
+    transform: translateZ(0); 
     backface-visibility: hidden;
 }
 
@@ -361,99 +427,53 @@
 }
 
 .platformIcon {
-    width: 18px;
-    height: 18px;
-}
-
-/* --- FLYING TAGS CONTAINER --- */
-.flyingTagsContainer {
-    position: absolute;
-    /* Create a large invisible aura so mouse doesn't "leave" the card when reaching for tags */
-    inset: -100px; 
-    pointer-events: none; /* Allow clicks to pass through the empty space */
-    z-index: 100;
-    transform-style: preserve-3d;
-    overflow: visible;
+    width: var(--tl-icon-size);
+    height: var(--tl-icon-size);
 }
 
 /* --- SATELLITES (FLYING SHARDS) --- */
-.satelliteField {
-    position: absolute;
-    inset: -50px;
-    pointer-events: none;
-    z-index: 50; 
-    transform-style: preserve-3d;
-}
-
-.satelliteShard {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) translateZ(0px);
-    pointer-events: auto;
-    z-index: 100;
-}
+.satelliteField { position: absolute; inset: -50px; pointer-events: none; z-index: 50; overflow: visible; transform-style: preserve-3d; }
+.satelliteShard { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) translateZ(0px); pointer-events: auto; z-index: 100; }
+.flyingTagsContainer { position: absolute; inset: -100px; pointer-events: none; z-index: 100; transform-style: preserve-3d; overflow: visible; }
 
 .shardPill {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.5rem 1.2rem;
+    
+    padding: var(--tl-pill-pad);
+    font-size: var(--tl-pill-font);
+    
+    font-family: var(--font-ui);
+    font-weight: 700;
     background-color: rgba(10, 10, 15, 0.9);
     border: 1px solid var(--accent);
     border-radius: 999px;
     color: var(--accent);
-    font-family: var(--font-ui);
-    font-size: 1.2rem;
-    font-weight: 700;
-    
-    /* FIX: Force single line and handle overflow */
     white-space: nowrap;
     width: max-content;
     max-width: 240px; 
     text-overflow: ellipsis;
     overflow: hidden;
-    
     text-decoration: none;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     backdrop-filter: blur(4px);
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    
-    /* THE FIX: Explicitly set cursor to pointer here for interactive pills */
     cursor: pointer;
-    
-    pointer-events: auto; /* Ensure pill captures events */
-
-    /* THE FIX: Improve text rendering quality */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    pointer-events: auto; 
     transform: translateZ(0);
     backface-visibility: hidden;
 }
 
-/* Non-interactive shards (like countdowns) should have default cursor */
-.shardPill.static {
-    cursor: default;
-}
+.shardPill.static { cursor: default; }
 
-/* --- Countdown Colors --- */
+/* Colors */
 .statusPill.golden { border-color: #FFD700; color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
 .statusPill.red { border-color: #DC2626; color: #DC2626; box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
 .statusPill.orange { border-color: #F97316; color: #F97316; box-shadow: 0 0 15px rgba(249, 115, 22, 0.2); }
 .statusPill.cyan { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent); }
-
-/* --- Metadata Colors --- */
-.pricePill {
-    border-color: #FFD700; /* Golden */
-    color: #FFD700;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
-}
-
-.devPill {
-    border-color: var(--accent); /* Cyan */
-    color: var(--accent);
-    background-color: rgba(0, 0, 0, 0.85);
-}
+.pricePill { border-color: #FFD700; color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+.devPill { border-color: var(--accent); color: var(--accent); background-color: rgba(0, 0, 0, 0.85); }
 
 .genrePill {
     display: flex;
@@ -463,83 +483,44 @@
     border-radius: 999px;
     font-family: var(--font-ui);
     font-weight: 700;
-    padding: 0.4rem 1rem;
+    
+    padding: var(--tl-pill-pad);
+    font-size: var(--tl-pill-font);
+    
     background-color: rgba(0, 0, 0, 0.85);
     border: 1px solid var(--accent);
     color: var(--accent);
     box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
-    
-    /* FIX: Force single line and handle overflow */
     white-space: nowrap;
     width: max-content;
     max-width: 200px;
     text-overflow: ellipsis;
     overflow: hidden;
-    
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    pointer-events: auto; /* Ensure pill captures events */
-
-    /* THE FIX: Improve text rendering quality */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    pointer-events: auto; 
     transform: translateZ(0);
     backface-visibility: hidden;
 }
 
-/* INTERACTIVE HOVER STATES */
 @media (hover: hover) {
-    /* For Genre Pills and Interactive Shard Pills (Linked) */
-    .genrePill:hover,
-    .shardPill.interactive:hover {
+    .genrePill:hover, .shardPill.interactive:hover {
         background-color: var(--accent);
-        color: #000; /* Black Text */
+        color: #000;
         border-color: var(--accent);
-        transform: scale(1.15) translateY(-4px); /* Larger scale and lift */
-        box-shadow: 
-            0 0 20px color-mix(in srgb, var(--accent) 60%, transparent),
-            0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
-        z-index: 200; /* Ensure overlap */
+        transform: scale(1.15) translateY(-4px);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
+        z-index: 200;
     }
 }
-
-/* Active State for Touch/Click */
-.genrePill:active,
-.shardPill.interactive:active {
+.genrePill:active, .shardPill.interactive:active {
     transform: scale(0.95);
     background-color: var(--accent);
     color: #000;
     box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
-
-.shardIcon {
-    width: 14px;
-    height: 14px;
-}
-
-/* --- TARGETED HOVER BRIDGE (Top) --- */
-.topBridge {
-    position: absolute;
-    bottom: 95%; /* Start slightly inside the card top */
-    left: 10%; 
-    width: 80%; /* Centered strip */
-    height: 140px; 
-    background: transparent;
-    pointer-events: auto;
-    z-index: 90;
-}
-
-
 @media (max-width: 768px) {
-    .cardTitle { font-size: 1.8rem; }
-    
-    /* MOBILE OPTIMIZATION: Disable expensive effects */
-    .statusBadge { font-size: 1.1rem; padding: 0.3rem 0.8rem; backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
+    /* Mobile Opts */
+    .statusBadge { backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
     .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
-    
-    .dateBlock { font-size: 1.3rem; }
-    .platformIcon { width: 16px; height: 16px; }
-    /* ENABLE Flying elements on mobile now */
-    .satelliteField { display: block; }
-    .flyingTagsContainer { display: block; }
 }

@@ -7,15 +7,11 @@ import { useTheme } from 'next-themes';
 
 const springConfig = { stiffness: 250, damping: 25 };
 
-/**
- * A custom hook to apply a "living card" 3D tilt and shadow effect.
- * @param {object} options - Optional configuration.
- * @param {boolean} options.isLead - If true, applies a more subtle rotation effect.
- * @returns An object containing the ref and motion props to apply to a Framer Motion component.
- */
 export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead = false } = {}) {
     const ref = useRef<T>(null);
     const { resolvedTheme } = useTheme();
+    // We manage isHovered locally for desktop mouse events.
+    // Mobile "locking" logic will be handled in the component by overriding this state.
     const [isHovered, setIsHovered] = useState(false);
 
     const mouseX = useMotionValue(0.5);
@@ -39,7 +35,8 @@ export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead =
         ([x, y]: number[]) => {
             const offsetX = (0.5 - x) * 30;
             const offsetY = (0.5 - y) * 30;
-            const shadowOpacity = isHovered ? 0.1 : 0;
+            // Note: Components can override this opacity logic if they force isHovered=true
+            const shadowOpacity = 0.1; // Base opacity
             const shadowColor = resolvedTheme === 'dark' 
                 ? `rgba(0, 229, 255, ${shadowOpacity})`
                 : `rgba(0, 0, 0, ${shadowOpacity * 1.5})`;
@@ -48,12 +45,7 @@ export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead =
     );
 
     const handlePointerMove = (e: React.MouseEvent<T> | React.TouchEvent<T>) => {
-        // OPTIMIZATION: Return early on mobile/touch devices to avoid expensive recalculations.
-        // We detect this via window.matchMedia if available to ensure we don't break SSR.
-        if (typeof window !== 'undefined' && window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
-            return;
-        }
-
+        // REMOVED MOBILE BLOCK: 3D calculations are active on all devices
         if (!ref.current) return;
         const { left, top, width, height } = ref.current.getBoundingClientRect();
         
@@ -89,6 +81,7 @@ export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead =
                 onPointerEnter();
                 handlePointerMove(e);
             },
+            // Note: Components implementing "Touch Lock" might ignore onTouchEnd to keep state active
             onTouchEnd: onPointerLeave,
             onTouchCancel: onPointerLeave,
         },

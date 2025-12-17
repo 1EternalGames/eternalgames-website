@@ -15,6 +15,8 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { translateTag } from '@/lib/translations';
 import styles from './ArticleCard.module.css';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useActiveCardStore } from '@/lib/activeCardStore';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
@@ -34,18 +36,31 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const isMobile = useIsMobile();
     
-    // PERF: Completely nullify the living card hook on mobile to save event listeners
+    // Enable living card on mobile
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     
-    const [isHovered, setIsHovered] = useState(false);
+    // Global Mobile Lock
+    const { activeCardId, setActiveCardId } = useActiveCardStore();
+
+    const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
+
+    // Derive actual hover state based on device
+    const isHovered = isMobile ? activeCardId === article.id : isHoveredLocal;
+
+    // Use Click Outside for mobile unlocking
+    useClickOutside(livingCardRef, () => {
+        if (isMobile && activeCardId === article.id) {
+            setActiveCardId(null);
+            setIsTextExpanded(false);
+        }
+    });
 
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
     const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
-    // PERF: Only attach handlers if NOT mobile
     const handlers = !isMobile ? {
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!disableLivingEffect) {
@@ -58,18 +73,35 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         onMouseEnter: () => {
             if (!disableLivingEffect) {
                 livingCardAnimation.onMouseEnter();
-                setIsHovered(true);
+                setIsHoveredLocal(true);
                 setIsTextExpanded(true);
             }
         },
         onMouseLeave: () => {
             if (!disableLivingEffect) {
                 livingCardAnimation.onMouseLeave();
-                setIsHovered(false);
-                // Text expansion is handled by onAnimationComplete
+                setIsHoveredLocal(false);
             }
         }
-    } : {};
+    } : {
+        onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
+            if (!disableLivingEffect) {
+                if (activeCardId !== article.id) {
+                     setActiveCardId(article.id);
+                     setIsTextExpanded(true);
+                }
+                // Pass touch event to living card to enable tilt
+                livingCardAnimation.onTouchStart(e);
+            }
+        },
+        onTouchMove: livingCardAnimation.onTouchMove,
+        onTouchEnd: livingCardAnimation.onTouchEnd,
+    };
+
+    const setExpandedState = (expanded: boolean) => {
+        // Helper function (if needed for logic reuse)
+        if (expanded) setIsTextExpanded(true);
+    };
 
     const getLinkBasePath = () => {
         switch (article.type) {
@@ -92,7 +124,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         { hoverX: 0, hoverY: -115, rotate: 5 } 
     ];
     
-    const animationStyles = !isMobile && !disableLivingEffect ? livingCardAnimation.style : {};
+    const animationStyles = !disableLivingEffect ? livingCardAnimation.style : {};
 
     const CreatorCapsule = () => {
         const content = (
@@ -127,14 +159,12 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     return (
         <div
             className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
-            // PERF: Only attach ref on desktop
-            ref={!isMobile ? livingCardRef : undefined}
+            ref={livingCardRef}
             {...handlers}
             style={{ zIndex: isHovered ? 9999 : 1 }}
         >
             <motion.div
                 className="tilt-container flex flex-col"
-                // PERF: Remove layoutId on mobile to prevent transition calculation delay
                 layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${article.legacyId}` : undefined}
                 style={{ 
                     ...animationStyles,
@@ -180,7 +210,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                 alt={article.title}
                                 fill
                                 className={styles.cardImage}
-                                // PERF: Aggressive mobile sizing
                                 sizes="(max-width: 768px) 90vw, 500px"
                                 placeholder="blur"
                                 blurDataURL={article.blurDataURL}
@@ -210,7 +239,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                 animate={{ height: isHovered ? 'auto' : '2.8rem' }}
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 onAnimationComplete={() => {
-                                    if (!isHovered) setIsTextExpanded(false);
+                                    if (!isHovered) {
+                                        setIsTextExpanded(false);
+                                    }
                                 }}
                             >
                                 <h3 className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}>
@@ -238,46 +269,49 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         </div>
                     </div>
 
-                    {!isMobile && (
-                        <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
-                            <AnimatePresence>
-                                {displayTags.map((tag, i) => (
-                                     <motion.div
-                                        key={`${article.id}-${tag.slug}`}
-                                        className={styles.satelliteShard}
-                                        initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                        animate={isHovered ? {
-                                            opacity: 1,
-                                            scale: 1.15,
-                                            x: satelliteConfig[i]?.hoverX || 0,
-                                            y: satelliteConfig[i]?.hoverY || 0,
-                                            rotate: satelliteConfig[i]?.rotate || 0,
-                                            z: -30 
-                                        } : {
-                                            opacity: 0,
-                                            scale: 0.4,
-                                            x: 0,
-                                            y: 50,
-                                            rotate: 0,
-                                            z: 0
-                                        }}
-                                        transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                        style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                    <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                        <AnimatePresence>
+                            {displayTags.map((tag, i) => (
+                                 <motion.div
+                                    key={`${article.id}-${tag.slug}`}
+                                    className={styles.satelliteShard}
+                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                    animate={isHovered ? {
+                                        opacity: 1,
+                                        scale: 1.15,
+                                        x: satelliteConfig[i]?.hoverX || 0,
+                                        y: satelliteConfig[i]?.hoverY || 0,
+                                        rotate: satelliteConfig[i]?.rotate || 0,
+                                        z: -30 
+                                    } : {
+                                        opacity: 0,
+                                        scale: 0.4,
+                                        x: 0,
+                                        y: 50,
+                                        rotate: 0,
+                                        z: 0
+                                    }}
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 180,
+                                        damping: 20,
+                                        delay: i * 0.05
+                                    }}
+                                    style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                                    onClick={(e) => e.stopPropagation()}
+                                 >
+                                     <Link 
+                                        href={`/tags/${tag.slug}`} 
                                         onClick={(e) => e.stopPropagation()}
+                                        className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
+                                        prefetch={false}
                                      >
-                                         <Link 
-                                            href={`/tags/${tag.slug}`} 
-                                            onClick={(e) => e.stopPropagation()}
-                                            className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
-                                            prefetch={false}
-                                         >
-                                             {translateTag(tag.title)}
-                                         </Link>
-                                     </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
-                    )}
+                                         {translateTag(tag.title)}
+                                     </Link>
+                                 </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </div>
 
                 </div>
             </motion.div>

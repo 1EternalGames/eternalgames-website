@@ -16,12 +16,36 @@ const ViewAllIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const SynopsisDisplay = ({ synopsis, isLeft, isInView }: { synopsis: string; isLeft: boolean; isInView: boolean; }) => {
+    const [firstWord, ...rest] = synopsis.split(' ');
+    const restOfText = rest.join(' ');
+
+    return (
+        <AnimatePresence>
+            {isInView && (
+                <motion.div
+                    className={`${styles.synopsisContainer} ${isLeft ? styles.left : styles.right}`}
+                    initial={{ opacity: 0, x: isLeft ? 20 : -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: isLeft ? 20 : -20 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <p>
+                        <span className={styles.synopsisFirstWord}>{firstWord}</span>
+                        {' '}{restOfText}
+                    </p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const itemRef = useRef(null);
-    const cardIsInView = useInView(itemRef, { once: true, amount: 0.55 });
+    const cardIsInView = useInView(itemRef, { once: true, amount: 0.4 });
     const isLeft = index % 2 === 0;
     
-    // Adjusted variants for cleaner entry without the synopsis text distractions
+    // Adjusted variants for cleaner entry
     const variants = {
         hidden: { opacity: 0, x: isLeft ? -30 : 30, scale: 0.95 },
         visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } }
@@ -29,8 +53,8 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
 
     return (
         <div ref={itemRef} className={`${styles.timelineItemWrapper} ${isLeft ? styles.left : styles.right}`}>
-            {/* Empty spacer to maintain the alternating layout structure if needed, or just let CSS handle alignment */}
-            <div className={styles.spacer} /> 
+            {/* Synopsis occupies the empty side */}
+            <SynopsisDisplay synopsis={release.synopsis} isLeft={isLeft} isInView={cardIsInView} />
             
             <motion.div 
                 variants={variants} 
@@ -38,7 +62,7 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
                 animate={cardIsInView ? "visible" : "hidden"}
                 className={styles.cardContainer}
             >
-                <TimelineCard release={release} />
+                <TimelineCard release={release} variant="homepage" />
             </motion.div>
         </div>
     );
@@ -78,7 +102,6 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
         
         return allReleases
             .filter(release => {
-                // Ensure date parsing works safely
                 if (!release.releaseDate) return false;
                 const releaseDate = new Date(release.releaseDate);
                 return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; 
@@ -95,7 +118,6 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
                 const itemElements = Array.from(containerEl.querySelectorAll(`.${styles.timelineItemWrapper}`));
                 const positions = itemElements.map(el => { 
                     const item = el as HTMLElement; 
-                    // Calculate dot position based on the Card's vertical center
                     const top = item.offsetTop + (item.offsetHeight / 2); 
                     return top / containerHeight; 
                 });
