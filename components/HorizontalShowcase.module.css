@@ -34,7 +34,7 @@
   height: 450px;
   display: flex;
   align-items: center;
-  overflow: hidden;
+  overflow: visible; /* Allow satellites to fly out */
   cursor: grab;
 }
 .horizontalShowcaseWrapper:active {
@@ -44,8 +44,9 @@
 .horizontalShowcaseList {
   display: flex;
   align-items: center;
-  --showcase-card-width: 50vw;
-  --showcase-card-max-width: 600px;
+  /* MODIFIED: Reduced size */
+  --showcase-card-width: 40vw;
+  --showcase-card-max-width: 480px; 
   --showcase-card-gap: 2rem;
 }
 
@@ -54,82 +55,210 @@
   width: var(--showcase-card-width);
   max-width: var(--showcase-card-max-width);
   margin-right: var(--showcase-card-gap);
+  perspective: 1000px; 
+  z-index: 1;
 }
 .showcaseItemWrapper:first-child {
   margin-left: var(--showcase-card-gap);
 }
 
-.showcaseCardContainer {
+/* --- NEW WRAPPERS FOR STABILITY --- */
+
+/* 1. Scale Wrapper (Carousel Logic) */
+.showcaseCardWrapper {
   width: 100%;
-  perspective: 1000px;
-  flex-shrink: 0;
-  padding: 0 1.5rem;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  /* Transform origin center for scaling */
+  transform-origin: center center;
 }
 
+/* 2. Living Tilt Container (3D Logic) */
+.livingCardContainer {
+    width: 100%;
+    height: 100%; /* Fix height to fill wrapper */
+    aspect-ratio: 16 / 9; /* Enforce aspect ratio here */
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+/* 3. The Link (Click Target) */
 .showcaseCardLink {
   display: block;
   position: relative;
+  width: 100%;
+  height: 100%;
   border-radius: 12px;
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-  box-shadow: 0 20px 40px -15px color-mix(in srgb, var(--text-primary) 20%, transparent);
-  background-color: var(--bg-secondary);
-  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  
+  /* Remove conflicting styles */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  
+  transform-style: preserve-3d;
+  /* Remove transition here, handled by livingCardContainer */
 }
+
+/* Monolith Frame Look (Visuals) */
+.monolithFrame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    transform: translateZ(0);
+    pointer-events: none;
+    z-index: 10;
+    
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* Corner Accent */
+.monolithFrame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    border-top: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-top-left-radius: 12px;
+    transition: all 0.3s ease;
+    z-index: 20;
+}
+
+/* --- HOVER EFFECTS (Applied via .livingCardContainer hover state in JS or CSS) --- */
+/* We rely on the JS hover state passed down or simple CSS hover on link */
+
+.showcaseCardLink:hover .monolithFrame {
+    box-shadow: 
+        0 35px 70px -15px rgba(0,0,0,0.8),
+        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+    border-color: var(--accent);
+}
+
+.showcaseCardLink:hover .monolithFrame::before {
+    width: 100%;
+    height: 100%;
+    border-color: var(--accent);
+    filter: drop-shadow(0 0 4px var(--accent));
+}
+.showcaseCardLink:hover .showcaseCardImage { transform: scale(1.1); }
+.showcaseCardLink:hover .holoSpotlight { opacity: 1; }
+.showcaseCardLink:hover .cardTitle { color: var(--accent); text-shadow: 0 0 15px color-mix(in srgb, var(--accent) 60%, transparent); }
+.showcaseCardLink:hover .creditCapsule { border-color: var(--accent); background-color: var(--accent); }
+.showcaseCardLink:hover .capsuleIcon { background-color: var(--bg-primary); color: var(--accent); }
+.showcaseCardLink:hover .creditCapsule :global(span) { color: var(--bg-primary); }
+.showcaseCardLink:hover .techDot { background-color: var(--accent); animation: pulse-dot 1.2s infinite ease-in-out; }
+.showcaseCardLink:hover .techDot:nth-child(2) { animation-delay: 0.2s; }
+.showcaseCardLink:hover .techDot:nth-child(3) { animation-delay: 0.4s; }
+
 
 .showcaseCardImageWrapper {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  transform: translateZ(0);
 }
 .showcaseCardImage {
-  transition: transform 0.4s ease;
-}
-@media (hover: hover) {@media (hover: hover) {
-  
-  .showcaseCardLink:hover .showcaseCardImage  {
-  transform: scale(1.05);
-}
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  scale: 1.02;
 }
 
-  .showcaseCardLink:active .showcaseCardImage  {
-  transform: scale(1.05);
+.holoSpotlight {
+    position: absolute;
+    width: 200px; 
+    height: 200px;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+    mix-blend-mode: overlay; 
+    border-radius: 50%;
 }
-}
-.showcaseCardLink:active .showcaseCardImage {
-  transform: scale(1.05);
-}
-
 
 .showcaseCardContent {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 2.5rem;
+  padding: 2.5rem; 
+  padding-bottom: 5rem; /* Extra space for HUD */
   color: #fff;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.6) 50%, transparent 100%);
   text-align: right;
+  z-index: 25;
+  transform: translateZ(20px);
+  pointer-events: none;
 }
 .showcaseCardTitle {
   font-family: var(--font-main);
   font-size: 2.8rem;
   line-height: 1.2;
+  font-weight: 800;
+  transition: color 0.3s ease;
 }
 .showcaseCardGame {
   font-family: var(--font-main);
-  color: var(--text-secondary);
-  font-weight: 500;
-  margin-top: 0.75rem;
-}
-[data-theme="dark"] .showcaseCardGame {
-  color: color-mix(in srgb, var(--text-secondary) 80%, #fff);
+  color: var(--accent);
+  font-weight: 700;
+  margin-top: 0.5rem;
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
+/* --- HUD & SATELLITES --- */
+.hudContainer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    z-index: 30; 
+    pointer-events: none; 
+    transform: translateZ(30px);
+}
+.hudContainer > * { pointer-events: auto; }
+
+.techDecoration { display: flex; gap: 5px; padding: 0.5rem 0; justify-content: flex-end; pointer-events: none; }
+.techDot { width: 4px; height: 4px; background-color: rgba(255,255,255,0.2); border-radius: 50%; transition: background-color 0.3s ease; }
+@keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); } }
+
+/* Reusing Capsule Styles */
+.creditCapsule { display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(10, 11, 15, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 999px; transition: all 0.4s ease; height: 32px; backdrop-filter: blur(8px); text-decoration: none; cursor: pointer; pointer-events: auto; }
+.capsuleIcon { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.4s ease; }
+.creditCapsule span { font-size: 1.2rem; font-weight: 700; color: #fff; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1.2rem; padding-right: 0.8rem; transition: color 0.4s ease; }
+
+.dateReadout { font-family: var(--font-ui); font-size: 1.1rem; color: rgba(255,255,255,0.7); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem; pointer-events: none; }
+
+.satelliteField { position: absolute; inset: -80px; pointer-events: none; z-index: 50; overflow: visible; transform-style: preserve-3d; }
+.satelliteShard { position: absolute; padding: 0; background: transparent; pointer-events: none; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
+.satelliteShardLink { display: flex; align-items: center; justify-content: center; padding: 0.4rem 1rem; background: #000; border: 2px solid var(--accent); color: var(--accent); font-family: var(--font-ui); font-size: 1.2rem; font-weight: 800; border-radius: 6px; white-space: nowrap; box-shadow: 0 15px 40px rgba(0,0,0,0.8); filter: drop-shadow(0 0 10px rgba(0,255,240,0.3)); text-decoration: none; transition: all 0.3s ease; cursor: pointer; pointer-events: auto; }
+@media (hover: hover) { .satelliteShardLink:hover { background-color: var(--accent); color: #000; transform: scale(1.15) translateY(-3px); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent); } }
+
+/* --- Arrows --- */
 .showcaseArrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10;
+  z-index: 100;
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -154,7 +283,7 @@
 /* --- Mobile Vertical Showcase --- */
 .mobileShowcaseContainer {
     position: relative;
-    width: 70%; /* MODIFIED: Reduced from 80% */
+    width: 70%; 
     max-width: 400px;
     margin: 0 auto;
     display: flex;
@@ -186,11 +315,11 @@
   }
 
   .showcaseArrow.left {
-    left: -5rem; /* MODIFIED: Increased distance further */
+    left: -5rem; 
   }
 
   .showcaseArrow.right {
-    right: -5rem; /* MODIFIED: Increased distance further */
+    right: -5rem; 
   }
 
   .showcaseCardTitle {

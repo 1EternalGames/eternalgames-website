@@ -139,9 +139,9 @@
     height: 100%; 
     object-fit: cover;
     overflow: hidden;
-    border-right: 1px solid var(--border-color);
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
+    /* FIX: Replaced explicit side rounding with full rounding to match request */
+    border-radius: 12px;
+    border: 1px solid var(--border-color); /* Added explicit border to match card style */
     transform: translateZ(0); 
     aspect-ratio: 16 / 10;
 }
@@ -369,7 +369,8 @@ a.creatorCapsule:active { transform: scale(0.95); }
     /* MOBILE OPTIMIZATION: Disable expensive effects */
     .imageBadge { backdrop-filter: none !important; background-color: rgba(0, 0, 0, 0.95); }
     .creatorCapsule { padding: 0; background: transparent; border: none; height: auto; backdrop-filter: none !important; }
-    .creatorCapsule span { display: none; }
+    /* THE FIX: Reverted to display: block (or inline) to show author name */
+    .creatorCapsule span { display: block; max-width: 100px; }
     .satelliteShardLink { backdrop-filter: none !important; background: #000; }
     
     .satelliteField { display: none; }

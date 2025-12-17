@@ -6,8 +6,11 @@ import NewsGridCard from './NewsGridCard';
 import { CardProps } from '@/types';
 import React from 'react'; 
 import styles from './NewsGrid.module.css';
+import { useActiveCardStore } from '@/lib/activeCardStore';
 
 export default function NewsGrid({ news }: { news: CardProps[] }) {
+    const { activeCardId } = useActiveCardStore();
+
     return (
         <motion.div 
             layout 
@@ -21,13 +24,17 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ zIndex: 50 }} // FIX: Elevate card wrapper on hover to prevent clipping
+                        whileHover={{ zIndex: 50 }} 
                         transition={{ 
                             type: 'spring' as const, 
                             stiffness: 400, 
                             damping: 30, 
                         }}
-                        style={{ height: '100%', willChange: 'transform, opacity, z-index' }}
+                        style={{ 
+                            height: '100%', 
+                            willChange: 'transform, opacity, z-index',
+                            zIndex: activeCardId === item.id ? 100 : 1
+                        }}
                     >
                         <NewsGridCard 
                             item={item} 

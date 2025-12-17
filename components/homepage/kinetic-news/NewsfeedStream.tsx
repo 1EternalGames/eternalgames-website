@@ -17,7 +17,6 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     const [isHovered, setIsHovered] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     
-    // Intersection observer to prevent animating when not visible
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
 
@@ -27,6 +26,7 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
 
     useEffect(() => {
         // Only scroll if: Not expanded, Not hovered, and IS in view
+        // Reverted to 5
         if (!isExpanded && !isHovered && isInView && listItems.length > 5) {
             intervalRef.current = setInterval(() => {
                 setListItems((prevItems) => {
@@ -46,6 +46,7 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     }, [isHovered, listItems.length, isExpanded, isInView]);
 
     const displayItems = useMemo(() => 
+        // Reverted to 5
         isExpanded ? items.slice(0, 15) : listItems.slice(0, 5),
     [isExpanded, items, listItems]);
 
@@ -55,7 +56,7 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
             className={styles.streamContainer}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ minHeight: isExpanded ? 'auto' : '400px' }} // Prevent layout snap
+            style={{ minHeight: isExpanded ? 'auto' : '400px' }}
         >
             <AnimatePresence mode="popLayout" initial={false}>
                 {displayItems.map((item) => (

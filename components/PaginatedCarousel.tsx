@@ -6,18 +6,21 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { CardProps } from '@/types';
 import styles from './PaginatedCarousel.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
+import { useActiveCardStore } from '@/lib/activeCardStore';
 
 type PaginatedCarouselProps = {
     items: CardProps[];
     itemsPerPage?: number;
 };
 
-export default function PaginatedCarousel({ items, itemsPerPage = 3 }: PaginatedCarouselProps) {
+export default function PaginatedCarousel({ items, itemsPerPage = 5 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
+    
+    const { activeCardId } = useActiveCardStore();
 
     // Intersection observer to prevent flipping when not visible
     const containerRef = useRef<HTMLDivElement>(null);
@@ -73,8 +76,12 @@ export default function PaginatedCarousel({ items, itemsPerPage = 3 }: Paginated
                         {currentItems.map((item) => (
                             <motion.div
                                 key={item.legacyId}
-                                style={{ height: 'auto', position: 'relative', zIndex: 1 }}
-                                whileHover={{ zIndex: 20 }}
+                                style={{ 
+                                    height: 'auto', 
+                                    position: 'relative', 
+                                    zIndex: activeCardId === item.id ? 100 : 1 
+                                }}
+                                whileHover={{ zIndex: 100 }}
                             >
                                 <NewsGridCard 
                                     item={item} 

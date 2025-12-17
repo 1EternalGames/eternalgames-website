@@ -5,11 +5,15 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
 import styles from './HorizontalShowcase.module.css';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
+import { useLivingCard } from '@/hooks/useLivingCard';
+import { PenEdit02Icon, Calendar03Icon } from '@/components/icons';
+import { translateTag } from '@/lib/translations';
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -17,45 +21,145 @@ const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) =>
   </svg>
 );
 
+const satelliteConfig = [
+    { hoverX: -120, hoverY: -40, rotate: -8 },
+    { hoverX: 110, hoverY: -20, rotate: 10 }, 
+    { hoverX: -10, hoverY: -130, rotate: 4 } 
+];
+
 const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boolean }) => {
   const router = useRouter();
   const setPrefix = useLayoutIdStore((state) => state.setPrefix);
   const layoutIdPrefix = "articles-showcase";
+  const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
+  const [isHovered, setIsHovered] = useState(false);
   
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
     setPrefix(layoutIdPrefix);
     router.push(`/articles/${article.slug}`, { scroll: false });
   };
 
   const imageSource = article.imageUrl;
   if (!imageSource) return null;
+  
+  const displayTags = article.tags.slice(0, 3);
+  const authorName = article.authors?.[0]?.name;
 
   return (
     <motion.div
-      className={styles.showcaseCardContainer}
-      animate={{ scale: isActive ? 1 : 0.85, opacity: isActive ? 1 : 0.7 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+       className={styles.showcaseCardWrapper}
+       animate={{ 
+         scale: isActive ? 1 : 0.9, 
+         opacity: isActive ? 1 : 1 // Full opacity to avoid "gray" look
+       }}
+       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+       style={{ zIndex: isActive || isHovered ? 100 : 1 }}
     >
       <motion.div
-        layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`}
-        onClick={handleClick}
-        className={`no-underline ${styles.showcaseCardLink}`}
-        draggable="false"
-        style={{ cursor: 'pointer' }}
+        className={styles.livingCardContainer}
+        ref={livingCardRef}
+        onMouseMove={livingCardAnimation.onMouseMove}
+        onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }}
+        onMouseLeave={() => { livingCardAnimation.onMouseLeave(); setIsHovered(false); }}
+        onTouchStart={livingCardAnimation.onTouchStart}
+        onTouchEnd={livingCardAnimation.onTouchEnd}
+        style={{ ...livingCardAnimation.style, perspective: '1000px' }}
       >
-        <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={styles.showcaseCardImageWrapper}>
-          <Image 
-            loader={sanityLoader} // <-- LOADER ADDED
-            src={imageSource} alt={article.title} fill sizes="60vw"
-            style={{ objectFit: 'cover' }} className={styles.showcaseCardImage}
+        <Link 
+            href={`/articles/${article.slug}`} 
+            onClick={handleClick}
+            className={`no-underline ${styles.showcaseCardLink}`}
             draggable="false"
-          />
-        </motion.div>
-        <div className={styles.showcaseCardContent}>
-          <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={styles.showcaseCardTitle}>{article.title}</motion.h3>
-          <p className={styles.showcaseCardGame}>{article.game}</p>
-        </div>
+        >
+            <div className={styles.monolithFrame}>
+                <motion.div 
+                    className={styles.holoSpotlight} 
+                    style={{ opacity: isHovered ? 1 : 0 }} 
+                />
+                
+                <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={styles.showcaseCardImageWrapper}>
+                  <Image 
+                    loader={sanityLoader} 
+                    src={imageSource} alt={article.title} fill sizes="60vw"
+                    style={{ objectFit: 'cover' }} className={styles.showcaseCardImage}
+                    draggable="false"
+                    priority={isActive}
+                  />
+                </motion.div>
+
+                <div className={styles.showcaseCardContent}>
+                  <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={styles.showcaseCardTitle}>{article.title}</motion.h3>
+                  <p className={styles.showcaseCardGame}>{article.game}</p>
+                </div>
+                
+                {/* HUD / Meta */}
+                <div className={styles.hudContainer} style={{ transform: 'translateZ(40px)' }}>
+                    {authorName ? (
+                         <div className={styles.creditCapsule}>
+                            <div className={styles.capsuleIcon}>
+                                <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                            </div>
+                            <span title={authorName}>{authorName}</span>
+                        </div>
+                    ) : <div />}
+
+                    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
+                        {article.date && (
+                            <div className={styles.dateReadout}>
+                                <Calendar03Icon style={{ width: '14px', height: '14px', color: 'var(--accent)' }} />
+                                {article.date.split(' - ')[0]}
+                            </div>
+                        )}
+                        <div className={styles.techDecoration}>
+                            <div className={styles.techDot} />
+                            <div className={styles.techDot} />
+                            <div className={styles.techDot} />
+                        </div>
+                     </div>
+                </div>
+            </div>
+            
+            {/* Flying Satellites */}
+            <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                <AnimatePresence>
+                    {isHovered && displayTags.map((tag, i) => (
+                         <motion.div
+                            key={`${article.id}-${tag.slug}`}
+                            className={styles.satelliteShard}
+                            initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                            animate={{
+                                opacity: 1,
+                                scale: 1.1,
+                                x: satelliteConfig[i]?.hoverX || 0,
+                                y: satelliteConfig[i]?.hoverY || 0,
+                                rotate: satelliteConfig[i]?.rotate || 0,
+                                z: -30 
+                            }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 180,
+                                damping: 20,
+                                delay: i * 0.05
+                            }}
+                            style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                            onClick={(e) => e.stopPropagation()}
+                         >
+                             <Link 
+                                href={`/tags/${tag.slug}`} 
+                                onClick={(e) => e.stopPropagation()}
+                                className={`${styles.satelliteShardLink} no-underline`}
+                                prefetch={false}
+                            >
+                                 {translateTag(tag.title)}
+                             </Link>
+                         </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+
+        </Link>
       </motion.div>
     </motion.div>
   );

@@ -136,6 +136,7 @@
 /* --- Article Feed Specifics --- */
 .topArticlesGrid {
     display: grid;
+    /* FIX: Desktop uses 2 columns (1fr 1fr) */
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     overflow: visible !important;
@@ -447,7 +448,8 @@
 
 @media (max-width: 768px) {
     .topArticlesGrid {
-        grid-template-columns: 1fr 1fr;
+        /* FIX: Mobile uses 1 column (Stacked) */
+        grid-template-columns: 1fr;
         gap: 1.5rem;
     }
     .topSection, .latestSection {

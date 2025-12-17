@@ -69,8 +69,10 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
 };
 
 const TimelineDot = ({ position, scrollYProgress }: { position: number, scrollYProgress: MotionValue<number> }) => {
-    const backgroundColor = useTransform( scrollYProgress, [position - 0.01, position], ['var(--border-color)', 'var(--accent)'] );
-    const boxShadow = useTransform( scrollYProgress, [position - 0.01, position], ['0 0 0px 0 rgba(0,0,0,0)', '0 0 8px 0 var(--accent)'] );
+    // FIX: Using a tight range starting at 'position' to ensure dot lights up
+    // exactly when or slightly after the line reaches it, not before.
+    const backgroundColor = useTransform( scrollYProgress, [position, position + 0.02], ['var(--border-color)', 'var(--accent)'] );
+    const boxShadow = useTransform( scrollYProgress, [position, position + 0.02], ['0 0 0px 0 rgba(0,0,0,0)', '0 0 8px 0 var(--accent)'] );
     
     return ( 
         <motion.div 
