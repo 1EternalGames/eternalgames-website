@@ -48,6 +48,16 @@
     pointer-events: none;
 }
 
+/* PERFORMANCE OVERRIDE */
+:global(.noCornerAnimation) .newsCard::before {
+    content: none !important;
+    display: none !important;
+    border: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+}
+
 /* ACTIVE STATE */
 .cardContainer.activeState .newsCard {
     transform: translateZ(10px) translateY(-4px);
@@ -125,12 +135,12 @@
 
 /* COMPACT MODE OVERRIDES */
 .newsCard.compact .imageContentWrapper {
-    grid-template-columns: 160px 1fr; /* Width for standard compact */
+    grid-template-columns: 160px 1fr; 
 }
 
-/* MINI MODE OVERRIDES (Even smaller for stream) */
+/* MINI MODE OVERRIDES */
 .newsCard.mini .imageContentWrapper {
-    grid-template-columns: 120px 1fr; /* Smallest Width */
+    grid-template-columns: 120px 1fr; 
 }
 
 .imageContainer {
@@ -139,9 +149,8 @@
     height: 100%; 
     object-fit: cover;
     overflow: hidden;
-    /* FIX: Replaced explicit side rounding with full rounding to match request */
     border-radius: 12px;
-    border: 1px solid var(--border-color); /* Added explicit border to match card style */
+    border: 1px solid var(--border-color); 
     transform: translateZ(0); 
     aspect-ratio: 16 / 10;
 }
@@ -222,7 +231,7 @@
 }
 
 .newsCard.mini .cardTitle {
-    font-size: 1.35rem; /* Smaller title */
+    font-size: 1.35rem; 
     margin-bottom: 0.3rem;
     -webkit-line-clamp: 2;
 }
@@ -329,11 +338,10 @@ a.creatorCapsule:active { transform: scale(0.95); }
     color: var(--accent);
 }
 
-/* REFINED: Small Tag Variant (Compact & Mini) */
 .satelliteShardLink.small {
     padding: 0.5rem 0.6rem;
-    font-size: 1.2rem; /* Smaller font */
-    border-width: 1.5px; /* Thinner border */
+    font-size: 1.2rem;
+    border-width: 1.5px;
 }
 
 .satelliteShardLink.clickable {
@@ -366,34 +374,11 @@ a.creatorCapsule:active { transform: scale(0.95); }
     .cardTitle { font-size: 1.5rem; line-height: 1.4; -webkit-line-clamp: 3; margin-bottom: 0.5rem; }
     .techDecoration { display: none; }
     
-    /* MOBILE OPTIMIZATION: Disable expensive effects */
     .imageBadge { backdrop-filter: none !important; background-color: rgba(0, 0, 0, 0.95); }
     .creatorCapsule { padding: 0; background: transparent; border: none; height: auto; backdrop-filter: none !important; }
-    /* THE FIX: Reverted to display: block (or inline) to show author name */
     .creatorCapsule span { display: block; max-width: 100px; }
     .satelliteShardLink { backdrop-filter: none !important; background: #000; }
     
     .satelliteField { display: none; }
     .cardContainer.activeState .satelliteField { display: block; }
-}
-/* ULTRA PERFORMANCE PATCH */
-.noCornerAnimation .monolithFrame::before,
-.noCornerAnimation .newsCard::before,
-.noCornerAnimation .timelineCard::before {
-    display: none !important;
-}
-
-.noCornerAnimation,
-.noCornerAnimation * {
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    transform-style: flat !important; /* Kill 3D context */
-    will-change: auto !important; /* Release GPU memory */
-}
-
-.noCornerAnimation .imageBadge,
-.noCornerAnimation .creatorCapsule,
-.noCornerAnimation .playButtonContainer {
-    background-color: #000 !important; /* Fallback for glassmorphism */
-    border: 1px solid #333 !important;
 }

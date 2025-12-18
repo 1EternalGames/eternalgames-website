@@ -13,7 +13,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { PenEdit02Icon, Calendar03Icon } from '@/components/icons';
 import { translateTag } from '@/lib/translations';
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
+import { usePerformanceStore } from '@/lib/performanceStore';
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">

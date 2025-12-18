@@ -48,6 +48,7 @@
     pointer-events: none; 
 }
 
+/* Corner Shooting Line (Pseudo-element) */
 .monolithFrame::before {
     content: '';
     position: absolute;
@@ -61,6 +62,17 @@
     transition: all 0.3s ease;
     z-index: 20;
     pointer-events: none;
+}
+
+/* PERFORMANCE OVERRIDE: DISABLE CORNER ANIMATION */
+/* Higher specificity to override active states */
+:global(.noCornerAnimation) .monolithFrame::before {
+    content: none !important;
+    display: none !important;
+    border: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
 }
 
 /* --- ACTIVE STATE STYLES --- */
@@ -286,43 +298,19 @@ a.creditCapsule:active { transform: scale(0.95); }
 @media (max-width: 768px) {
     .livingCardWrapper { perspective: none; overflow: visible !important; border-radius: 12px; background: transparent; margin-bottom: 2.5rem; }
     .monolithFrame { min-height: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: none !important; mask-image: none; -webkit-mask-image: none; }
-    .monolithFrame::before { display: none; }
+    /* Corner animation hides on mobile if not active, but our new global rule handles it */
     .cardTitle { font-size: 1.6rem; }
     
-    /* MODIFIED: Reduced bottom padding slightly for mobile to pull title up closer to credits */
     .titleOverlay { padding: 4rem 1.5rem 5rem 1.5rem; }
     
     .hudContainer { padding: 0 1rem 1rem 1rem; z-index: 50; transform: none !important; }
     
-    /* MOBILE OPTIMIZATION: Disable expensive effects */
     .scoreBadge { width: 40px; height: 40px; font-size: 1.5rem; transform: none !important; top: 0.8rem; left: 0.8rem; backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
     .holoSpotlight, .satelliteField { display: none; }
     .livingCardWrapper.activeState .satelliteField { display: block; }
 
-    /* Disable glassmorphism on capsules */
     a.creditCapsule, div.creditCapsule {
         backdrop-filter: none !important;
         background-color: rgba(10, 11, 15, 0.95);
     }
-}
-/* ULTRA PERFORMANCE PATCH */
-.noCornerAnimation .monolithFrame::before,
-.noCornerAnimation .newsCard::before,
-.noCornerAnimation .timelineCard::before {
-    display: none !important;
-}
-
-.noCornerAnimation,
-.noCornerAnimation * {
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    transform-style: flat !important; /* Kill 3D context */
-    will-change: auto !important; /* Release GPU memory */
-}
-
-.noCornerAnimation .imageBadge,
-.noCornerAnimation .creatorCapsule,
-.noCornerAnimation .playButtonContainer {
-    background-color: #000 !important; /* Fallback for glassmorphism */
-    border: 1px solid #333 !important;
 }

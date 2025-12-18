@@ -1,115 +1,5 @@
 /* components/TimelineCard.module.css */
 
-/* --- CONFIGURATION PARAMETERS (CSS VARIABLES) --- */
-.timelineCard {
-    /* -- DEFAULT SIZES -- */
-    --tl-card-padding: 1.5rem;
-    --tl-title-size: 2rem;
-    --tl-date-size: 1.4rem;
-    --tl-icon-size: 18px;          /* Platform Icons */
-    --tl-cal-icon-size: 14px;      /* Calendar Icon */
-    --tl-badge-font: 1.2rem;
-    --tl-badge-pad: 0;             /* Removed padding for icon-only button style */
-    --tl-badge-height: 32px;       /* Fixed height matching buttons */
-    --tl-badge-width: 32px;        /* Fixed width matching buttons */
-    --tl-btn-size: 32px;           /* Wishlist/Close Buttons */
-    --tl-btn-icon-size: 16px;
-    --tl-play-btn-font: 1.3rem;
-    --tl-play-btn-pad: 0.6rem 1.4rem;
-    --tl-pill-font: 1.2rem;        /* Flying Tags */
-    --tl-pill-pad: 0.5rem 1.2rem;
-    
-    /* Layout Variables */
-    --tl-meta-gap: 1rem;
-    --tl-meta-direction: row;      /* Default: Side by side */
-    --tl-meta-align: center;
-}
-
-/* --- HOMEPAGE VARIANT OVERRIDES (Smaller) --- */
-.timelineCard.homepage {
-    /* -- HOMEPAGE SIZES -- */
-    --tl-card-padding: 1.2rem;
-    --tl-title-size: 1.7rem;
-    --tl-date-size: 1.2rem;
-    --tl-icon-size: 16px;
-    --tl-cal-icon-size: 12px;
-    --tl-badge-font: 1.1rem;
-    --tl-badge-height: 28px;
-    --tl-badge-width: 28px;
-    --tl-pill-font: 1.1rem;
-    --tl-pill-pad: 0.4rem 1rem;
-    
-    /* Stack date/platforms on timeline view */
-    --tl-meta-direction: column;
-    --tl-meta-align: flex-start;
-    --tl-meta-gap: 0.5rem;
-}
-
-/* =========================================
-   3. MOBILE CONFIGURATION
-   ========================================= */
-@media (max-width: 768px) {
-    
-    /* A. MOBILE - /RELEASES PAGE (Standard) */
-    .timelineCard {
-        --tl-card-padding: 1.5rem;
-        --tl-title-size: 1.8rem;       /* Readable Title */
-        --tl-date-size: 1.3rem;
-        --tl-icon-size: 16px;          /* Standard Icon */
-        --tl-cal-icon-size: 13px;      /* Standard Calendar */
-        
-        --tl-badge-height: 36px;       /* Larger touch target */
-        --tl-badge-width: 36px;
-        
-        --tl-pill-font: 1.2rem;        /* Readable Tags */
-        --tl-pill-pad: 0.4rem 1rem;
-        
-        --tl-btn-size: 36px;           /* Larger touch targets */
-        --tl-btn-icon-size: 18px;
-        
-        --tl-play-btn-font: 1.2rem;
-        --tl-play-btn-pad: 0.5rem 1.2rem;
-
-        /* Layout */
-        --tl-meta-direction: row;      /* Side by Side */
-        --tl-meta-align: center;
-        --tl-meta-gap: 1rem;
-    }
-
-    /* B. MOBILE - HOMEPAGE TIMELINE (Compact) */
-    .timelineCard.homepage {
-        --tl-card-padding: 1rem;
-        --tl-title-size: 1.4rem;       /* Smaller Title */
-        --tl-date-size: 1.1rem;        /* Tiny Date */
-        --tl-icon-size: 14px;          /* Tiny Icons */
-        --tl-cal-icon-size: 11px;      /* Requested 11px */
-        
-        --tl-badge-height: 28px;
-        --tl-badge-width: 28px;
-        
-        --tl-pill-font: 1rem;          /* Tiny Tags */
-        --tl-pill-pad: 0.3rem 0.7rem;
-        
-        --tl-btn-size: 28px;           /* Smaller Buttons */
-        --tl-btn-icon-size: 14px;
-        
-        --tl-play-btn-font: 1rem;
-        --tl-play-btn-pad: 0.3rem 0.8rem;
-
-        /* Layout */
-        --tl-meta-direction: column;   /* Stacked */
-        --tl-meta-align: flex-start;
-        --tl-meta-gap: 0.3rem;
-    }
-    
-    /* Disable glass effects globally on mobile for performance */
-    .statusBadge { backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
-    .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
-}
-
-
-/* --- CSS IMPLEMENTATION (Do not change below) --- */
-
 .livingCardWrapper {
     transform-style: preserve-3d;
     height: 100%;
@@ -144,6 +34,41 @@
     will-change: transform;
     transform-style: preserve-3d;
     position: relative;
+    /* Config vars */
+    --tl-card-padding: 1.5rem;
+    --tl-title-size: 2rem;
+    --tl-date-size: 1.4rem;
+    --tl-icon-size: 18px;
+    --tl-cal-icon-size: 14px;
+    --tl-badge-font: 1.2rem;
+    --tl-badge-pad: 0;
+    --tl-badge-height: 32px;
+    --tl-badge-width: 32px;
+    --tl-btn-size: 32px;
+    --tl-btn-icon-size: 16px;
+    --tl-play-btn-font: 1.3rem;
+    --tl-play-btn-pad: 0.6rem 1.4rem;
+    --tl-pill-font: 1.2rem;
+    --tl-pill-pad: 0.5rem 1.2rem;
+    --tl-meta-gap: 1rem;
+    --tl-meta-direction: row;
+    --tl-meta-align: center;
+}
+
+.timelineCard.homepage {
+    --tl-card-padding: 1.2rem;
+    --tl-title-size: 1.7rem;
+    --tl-date-size: 1.2rem;
+    --tl-icon-size: 16px;
+    --tl-cal-icon-size: 12px;
+    --tl-badge-font: 1.1rem;
+    --tl-badge-height: 28px;
+    --tl-badge-width: 28px;
+    --tl-pill-font: 1.1rem;
+    --tl-pill-pad: 0.4rem 1rem;
+    --tl-meta-direction: column;
+    --tl-meta-align: flex-start;
+    --tl-meta-gap: 0.5rem;
 }
 
 .timelineCard.autoHeight {
@@ -163,6 +88,17 @@
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 20;
     pointer-events: none;
+}
+
+/* PERFORMANCE OVERRIDE: Disable Corner Animation */
+/* Using :global(.noCornerAnimation) to match string class */
+:global(.noCornerAnimation) .timelineCard::before {
+    content: none !important;
+    display: none !important;
+    border: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 /* Active State */
@@ -192,7 +128,7 @@
         transform: translateZ(20px) translateY(-5px);
         box-shadow: 
             0 25px 60px -12px rgba(0,0,0,0.7),
-        0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+            0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
         border-color: var(--accent);
     }
     .livingCardWrapper:hover .timelineCard::before {
@@ -354,7 +290,7 @@
 }
 
 .statusBadge svg {
-    width: 16px; /* FIXED: Matching wishlist icon size */
+    width: 16px;
     height: 16px;
 }
 
@@ -470,10 +406,8 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    
     padding: var(--tl-pill-pad);
     font-size: var(--tl-pill-font);
-    
     font-family: var(--font-ui);
     font-weight: 700;
     background-color: rgba(10, 10, 15, 0.9);
@@ -512,10 +446,8 @@
     border-radius: 999px;
     font-family: var(--font-ui);
     font-weight: 700;
-    
     padding: var(--tl-pill-pad);
     font-size: var(--tl-pill-font);
-    
     background-color: rgba(0, 0, 0, 0.85);
     border: 1px solid var(--accent);
     color: var(--accent);
@@ -592,24 +524,45 @@
     width: 32px;
     height: 32px;
 }
-/* ULTRA PERFORMANCE PATCH */
-.noCornerAnimation .monolithFrame::before,
-.noCornerAnimation .newsCard::before,
-.noCornerAnimation .timelineCard::before {
-    display: none !important;
-}
 
-.noCornerAnimation,
-.noCornerAnimation * {
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    transform-style: flat !important; /* Kill 3D context */
-    will-change: auto !important; /* Release GPU memory */
-}
-
-.noCornerAnimation .imageBadge,
-.noCornerAnimation .creatorCapsule,
-.noCornerAnimation .playButtonContainer {
-    background-color: #000 !important; /* Fallback for glassmorphism */
-    border: 1px solid #333 !important;
+/* --- MOBILE --- */
+@media (max-width: 768px) {
+    .timelineCard {
+        --tl-card-padding: 1.5rem;
+        --tl-title-size: 1.8rem;
+        --tl-date-size: 1.3rem;
+        --tl-icon-size: 16px;
+        --tl-cal-icon-size: 13px;
+        --tl-badge-height: 36px;
+        --tl-badge-width: 36px;
+        --tl-pill-font: 1.2rem;
+        --tl-pill-pad: 0.4rem 1rem;
+        --tl-btn-size: 36px;
+        --tl-btn-icon-size: 18px;
+        --tl-play-btn-font: 1.2rem;
+        --tl-play-btn-pad: 0.5rem 1.2rem;
+        --tl-meta-direction: row;
+        --tl-meta-align: center;
+        --tl-meta-gap: 1rem;
+    }
+    .timelineCard.homepage {
+        --tl-card-padding: 1rem;
+        --tl-title-size: 1.4rem;
+        --tl-date-size: 1.1rem;
+        --tl-icon-size: 14px;
+        --tl-cal-icon-size: 11px;
+        --tl-badge-height: 28px;
+        --tl-badge-width: 28px;
+        --tl-pill-font: 1rem;
+        --tl-pill-pad: 0.3rem 0.7rem;
+        --tl-btn-size: 28px;
+        --tl-btn-icon-size: 14px;
+        --tl-play-btn-font: 1rem;
+        --tl-play-btn-pad: 0.3rem 0.8rem;
+        --tl-meta-direction: column;
+        --tl-meta-align: flex-start;
+        --tl-meta-gap: 0.3rem;
+    }
+    .statusBadge { backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
+    .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
 }

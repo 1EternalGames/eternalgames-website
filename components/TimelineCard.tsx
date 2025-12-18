@@ -28,10 +28,9 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 import styles from './TimelineCard.module.css';
 
-// ... (Constants: GLOBAL TAG SCALES, ICONS, DESKTOP/MOBILE CONFIGS remain same) ...
+// ... (Rest of icons and constants remain unchanged)
 const DESKTOP_TAG_SCALE = 0.8; 
 const MOBILE_TAG_SCALE = 0.8; 
-
 const YoutubeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>;
 const CloseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const AddToListStrokeIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 9V20C3.5 21.1046 4.39543 22 5.5 22H18.5C19.6046 22 20.5 21.1046 20.5 20V4C20.5 2.89543 19.6046 2 18.5 2H12"></path><path d="M13.5 17H17.5"></path><path d="M13.5 7H17.5"></path><path d="M13.5 12H17.5"></path><path d="M6.5 16.5L8 18L11 14"></path><path d="M10 5H3.5M10 5L7.08333 2M10 5L7.08333 8"></path></svg>);
@@ -44,14 +43,13 @@ const CheckmarkCircleIcon = () => (
     </svg>
 );
 
-// ... (Configs for desktop/mobile fly configs remain same) ...
 const PLATFORM_FLY_CONFIG = { LEFT_ANCHOR: '80%', TARGET_TOP: 170, TOP_STEP: 33, BASE_ROT: -5, ROT_STEP: 0, SCALE: 0.8 };
-const PRICE_FLY_CONFIG = { X: 40, Y: -60, ROT: 5, SCALE: 0.8 }; 
+const PRICE_FLY_CONFIG = { X: -180, Y: -60, ROT: 5, SCALE: 0.8 }; 
 const STATUS_FLY_CONFIG = { X: 0, Y: 140, ROT: -3, SCALE: 0.8 };
 const PLAY_BUTTON_CONFIG = { OFFSET_X: 0, OFFSET_Y: 70, ROTATE: 0, INITIAL_SCALE: 1 };
 const CLICK_MORE_CONFIG = { X: -65, Y: -170, ROT: 0, SCALE: 0.75 };
-const DEV_FLY_CONFIG = { X: -90, Y: -155, ROT: 0, SCALE: 0.7 };
-const PUB_FLY_CONFIG = { X: 100, Y: -155, ROT: 0, SCALE: 0.7 };
+const DEV_FLY_CONFIG = { X: 40, Y: -155, ROT: 0, SCALE: 0.7 };
+const PUB_FLY_CONFIG = { X: -155, Y: -155, ROT: 0, SCALE: 0.7 };
 const DESKTOP_GP_CONFIG = { LEFT: '-8%', TOP: 257, ROT: 5, SCALE: 0.75 };
 const DESKTOP_PS_CONFIG = { LEFT: '-8%', TOP: 225, ROT: 5, SCALE: 0.75 };
 
@@ -98,7 +96,7 @@ const TimelineCardComponent = ({
     variant?: 'default' | 'homepage'
 }) => {
     const isMobile = useIsMobile();
-    // Performance Settings from Store
+    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
 
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
@@ -237,7 +235,6 @@ const TimelineCardComponent = ({
         return Array.from(normalizedSet);
     }, [release.platforms]);
 
-    // Apply Transition logic
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
 
     const handleClick = (e: React.MouseEvent) => {
@@ -366,7 +363,6 @@ const TimelineCardComponent = ({
 
     return (
         <>
-            {/* ... Video Modal Logic (Same as before) ... */}
             <AnimatePresence>
                 {showVideoModal && trailerId && (
                     createPortal(
@@ -404,23 +400,13 @@ const TimelineCardComponent = ({
 
             <motion.div
                 ref={livingCardRef}
-                className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
+                className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
                 {...handlers}
                 style={animationStyles} // Apply conditional animation
             >
-                {/* --- Conditional CSS Injection for Corner Anim --- */}
-                {!isCornerAnimationEnabled && (
-                    <style jsx>{`
-                        .${styles.timelineCard}::before {
-                            display: none !important;
-                        }
-                    `}</style>
-                )}
-
                 <div className={`${styles.timelineCard} ${autoHeight ? styles.autoHeight : ''} ${variant === 'homepage' ? styles.homepage : ''}`} style={{ position: 'relative' }}>
                     
                     <div style={{ position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none' }}>
-                        {/* Video Handling Logic (Same) */}
                          {isVideoActive && trailerId && (
                             <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', zIndex: 110, pointerEvents: 'auto' }}>
                                 <iframe ref={videoRef} src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&controls=1&modestbranding=1&rel=0`} title="Trailer" style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover', borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />

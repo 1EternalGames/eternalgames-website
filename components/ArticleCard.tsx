@@ -120,8 +120,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     ];
     
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
-
-    // Logic to disable layoutId if Hero Transition is disabled
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
 
     const CreatorCapsule = () => {
