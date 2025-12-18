@@ -10,7 +10,7 @@ const springConfig = { stiffness: 250, damping: 25 };
 export function useLivingCard<T extends HTMLElement = HTMLDivElement>({ isLead = false } = {}) {
     const ref = useRef<T>(null);
     const { resolvedTheme } = useTheme();
-    // We manage isHovered locally for desktop mouse events.
+    // We manage isHovered locally for desktop mouse events. 
     // Mobile "locking" logic will be handled in the component by overriding this state.
     const [isHovered, setIsHovered] = useState(false);
 
