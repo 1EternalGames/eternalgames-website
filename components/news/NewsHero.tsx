@@ -11,6 +11,7 @@ import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader'; 
+import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
@@ -35,9 +36,16 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const [isPressed, setIsPressed] = useState(false);
     
+    // Performance Check
+    const { isHeroTransitionEnabled } = usePerformanceStore();
+
     const handleClick = () => {
-        setPrefix(layoutIdPrefix);
+        if (isHeroTransitionEnabled) {
+            setPrefix(layoutIdPrefix);
+        }
     };
+
+    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
 
     return (
         <AnimatePresence>
@@ -66,7 +74,7 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                         >
                             <motion.h1 
                                 className={styles.storyTitle} 
-                                layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`}
+                                layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
                                 variants={titleContainerVariants}
                                 initial="initial"
                                 animate="animate"
@@ -95,16 +103,21 @@ AnimatedStory.displayName = "AnimatedStory";
 
 const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix }: { imageUrl: string; alt: string; layoutId: string; legacyId: number; layoutIdPrefix: string }) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const { isHeroTransitionEnabled } = usePerformanceStore();
     
     const handleClick = () => {
-        setPrefix(layoutIdPrefix);
+        if (isHeroTransitionEnabled) {
+            setPrefix(layoutIdPrefix);
+        }
     };
+    
+    const safeLayoutId = isHeroTransitionEnabled ? layoutId : undefined;
 
     return (
         <motion.div 
             key={imageUrl} 
             className={styles.heroBackground} 
-            layoutId={`${layoutIdPrefix}-card-container-${legacyId}`} 
+            layoutId={isHeroTransitionEnabled ? `${layoutIdPrefix}-card-container-${legacyId}` : undefined} 
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
@@ -113,7 +126,7 @@ const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix
         >
              <motion.div 
                 style={{ position: 'relative', width: '100%', height: '100%' }}
-                layoutId={`${layoutIdPrefix}-card-image-${legacyId}`} 
+                layoutId={safeLayoutId} 
              >
                 <Image
                     loader={sanityLoader} 
@@ -129,7 +142,6 @@ const HeroBackground = memo(({ imageUrl, alt, layoutId, legacyId, layoutIdPrefix
     );
 });
 HeroBackground.displayName = "HeroBackground";
-
 
 export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
     const [activeIndex, setActiveIndex] = useState(0);

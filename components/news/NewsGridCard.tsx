@@ -15,6 +15,7 @@ import { translateTag } from '@/lib/translations';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
 
 type NewsGridCardProps = {
     item: CardProps;
@@ -38,11 +39,17 @@ const typeDisplayMap: Record<string, string> = {
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default' }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const isMobile = useIsMobile();
+    
+    // Performance Settings
+    const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
+
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
     
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
+
+    const effectivelyDisabledLiving = !isLivingCardEnabled;
 
     useClickOutside(livingCardRef, () => {
         if (isMobile && activeCardId === item.id) {
@@ -61,7 +68,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
-        if (!isMobile) {
+        if (!isMobile && isHeroTransitionEnabled) {
             setPrefix(layoutIdPrefix);
         }
     };
@@ -104,7 +111,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         { hoverX: 0, hoverY: -85, rotate: -2 } 
     ];
 
-    // Compact Config
     const compactConfig = [
         { hoverX: -110, hoverY: 30, rotate: -5 },
         { hoverX: 70, hoverY: 35, rotate: 4 },
@@ -130,29 +136,39 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     );
     
     const handlers = !isMobile ? {
-        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); setIsHoveredLocal(true); },
-        onMouseLeave: () => { livingCardAnimation.onMouseLeave(); setIsHoveredLocal(false); },
-        onMouseMove: livingCardAnimation.onMouseMove,
+        onMouseEnter: () => { 
+            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
+            setIsHoveredLocal(true); 
+        },
+        onMouseLeave: () => { 
+            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); 
+            setIsHoveredLocal(false); 
+        },
+        onMouseMove: !effectivelyDisabledLiving ? livingCardAnimation.onMouseMove : undefined,
     } : {
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             if (activeCardId !== item.id) {
                 setActiveCardId(item.id);
             }
-            livingCardAnimation.onTouchStart(e);
+            if(!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
-        onTouchMove: livingCardAnimation.onTouchMove,
-        onTouchEnd: livingCardAnimation.onTouchEnd,
+        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
+        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
     };
+    
+    // Apply layoutId logic
+    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+    const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
     return (
         <motion.div
-            ref={livingCardRef} // FIX: Attached unconditionally
+            ref={livingCardRef} 
             {...handlers}
-            className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''}`}
-            style={livingCardAnimation.style}
+            className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
+            style={animationStyles}
         >
             <motion.div
-                layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${item.legacyId}` : undefined}
+                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined}
                 className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
             >
                 <Link 
@@ -164,7 +180,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
                             className={styles.imageContainer} 
-                            layoutId={!isMobile ? `${layoutIdPrefix}-card-image-${item.legacyId}` : undefined}
+                            layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined}
                         >
                             {isNews && (
                                 <span className={`${styles.imageBadge} ${styles[newsType]}`}>
@@ -189,7 +205,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                         <div className={styles.cardInfoColumn}>
                             <motion.h3 
                                 className={styles.cardTitle}
-                                layoutId={!isMobile ? `${layoutIdPrefix}-card-title-${item.legacyId}` : undefined}
+                                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
                             >
                                 {item.title}
                             </motion.h3>
@@ -229,66 +245,68 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     </div>
                 </Link>
 
-                <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
-                    <AnimatePresence>
-                         {isHovered && flyingItems.map((sat, i) => {
-                             if (!sat) return null;
-                             
-                             const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
-                             const isLeft = config.hoverX < 0;
-                             
-                             const positionStyle = isLeft 
-                                ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
-                                : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
+                {isFlyingTagsEnabled && (
+                    <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                        <AnimatePresence>
+                             {isHovered && flyingItems.map((sat, i) => {
+                                 if (!sat) return null;
+                                 
+                                 const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
+                                 const isLeft = config.hoverX < 0;
+                                 
+                                 const positionStyle = isLeft 
+                                    ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
+                                    : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
 
-                             return (
-                                 <motion.div
-                                    key={`${item.id}-sat-${i}`}
-                                    className={styles.satelliteShard}
-                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                    animate={{
-                                        opacity: 1,
-                                        scale: 1.15,
-                                        x: config.hoverX,
-                                        y: config.hoverY,
-                                        rotate: config.rotate,
-                                        z: -30 
-                                    }}
-                                    exit={{
-                                        opacity: 0,
-                                        scale: 0.4,
-                                        x: 0,
-                                        y: 50,
-                                        rotate: 0,
-                                        z: 0
-                                    }}
-                                    transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                    style={{ 
-                                        position: 'absolute', 
-                                        ...positionStyle, 
-                                        transformStyle: 'preserve-3d' 
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                 >
-                                     {sat.link ? (
-                                         <Link 
-                                            href={sat.link} 
-                                            onClick={(e) => e.stopPropagation()}
-                                            className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                            prefetch={false}
-                                         >
-                                             {sat.label}
-                                         </Link>
-                                     ) : (
-                                         <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
-                                             {sat.label}
-                                         </span>
-                                     )}
-                                 </motion.div>
-                             );
-                         })}
-                    </AnimatePresence>
-                </div>
+                                 return (
+                                     <motion.div
+                                        key={`${item.id}-sat-${i}`}
+                                        className={styles.satelliteShard}
+                                        initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                        animate={{
+                                            opacity: 1,
+                                            scale: 1.15,
+                                            x: config.hoverX,
+                                            y: config.hoverY,
+                                            rotate: config.rotate,
+                                            z: -30 
+                                        }}
+                                        exit={{
+                                            opacity: 0,
+                                            scale: 0.4,
+                                            x: 0,
+                                            y: 50,
+                                            rotate: 0,
+                                            z: 0
+                                        }}
+                                        transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
+                                        style={{ 
+                                            position: 'absolute', 
+                                            ...positionStyle, 
+                                            transformStyle: 'preserve-3d' 
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                     >
+                                         {sat.link ? (
+                                             <Link 
+                                                href={sat.link} 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
+                                                prefetch={false}
+                                             >
+                                                 {sat.label}
+                                             </Link>
+                                         ) : (
+                                             <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
+                                                 {sat.label}
+                                             </span>
+                                         )}
+                                     </motion.div>
+                                 );
+                             })}
+                        </AnimatePresence>
+                    </div>
+                )}
             </motion.div>
         </motion.div>
     );

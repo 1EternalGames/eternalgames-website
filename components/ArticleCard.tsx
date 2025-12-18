@@ -17,6 +17,7 @@ import styles from './ArticleCard.module.css';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { usePerformanceStore } from '@/lib/performanceStore';
 
 type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
@@ -35,6 +36,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const isMobile = useIsMobile();
+    
+    // Performance Settings
+    const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
     
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
@@ -56,9 +60,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
+    const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled;
+
     const handlers = !isMobile ? {
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
-            if (!disableLivingEffect) {
+            if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseMove(e);
                 const rect = e.currentTarget.getBoundingClientRect();
                 mouseX.set(e.clientX - rect.left - 75); 
@@ -66,30 +72,30 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             }
         },
         onMouseEnter: () => {
-            if (!disableLivingEffect) {
+            if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseEnter();
-                setIsHoveredLocal(true);
-                setIsTextExpanded(true);
             }
+            setIsHoveredLocal(true);
+            setIsTextExpanded(true);
         },
         onMouseLeave: () => {
-            if (!disableLivingEffect) {
+            if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseLeave();
-                setIsHoveredLocal(false);
             }
+            setIsHoveredLocal(false);
         }
     } : {
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
-            if (!disableLivingEffect) {
-                if (activeCardId !== article.id) {
+            if (activeCardId !== article.id) {
                      setActiveCardId(article.id);
                      setIsTextExpanded(true);
-                }
+            }
+            if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onTouchStart(e);
             }
         },
-        onTouchMove: livingCardAnimation.onTouchMove,
-        onTouchEnd: livingCardAnimation.onTouchEnd,
+        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
+        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
     };
 
     const getLinkBasePath = () => {
@@ -113,7 +119,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         { hoverX: 0, hoverY: -115, rotate: 5 } 
     ];
     
-    const animationStyles = !disableLivingEffect ? livingCardAnimation.style : {};
+    const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
+
+    // Logic to disable layoutId if Hero Transition is disabled
+    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
 
     const CreatorCapsule = () => {
         const content = (
@@ -147,14 +156,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
     return (
         <div
-            className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''}`}
-            ref={livingCardRef} // FIX: Attached unconditionally
+            className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
+            ref={livingCardRef}
             {...handlers}
             style={{ zIndex: isHovered ? 9999 : 1 }}
         >
             <motion.div
                 className="tilt-container flex flex-col"
-                layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${article.legacyId}` : undefined}
+                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
                 style={{ 
                     ...animationStyles,
                     borderRadius: '16px',
@@ -173,7 +182,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         onClick={() => {
                             if (!isMobile) {
                                 setScrollPos(window.scrollY);
-                                setPrefix(layoutIdPrefix);
+                                if (isHeroTransitionEnabled) {
+                                    setPrefix(layoutIdPrefix);
+                                }
                             }
                         }}
                     />
@@ -191,7 +202,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                         <motion.div 
                             className={styles.imageWrapper}
-                            layoutId={!isMobile ? `${layoutIdPrefix}-card-image-${article.legacyId}` : undefined}
+                            layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined}
                         >
                             <Image 
                                 loader={sanityLoader}
@@ -258,42 +269,44 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         </div>
                     </div>
 
-                    <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
-                        <AnimatePresence>
-                            {isHovered && displayTags.map((tag, i) => (
-                                 <motion.div
-                                    key={`${article.id}-${tag.slug}`}
-                                    className={styles.satelliteShard}
-                                    initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                    animate={{
-                                        opacity: 1,
-                                        scale: 1.15,
-                                        x: satelliteConfig[i]?.hoverX || 0,
-                                        y: satelliteConfig[i]?.hoverY || 0,
-                                        rotate: satelliteConfig[i]?.rotate || 0,
-                                        z: -30 
-                                    }}
-                                    transition={{
-                                        type: "spring",
-                                        stiffness: 180,
-                                        damping: 20,
-                                        delay: i * 0.05
-                                    }}
-                                    style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
-                                    onClick={(e) => e.stopPropagation()}
-                                 >
-                                     <Link 
-                                        href={`/tags/${tag.slug}`} 
+                    {isFlyingTagsEnabled && (
+                        <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                            <AnimatePresence>
+                                {isHovered && displayTags.map((tag, i) => (
+                                     <motion.div
+                                        key={`${article.id}-${tag.slug}`}
+                                        className={styles.satelliteShard}
+                                        initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                        animate={{
+                                            opacity: 1,
+                                            scale: 1.15,
+                                            x: satelliteConfig[i]?.hoverX || 0,
+                                            y: satelliteConfig[i]?.hoverY || 0,
+                                            rotate: satelliteConfig[i]?.rotate || 0,
+                                            z: -30 
+                                        }}
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 180,
+                                            damping: 20,
+                                            delay: i * 0.05
+                                        }}
+                                        style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
-                                        prefetch={false}
                                      >
-                                         {translateTag(tag.title)}
-                                     </Link>
-                                 </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
+                                         <Link 
+                                            href={`/tags/${tag.slug}`} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
+                                            prefetch={false}
+                                        >
+                                             {translateTag(tag.title)}
+                                         </Link>
+                                     </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    )}
 
                 </div>
             </motion.div>

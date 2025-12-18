@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 import UserProfile from './UserProfile';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import PerformanceSettings from '@/components/PerformanceSettings';
 import { motion, AnimatePresence, Variants, Transition } from 'framer-motion';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useBodyClass } from '@/hooks/useBodyClass';
@@ -198,7 +199,6 @@ const BlackHoleNavLink = ({
                 </motion.div>
             </div>
             
-            {/* Removed the Active Indicator (Underline) as requested */}
         </Link>
     );
 };
@@ -239,6 +239,7 @@ const Navbar = () => {
                             </ul>
                         </nav>
                         <div className={styles.navControls}>
+                            <PerformanceSettings />
                             {isEditorActive && <EditorPreviewButton />}
                             <NotificationBell />
                             <ThemeToggle />
@@ -285,6 +286,11 @@ const Navbar = () => {
                                 const angle = -Math.PI / 2 + (i / navItems.length) * (Math.PI * 2);
                                 return ( <OrbitalNavItem key={item.href} item={item} angle={angle} radius="min(38vh, 38vw)" isActive={pathname.startsWith(item.href)} onClick={closeAll} /> );
                             })}
+                            
+                            {/* Insert Mobile Performance Settings at bottom of menu */}
+                            <div style={{ position: 'absolute', bottom: '2rem', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                <PerformanceSettings isMobile={true} />
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

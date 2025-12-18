@@ -1,0 +1,117 @@
+/* components/PerformanceSettings.module.css */
+.container {
+    position: relative;
+    z-index: 1200;
+}
+
+.triggerButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-primary);
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.triggerButton:hover {
+    color: var(--accent);
+    transform: rotate(45deg);
+}
+
+.triggerButton:active {
+    transform: rotate(90deg) scale(0.95);
+}
+
+.panel {
+    position: absolute;
+    top: calc(100% + 20px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.6);
+    transform-origin: top center;
+    overflow: hidden;
+}
+
+.mobilePanel {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 2rem;
+    background-color: var(--bg-secondary);
+    box-shadow: none;
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    border-radius: 12px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.headerTitle {
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.settingRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.settingRow:last-child {
+    margin-bottom: 0;
+}
+
+.settingLabel {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-family: var(--font-main);
+}
+
+/* Toggle Switch */
+.toggle {
+    width: 44px;
+    height: 24px;
+    background-color: var(--border-color);
+    border-radius: 999px;
+    padding: 2px;
+    display: flex;
+    cursor: pointer;
+    justify-content: flex-start;
+    border: none;
+    transition: background-color 0.2s ease-out;
+}
+
+.toggle.active {
+    background-color: var(--accent);
+    justify-content: flex-end;
+}
+
+.toggleHandle {
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}

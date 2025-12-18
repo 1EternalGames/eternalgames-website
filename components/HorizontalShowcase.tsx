@@ -1,5 +1,4 @@
 // components/HorizontalShowcase.tsx
-
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
@@ -14,6 +13,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { PenEdit02Icon, Calendar03Icon } from '@/components/icons';
 import { translateTag } from '@/lib/translations';
+import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -34,11 +34,17 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
   const [isHovered, setIsHovered] = useState(false);
   
+  // Performance Settings
+  const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
+  const effectivelyDisabledLiving = !isLivingCardEnabled;
+
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
-    if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return; // Check for creator link too
-    setPrefix(layoutIdPrefix);
+    if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
+    if (isHeroTransitionEnabled) {
+        setPrefix(layoutIdPrefix);
+    }
     router.push(`/articles/${article.slug}`, { scroll: false });
   };
 
@@ -46,15 +52,17 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   if (!imageSource) return null;
   
   const displayTags = article.tags.slice(0, 3);
-  
-  // Get author details
   const author = article.authors?.[0];
   const authorName = author?.name;
   const authorUsername = author?.username;
 
+  // Conditional Logic
+  const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
+  const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+
   return (
     <motion.div
-       className={styles.showcaseCardWrapper}
+       className={`${styles.showcaseCardWrapper} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
        animate={{ 
          scale: isActive ? 1 : 0.9, 
          opacity: isActive ? 1 : (isHovered ? 1 : 0.4),
@@ -66,18 +74,25 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
       <motion.div
         className={styles.livingCardContainer}
         ref={livingCardRef}
-        onMouseMove={livingCardAnimation.onMouseMove}
-        onMouseEnter={() => { livingCardAnimation.onMouseEnter(); setIsHovered(true); }}
-        onMouseLeave={() => { livingCardAnimation.onMouseLeave(); setIsHovered(false); }}
-        onTouchStart={livingCardAnimation.onTouchStart}
-        onTouchEnd={livingCardAnimation.onTouchEnd}
-        style={{ ...livingCardAnimation.style, perspective: '1000px' }}
+        onMouseMove={!effectivelyDisabledLiving ? livingCardAnimation.onMouseMove : undefined}
+        onMouseEnter={() => { 
+            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
+            setIsHovered(true); 
+        }}
+        onMouseLeave={() => { 
+            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); 
+            setIsHovered(false); 
+        }}
+        onTouchStart={!effectivelyDisabledLiving ? livingCardAnimation.onTouchStart : undefined}
+        onTouchEnd={!effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined}
+        style={{ ...animationStyles, perspective: '1000px' }}
       >
         <Link 
             href={`/articles/${article.slug}`} 
             onClick={handleClick}
             className={`no-underline ${styles.showcaseCardLink}`}
             draggable="false"
+            prefetch={false}
         >
             <div className={styles.monolithFrame}>
                 <motion.div 
@@ -85,7 +100,7 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                     style={{ opacity: isHovered ? 1 : 0 }} 
                 />
                 
-                <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={styles.showcaseCardImageWrapper}>
+                <motion.div layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined} className={styles.showcaseCardImageWrapper}>
                   <Image 
                     loader={sanityLoader} 
                     src={imageSource} alt={article.title} fill sizes="60vw"
@@ -96,11 +111,10 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                 </motion.div>
 
                 <div className={styles.showcaseCardContent}>
-                  <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={styles.showcaseCardTitle}>{article.title}</motion.h3>
+                  <motion.h3 layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${article.legacyId}` : undefined} className={styles.showcaseCardTitle}>{article.title}</motion.h3>
                   <p className={styles.showcaseCardGame}>{article.game}</p>
                 </div>
                 
-                {/* HUD / Meta */}
                 <div className={styles.hudContainer} style={{ transform: 'translateZ(40px)' }}>
                     {authorName ? (
                         authorUsername ? (
@@ -108,7 +122,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                                 href={`/creators/${authorUsername}`}
                                 onClick={(e) => e.stopPropagation()} 
                                 className={`${styles.creditCapsule} no-underline`}
-                                // FLIP CREDITS: Row Reverse for Icon on Right (since wrapper is LTR)
                                 style={{ flexDirection: 'row-reverse' }} 
                                 prefetch={false}
                             >
@@ -143,43 +156,44 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                 </div>
             </div>
             
-            {/* Flying Satellites */}
-            <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
-                <AnimatePresence>
-                    {isHovered && displayTags.map((tag, i) => (
-                         <motion.div
-                            key={`${article.id}-${tag.slug}`}
-                            className={styles.satelliteShard}
-                            initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                            animate={{
-                                opacity: 1,
-                                scale: 1.1,
-                                x: satelliteConfig[i]?.hoverX || 0,
-                                y: satelliteConfig[i]?.hoverY || 0,
-                                rotate: satelliteConfig[i]?.rotate || 0,
-                                z: -30 
-                            }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 180,
-                                damping: 20,
-                                delay: i * 0.05
-                            }}
-                            style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
-                            onClick={(e) => e.stopPropagation()}
-                         >
-                             <Link 
-                                href={`/tags/${tag.slug}`} 
+            {isFlyingTagsEnabled && (
+                <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                    <AnimatePresence>
+                        {isHovered && displayTags.map((tag, i) => (
+                             <motion.div
+                                key={`${article.id}-${tag.slug}`}
+                                className={styles.satelliteShard}
+                                initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
+                                animate={{
+                                    opacity: 1,
+                                    scale: 1.1,
+                                    x: satelliteConfig[i]?.hoverX || 0,
+                                    y: satelliteConfig[i]?.hoverY || 0,
+                                    rotate: satelliteConfig[i]?.rotate || 0,
+                                    z: -30 
+                                }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 180,
+                                    damping: 20,
+                                    delay: i * 0.05
+                                }}
+                                style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                 onClick={(e) => e.stopPropagation()}
-                                className={`${styles.satelliteShardLink} no-underline`}
-                                prefetch={false}
-                            >
-                                 {translateTag(tag.title)}
-                             </Link>
-                         </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
+                             >
+                                 <Link 
+                                    href={`/tags/${tag.slug}`} 
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`${styles.satelliteShardLink} no-underline`}
+                                    prefetch={false}
+                                >
+                                     {translateTag(tag.title)}
+                                 </Link>
+                             </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )}
 
         </Link>
       </motion.div>

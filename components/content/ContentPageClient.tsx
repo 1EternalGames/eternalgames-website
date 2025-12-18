@@ -9,6 +9,7 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
+import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
 
 import type { SanityReview, SanityArticle, SanityNews } from '@/types/sanity';
 import PortableTextComponent from '@/components/PortableTextComponent';
@@ -60,6 +61,8 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 }) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     const openLightbox = useLightboxStore((state) => state.openLightbox);
+    // Performance Check
+    const { isHeroTransitionEnabled } = usePerformanceStore();
 
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
@@ -198,6 +201,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
     
     const newsType = (item as any).newsType || 'official';
+    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
 
     return (
         <>
@@ -209,7 +213,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 
             <motion.div
                 layout
-                layoutId={`${layoutIdPrefix}-card-container-${item.legacyId}`}
+                layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined}
                 transition={springTransition}
                 style={{ 
                     backgroundColor: 'var(--bg-primary)',
@@ -218,7 +222,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                 }}
             >
                 <motion.div 
-                    layoutId={`${layoutIdPrefix}-card-image-${item.legacyId}`} 
+                    layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined} 
                     className={`${styles.heroImage} image-lightbox-trigger`}
                     transition={springTransition}
                     onClick={() => openLightbox([fullResImageUrl], 0)}
@@ -249,7 +253,14 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                             </span>
                                         </div>
                                     )}
-                                    <motion.h1 layoutId={`${layoutIdPrefix}-card-title-${item.legacyId}`} className="page-title" style={{ textAlign: 'right', margin: 0 }} transition={springTransition}>{item.title}</motion.h1>
+                                    <motion.h1 
+                                        layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
+                                        className="page-title" 
+                                        style={{ textAlign: 'right', margin: 0 }} 
+                                        transition={springTransition}
+                                    >
+                                        {item.title}
+                                    </motion.h1>
                                 </div>
                                 
                                 <div className={styles.metaContainer}>

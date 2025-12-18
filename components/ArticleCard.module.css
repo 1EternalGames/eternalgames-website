@@ -305,3 +305,24 @@ a.creditCapsule:active { transform: scale(0.95); }
         background-color: rgba(10, 11, 15, 0.95);
     }
 }
+/* ULTRA PERFORMANCE PATCH */
+.noCornerAnimation .monolithFrame::before,
+.noCornerAnimation .newsCard::before,
+.noCornerAnimation .timelineCard::before {
+    display: none !important;
+}
+
+.noCornerAnimation,
+.noCornerAnimation * {
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    transform-style: flat !important; /* Kill 3D context */
+    will-change: auto !important; /* Release GPU memory */
+}
+
+.noCornerAnimation .imageBadge,
+.noCornerAnimation .creatorCapsule,
+.noCornerAnimation .playButtonContainer {
+    background-color: #000 !important; /* Fallback for glassmorphism */
+    border: 1px solid #333 !important;
+}
