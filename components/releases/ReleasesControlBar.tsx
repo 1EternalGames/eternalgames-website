@@ -49,8 +49,8 @@ interface ReleasesControlBarProps {
     onToggleWishlist: () => void;
     onJumpToNow: () => void;
     isAuthenticated: boolean;
-    selectedYear: number;
-    onYearChange: (year: number) => void;
+    selectedYear: number | 'TBA';
+    onYearChange: (year: number | 'TBA') => void;
     selectedMonth: number | 'all';
     onMonthChange: (month: number | 'all') => void;
     selectedPlatform: string | 'all';
@@ -89,7 +89,6 @@ export default function ReleasesControlBar({
         }
     }, [selectedMonth, isMobile]);
 
-    // Handle "This Month" click with precise scroll calculation
     const handleJump = () => {
         onJumpToNow();
         const now = new Date();
@@ -172,7 +171,6 @@ export default function ReleasesControlBar({
                                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                             >
                                 {isActive && <motion.div layoutId="plat-highlight" className={styles.filterHighlight} />}
-                                {/* SWAPPED ORDER: Text First, Icon Second (Left in RTL) */}
                                 <span>{p === 'PlayStation' ? 'PS5' : p}</span>
                                 <Icon width={16} height={16} />
                             </motion.button>
@@ -188,7 +186,6 @@ export default function ReleasesControlBar({
                         whileTap={{ scale: 0.95 }}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
-                        {/* Down Icon shifted slightly down for alignment */}
                         <span>الإنتقال لهذا الشهر</span>
                         <div style={{ transform: 'translateY(2px)' }}>
                             <ArrowDownIcon />
@@ -203,7 +200,6 @@ export default function ReleasesControlBar({
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
                         {showWishlistOnly && <motion.div layoutId="wishlist-highlight" className={styles.filterHighlight} />}
-                         {/* Wishlist Icon shifted slightly down */}
                         <span>قائمة الأمنيات</span>
                         <div style={{ transform: 'translateY(2px)' }}>
                             {showWishlistOnly ? <AddToListSolidIcon /> : <AddToListStrokeIcon />}
@@ -212,31 +208,33 @@ export default function ReleasesControlBar({
                 </FilterGroup>
             </div>
 
-            {/* ROW 3: Months Strip */}
-            <FilterGroup label="الأشهر:">
-                <div className={releaseStyles.monthStripContainer} ref={monthStripRef}>
-                     <div className={releaseStyles.monthGroup}>
-                         <motion.button 
-                            className={`${styles.filterButton} ${selectedMonth === 'all' ? styles.active : ''}`}
-                            onClick={() => onMonthChange('all')}
-                        >
-                            الكل
-                            {selectedMonth === 'all' && <motion.div layoutId="month-highlight" className={styles.filterHighlight} />}
-                        </motion.button>
-                         
-                         {ARABIC_MONTHS.map((month, idx) => (
-                             <motion.button 
-                                key={idx}
-                                onClick={() => onMonthChange(idx)}
-                                className={`${styles.filterButton} ${selectedMonth === idx ? styles.active : ''}`}
+            {/* ROW 3: Months Strip (Only show if not TBA) */}
+            {selectedYear !== 'TBA' && (
+                <FilterGroup label="الأشهر:">
+                    <div className={releaseStyles.monthStripContainer} ref={monthStripRef}>
+                        <div className={releaseStyles.monthGroup}>
+                            <motion.button 
+                                className={`${styles.filterButton} ${selectedMonth === 'all' ? styles.active : ''}`}
+                                onClick={() => onMonthChange('all')}
                             >
-                                {month}
-                                {selectedMonth === idx && <motion.div layoutId="month-highlight" className={styles.filterHighlight} />}
+                                الكل
+                                {selectedMonth === 'all' && <motion.div layoutId="month-highlight" className={styles.filterHighlight} />}
                             </motion.button>
-                         ))}
-                     </div>
-                </div>
-            </FilterGroup>
+                            
+                            {ARABIC_MONTHS.map((month, idx) => (
+                                <motion.button 
+                                    key={idx}
+                                    onClick={() => onMonthChange(idx)}
+                                    className={`${styles.filterButton} ${selectedMonth === idx ? styles.active : ''}`}
+                                >
+                                    {month}
+                                    {selectedMonth === idx && <motion.div layoutId="month-highlight" className={styles.filterHighlight} />}
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
+                </FilterGroup>
+            )}
         </div>
     );
 
@@ -275,16 +273,18 @@ export default function ReleasesControlBar({
                                 <AnimatePresence>{openPopover === 'year' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><YearFilterPopover availableYears={availableYears} selectedYear={selectedYear} onSelect={(y) => { onYearChange(y); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
                             </div>
 
-                            {/* Mobile Month Popover */}
-                            <div style={{ position: 'relative' }}>
-                                <PopoverTriggerButton 
-                                    label={selectedMonth === 'all' ? 'الشهر: الكل' : `الشهر: ${ARABIC_MONTHS[selectedMonth]}`} 
-                                    isActive={selectedMonth !== 'all'} 
-                                    onClick={() => togglePopover('month')} 
-                                    layoutId="mobile-month"
-                                />
-                                <AnimatePresence>{openPopover === 'month' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><MonthFilterPopover selectedMonth={selectedMonth} onSelect={(m) => { onMonthChange(m); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
-                            </div>
+                            {/* Mobile Month Popover (Only if not TBA) */}
+                            {selectedYear !== 'TBA' && (
+                                <div style={{ position: 'relative' }}>
+                                    <PopoverTriggerButton 
+                                        label={selectedMonth === 'all' ? 'الشهر: الكل' : `الشهر: ${ARABIC_MONTHS[selectedMonth]}`} 
+                                        isActive={selectedMonth !== 'all'} 
+                                        onClick={() => togglePopover('month')} 
+                                        layoutId="mobile-month"
+                                    />
+                                    <AnimatePresence>{openPopover === 'month' && <><div className={styles.popoverBackdrop} onClick={closePopover}></div><MonthFilterPopover selectedMonth={selectedMonth} onSelect={(m) => { onMonthChange(m); closePopover(); }} onClose={closePopover} /></>}</AnimatePresence>
+                                </div>
+                            )}
                         </FilterGroup>
 
                         <FilterGroup label="المنصة:">
@@ -336,3 +336,5 @@ export default function ReleasesControlBar({
         </FilterContainer>
     );
 }
+
+

@@ -26,6 +26,14 @@ fields: [
 
     // DATE & TBA
     defineField({name: 'releaseDate', title: 'Release Date', type: 'date'}),
+    // THE FIX: Added datePrecision field to store the user's intent (Year vs Month vs Day)
+    defineField({
+        name: 'datePrecision', 
+        title: 'Date Precision', 
+        type: 'string', 
+        options: {list: ['day', 'month', 'year']},
+        initialValue: 'day'
+    }),
     defineField({name: 'isTBA', title: 'Is TBA?', type: 'boolean', initialValue: false}),
 
     // METADATA
@@ -60,3 +68,5 @@ preview: {
 select: {title: 'title', subtitle: 'releaseDate', media: 'mainImage'},
 },
 })
+
+

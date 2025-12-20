@@ -94,3 +94,5 @@ export const AutoColorExtension = Extension.create<AutoColorOptions>({
     ];
   },
 });
+
+

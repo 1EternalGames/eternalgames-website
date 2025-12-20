@@ -14,7 +14,7 @@ import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useRouter } from 'next/navigation';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ReviewIcon } from '@/components/icons';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
 
 const fetchReviews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/reviews?${params.toString()}`);
@@ -28,12 +28,10 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
 
-    // OPTIMIZATION: 600px for grid items
     const initialCards = useMemo(() => initialGridReviews.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridReviews]);
     const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // FIX: Updated threshold to 20 to match server query
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
     
     const [searchTerm, setSearchTerm] = useState('');
@@ -116,7 +114,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
             >
                 <motion.div layoutId={`reviews-hero-card-image-${heroReview.legacyId}`} className={styles.heroBg}>
                     <Image 
-                        loader={sanityLoader} // <-- LOADER ADDED
+                        loader={sanityLoader}
                         src={heroReview.mainImage.url} 
                         alt={`Background for ${heroReview.title}`} 
                         fill 
@@ -144,7 +142,11 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 <ReviewFilters activeSort={activeSort} onSortChange={setActiveSort} selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
                 
                 <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
-                    <motion.div layout className="content-grid">
+                    <motion.div 
+                        layout 
+                        className="content-grid"
+                        // FIX: Removed content-visibility to prevent 3D clipping
+                    >
                         {gridReviews.map((review, index) => (
                             <ArticleCard
                                 key={review.id}
@@ -183,3 +185,5 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         </>
     );
 }
+
+

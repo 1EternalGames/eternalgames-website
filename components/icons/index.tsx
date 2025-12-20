@@ -136,3 +136,5 @@ export const NotificationIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path d="M13.5 20C13.5 20.8284 12.8284 21.5 12 21.5M10.5 20C10.5 20.8284 11.1716 21.5 12 21.5M12 21.5V20"></path>
     </svg>
 );
+
+

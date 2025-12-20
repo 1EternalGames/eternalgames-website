@@ -126,13 +126,46 @@ export async function downloadElementAsImage(
 
     // 2. Inject Fonts & Styles
     const fontStyles = await getFontStyles();
+    
     // Define critical layout styles that might be missing in the serialized SVG context
-    // Specifically targeted for Tiptap paragraphs which add margins by default
+    // Specifically targeted for Tiptap paragraphs AND the Social News Variants
     const criticalStyles = `
         .social-editor-content p { margin: 0 !important; }
         .ProseMirror p { margin: 0 !important; }
         .social-editor-content { overflow: hidden; }
         text, input, div, span, p { font-family: 'Cairo', sans-serif !important; } 
+
+        /* HERO VARIANT STYLES */
+        .variant-hero p {
+            margin: 0;
+            font-size: 0.55em !important; 
+            color: #00FFF0 !important;
+            line-height: 1.4 !important;
+            font-weight: 700;
+        }
+        .variant-hero p::first-line {
+            font-size: 1.81em !important; 
+            color: #FFFFFF !important;
+            line-height: 1.1 !important;
+            font-weight: 900;
+        }
+
+        /* CARD VARIANT STYLES */
+        .variant-card p {
+            margin: 0;
+            font-size: 0.85em !important;
+            color: #FFFFFF !important;
+            opacity: 0.9;
+            font-weight: 500;
+            line-height: 1.3 !important;
+        }
+        .variant-card p::first-line {
+            font-size: 1.17em !important; 
+            color: #FFFFFF !important;
+            opacity: 1;
+            font-weight: 700;
+            line-height: 1.2 !important;
+        }
     `;
     
     let styleTag = svg.querySelector('style');
@@ -195,3 +228,5 @@ export async function downloadElementAsImage(
         img.onerror = (e) => reject(e);
     });
 }
+
+

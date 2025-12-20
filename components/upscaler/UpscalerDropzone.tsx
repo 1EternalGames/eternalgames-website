@@ -75,3 +75,5 @@ export default function UpscalerDropzone({ onImageSelect }: { onImageSelect: (fi
         </motion.div>
     );
 }
+
+

@@ -86,3 +86,5 @@ export const FourImageGridComponent = ({ node, updateAttributes, editor, getPos 
         </NodeViewWrapper>
     );
 };
+
+

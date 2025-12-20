@@ -33,3 +33,5 @@ export function MobileViewToggle({ isSidebarOpen, setIsSidebarOpen }: MobileView
         </motion.div>
     );
 }
+
+

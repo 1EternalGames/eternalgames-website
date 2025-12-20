@@ -72,3 +72,5 @@ export const FirstWordColorExtension = Extension.create<FirstWordColorOptions>({
         ];
     },
 });
+
+

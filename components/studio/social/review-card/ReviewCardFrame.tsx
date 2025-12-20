@@ -40,3 +40,5 @@ export default function ReviewCardFrame({ enChar }: { enChar: string }) {
         </>
     );
 }
+
+

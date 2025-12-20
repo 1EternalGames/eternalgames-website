@@ -17,3 +17,5 @@ self.addEventListener('message', async (event) => {
       }, 1500);
   }
 });
+
+

@@ -32,6 +32,7 @@ export const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
     </div>
 );
 
+// ... (Orbital Icons remain the same: ConstellationIcon, CelestialAlmanacIcon, etc...) 
 const ConstellationIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" role="img" color="currentColor" {...props} style={{ transform: 'translate(1px, 2px)' }}>
         <path d="M12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
@@ -60,8 +61,7 @@ const navItems = [
     { href: '/constellation', label: 'الكوكبة', Icon: ConstellationIcon }
 ];
 
-// --- Orbital Animation Variants ---
-const orbitalContainerVariants: Variants = {
+const orbitalContainerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.2 } }
 };
@@ -117,16 +117,7 @@ const EditorPreviewButton = () => {
     );
 };
 
-// --- BLACK HOLE LINK COMPONENT ---
-const BlackHoleNavLink = ({ 
-    item, 
-    isActive, 
-    onClick 
-}: { 
-    item: typeof navItems[0]; 
-    isActive: boolean; 
-    onClick?: () => void;
-}) => {
+const BlackHoleNavLink = ({ item, isActive, onClick }: { item: typeof navItems[0]; isActive: boolean; onClick?: () => void; }) => {
     const [isHovered, setIsHovered] = useState(false);
     
     return (
@@ -139,66 +130,29 @@ const BlackHoleNavLink = ({
             onMouseLeave={() => setIsHovered(false)}
         >
             <div className={styles.contentContainer}>
-                {/* 1. TEXT LAYER (The Matter) */}
                 <motion.span
                     className={styles.textWrapper}
                     animate={isHovered ? "sucked" : "rest"}
                     variants={{
-                        rest: {
-                            y: 0,
-                            scale: 1,
-                            opacity: 1,
-                            filter: "blur(0px)",
-                            transition: { duration: 0.4, ease: "easeOut" }
-                        },
-                        sucked: {
-                            y: -20,       // Move UP and away
-                            scale: 0.6,   // Shrink into distance
-                            opacity: 0,   // Fade out
-                            filter: "blur(8px)", // Motion blur effect
-                            transition: { duration: 0.3, ease: "easeIn" }
-                        }
+                        rest: { y: 0, scale: 1, opacity: 1, filter: "blur(0px)", transition: { duration: 0.4, ease: "easeOut" } },
+                        sucked: { y: -20, scale: 0.6, opacity: 0, filter: "blur(8px)", transition: { duration: 0.3, ease: "easeIn" } }
                     }}
-                    style={{ 
-                        color: isActive ? "var(--accent)" : "var(--text-primary)",
-                        transformOrigin: "center bottom"
-                    }}
+                    style={{ color: isActive ? "var(--accent)" : "var(--text-primary)", transformOrigin: "center bottom" }}
                 >
                     {item.label}
                 </motion.span>
-
-                {/* 2. ICON LAYER (The Singularity) */}
                 <motion.div
                     className={styles.iconWrapper}
                     initial={{ y: 25, scale: 0.5, rotate: -45, opacity: 0 }}
                     animate={isHovered ? "active" : "inactive"}
                     variants={{
-                        inactive: { 
-                            y: 25, 
-                            scale: 0.5, 
-                            rotate: -45, 
-                            opacity: 0,
-                            transition: { duration: 0.3, ease: "easeOut" }
-                        },
-                        active: { 
-                            y: 0, 
-                            scale: 1.1,  // Slight overshoot for impact
-                            rotate: 0, 
-                            opacity: 1,
-                            transition: { 
-                                type: "spring", 
-                                stiffness: 400, 
-                                damping: 25, 
-                                mass: 1,
-                                delay: 0.05 
-                            }
-                        }
+                        inactive: { y: 25, scale: 0.5, rotate: -45, opacity: 0, transition: { duration: 0.3, ease: "easeOut" } },
+                        active: { y: 0, scale: 1.1, rotate: 0, opacity: 1, transition: { type: "spring", stiffness: 400, damping: 25, mass: 1, delay: 0.05 } }
                     }}
                 >
                      <item.Icon className={styles.navIconSvg} />
                 </motion.div>
             </div>
-            
         </Link>
     );
 };
@@ -261,6 +215,7 @@ const Navbar = () => {
                              <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
                                 <SearchIcon />
                             </button>
+                            <PerformanceSettings isMobile={true} />
                         </div>
                         <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll} prefetch={false}>
                             <EternalGamesIcon style={{ width: '28px', height: '28px' }} />
@@ -286,11 +241,6 @@ const Navbar = () => {
                                 const angle = -Math.PI / 2 + (i / navItems.length) * (Math.PI * 2);
                                 return ( <OrbitalNavItem key={item.href} item={item} angle={angle} radius="min(38vh, 38vw)" isActive={pathname.startsWith(item.href)} onClick={closeAll} /> );
                             })}
-                            
-                            {/* Insert Mobile Performance Settings at bottom of menu */}
-                            <div style={{ position: 'absolute', bottom: '2rem', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                <PerformanceSettings isMobile={true} />
-                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -302,3 +252,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+

@@ -11,3 +11,5 @@ export const useUIStore = create<UIState>((set) => ({
     toggleMobileMenu: () => set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen })),
     setMobileMenuOpen: (isOpen) => set({ isMobileMenuOpen: isOpen }),
 }));
+
+

@@ -103,3 +103,5 @@ export function ContentBlock({ title, children, variant = 'default', Icon }: Con
         </motion.section>
     );
 }
+
+

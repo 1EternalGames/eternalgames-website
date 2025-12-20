@@ -12,8 +12,8 @@ export default function YearFilterPopover({
     onClose 
 }: { 
     availableYears: number[], 
-    selectedYear: number, 
-    onSelect: (year: number) => void, 
+    selectedYear: number | 'TBA', 
+    onSelect: (year: number | 'TBA') => void, 
     onClose: () => void 
 }) {
   return (
@@ -27,6 +27,14 @@ export default function YearFilterPopover({
         onClick={(e) => e.stopPropagation()}
     >
       <div className={styles.popoverResultsList}>
+        {/* ADD TBA OPTION */}
+        <motion.button 
+            className={`${styles.popoverItemButton} ${selectedYear === 'TBA' ? styles.selected : ''}`} 
+            onClick={() => { onSelect('TBA'); onClose(); }}
+        >
+            يُعلن لاحقاً
+        </motion.button>
+        
         {availableYears.map(year => (
           <motion.button 
             key={year} 
@@ -40,3 +48,5 @@ export default function YearFilterPopover({
     </motion.div>
   );
 }
+
+

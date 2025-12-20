@@ -23,9 +23,18 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
 
     if (!imageUrl) return null;
 
+    // Process Vertical Image
+    const verticalImageAsset = item.mainImageVertical?.asset || item.mainImageVerticalRef;
+    let verticalImageUrl = null;
+    if (verticalImageAsset) {
+        // Vertical aspect ratio 2:3 or similar
+        verticalImageUrl = urlFor(verticalImageAsset).width(600).height(900).fit('crop').auto('format').url();
+    }
+
     let formattedDate = '';
     let publishedYear = null;
 
+    // Handle Content Date (PublishedAt)
     if (item.publishedAt) {
         const date = new Date(item.publishedAt);
         const day = date.getDate();
@@ -33,6 +42,24 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         const year = date.getFullYear();
         formattedDate = `${day} ${arabicMonths[monthIndex]} ${year}`;
         publishedYear = year;
+    } 
+    // Handle Release Date (Specific formatting based on precision)
+    else if (item.releaseDate) {
+        const date = new Date(item.releaseDate);
+        const day = date.getDate();
+        const monthIndex = date.getMonth();
+        const year = date.getFullYear();
+        publishedYear = year;
+
+        if (item.isTBA) {
+            formattedDate = "غير معلن";
+        } else if (item.datePrecision === 'year') {
+            formattedDate = `${year}`;
+        } else if (item.datePrecision === 'month') {
+            formattedDate = `${arabicMonths[monthIndex]} ${year}`;
+        } else {
+            formattedDate = `${day} ${arabicMonths[monthIndex]} ${year}`;
+        }
     }
 
     let primaryCreators = [];
@@ -46,8 +73,6 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         primaryCreators = item.authors || item.reporters || [];
     }
 
-    // Safely extract game data
-    // item.game is typically an object { title: "...", slug: "..." } from the Sanity projection
     const gameTitle = item.game?.title;
     const gameSlug = item.game?.slug;
 
@@ -57,14 +82,16 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         legacyId: item.legacyId,
         slug: item.slug?.current ?? item.slug ?? '',
         game: gameTitle,
-        gameSlug: gameSlug, // Pass slug to props
+        gameSlug: gameSlug,
         title: item.title,
         authors: primaryCreators,
         designers: item.designers || [],
         date: formattedDate,
         year: publishedYear,
         imageUrl: imageUrl,
+        verticalImageUrl: verticalImageUrl, // Added field
         mainImageRef: imageAsset,
+        mainImageVerticalRef: verticalImageAsset, // Added field
         score: item.score,
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
@@ -77,10 +104,14 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         relatedReviewIds: item.relatedReviewIds || [],
         synopsis: item.synopsis,
 
-        // NEW: Release specific mappings (using coalescing for safety)
+        // NEW: Release Specific Fields (Optional for other types)
         onGamePass: item.onGamePass || false,
         onPSPlus: item.onPSPlus || false,
         trailer: item.trailer || '',
         isPinned: item.isPinned || false,
+        datePrecision: item.datePrecision || 'day', 
+        isTBA: item.isTBA || false,
     };
 };
+
+

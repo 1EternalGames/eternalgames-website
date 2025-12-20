@@ -96,3 +96,5 @@ export default async function ArticlesPage() {
     </Suspense>
   );
 }
+
+

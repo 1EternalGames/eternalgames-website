@@ -200,3 +200,5 @@ export default function ColorDictionaryModal({ isOpen, onClose, initialMappings,
     </Modal>
   );
 }
+
+

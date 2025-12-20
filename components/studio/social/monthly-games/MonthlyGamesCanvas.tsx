@@ -129,3 +129,5 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
         </div>
     );
 }
+
+

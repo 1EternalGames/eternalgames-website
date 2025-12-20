@@ -4,11 +4,13 @@ import { useEffect, RefObject } from 'react';
 type Event = MouseEvent | TouchEvent;
 
 export const useClickOutside = <T extends HTMLElement = HTMLElement>(
-  // MODIFIED: The ref can be null initially, so we accept RefObject<T | null>.
   ref: RefObject<T | null>,
-  handler: (event: Event) => void
+  handler: (event: Event) => void,
+  active: boolean = true // Added active flag to conditionally disable
 ) => {
   useEffect(() => {
+    if (!active) return; // Skip if disabled
+
     const listener = (event: Event) => {
       const el = ref?.current;
       // Do nothing if clicking ref's element or descendent elements
@@ -25,5 +27,7 @@ export const useClickOutside = <T extends HTMLElement = HTMLElement>(
       document.removeEventListener('mousedown', listener);
       document.removeEventListener('touchstart', listener);
     };
-  }, [ref, handler]); // Reload only if ref or handler changes
+  }, [ref, handler, active]);
 };
+
+

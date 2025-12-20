@@ -8,7 +8,6 @@ import HorizontalShowcase from '@/components/HorizontalShowcase';
 import ArticleFilters from '@/components/filters/ArticleFilters';
 import ArticleCard from '@/components/ArticleCard';
 import Image from 'next/image';
-import AnimatedGridBackground from '@/components/AnimatedGridBackground';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from '@/components/HorizontalShowcase.module.css';
@@ -16,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ArticleIcon } from '@/components/icons';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
 
 const fetchArticles = async (params: URLSearchParams) => {
     const res = await fetch(`/api/articles?${params.toString()}`);
@@ -66,7 +65,7 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
                     >
                         <motion.div layoutId={`${layoutIdPrefix}-card-image-${activeArticle.legacyId}`} className={styles.showcaseCardImageWrapper}>
                             <Image 
-                                loader={sanityLoader} // <-- LOADER ADDED
+                                loader={sanityLoader}
                                 src={activeArticle.imageUrl} 
                                 alt={activeArticle.title} 
                                 fill 
@@ -93,12 +92,10 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const intersectionRef = useRef(null);
     const isInView = useInView(intersectionRef, { margin: '400px' });
 
-    // OPTIMIZATION: 600px for grid items
     const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // FIX: Updated threshold to 20
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
     
     useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener('resize', checkMobile); return () => window.removeEventListener('resize', checkMobile); }, []);
@@ -145,19 +142,18 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const handleGameTagToggle = (tag: SanityTag) => { setSelectedGameTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAllFilters = () => { setSelectedGame(null); setSelectedGameTags([]); setSelectedArticleType(null); setSearchTerm(''); setSortOrder('latest'); };
     
-    // OPTIMIZATION: 800px for showcase items
     const featuredForShowcase = useMemo(() => featuredArticles.map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[], [featuredArticles]);
     const activeBackgroundUrl = featuredForShowcase[activeIndex]?.imageUrl;
 
     return (
         <React.Fragment>
-            <AnimatedGridBackground />
+            {/* AnimatedGridBackground removed */}
             <div className={styles.articlesPageContainer}>
                 <AnimatePresence>
                     {activeBackgroundUrl && (
                         <motion.div key={activeBackgroundUrl} className={styles.articlesPageBg} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                             <Image 
-                                loader={sanityLoader} // <-- LOADER ADDED
+                                loader={sanityLoader}
                                 src={activeBackgroundUrl} 
                                 alt="Dynamic background" 
                                 fill 
@@ -174,7 +170,10 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                         <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
                         
                         <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
-                            <motion.div layout className="content-grid">
+                            <motion.div 
+                                layout 
+                                className="content-grid" 
+                            >
                                 <AnimatePresence>
                                     {gridArticles.map((article, index) => ( <ArticleCard key={article.id} article={article} layoutIdPrefix="articles-grid" isPriority={index < 3} /> ))}
                                 </AnimatePresence>
@@ -202,3 +201,5 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         </React.Fragment>
     );
 }
+
+

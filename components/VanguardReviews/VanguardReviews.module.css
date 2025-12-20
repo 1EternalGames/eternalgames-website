@@ -10,7 +10,7 @@
     --card-gap: 1.5rem;
     --center-width: 400px;
     --side-width: 280px;
-    background-color: var(--bg-secondary);
+    background-color: transparent; 
     width: 100%;
     overflow-x: clip;
 }
@@ -29,27 +29,31 @@
 
 .cardSlot {
     position: absolute;
-    /* OPTIMIZATION: Added will-change and hardware acceleration hacks */
-    will-change: transform, opacity, left;
     transform: translateZ(0);
     backface-visibility: hidden;
-    
     transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease-out, left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
     width: var(--center-width);
     height: 500px;
 }
 
-.cardWrapper {
-    height: 100%;
-    /* OPTIMIZATION */
-    will-change: transform, filter;
-    transform: translateZ(0);
-    
-    transition: filter 0.4s ease-out;
-    position: relative;
+.cardSlot:hover,
+.cardSlot.activeState {
+    will-change: transform, opacity, left;
 }
 
-/* Active/Hover states for Vanguard Card */
+.cardWrapper {
+    height: 100%;
+    transform: translateZ(0);
+    transition: filter 0.4s ease-out;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.cardSlot:hover .cardWrapper,
+.cardSlot.activeState .cardWrapper {
+    will-change: transform, filter;
+}
+
 .vanguardContainer.manual-hover .cardWrapper {
     filter: brightness(0.6) saturate(0.8);
 }
@@ -64,24 +68,25 @@
 }
 
 .vanguardCard {
-    background-color: transparent;
+    background-color: transparent !important;
+    background: transparent !important;
     border-radius: 0; 
-    overflow: visible;
+    overflow: visible; 
     height: 100%;
     border: none;
-    box-shadow: none; 
+    box-shadow: none !important; 
     color: #fff;
     position: relative;
-    /* OPTIMIZATION */
     backface-visibility: hidden;
     transform: translateZ(0);
 }
 
+/* --- FRAME & SVG --- */
 .frameSvgContainer {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    inset: -2px; /* Slight overflow to prevent clipping of thick strokes */
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
     pointer-events: none;
     z-index: 0;
 }
@@ -91,12 +96,14 @@
     overflow: visible;
 }
 
+/* --- IMAGE --- */
 .cardImageContainer {
     position: absolute;
     inset: 0;
     overflow: hidden;
     clip-path: url(#vg-cardClip);
     z-index: 1;
+    background-color: transparent; 
 }
 
 .cardImage {
@@ -106,10 +113,19 @@
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Active State for Image Scale */
 .cardSlot.activeState .cardImage { transform: scale(1.05); }
 @media (hover: hover) { .cardSlot:hover .cardImage { transform: scale(1.05); } }
 
+/* --- EFFECT LAYER --- */
+.effectLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    clip-path: url(#vg-cardClip);
+}
+
+/* --- CONTENT --- */
 .cardContent {
     position: absolute;
     inset: 0;
@@ -120,109 +136,374 @@
     text-align: right;
     pointer-events: none;
     z-index: 2;
-    clip-path: url(#vg-cardClip);
+    clip-path: url(#vg-cardClip); 
 }
 
-.cardContent h3 { font-size: 2.4rem; line-height: 1.2; margin: 0 0 0.75rem 0; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-.cardDate { font-size: 1.4rem; color: var(--accent); font-weight: 600; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+.cardContent h3 { 
+    font-size: 2.4rem; 
+    line-height: 1.2; 
+    margin: 0 0 0.75rem 0; 
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
 
+.cardMetaRow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Aligns content to the right in RTL */
+    gap: 1rem;
+    width: 100%;
+}
+
+.cardDate { 
+    font-size: 1.4rem; 
+    color: var(--accent); 
+    font-weight: 600; 
+    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+    margin: 0;
+}
+
+.cardSlot.activeState .cardContent h3 { 
+    color: var(--accent);
+    /* Title Bloom Effect */
+    text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent); 
+}
+
+@media (hover: hover) { 
+    .cardSlot:hover .cardContent h3 { 
+        color: var(--accent);
+        /* Title Bloom Effect */
+        text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
+    } 
+}
+
+/* --- BADGE --- */
 .vanguardScoreBadge {
     position: absolute;
     top: 1.5rem;
-    right: 1.5rem;
-    width: 75px;
-    height: 75px;
+    right: 1.5rem; 
+    left: auto;
+    width: 64px;
+    height: 64px;
+    background-color: var(--bg-secondary);
+    backdrop-filter: blur(16px);
+    border: 2px solid var(--accent);
     border-radius: 50%;
-    background-color: var(--accent);
-    color: var(--bg-primary);
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--accent);
     font-family: var(--font-heading), sans-serif;
-    font-weight: 800;
+    font-weight: 900;
     font-size: 2.2rem;
-    border: none;
-    box-shadow: 0 0 20px 0px color-mix(in srgb, var(--accent) 80%, transparent);
-    z-index: 3;
+    letter-spacing: -1px;
+    z-index: 30; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     transform: translateZ(60px);
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease, background-color 0.4s ease, color 0.4s ease;
 }
 
-/* Active State for Badge */
-.cardSlot.activeState .vanguardScoreBadge { transform: translateZ(80px) scale(1.05); box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent); }
-@media (hover: hover) { .cardSlot:hover .vanguardScoreBadge { transform: translateZ(80px) scale(1.05); box-shadow: 0 0 25px 3px color-mix(in srgb, var(--accent) 90%, transparent); } }
+.cardSlot.activeState .vanguardScoreBadge { 
+    /* Reduced tilt from 15deg to 10deg */
+    transform: translateZ(100px) scale(1.3) rotate(10deg); 
+    background-color: var(--accent);
+    color: #000;
+    /* Added strong bloom effect */
+    box-shadow: 0 0 25px var(--accent), 0 10px 40px rgba(0,0,0,0.5); 
+}
+@media (hover: hover) { 
+    .cardSlot:hover .vanguardScoreBadge { 
+        /* Reduced tilt from 15deg to 10deg */
+        transform: translateZ(100px) scale(1.3) rotate(10deg); 
+        background-color: var(--accent);
+        color: #000;
+        /* Added strong bloom effect */
+        box-shadow: 0 0 25px var(--accent), 0 10px 40px rgba(0,0,0,0.5); 
+    } 
+}
 
-.creatorBubbleContainer {
+/* --- CREATORS --- */
+.creatorCapsuleContainer {
     position: absolute;
-    top: 30%;
-    right: -3.5rem;
+    top: 35%;
+    right: -2.5rem; 
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.1rem;
-    z-index: 5;
-    transform: translateZ(50px);
+    gap: 0.6rem;
+    z-index: 50; 
+    transform: translateZ(70px); 
 }
 
-.creatorBubble {
+/* --- SAFE BRIDGES --- */
+/* Invisible bridge to allow mouse travel from card to bubbles without losing hover state */
+.creatorCapsuleContainer::before {
+    content: '';
+    position: absolute;
+    right: 100%; /* Start exactly at the left edge of the container */
+    top: -10%;
+    height: 120%;
+    width: 50px; /* Safe area width bridging back to the card */
+    background: transparent;
+    pointer-events: auto;
+    z-index: 49;
+}
+
+.safeBridgeWrapper {
+    position: relative;
+    /* Ensure the arrow can be seen outside the wrapper */
+    overflow: visible; 
+}
+
+/* Capsule Wrapper (Handles movement/scale) */
+.capsuleWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* The visual pill */
+.creditCapsule {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    background-color: var(--bg-secondary);
-    border: 1.2px solid var(--accent);
+    justify-content: space-between;
+    gap: 0;
+    
+    background: #0A0B0F; 
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 0;
+    
     border-radius: 999px;
-    padding: 0.3rem 1.2rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    height: 28px;
+    
+    text-decoration: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Mobile Opt */
-@media (max-width: 768px) {
-    .creatorBubble {
-        backdrop-filter: none !important;
-        background-color: rgba(20, 20, 25, 0.95);
-    }
+.capsuleIcon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    
+    background-color: #000;
+    color: var(--accent);
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    border: none;
+    margin: 0;
+}
+.capsuleIcon svg { width: 14px; height: 14px; }
+
+.creditCapsule span {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff; 
+    white-space: nowrap;
+    transition: color 0.3s ease;
+    padding: 0 12px;
 }
 
-/* Creator Bubble Active State */
-.creatorBubble.activeState, 
-.creatorBubble.pressed {
+/* The Animated Arrow */
+.capsuleArrow {
+    position: absolute;
+    /* Position to the left of the capsule */
+    left: -20px; 
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+    /* Transition handled by Framer Motion in TSX, but base styles here */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- HOVER STATES --- */
+
+/* Parent wrapper is hovered */
+.capsuleWrapper:hover .creditCapsule {
     background-color: var(--accent);
-    box-shadow: 0 0 15px -0.5px var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
 }
+
+.capsuleWrapper:hover .capsuleIcon {
+    background-color: #000;
+    color: var(--accent);
+}
+
+.capsuleWrapper:hover .creditCapsule span {
+    color: #000;
+}
+
+/* --- EFFECTS --- */
+.cyberCorner {
+    display: none;
+}
+
+.holoSpotlight {
+    position: absolute;
+    width: 250px; 
+    height: 250px;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 50%, transparent 70%);
+    mix-blend-mode: overlay; 
+    border-radius: 50%;
+}
+
+.cardSlot:hover .holoSpotlight,
+.cardSlot.activeState .holoSpotlight { opacity: 1; }
+
+.scanLine {
+    position: absolute;
+    top: -50%;
+    left: 0;
+    width: 100%;
+    height: 10%; /* Thinner */
+    background: linear-gradient(to bottom, transparent, rgba(0, 255, 240, 0.3) 50%, transparent);
+    z-index: 10;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes scan {
+    0% { top: -30%; }
+    100% { top: 130%; }
+}
+
+.cardSlot:hover .scanLine,
+.cardSlot.activeState .scanLine {
+    opacity: 1;
+    animation: scan 3s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.techDecoration {
+    display: flex;
+    gap: 5px;
+    align-items: center; /* Center dots relative to date text */
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.techDot {
+    width: 4px;
+    height: 4px;
+    background-color: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+@keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); } }
+
+.cardSlot:hover .techDot,
+.cardSlot.activeState .techDot {
+    background-color: var(--accent);
+    animation: pulse-dot 1.2s infinite ease-in-out;
+}
+.cardSlot.activeState .techDot:nth-child(2) { animation-delay: 0.2s; }
+.cardSlot.activeState .techDot:nth-child(3) { animation-delay: 0.4s; }
+
+/* 5. Satellite Field (Flying Tags) */
+.satelliteField {
+    position: absolute;
+    inset: -200px;
+    pointer-events: none;
+    z-index: 100;
+    overflow: visible;
+    transform-style: preserve-3d;
+}
+
+.satelliteBridgeSvg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 90; 
+    overflow: visible;
+}
+
+.satelliteBridgeLine {
+    fill: none;
+    stroke: transparent; /* Invisible but interactive */
+    stroke-width: 50px; /* Wide path to catch mouse movement */
+    pointer-events: auto; /* Keeps hover active */
+    cursor: auto; 
+}
+
+.satelliteShard {
+    position: absolute;
+    padding: 0;
+    background: transparent;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-style: preserve-3d;
+}
+
+.satelliteShardLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.2rem;
+    background: rgba(10, 10, 15, 0.95);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1.3rem;
+    font-weight: 800;
+    border-radius: 8px;
+    white-space: nowrap;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    filter: drop-shadow(0 0 10px rgba(0,255,240,0.3));
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+    z-index: 101;
+    backdrop-filter: blur(4px);
+}
+
 @media (hover: hover) {
-    .creatorBubble:hover {
+    .satelliteShardLink:hover {
         background-color: var(--accent);
-        box-shadow: 0 0 15px -0.5px var(--accent);
+        color: #000;
+        transform: scale(1.15) translateY(-3px);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
+        z-index: 200;
     }
 }
 
-.creatorLabel { color: var(--text-secondary); font-size: 1rem; font-weight: 500; transition: color 0.3s ease; }
-.creatorBubble.activeState .creatorLabel, .creatorBubble.pressed .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); }
-@media (hover: hover) { .creatorBubble:hover .creatorLabel { color: color-mix(in srgb, var(--bg-primary) 70%, transparent); } }
 
-.creatorName { font-size: 1.2rem; font-weight: 600; transition: color 0.3s ease; }
-.creatorBubble.activeState .creatorName, .creatorBubble.pressed .creatorName { color: var(--bg-primary); }
-@media (hover: hover) { .creatorBubble:hover .creatorName { color: var(--bg-primary); } }
-
-.creatorArrow { 
-    position: absolute; 
-    left: -22px;
-    top: 75%; 
-    transform: translateY(-50%); 
-    color: var(--accent); 
-    transition: opacity 0.3s ease, transform 0.3s ease; 
-    opacity: 0; 
-}
-.creatorBubble.activeState .creatorArrow, .creatorBubble.pressed .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-8px); }
-@media (hover: hover) { .creatorBubble:hover .creatorArrow { opacity: 1; transform: translateY(-50%) translateX(-8px); } }
-
+/* --- NAVIGATOR --- */
 .kineticNavigator { position: absolute; bottom: 0; width: 100%; display: flex; justify-content: center; }
 .navTrack { display: flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 8px; background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent); border: 1px solid var(--border-color); border-radius: 16px; backdrop-filter: blur(10px); z-index: 10; max-width: 90vw; overflow-x: auto; scrollbar-width: none; }
 @media (max-width: 768px) {
     .navTrack {
         backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         background-color: rgba(20, 20, 25, 0.95);
     }
 }
@@ -242,11 +523,36 @@
     .vanguardContainer { --center-width: 65vw; --side-width: 45vw; min-height: 420px; padding-top: 5.5rem; padding-bottom: 8rem; }
     .cardContent { padding: 1.5rem; }
     .cardContent h3 { font-size: 1.8rem; }
-    .vanguardScoreBadge { width: 55px; height: 55px; font-size: 2rem; top: 1rem; right: 1rem; }
-    .creatorBubbleContainer { top: 30%; right: -1.5rem; }
-    .creatorBubble { padding: 0.2rem 1rem; }
-    .creatorName { font-size: 1.1rem; }
+    .vanguardScoreBadge { width: 55px; height: 55px; font-size: 2rem; top: 1rem; left: 1rem; }
+    
+    .creatorCapsuleContainer { top: auto; bottom: 8rem; right: auto; left: 1rem; flex-direction: row; }
+    
+    /* SAFE BRIDGE MOBILE ADJUST */
+    .creatorCapsuleContainer::before {
+        right: auto;
+        left: auto;
+        bottom: 100%;
+        width: 100%;
+        height: 50px;
+    }
+
+    .creditCapsule { height: 28px; font-size: 1.1rem; }
+    .capsuleIcon { width: 28px; height: 28px; }
+    .capsuleIcon svg { width: 14px; height: 14px; }
+
+    /* Mobile Kill Features */
+    .holoSpotlight, .scanLine, .satelliteField { display: none; }
+    .cardSlot.activeState .satelliteField { display: block; }
+    .satelliteShardLink {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: #000;
+        font-size: 1.1rem;
+        padding: 0.4rem 1rem;
+    }
 }
 @media (max-width: 480px) {
     .vanguardContainer { --center-width: 70vw; --side-width: 50vw; }
 }
+
+

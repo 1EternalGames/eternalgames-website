@@ -61,3 +61,5 @@ export default function BanEnforcer({ isBanned, reason }: BanEnforcerProps) {
         </div>
     );
 }
+
+

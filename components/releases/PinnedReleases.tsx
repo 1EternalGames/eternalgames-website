@@ -25,11 +25,15 @@ const containerVariants = {
 
 const itemVariants = {
     hidden: { opacity: 0, y: 30 },
-    // THE FIX: Added 'as const' to satisfy Variants type
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } as const }
 };
 
-export default function PinnedReleases({ items }: { items: SanityGameRelease[] }) {
+interface PinnedReleasesProps {
+    items: SanityGameRelease[];
+    showAdminControls?: boolean; // Added Prop
+}
+
+export default function PinnedReleases({ items, showAdminControls = false }: PinnedReleasesProps) {
     if (items.length === 0) return null;
 
     return (
@@ -51,10 +55,17 @@ export default function PinnedReleases({ items }: { items: SanityGameRelease[] }
                         className={styles.pinnedItem}
                         variants={itemVariants}
                     >
-                        <TimelineCard release={release} autoHeight={true} />
+                        {/* Pass showAdminControls down to TimelineCard */}
+                        <TimelineCard 
+                            release={release} 
+                            autoHeight={true} 
+                            showAdminControls={showAdminControls} 
+                        />
                     </motion.div>
                 ))}
             </motion.div>
         </div>
     );
 }
+
+

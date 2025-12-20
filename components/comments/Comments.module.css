@@ -14,7 +14,19 @@
 
 .commentsSection { margin-top: 8rem; padding-top: 4rem; border-top: 1px solid var(--border-color); }
 .commentsBlock .commentsSection { margin-top: 0; padding-top: 0; border-top: none; }
-.commentsBlock { margin-top: 8rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 3rem; }
+
+/* OPTIMIZATION: Heavy interaction section below fold */
+.commentsBlock { 
+    margin-top: 8rem; 
+    background-color: var(--bg-secondary); 
+    border: 1px solid var(--border-color); 
+    border-radius: 12px; 
+    padding: 3rem; 
+    
+    content-visibility: auto;
+    contain-intrinsic-size: 500px;
+}
+
 .commentSigninPrompt { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 4rem; text-align: center; margin-top: 2rem; }
 .commentFormWrapper { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 5rem; max-width: 700px; }
 .commentFormAvatar { flex-shrink: 0; margin-top: 0.5rem; }

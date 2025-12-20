@@ -90,3 +90,5 @@ export default function TerminalTicker({ headlines }: { headlines: SanityNews[] 
     </div>
   );
 }
+
+

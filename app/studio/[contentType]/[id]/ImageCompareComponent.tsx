@@ -109,3 +109,5 @@ export const ImageCompareComponent = ({ node, updateAttributes, editor, getPos }
         </NodeViewWrapper>
     );
 };
+
+

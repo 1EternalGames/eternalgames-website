@@ -11,6 +11,9 @@
     margin-bottom: 0; 
     background: transparent !important;
     -webkit-tap-highlight-color: transparent;
+
+    /* OPTIMIZATION: Isolate layout calculations */
+    contain: layout style;
 }
 
 .livingCardWrapper.activeState {
@@ -33,61 +36,97 @@
     aspect-ratio: 16 / 10; 
     min-height: 180px; 
     border-radius: 16px;
-    overflow: hidden; 
+    overflow: visible; 
+    
     background-color: var(--bg-secondary);
     
     transform-style: preserve-3d;
     transform: translateZ(0px);
-    will-change: transform, box-shadow;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease;
+    
+    /* GPU FIX: Removed will-change */
+    
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.3s ease;
 
-    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
     border: 1px solid rgba(255,255,255,0.08);
-
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
+    
     isolation: isolate; 
     pointer-events: none; 
 }
 
-/* Corner Shooting Line (Pseudo-element) */
-.monolithFrame::before {
+/* GPU FIX: Apply will-change only when needed */
+.livingCardWrapper:hover .monolithFrame,
+.livingCardWrapper.activeState .monolithFrame {
+    will-change: transform;
+}
+
+.monolithFrame::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
+    border-radius: 16px;
+    box-shadow: 
+        0 35px 70px -15px rgba(0,0,0,0.8),
+        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease; 
+    z-index: -1;
+    pointer-events: none;
+}
+
+.cyberCorner {
+    position: absolute;
+    top: -1px;
+    left: -1px;
     width: 40px;
     height: 40px;
     border-top: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-top-left-radius: 16px;
     transition: all 0.3s ease;
-    z-index: 20;
+    z-index: 20; 
     pointer-events: none;
+    /* GPU FIX: Removed will-change */
 }
 
-/* PERFORMANCE OVERRIDE: DISABLE CORNER ANIMATION */
-/* Higher specificity to override active states */
-:global(.noCornerAnimation) .monolithFrame::before {
-    content: none !important;
+/* GPU FIX: Only hint GPU on hover/active */
+.livingCardWrapper:hover .cyberCorner,
+.livingCardWrapper.activeState .cyberCorner {
+    will-change: width, height, border-color;
+}
+
+.innerClippingFrame {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px; 
+    overflow: hidden; 
+    z-index: 5;
+    transform: translateZ(0); 
+    background-color: var(--bg-secondary);
+}
+
+:global(.noCornerAnimation) .cyberCorner {
     display: none !important;
-    border: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    opacity: 0 !important;
 }
 
-/* --- ACTIVE STATE STYLES --- */
 .livingCardWrapper.activeState .monolithFrame {
     transform: translateZ(20px);
-    box-shadow: 
-        0 35px 70px -15px rgba(0,0,0,0.8),
-        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+    border-color: var(--accent);
 }
-.livingCardWrapper.activeState .monolithFrame::before {
-    width: 100%;
-    height: 100%;
+.livingCardWrapper.activeState .monolithFrame::after {
+    opacity: 1; 
+}
+
+.livingCardWrapper.activeState .cyberCorner {
+    width: calc(100% + 2px);
+    height: calc(100% + 2px);
+    border-radius: 16px; 
     border-color: var(--accent);
     filter: drop-shadow(0 0 4px var(--accent));
+    border-right: none;
+    border-bottom: none;
 }
+
 .livingCardWrapper.activeState .cardImage { transform: scale(1.1); }
 .livingCardWrapper.activeState .holoSpotlight { opacity: 1; }
 .livingCardWrapper.activeState .scanLine { opacity: 1; animation: scan 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
@@ -100,20 +139,24 @@
 .livingCardWrapper.activeState .techDot:nth-child(2) { animation-delay: 0.2s; }
 .livingCardWrapper.activeState .techDot:nth-child(3) { animation-delay: 0.4s; }
 
-/* --- HOVER STYLES --- */
 @media (hover: hover) {
     .livingCardWrapper:hover { z-index: 500; }
     .livingCardWrapper:hover .monolithFrame {
         transform: translateZ(20px);
-        box-shadow: 
-            0 35px 70px -15px rgba(0,0,0,0.8),
-            0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+        border-color: var(--accent);
     }
-    .livingCardWrapper:hover .monolithFrame::before {
-        width: 100%;
-        height: 100%;
+    .livingCardWrapper:hover .monolithFrame::after {
+        opacity: 1;
+    }
+
+    .livingCardWrapper:hover .cyberCorner {
+        width: calc(100% + 2px);
+        height: calc(100% + 2px);
+        border-radius: 16px;
         border-color: var(--accent);
         filter: drop-shadow(0 0 4px var(--accent));
+        border-right: none;
+        border-bottom: none;
     }
     .livingCardWrapper:hover .cardImage { transform: scale(1.1); }
     .livingCardWrapper:hover .holoSpotlight { opacity: 1; }
@@ -134,7 +177,6 @@
     width: 100%;
     height: 100%;
     z-index: 1;
-    overflow: hidden;
     transform: translateZ(0); 
     pointer-events: none;
 }
@@ -196,13 +238,10 @@
     pointer-events: none;
     z-index: 25;
     transform: translateZ(10px); 
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
 }
 
 .titleMaskWrapper {
     width: 100%;
-    /* Ensure no scrollbars */
     overflow: hidden; 
     display: flex;
     flex-direction: column;
@@ -223,7 +262,6 @@
     pointer-events: none;
     transition: color 0.3s ease;
     
-    /* DEFAULT STATE: Single line with Ellipsis */
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
@@ -281,7 +319,7 @@ a.creditCapsule { display: inline-flex; align-items: center; gap: 0.8rem; backgr
 div.creditCapsule { display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(10, 11, 15, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 999px; height: 32px; backdrop-filter: blur(8px); pointer-events: none; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 @media (hover: hover) { a.creditCapsule:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent); z-index: 100; } }
 a.creditCapsule:active { transform: scale(0.95); }
-.capsuleIcon { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color 0.4s ease, background-color 0.4s ease; }
+.capsuleIcon { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease; }
 .capsuleIcon svg { width: 16px; height: 16px; }
 .creditCapsule :global(span) { font-size: 1.2rem; font-weight: 700; color: #fff; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1.2rem; padding-right: 0.8rem; transition: color 0.4s ease; }
 .satelliteField { position: absolute; inset: -100px; pointer-events: none; z-index: 100; overflow: visible; transform-style: preserve-3d; }
@@ -298,19 +336,27 @@ a.creditCapsule:active { transform: scale(0.95); }
 @media (max-width: 768px) {
     .livingCardWrapper { perspective: none; overflow: visible !important; border-radius: 12px; background: transparent; margin-bottom: 2.5rem; }
     .monolithFrame { min-height: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: none !important; mask-image: none; -webkit-mask-image: none; }
-    /* Corner animation hides on mobile if not active, but our new global rule handles it */
     .cardTitle { font-size: 1.6rem; }
     
     .titleOverlay { padding: 4rem 1.5rem 5rem 1.5rem; }
     
     .hudContainer { padding: 0 1rem 1rem 1rem; z-index: 50; transform: none !important; }
     
-    .scoreBadge { width: 40px; height: 40px; font-size: 1.5rem; transform: none !important; top: 0.8rem; left: 0.8rem; backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
+    /* MOBILE OPTIMIZATION: Kill Blur */
+    .scoreBadge { 
+        width: 40px; height: 40px; font-size: 1.5rem; transform: none !important; top: 0.8rem; left: 0.8rem; 
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: rgba(20, 20, 25, 0.95); 
+    }
     .holoSpotlight, .satelliteField { display: none; }
     .livingCardWrapper.activeState .satelliteField { display: block; }
 
     a.creditCapsule, div.creditCapsule {
         backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         background-color: rgba(10, 11, 15, 0.95);
     }
 }
+
+

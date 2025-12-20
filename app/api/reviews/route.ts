@@ -66,3 +66,5 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch reviews data' }, { status: 500 });
     }
 }
+
+

@@ -174,3 +174,5 @@ export default function SmartFillerMonthly({ isOpen, onClose, onApply }: SmartFi
         </Modal>
     );
 }
+
+

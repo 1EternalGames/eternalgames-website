@@ -15,3 +15,6 @@ CREATE UNIQUE INDEX "Bookmark_userId_contentId_contentType_key" ON "Bookmark"("u
 
 
 
+
+
+

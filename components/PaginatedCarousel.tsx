@@ -108,3 +108,5 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
         </div>
     );
 }
+
+

@@ -137,7 +137,7 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                     style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                 >
                     {/* Transparent rect to ensure clickability when empty */}
-                    <rect x="0" y="0" width={1080} height={350} fill="transparent" />
+                    <rect x="0" y="0" width="1080" height="350" fill="transparent" />
                     <image 
                         href={data.hero.image} 
                         width={imgDims.width}
@@ -187,8 +187,8 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                  })}
             </g>
 
-            <g transform="translate(1040, 220)">
-                <foreignObject x={-900} y={-45} width={900} height={140}>
+            <g transform="translate(1040, 235)">
+                <foreignObject x={-900} y={-30} width={900} height={140}>
                     <SocialNewsBodyEditor 
                         content={data.hero.title} 
                         onChange={(val) => onChange({ hero: { ...data.hero, title: val }})}
@@ -211,3 +211,5 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
         </g>
     );
 }
+
+

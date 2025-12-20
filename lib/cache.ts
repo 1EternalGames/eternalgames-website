@@ -13,3 +13,5 @@ export const cacheDb = <T, P extends any[]>(
     revalidate: refreshInterval,
   });
 };
+
+

@@ -308,12 +308,25 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
     const userRoles = session.user.roles;
     const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
     if (!isCreatorOrAdmin) return { success: false, error: 'غير مُصرَّح به' };
+    
     const file = formData.get('file') as File | null;
     if (!file) return { success: false, error: 'لم يُقدَّم ملف.' };
+    
     try {
-        const asset = await sanityWriteClient.assets.upload('image', file, { filename: file.name, contentType: file.type });
+        // THE FIX: Convert File to Buffer explicitly to prevent ECONNRESET/Stream errors in Node environment
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        const asset = await sanityWriteClient.assets.upload('image', buffer, { 
+            filename: file.name, 
+            contentType: file.type 
+        });
+        
         return { success: true, asset: { _id: asset._id, url: asset.url } };
-    } catch (error: any) { console.error("Sanity asset upload failed:", error); return { success: false, error: 'أخفق رفع الملف.' }; }
+    } catch (error: any) { 
+        console.error("Sanity asset upload failed:", error); 
+        return { success: false, error: 'أخفق رفع الملف.' }; 
+    }
 }
 
 export async function addOrUpdateColorDictionaryAction(newMapping: { word: string; color: string }) {
@@ -337,3 +350,5 @@ export async function removeColorDictionaryAction(keyToRemove: string) {
     return { success: true, updatedDictionary };
   } catch (error: any) { console.error("Failed to remove from dictionary:", error); return { success: false, message: error.message || 'Failed to remove from dictionary.' }; }
 }
+
+

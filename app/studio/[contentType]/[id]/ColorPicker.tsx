@@ -148,3 +148,5 @@ export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverS
         </motion.div>
     );
 }
+
+

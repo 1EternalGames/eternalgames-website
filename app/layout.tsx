@@ -11,6 +11,7 @@ import UserStoreHydration from '@/components/UserStoreHydration';
 import Lightbox from '@/components/Lightbox';
 import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
+import SpaceBackground from '@/components/ui/SpaceBackground';
 import type { Metadata } from 'next';
 
 const cairo = Cairo({
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
           <UserStoreHydration />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
+              <SpaceBackground />
               <ToastProvider />
               <Lightbox />
               <Navbar />
@@ -101,3 +103,5 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
     </html>
   );
 }
+
+

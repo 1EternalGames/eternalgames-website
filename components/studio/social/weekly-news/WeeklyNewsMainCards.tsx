@@ -184,7 +184,7 @@ const SingleCard = ({
                  })}
             </g>
 
-            <foreignObject x={10} y={80} width={300} height={70}>
+            <foreignObject x={10} y={95} width={300} height={70}>
                 <SocialNewsBodyEditor 
                     content={card.title} 
                     onChange={(val) => onCardChange({ ...card, title: val })}
@@ -226,3 +226,5 @@ export default function WeeklyNewsMainCards({ data, onChange, scale }: Props) {
         </g>
     );
 }
+
+

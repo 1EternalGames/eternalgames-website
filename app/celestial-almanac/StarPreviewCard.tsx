@@ -105,3 +105,5 @@ export const StarPreviewCard = ({ orbitalBody, position, onClose }: {
     </motion.div>
   );
 };
+
+

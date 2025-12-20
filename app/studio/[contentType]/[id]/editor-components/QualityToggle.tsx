@@ -64,3 +64,5 @@ export function QualityToggle({ currentQuality, onQualityChange, isMobile = fals
         </div>
     );
 }
+
+

@@ -60,7 +60,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
-    const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled;
+    // CHEAT CODE: On mobile, completely disable living effect to save CPU.
+    const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled || isMobile;
 
     const handlers = !isMobile ? {
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
@@ -90,12 +91,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                      setActiveCardId(article.id);
                      setIsTextExpanded(true);
             }
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onTouchStart(e);
-            }
+            // NO living effect calculation on touch start for mobile
         },
-        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
-        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
+        // NO touch move/end handlers
     };
 
     const getLinkBasePath = () => {
@@ -157,7 +155,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
             ref={livingCardRef}
             {...handlers}
-            style={{ zIndex: isHovered ? 9999 : 1 }}
+            // THE FIX: Reduced zIndex from 9999 to 500 to ensure it stays below the Navbar (1070)
+            style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
                 className="tilt-container flex flex-col"
@@ -189,65 +188,75 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                     <div className={styles.monolithFrame}>
                         
-                        {!isMobile && (
+                        {/* --- INNER CLIPPING FRAME START --- */}
+                        <div className={styles.innerClippingFrame}>
+                            {!isMobile && (
+                                <motion.div 
+                                    className={styles.holoSpotlight} 
+                                    style={{ x: smoothMouseX, y: smoothMouseY }} 
+                                />
+                            )}
+                            
+                            {!isMobile && <div className={styles.scanLine} />}
+
                             <motion.div 
-                                className={styles.holoSpotlight} 
-                                style={{ x: smoothMouseX, y: smoothMouseY }} 
-                            />
-                        )}
-                        
-                        {!isMobile && <div className={styles.scanLine} />}
-
-                        <motion.div 
-                            className={styles.imageWrapper}
-                            layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined}
-                        >
-                            <Image 
-                                loader={sanityLoader}
-                                src={article.imageUrl}
-                                alt={article.title}
-                                fill
-                                className={styles.cardImage}
-                                sizes="(max-width: 768px) 90vw, 500px"
-                                placeholder="blur"
-                                blurDataURL={article.blurDataURL}
-                                priority={isPriority}
-                            />
-                        </motion.div>
-
-                        {hasScore && (
-                             <motion.div 
-                                className={styles.scoreBadge}
-                                initial={{ scale: 1, rotate: 0 }}
-                                animate={{ 
-                                    scale: isHovered ? 1.2 : 1, 
-                                    rotate: isHovered ? -12 : 0,
-                                    z: 50
-                                }}
-                                transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                             >
-                                 {article.score!.toFixed(1)}
-                             </motion.div>
-                        )}
-
-                        <div className={styles.titleOverlay}>
-                            <motion.div 
-                                className={styles.titleMaskWrapper}
-                                initial={{ height: '2.8rem' }} 
-                                animate={{ height: isHovered ? 'auto' : '2.8rem' }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                onAnimationComplete={() => {
-                                    if (!isHovered) {
-                                        setIsTextExpanded(false);
-                                    }
-                                }}
+                                className={styles.imageWrapper}
+                                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined}
                             >
-                                <h3 className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}>
-                                    {article.title}
-                                </h3>
+                                <Image 
+                                    loader={sanityLoader}
+                                    src={article.imageUrl}
+                                    alt={article.title}
+                                    fill
+                                    className={styles.cardImage}
+                                    sizes="(max-width: 768px) 90vw, 500px"
+                                    placeholder="blur"
+                                    blurDataURL={article.blurDataURL}
+                                    priority={isPriority}
+                                    // CHEAT CODE: Texture Streaming
+                                    decoding="async" 
+                                />
                             </motion.div>
-                        </div>
+
+                            {hasScore && (
+                                <motion.div 
+                                    className={styles.scoreBadge}
+                                    initial={{ scale: 1, rotate: 0 }}
+                                    animate={{ 
+                                        scale: isHovered ? 1.2 : 1, 
+                                        rotate: isHovered ? -12 : 0,
+                                        z: 50
+                                    }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                >
+                                    {article.score!.toFixed(1)}
+                                </motion.div>
+                            )}
+
+                            <div className={styles.titleOverlay}>
+                                <motion.div 
+                                    className={styles.titleMaskWrapper}
+                                    initial={{ height: '2.8rem' }} 
+                                    animate={{ height: isHovered ? 'auto' : '2.8rem' }}
+                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    onAnimationComplete={() => {
+                                        if (!isHovered) {
+                                            setIsTextExpanded(false);
+                                        }
+                                    }}
+                                >
+                                    <h3 className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}>
+                                        {article.title}
+                                    </h3>
+                                </motion.div>
+                            </div>
                         
+                        </div> 
+                        {/* --- INNER CLIPPING FRAME END --- */}
+                        
+                        {/* Explicit Cyber Corner Element */}
+                        <div className={styles.cyberCorner} />
+
                         <div className={styles.hudContainer} style={{ transform: 'translateZ(60px)' }}>
                              {authorName ? <CreatorCapsule /> : <div />}
 
@@ -314,3 +323,5 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
 const ArticleCard = memo(ArticleCardComponent);
 export default ArticleCard;
+
+

@@ -9,19 +9,21 @@ export type CardProps = {
     legacyId: number; // Numeric legacy ID
     slug: string;
     game?: string;
-    gameSlug?: string; // Added: For linking to game hubs
+    gameSlug?: string;
     title: string;
     authors: SanityAuthor[];
     designers?: SanityAuthor[];
     date?: string;
     year?: number | null;
     imageUrl: string;
-    mainImageRef?: any; // For components needing custom aspect ratios
+    verticalImageUrl?: string | null; // Added: Optional vertical image
+    mainImageRef?: any;
+    mainImageVerticalRef?: any; // Added: Raw ref for vertical image
     score?: number;
     tags: { title: string, slug: string }[];
     blurDataURL: string;
     category?: string; 
-    newsType?: 'official' | 'rumor' | 'leak'; // Added Field
+    newsType?: 'official' | 'rumor' | 'leak'; 
     verdict?: string;
     pros?: any[];
     cons?: any[];
@@ -34,6 +36,10 @@ export type CardProps = {
     onPSPlus?: boolean;
     trailer?: string;
     isPinned?: boolean;
+    datePrecision?: 'day' | 'month' | 'year'; 
+    isTBA?: boolean;
 };
 
 export type EngagementScore = { id: number; engagementScore: number };
+
+

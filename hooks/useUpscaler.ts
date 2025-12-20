@@ -83,3 +83,5 @@ export function useUpscaler() {
 
     return { ...state, upscaleImage, reset };
 }
+
+

@@ -25,3 +25,5 @@ const GameLink = ({ gameName, gameSlug, className = '' }: GameLinkProps) => {
 };
 
 export default GameLink;
+
+

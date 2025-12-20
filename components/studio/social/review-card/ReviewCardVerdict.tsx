@@ -46,3 +46,5 @@ export default function ReviewCardVerdict({ data, onDataChange, editingField, se
         </g>
     );
 }
+
+

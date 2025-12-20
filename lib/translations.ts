@@ -76,3 +76,5 @@ export const translateTag = (tagTitle: string): string => {
 export const translateRole = (roleName: string): string => {
     return ROLE_TRANSLATIONS[roleName] || roleName;
 };
+
+

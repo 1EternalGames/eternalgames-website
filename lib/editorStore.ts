@@ -19,3 +19,5 @@ export const useEditorStore = create<EditorState>((set) => ({
   setLiveUrl: (url) => set({ liveUrl: url }),
   setBlockUploadQuality: (quality) => set({ blockUploadQuality: quality }),
 }));
+
+

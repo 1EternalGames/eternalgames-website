@@ -41,3 +41,5 @@ const ScoreBoxComponent = ({ review, className }: { review: any, className?: str
 };
 
 export default memo(ScoreBoxComponent);
+
+

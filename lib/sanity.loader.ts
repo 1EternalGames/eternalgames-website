@@ -44,3 +44,5 @@ export const sanityLoader = ({ src, width, quality }: SanityImageLoaderProps) =>
     return `${src}${separator}width=${width}`
   }
 }
+
+

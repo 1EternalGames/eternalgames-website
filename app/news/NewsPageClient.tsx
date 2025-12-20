@@ -36,7 +36,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // FIX: Updated threshold to 20
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -146,3 +145,5 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         </div>
     );
 }
+
+

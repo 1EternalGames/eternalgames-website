@@ -237,3 +237,5 @@ function processBlockChildren(block: PortableTextBlock): TiptapNode[] {
 
   return processedChildren
 }
+
+

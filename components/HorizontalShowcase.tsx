@@ -95,6 +95,9 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
             prefetch={false}
         >
             <div className={styles.monolithFrame}>
+                {/* NEW: Explicit Cyber Corner Div */}
+                <div className={styles.cyberCorner} />
+                
                 <motion.div 
                     className={styles.holoSpotlight} 
                     style={{ opacity: isHovered ? 1 : 0 }} 
@@ -116,43 +119,51 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                 </div>
                 
                 <div className={styles.hudContainer} style={{ transform: 'translateZ(40px)' }}>
-                    {authorName ? (
-                        authorUsername ? (
-                            <Link 
-                                href={`/creators/${authorUsername}`}
-                                onClick={(e) => e.stopPropagation()} 
-                                className={`${styles.creditCapsule} no-underline`}
-                                style={{ flexDirection: 'row-reverse' }} 
-                                prefetch={false}
-                            >
-                                <div className={styles.capsuleIcon}>
-                                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
-                                </div>
-                                <span title={authorName}>{authorName}</span>
-                            </Link>
-                        ) : (
-                            <div className={styles.creditCapsule} style={{ flexDirection: 'row-reverse' }}>
-                                <div className={styles.capsuleIcon}>
-                                    <PenEdit02Icon style={{ width: 14, height: 14 }} />
-                                </div>
-                                <span title={authorName}>{authorName}</span>
-                            </div>
-                        )
-                    ) : <div />}
-
-                    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
+                    
+                    {/* LEFT COLUMN: DATE */}
+                    <div style={{ justifySelf: 'start' }}>
                         {article.date && (
                             <div className={styles.dateReadout}>
                                 <Calendar03Icon style={{ width: '14px', height: '14px', color: 'var(--accent)' }} />
                                 {article.date.split(' - ')[0]}
                             </div>
                         )}
-                        <div className={styles.techDecoration}>
-                            <div className={styles.techDot} />
-                            <div className={styles.techDot} />
-                            <div className={styles.techDot} />
-                        </div>
-                     </div>
+                    </div>
+                    
+                    {/* CENTER COLUMN: TECH DECORATION */}
+                    <div className={styles.techDecoration}>
+                        <div className={styles.techDot} />
+                        <div className={styles.techDot} />
+                        <div className={styles.techDot} />
+                    </div>
+                    
+                    {/* RIGHT COLUMN: CREDITS */}
+                    <div style={{ justifySelf: 'end' }}>
+                        {authorName ? (
+                            authorUsername ? (
+                                <Link 
+                                    href={`/creators/${authorUsername}`}
+                                    onClick={(e) => e.stopPropagation()} 
+                                    className={`${styles.creditCapsule} no-underline`}
+                                    style={{ flexDirection: 'row-reverse' }} 
+                                    prefetch={false}
+                                >
+                                    <div className={styles.capsuleIcon}>
+                                        <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                                    </div>
+                                    <span title={authorName}>{authorName}</span>
+                                </Link>
+                            ) : (
+                                <div className={styles.creditCapsule} style={{ flexDirection: 'row-reverse' }}>
+                                    <div className={styles.capsuleIcon}>
+                                        <PenEdit02Icon style={{ width: 14, height: 14 }} />
+                                    </div>
+                                    <span title={authorName}>{authorName}</span>
+                                </div>
+                            )
+                        ) : <div />}
+                    </div>
+
                 </div>
             </div>
             
@@ -295,3 +306,5 @@ export default function HorizontalShowcase({ articles, onActiveIndexChange }: { 
     </div>
   );
 }
+
+

@@ -107,3 +107,5 @@ export function BlockToolbar({
     </motion.div>
   )
 }
+
+

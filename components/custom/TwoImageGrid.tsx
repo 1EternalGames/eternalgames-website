@@ -38,3 +38,5 @@ export default function TwoImageGrid({ value }: { value: any }) {
         </div>
     );
 }
+
+

@@ -7,6 +7,9 @@
     z-index: 1;
     perspective: 1000px;
     -webkit-tap-highlight-color: transparent;
+
+    /* OPTIMIZATION: Isolate layout calculations */
+    contain: layout style;
 }
 
 .livingCardWrapper.activeState {
@@ -28,12 +31,18 @@
     border-radius: 16px;
     overflow: visible; 
     border: 1px solid var(--border-color);
+    
+    /* OPTIMIZATION: Removed box-shadow transition */
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-                box-shadow 0.4s ease, 
                 border-color 0.4s ease;
-    will-change: transform;
+                
+    /* GPU FIX: Removed persistent will-change: transform */
     transform-style: preserve-3d;
     position: relative;
+    
+    /* Base Shadow (Static) */
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
+
     /* Config vars */
     --tl-card-padding: 1.5rem;
     --tl-title-size: 2rem;
@@ -55,24 +64,30 @@
     --tl-meta-align: center;
 }
 
-.timelineCard.homepage {
-    --tl-card-padding: 1.2rem;
-    --tl-title-size: 1.7rem;
-    --tl-date-size: 1.2rem;
-    --tl-icon-size: 16px;
-    --tl-cal-icon-size: 12px;
-    --tl-badge-font: 1.1rem;
-    --tl-badge-height: 28px;
-    --tl-badge-width: 28px;
-    --tl-pill-font: 1.1rem;
-    --tl-pill-pad: 0.4rem 1rem;
-    --tl-meta-direction: column;
-    --tl-meta-align: flex-start;
-    --tl-meta-gap: 0.5rem;
+/* GPU FIX: Apply will-change only on interaction */
+.livingCardWrapper:hover .timelineCard,
+.livingCardWrapper.activeState .timelineCard {
+    will-change: transform;
 }
 
 .timelineCard.autoHeight {
     height: auto;
+}
+
+/* OPTIMIZATION: Active Shadow on Pseudo-element */
+.timelineCard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    /* The Heavy Active Shadow */
+    box-shadow: 
+        0 25px 60px -12px rgba(0,0,0,0.7),
+        0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease; /* GPU Only */
+    z-index: -1;
+    pointer-events: none;
 }
 
 .timelineCard::before {
@@ -91,7 +106,6 @@
 }
 
 /* PERFORMANCE OVERRIDE: Disable Corner Animation */
-/* Using :global(.noCornerAnimation) to match string class */
 :global(.noCornerAnimation) .timelineCard::before {
     content: none !important;
     display: none !important;
@@ -104,11 +118,12 @@
 /* Active State */
 .livingCardWrapper.activeState .timelineCard {
     transform: translateZ(20px) translateY(-5px);
-    box-shadow: 
-        0 25px 60px -12px rgba(0,0,0,0.7),
-        0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
     border-color: var(--accent);
 }
+.livingCardWrapper.activeState .timelineCard::after {
+    opacity: 1; /* Fade in shadow */
+}
+
 .livingCardWrapper.activeState .timelineCard::before {
     width: 100%;
     height: 100%;
@@ -126,11 +141,12 @@
 @media (hover: hover) {
     .livingCardWrapper:hover .timelineCard {
         transform: translateZ(20px) translateY(-5px);
-        box-shadow: 
-            0 25px 60px -12px rgba(0,0,0,0.7),
-            0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
         border-color: var(--accent);
     }
+    .livingCardWrapper:hover .timelineCard::after {
+        opacity: 1;
+    }
+
     .livingCardWrapper:hover .timelineCard::before {
         width: 100%;
         height: 100%;
@@ -545,6 +561,8 @@
         --tl-meta-align: center;
         --tl-meta-gap: 1rem;
     }
+    
+    /* HOMEPAGE VARIANT - MOBILE ONLY */
     .timelineCard.homepage {
         --tl-card-padding: 1rem;
         --tl-title-size: 1.4rem;
@@ -563,6 +581,18 @@
         --tl-meta-align: flex-start;
         --tl-meta-gap: 0.3rem;
     }
-    .statusBadge { backdrop-filter: none !important; background-color: rgba(20, 20, 25, 0.95); }
-    .shardPill, .genrePill, .playButtonContainer { backdrop-filter: none !important; background: #000; }
+    
+    /* MOBILE OPTIMIZATION: Kill Blur */
+    .statusBadge { 
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: rgba(20, 20, 25, 0.95); 
+    }
+    .shardPill, .genrePill, .playButtonContainer { 
+        backdrop-filter: none !important; 
+        -webkit-backdrop-filter: none !important;
+        background: #000; 
+    }
 }
+
+

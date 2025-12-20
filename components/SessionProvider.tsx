@@ -20,3 +20,5 @@ export default function NextAuthProvider({ children, session }: Props) {
     </SessionProvider>
   );
 }
+
+

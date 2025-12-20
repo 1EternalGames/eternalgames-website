@@ -10,15 +10,10 @@ import { SanityReview } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
-import { enrichContentList } from '@/lib/enrichment';
+import { enrichContentList, enrichCreators } from '@/lib/enrichment'; // Imported enrichCreators
 
-// THE FIX: Enforce static generation.
-// This page will be built ONCE and cached forever until a revalidateTag triggers.
-// No more background time-based revalidation.
 export const dynamic = 'force-static';
 
-// OPTIMIZATION: Infinite cache for engagement scores. 
-// This is revalidated via 'engagement-scores' tag whenever a user Likes/Shares.
 const getCachedEngagementScoresMap = unstable_cache(
     async (): Promise<[number, number][]> => {
         try {
@@ -52,32 +47,27 @@ const getCachedEngagementScoresMap = unstable_cache(
     },
     ['homepage-engagement-scores'],
     { 
-        revalidate: false, // Infinite cache
+        revalidate: false,
         tags: ['engagement-scores'] 
     }
 );
 
-// OPTIMIZATION: Infinite cache for Homepage content.
-// Revalidated when Sanity publishes any content via webhook.
-// Added 'gameRelease' tag so it updates when a release is modified.
-// FIX: Updated cache key to 'v2' to force refresh of new fields (onGamePass, etc.)
 const getCachedHomepageContent = unstable_cache(
     async () => {
         return await client.fetch(consolidatedHomepageQuery);
     },
     ['homepage-content-consolidated-v2'],
     {
-        revalidate: false, // Infinite cache
+        revalidate: false,
         tags: ['review', 'article', 'news', 'content', 'gameRelease', 'releases']
     }
 );
 
-// OPTIMIZATION: Releases are now passed in, no internal fetch.
-function ReleasesSection({ releases }: { releases: any[] }) {
+function ReleasesSection({ releases, credits }: { releases: any[], credits: any[] }) {
     const sanitizedReleases = (releases || []).filter((item: any) => 
         item?.mainImage?.url && item.releaseDate && item.title && item.slug
     );
-    return <AnimatedReleases releases={sanitizedReleases} />;
+    return <AnimatedReleases releases={sanitizedReleases} credits={credits} />;
 }
 
 export default async function HomePage() {
@@ -89,13 +79,15 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
-    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw, releases: releasesRaw } = consolidatedData;
+    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw, releases: releasesRaw, credits: creditsRaw } = consolidatedData;
 
-    const [reviews, homepageArticles, homepageNews] = await Promise.all([
+    // Enrich content AND credits
+    const [reviews, homepageArticles, homepageNews, credits] = await Promise.all([
         enrichContentList(reviewsRaw),
         enrichContentList(homepageArticlesRaw),
-        enrichContentList(homepageNewsRaw)
-    ]) as [SanityReview[], any[], any[]];
+        enrichContentList(homepageNewsRaw),
+        enrichCreators(creditsRaw) // Enrich credits here
+    ]) as [SanityReview[], any[], any[], any[]];
 
     if (reviews.length > 0) {
         const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
@@ -149,8 +141,7 @@ export default async function HomePage() {
         />
     );
 
-    // OPTIMIZATION: Pass raw releases to component
-    const releasesSection = <ReleasesSection releases={releasesRaw} />;
+    const releasesSection = <ReleasesSection releases={releasesRaw} credits={credits || []} />;
 
     return (
         <DigitalAtriumHomePage 
@@ -160,3 +151,5 @@ export default async function HomePage() {
         />
     );
 }
+
+

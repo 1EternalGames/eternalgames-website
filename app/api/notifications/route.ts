@@ -28,3 +28,5 @@ export async function GET() {
         return NextResponse.json({ success: false, notifications: [], unreadCount: 0 }, { status: 200 });
     }
 }
+
+

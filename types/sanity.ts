@@ -1,6 +1,7 @@
 // types/sanity.ts
 import type { Image, PortableTextBlock } from '@sanity/types'
 
+// ... (Existing Interfaces keep same) ...
 export interface SanityImage extends Image {
     url: string;
     blurDataURL: string;
@@ -18,7 +19,6 @@ export interface SanityAuthor {
     name: string;
     slug: string;
     prismaUserId: string;
-    // --- ENRICHED DATA ---
     username?: string | null;
     image?: string | null;
     bio?: string | null;
@@ -31,7 +31,6 @@ export interface SanityGame {
     mainImage?: SanityImage;
 }
 
-// New Types
 export interface SanityDeveloper {
     _id: string;
     title: string;
@@ -54,6 +53,7 @@ export interface SanityReview {
     designers?: SanityAuthor[];
     game: { _id: string, title: string };
     mainImage: SanityImage;
+    mainImageVertical?: SanityImage; // Added
     score: number;
     verdict: string;
     pros: string[];
@@ -83,6 +83,7 @@ export interface SanityArticle {
     designers?: SanityAuthor[];
     game: { title: string };
     mainImage: SanityImage;
+    mainImageVertical?: SanityImage; // Added
     content?: PortableTextBlock[];
     tags: { _id: string, title: string }[];
     publishedAt: string; 
@@ -99,6 +100,7 @@ export interface SanityNews {
     reporters: SanityAuthor[];
     designers?: SanityAuthor[];
     mainImage: SanityImage;
+    mainImageVertical?: SanityImage; // Added
     category: string;
     tags: { _id: string, title: string }[];
     publishedAt: string; 
@@ -111,6 +113,7 @@ export interface SanityGameRelease {
     title: string;
     slug: string;
     releaseDate: string;
+    datePrecision?: 'day' | 'month' | 'year';
     isTBA?: boolean;       
     price?: string;        
     developer?: SanityDeveloper; 
@@ -119,7 +122,6 @@ export interface SanityGameRelease {
     synopsis: string;
     mainImage: SanityImage;
     tags?: SanityTag[]; 
-    // UPDATED
     isPinned?: boolean;
     trailer?: string;
 }
@@ -135,3 +137,5 @@ export interface SanitySearchResult {
     gameTitle?: string;
     category?: string;
 }
+
+

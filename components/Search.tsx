@@ -122,3 +122,5 @@ export default function Search({ isOpen, onClose }: { isOpen: boolean, onClose: 
         </AnimatePresence>
     );
 }
+
+

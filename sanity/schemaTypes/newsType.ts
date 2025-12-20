@@ -7,7 +7,6 @@ export default defineType({
     fields: [
         defineField({name: 'title', title: 'Title', type: 'string', validation: (Rule) => Rule.required()}),
         defineField({name: 'slug', title: 'Slug', type: 'slug', options: {source: 'title', maxLength: 96}, validation: (Rule) => Rule.required()}),
-        // NEW FIELD: Classification
         defineField({
             name: 'newsType',
             title: 'Classification',
@@ -37,7 +36,8 @@ export default defineType({
             validation: (Rule) => Rule.required()
         }),
         defineField({name: 'game', title: 'Game (Optional)', type: 'reference', to: {type: 'game'}}),
-        defineField({name: 'mainImage', title: 'Main image', type: 'image', options: {hotspot: true}, validation: (Rule) => Rule.required()}),
+        defineField({name: 'mainImage', title: 'Main Image (Horizontal)', type: 'image', options: {hotspot: true}, validation: (Rule) => Rule.required()}),
+        defineField({name: 'mainImageVertical', title: 'Vertical Image (Vanguard)', type: 'image', options: {hotspot: true}}),
         defineField({name: 'publishedAt', title: 'Published at', type: 'datetime'}),
         defineField({name: 'content', title: 'Content', type: 'blockContent'}),
         defineField({name: 'relatedNews', title: 'Related News', type: 'array', of: [{type: 'reference', to: {type: 'news'}}]}),
@@ -51,3 +51,5 @@ export default defineType({
         }
     },
 })
+
+

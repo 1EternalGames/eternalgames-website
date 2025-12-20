@@ -6,6 +6,7 @@ import { motion, useScroll, useInView, useTransform, MotionValue, AnimatePresenc
 import Link from 'next/link';
 import TimelineCard from './TimelineCard';
 import styles from './KineticReleaseTimeline.module.css';
+import ReleasesCredits from './releases/ReleasesCredits';
 
 const ViewAllIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" {...props}>
@@ -45,7 +46,6 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
     const cardIsInView = useInView(itemRef, { once: true, amount: 0.4 });
     const isLeft = index % 2 === 0;
     
-    // Adjusted variants for cleaner entry
     const variants = {
         hidden: { opacity: 0, x: isLeft ? -30 : 30, scale: 0.95 },
         visible: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } }
@@ -53,9 +53,7 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
 
     return (
         <div ref={itemRef} className={`${styles.timelineItemWrapper} ${isLeft ? styles.left : styles.right}`}>
-            {/* Synopsis occupies the empty side */}
             <SynopsisDisplay synopsis={release.synopsis} isLeft={isLeft} isInView={cardIsInView} />
-            
             <motion.div 
                 variants={variants} 
                 initial="hidden" 
@@ -69,32 +67,32 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
 };
 
 const TimelineDot = ({ position, scrollYProgress }: { position: number, scrollYProgress: MotionValue<number> }) => {
-    // FIX: Using a tight range starting at 'position' to ensure dot lights up
-    // exactly when or slightly after the line reaches it, not before.
-    const backgroundColor = useTransform( scrollYProgress, [position, position + 0.02], ['var(--border-color)', 'var(--accent)'] );
-    const boxShadow = useTransform( scrollYProgress, [position, position + 0.02], ['0 0 0px 0 rgba(0,0,0,0)', '0 0 8px 0 var(--accent)'] );
+    // Instant switch effect: 0 to 1 immediately when position is reached
+    const activeOpacity = useTransform( scrollYProgress, [position - 0.001, position], [0, 1] );
     
     return ( 
-        <motion.div 
-            className={styles.dot} 
-            style={{ 
-                top: `${position * 100}%`, 
-                backgroundColor: backgroundColor, 
-                boxShadow: boxShadow,
-            }} 
-        /> 
+        <div 
+            className={styles.dotWrapper}
+            style={{ top: `${position * 100}%` }} 
+        >
+            <div className={styles.dotBase} />
+            <motion.div 
+                className={styles.dotActive} 
+                style={{ opacity: activeOpacity }}
+            /> 
+        </div> 
     );
 };
 
-export default function KineticReleaseTimeline({ releases: allReleases }: { releases: any[] }) {
+export default function KineticReleaseTimeline({ releases: allReleases, credits }: { releases: any[], credits?: any[] }) {
     const timelineRef = useRef<HTMLDivElement>(null);
     const terminusRef = useRef(null);
     const isTerminusInView = useInView(terminusRef, { once: true, amount: 0.8 });
     const [dotPositions, setDotPositions] = useState<number[]>([]);
     
-    const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 50%", "end 50%"], });
+    const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 60%", "end 50%"], });
     
-    const height = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+    const scaleY = useTransform(scrollYProgress, [0, 1], [0, 1]);
     
     const releasesForThisMonth = useMemo(() => {
         if (!allReleases) return [];
@@ -104,7 +102,8 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
         
         return allReleases
             .filter(release => {
-                if (!release.releaseDate) return false;
+                // FIXED: Explicitly exclude TBA from homepage timeline
+                if (release.isTBA || !release.releaseDate) return false;
                 const releaseDate = new Date(release.releaseDate);
                 return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; 
             })
@@ -131,59 +130,65 @@ export default function KineticReleaseTimeline({ releases: allReleases }: { rele
 
     return (
         <div ref={timelineRef} className={styles.timelineContainer}>
-            <div className={styles.timelineSpine}>
-                <div className={styles.timelineSpineTrack} />
-                <motion.div 
-                    className={styles.timelineSpineProgress} 
-                    style={{ height }}
-                />
-                <div className={styles.dotsContainer}>
-                    {dotPositions.map((pos, index) => ( 
-                        <TimelineDot key={index} position={pos} scrollYProgress={scrollYProgress} /> 
-                    ))}
-                </div>
-            </div>
-            <div className={styles.timelineItemsWrapper}>
-                {releasesForThisMonth.length > 0 ? (
-                    releasesForThisMonth.map((release, index) => ( 
-                        <TimelineItem key={release._id} release={release} index={index} /> 
-                    ))
-                ) : (
+            <ReleasesCredits initialCredits={credits || []} />
+
+            <div className={styles.timelineContent}>
+                <div className={styles.timelineSpine}>
+                    <div className={styles.timelineSpineTrack} />
                     <motion.div 
-                        style={{ paddingTop: '10vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' as const }}
+                        className={styles.timelineSpineProgress} 
+                        style={{ scaleY, transformOrigin: 'top' }}
+                    />
+                    <div className={styles.dotsContainer}>
+                        {dotPositions.map((pos, index) => ( 
+                            <TimelineDot key={index} position={pos} scrollYProgress={scrollYProgress} /> 
+                        ))}
+                    </div>
+                </div>
+                <div className={styles.timelineItemsWrapper}>
+                    {releasesForThisMonth.length > 0 ? (
+                        releasesForThisMonth.map((release, index) => ( 
+                            <TimelineItem key={release._id} release={release} index={index} /> 
+                        ))
+                    ) : (
+                        <motion.div 
+                            style={{ paddingTop: '5vh', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }} 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' as const }}
+                        >
+                            لا إصدارات مجدولة لهذا الشهر.
+                        </motion.div>
+                    )}
+                </div>
+
+                {releasesForThisMonth.length > 0 && (
+                    <motion.div
+                        ref={terminusRef}
+                        className={styles.terminusContainer}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={isTerminusInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
                     >
-                        لا إصدارات مجدولة لهذا الشهر.
+                        <motion.div 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{ display: 'inline-block' }}
+                        >
+                            <Link 
+                                href="/releases" 
+                                className={`${styles.timelineTerminusButton} no-underline`}
+                                prefetch={false}
+                            >
+                                <ViewAllIcon className={styles.terminusIcon} />
+                                <span>عرض كل الإصدارات</span>
+                            </Link>
+                        </motion.div>
                     </motion.div>
                 )}
             </div>
-
-            {releasesForThisMonth.length > 0 && (
-                <motion.div
-                    ref={terminusRef}
-                    className={styles.terminusContainer}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={isTerminusInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
-                >
-                    <motion.div 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{ display: 'inline-block' }}
-                    >
-                        <Link 
-                            href="/releases" 
-                            className={`${styles.timelineTerminusButton} no-underline`}
-                            prefetch={false}
-                        >
-                            <ViewAllIcon className={styles.terminusIcon} />
-                            <span>عرض كل الإصدارات</span>
-                        </Link>
-                    </motion.div>
-                </motion.div>
-            )}
         </div>
     );
 }
+
+

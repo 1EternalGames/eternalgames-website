@@ -291,3 +291,5 @@ export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings
         </Suspense>
     );
 };
+
+

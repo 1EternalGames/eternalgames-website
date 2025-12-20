@@ -15,6 +15,7 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
         <motion.div 
             layout 
             className={styles.newsGrid}
+            // FIX: Removed content-visibility to prevent 3D clipping
         >
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (
@@ -32,7 +33,7 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
                         }}
                         style={{ 
                             height: '100%', 
-                            willChange: 'transform, opacity, z-index',
+                            willChange: 'transform, opacity',
                             zIndex: activeCardId === item.id ? 100 : 1
                         }}
                     >
@@ -47,3 +48,5 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
         </motion.div>
     );
 }
+
+

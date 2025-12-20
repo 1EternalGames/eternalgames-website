@@ -101,3 +101,5 @@ export const GameDetailsComponent = ({ node, updateAttributes, deleteNode }: Nod
     </NodeViewWrapper>
   );
 };
+
+

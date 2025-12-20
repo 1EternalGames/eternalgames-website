@@ -4,7 +4,7 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 4rem 2rem;
-  overflow: visible; /* CRITICAL: Allows flying tags from TimelineCard to be seen */
+  overflow: visible;
 }
 
 .timelineSpine {
@@ -29,9 +29,12 @@
   top: 0;
   right: 0;
   width: 100%;
+  height: 100%;
   background-color: var(--accent);
   border-radius: 2px;
   box-shadow: 0 0 10px 0 var(--accent);
+  transform-origin: top;
+  /* GPU FIX: Removed will-change */
 }
 
 .timelineItemsWrapper {
@@ -49,70 +52,43 @@
   width: 100%;
   position: relative;
   margin-bottom: 4rem;
-  /* Gap handles distance from center spine */
   gap: 60px; 
 }
 
-/* Card Container width logic */
 .cardContainer {
     flex: 1;
-    max-width: 340px; /* Match standard grid card size */
+    max-width: 340px;
     width: 100%;
     min-width: 0;
-    /* Default Z-index for card */
     z-index: 10;
 }
 
-/* Synopsis Styles - Desktop */
+/* REFACTORED: Floating Glass Style instead of solid block */
 .synopsisContainer {
   flex: 1;
-  max-width: 340px; /* Match Card width */
+  max-width: 340px;
   display: flex;
   align-items: center;
   font-size: 1.5rem;
   color: var(--text-primary);
   line-height: 1.7;
   pointer-events: none;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  
+  /* Glassy Background */
+  background-color: rgba(10, 11, 15, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.05);
+  
   border-radius: 12px;
   padding: 2.5rem;
   box-shadow: 0 5px 20px -5px rgba(0,0,0,0.1);
   z-index: 5;
 }
 
-/* Layout Directions */
-
-/* Left: [Card] [Spine] [Synopsis] (Visual Right to Left in RTL)
-   Actually in DOM: [Synopsis] [Card].
-   RTL Flex: 
-   Row: Right item is 1st in DOM (Synopsis), Left Item is 2nd (Card).
-   Wait, in RTL: 
-   flex-direction: row -> 1st child is on Right, 2nd on Left.
-   
-   If index is even (Left side visually in LTR terms, Right side in RTL terms?):
-   User wants alternating sides.
-   
-   Let's stick to flex-direction logic.
-*/
-
-.timelineItemWrapper.left {
-    /* Card Left, Synopsis Right */
-    flex-direction: row-reverse; 
-}
-
-.timelineItemWrapper.right {
-    /* Card Right, Synopsis Left */
-    flex-direction: row;
-}
-
-/* Text Alignments */
-.timelineItemWrapper.left .synopsisContainer {
-    text-align: right; 
-}
-.timelineItemWrapper.right .synopsisContainer {
-    text-align: left;
-}
+.timelineItemWrapper.left { flex-direction: row-reverse; }
+.timelineItemWrapper.right { flex-direction: row; }
+.timelineItemWrapper.left .synopsisContainer { text-align: right; }
+.timelineItemWrapper.right .synopsisContainer { text-align: left; }
 
 .synopsisFirstWord {
   font-weight: 700;
@@ -129,16 +105,34 @@
   pointer-events: none;
 }
 
-.dot {
-  position: absolute;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  background-color: var(--border-color);
-  border-radius: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  transition: background-color 0.2s ease-in-out, box-shadow 0.3s ease-in-out;
+/* OPTIMIZED DOT STYLES */
+.dotWrapper {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    width: 12px;
+    height: 12px;
 }
+
+/* Static Base Dot (Always Visible, Cheap) */
+.dotBase {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: var(--border-color);
+}
+
+/* Animated Active Dot (Fades in, GPU Accelerated) */
+.dotActive {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: var(--accent);
+    box-shadow: 0 0 8px 0 var(--accent);
+    /* Keep will-change here as it's small and frequently updated via opacity */
+    will-change: opacity;
+}
+
 
 .terminusContainer {
   position: relative;
@@ -189,49 +183,27 @@
   height: 20px;
 }
 
-/* --- MOBILE OVERRIDES --- */
 @media (max-width: 768px) {
-  .timelineContainer {
-    padding: 4rem 0.5rem; 
-  }
-
-  .timelineSpine {
-      display: block;
-      /* On mobile, spine is still center, but cards and synopsis squeeze around it */
-  }
-
-  .timelineItemWrapper {
-      gap: 0; /* Remove gap, use space-between */
-      margin-bottom: 3rem;
-  }
-
-  .cardContainer {
-      flex: 0 0 42%; /* Fix width to ~42% to allow spine space */
-      max-width: none;
-  }
-
-  .synopsisContainer {
-      flex: 0 0 42%; /* Fix width to ~42% */
-      max-width: none;
-      
-      padding: 1rem;
-      font-size: 1.1rem; /* Smaller Font */
-      line-height: 1.4;
+  .timelineContainer { padding: 4rem 0.5rem; }
+  .timelineSpine { display: block; }
+  .timelineItemWrapper { gap: 0; margin-bottom: 3rem; }
+  .cardContainer { flex: 0 0 42%; max-width: none; }
+  
+  .synopsisContainer { 
+      flex: 0 0 42%; 
+      max-width: none; 
+      padding: 1rem; 
+      font-size: 1.1rem; 
+      line-height: 1.4; 
       border-radius: 8px;
+      /* Simpler on mobile for perf, but still transparent/dark */
+      background-color: rgba(10, 11, 15, 0.6); 
+      border-color: rgba(255,255,255,0.05);
   }
   
-  /* On mobile, ensure Synopsis text clamps */
-  .synopsisContainer p {
-      margin: 0;
-      display: -webkit-box;
-      -webkit-line-clamp: 5;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-  }
-
-  /* Reduce Dot size */
-  .dot {
-      width: 8px;
-      height: 8px;
-  }
+  .synopsisContainer p { margin: 0; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  
+  .dotWrapper, .dotBase, .dotActive { width: 8px; height: 8px; }
 }
+
+

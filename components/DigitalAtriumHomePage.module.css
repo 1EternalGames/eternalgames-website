@@ -6,10 +6,11 @@
 }
 
 .vanguardFullBleedContainer {
-    background-color: var(--bg-secondary);
+    /* REMOVED: background-color: var(--bg-secondary); */
+    background-color: transparent; /* Force transparent for floating look */
     padding-top: 4rem;
     margin-bottom: 5rem;
-    overflow-x: clip; /* THE DEFINITIVE FIX: Contain overflow here */
+    overflow-x: clip; 
 }
 
 .atriumMainContent {
@@ -38,3 +39,5 @@
         padding-bottom: 4rem;
     }
 }
+
+

@@ -79,3 +79,5 @@ export const getCachedContentAndDictionary = cache(async (type: string, slug: st
         next: { tags: [type, 'content', slug, 'colorDictionary'] }
     });
 });
+
+

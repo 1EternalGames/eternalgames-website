@@ -48,3 +48,5 @@ export default function UpscalerProcessing({ status, progress, message, imageSrc
         </div>
     );
 }
+
+

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, memo } from 'react';
-import { motion, AnimatePresence, useInView, animate, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, useInView, animate, PanInfo, useMotionValue, useSpring, Variants } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -14,6 +14,9 @@ import type { SanityAuthor } from '@/types/sanity';
 import type { CardProps } from '@/types';
 import styles from './VanguardReviews.module.css';
 import { sanityLoader } from '@/lib/sanity.loader';
+import { usePerformanceStore } from '@/lib/performanceStore';
+import { translateTag } from '@/lib/translations';
+import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0 },
@@ -23,66 +26,279 @@ const creatorBubbleItemVariants = {
     hidden: { opacity: 0, x: 20 },
     visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } }
 };
+
+// --- CONFIGURATION ---
+const SATELLITE_CONFIG = [
+    { hoverX: -240, hoverY: -100, rotate: -12 }, // Top Left
+    { hoverX: 180, hoverY: 60, rotate: 10 },    // Top Right
+    { hoverX: -50, hoverY: -265, rotate: 5 }     // Upper Center (The "Upper Tag")
+];
+
+// --- ARROW POSITION SETTINGS ---
+const ARROW_SETTINGS = {
+    xOffset: -45, 
+    yOffset: -10  
+};
+
+// --- ICONS ---
 const ArrowIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" role="img" color="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" color="currentColor">
         <path d="M12.293 5.29273C12.6591 4.92662 13.2381 4.90402 13.6309 5.22437L13.707 5.29273L19.707 11.2927L19.7754 11.3689C20.0957 11.7617 20.0731 12.3407 19.707 12.7068L13.707 18.7068C13.3165 19.0973 12.6835 19.0973 12.293 18.7068C11.9025 18.3163 11.9025 17.6833 12.293 17.2927L16.5859 12.9998H5C4.44772 12.9998 4 12.552 4 11.9998C4 11.4475 4.44772 10.9998 5 10.9998H16.5859L12.293 6.7068L12.2246 6.63063C11.9043 6.23785 11.9269 5.65885 12.293 5.29273Z" fill="currentColor"></path>
     </svg>
 );
 
-const VanguardCardFrame = () => (
-    <div className={styles.frameSvgContainer}>
-        <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none">
-            <defs>
-                 <filter id="vg-activeGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
-                    <feMerge>
-                        <feMergeNode in="coloredBlur"></feMergeNode>
-                        <feMergeNode in="SourceGraphic"></feMergeNode>
-                    </feMerge>
-                </filter>
-                <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox">
-                     <path d="M 0,0 L 1,0 L 1,0.315 L 0.966,0.329 L 1,0.342 L 1,0.657 L 0.966,0.684 L 0.966,0.763 L 1,0.789 L 1,0.921 L 0.9,1 L 0.1,1 L 0,0.921 L 0,0.789 L 0.033,0.763 L 0.033,0.684 L 0,0.657 L 0,0.342 L 0.033,0.329 L 0,0.315 Z" />
-                </clipPath>
-            </defs>
-            <path d="M 0,0 L 300,0 L 300,120 L 290,125 L 300,130 L 300,250 L 290,260 L 290,290 L 300,300 L 300,350 L 270,380 L 30,380 L 0,350 L 0,300 L 10,290 L 10,260 L 0,250 L 0,130 L 10,125 L 0,120 Z" 
-                  fill="var(--bg-secondary)" stroke="#556070" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-            <path d="M 0,300 L 0,350 L 30,380" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
-            <path d="M 300,300 L 300,350 L 270,380" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
-            <path d="M 10,260 L 10,290" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
-            <path d="M 290,260 L 290,290" fill="none" stroke="var(--accent)" strokeWidth="4" filter="url(#vg-activeGlow)" vectorEffect="non-scaling-stroke" />
-        </svg>
-    </div>
+// --- GLOBAL DEFINITIONS ---
+const CARD_SHAPE_PATH = `
+    M 20,0 
+    L 280,0 Q 300,0 300,20 
+    L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 
+    L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 
+    L 300,335 Q 300,345 292,352 
+    L 272,372 Q 265,380 255,380 
+    L 45,380 Q 35,380 28,372 
+    L 8,352 Q 0,345 0,335 
+    L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 
+    L 10,160 Q 10,156 7,154 L 3,152 Q 0,150 0,146 
+    L 0,20 Q 0,0 20,0 Z
+`;
+
+const VanguardGlobalDefs = () => (
+    <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}>
+        <defs>
+             <filter id="vg-activeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"></feMergeNode>
+                    <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+            </filter>
+            <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox">
+                 <path d={CARD_SHAPE_PATH} transform="scale(0.00333333, 0.00263158)" /> 
+            </clipPath>
+        </defs>
+    </svg>
 );
 
-const CreatorBubble = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
-    const [isPressed, setIsPressed] = useState(false);
+const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabled: boolean }) => {
+    if (!isEnabled) return null;
+
+    const defaultTopLength = 0.13;  
+    const defaultSideLength = 0.09; 
+    const defaultOpacity = 0.6;
+    
+    const activeTopLength = 0.66; 
+    const activeSideLength = 1.05;
+
+    // --- ACTIVE PATHS (EXPANDING) ---
+    const topWingPath = `
+        M 0,20 
+        Q 0,0 20,0 
+        L 280,0 
+        Q 300,0 300,20 
+        L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 
+        L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 
+        L 300,335
+    `;
+
+    const leftWingPath = `
+        M 0,20.1 
+        L 0,146 Q 0,150 3,152 L 7,154 Q 10,156 10,160 
+        L 10,220 Q 10,224 7,226 L 3,228 Q 0,230 0,234 
+        L 0,335 Q 0,345 8,352 
+        L 28,372 Q 35,380 45,380
+        L 150,380
+    `;
+
+    // --- STATIC BOTTOM PATHS (RETREATING) ---
+    // Extends further up to include the notches (middle curves)
+    
+    // Right Side: Bottom -> Up Right Edge -> Notch Curve -> Up Notch Side -> Top of Notch
+    const bottomRightPath = `
+        M 150,380 
+        L 255,380 Q 265,380 272,372 L 292,352 Q 300,345 300,335 
+        L 300,234 Q 300,230 297,228 L 293,226 Q 290,224 290,220 
+        L 290,130
+    `;
+    
+    // Left Side: Bottom -> Up Left Edge -> Notch Curve -> Up Notch Side -> Top of Notch
+    const bottomLeftPath = `
+        M 150,380 
+        L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 
+        L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 
+        L 10,130
+    `;
+
+    const activeStrokeThickness = "4"; 
+    const staticStrokeThickness = "2"; // Thinner as requested
+
+    // Transition Configs
+    const activeTransition = {
+        pathLength: { duration: 0.4, ease: "easeInOut" as const },
+        opacity: { duration: 0.05 },
+        filter: { duration: 0.05 }
+    };
+    
+    const bottomTransition = {
+        duration: 0.4,
+        ease: "easeInOut" as const
+    };
+
+    return (
+        <div className={styles.frameSvgContainer}>
+            <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none">
+                {/* Base Card Background */}
+                <path d={CARD_SHAPE_PATH} 
+                      fill="var(--bg-secondary)" stroke="none" strokeWidth="0" vectorEffect="non-scaling-stroke" />
+                
+                {/* --- STATIC BOTTOM STROKES (Disappear on Hover) --- */}
+                {/* These persist even if isEnabled (Cyber Corners) is false, they are part of the base look */}
+                <motion.path 
+                    d={bottomRightPath}
+                    fill="none" 
+                    stroke="var(--accent)" 
+                    strokeWidth={staticStrokeThickness}
+                    vectorEffect="non-scaling-stroke"
+                    strokeLinecap="round"
+                    filter="url(#vg-activeGlow)"
+                    initial={{ pathLength: 1, opacity: 1 }}
+                    animate={{ 
+                        pathLength: isActive ? 0 : 1, 
+                        opacity: isActive ? 0 : 1 
+                    }}
+                    transition={bottomTransition}
+                />
+                
+                <motion.path 
+                    d={bottomLeftPath}
+                    fill="none" 
+                    stroke="var(--accent)" 
+                    strokeWidth={staticStrokeThickness}
+                    vectorEffect="non-scaling-stroke"
+                    strokeLinecap="round"
+                    filter="url(#vg-activeGlow)"
+                    initial={{ pathLength: 1, opacity: 1 }}
+                    animate={{ 
+                        pathLength: isActive ? 0 : 1, 
+                        opacity: isActive ? 0 : 1 
+                    }}
+                    transition={bottomTransition}
+                />
+
+                {/* --- ACTIVE CYBER CORNER (Expand on Hover) --- */}
+                {isEnabled && (
+                    <>
+                        <motion.path 
+                            d={topWingPath}
+                            fill="none" 
+                            stroke="var(--accent)" 
+                            strokeWidth={activeStrokeThickness}
+                            vectorEffect="non-scaling-stroke"
+                            strokeLinecap="round"
+                            initial={{ pathLength: defaultTopLength, opacity: defaultOpacity }}
+                            animate={{ 
+                                pathLength: isActive ? activeTopLength : defaultTopLength, 
+                                opacity: isActive ? 1 : defaultOpacity,
+                                filter: isActive ? "url(#vg-activeGlow)" : "none"
+                            }}
+                            transition={activeTransition}
+                        />
+
+                        <motion.path 
+                            d={leftWingPath}
+                            fill="none" 
+                            stroke="var(--accent)" 
+                            strokeWidth={activeStrokeThickness}
+                            vectorEffect="non-scaling-stroke"
+                            strokeLinecap="round"
+                            initial={{ pathLength: defaultSideLength, opacity: defaultOpacity }}
+                            animate={{ 
+                                pathLength: isActive ? activeSideLength : defaultSideLength, 
+                                opacity: isActive ? 1 : defaultOpacity,
+                                filter: isActive ? "url(#vg-activeGlow)" : "none"
+                            }}
+                            transition={activeTransition}
+                        />
+                    </>
+                )}
+            </svg>
+        </div>
+    );
+};
+
+// --- ANIMATION VARIANTS FOR HOVER ---
+const capsuleVariants: Variants = {
+    idle: { x: 0, scale: 1 },
+    hover: { 
+        x: -10, 
+        scale: 1.1,
+        transition: { type: 'spring', stiffness: 400, damping: 15 }
+    }
+};
+
+const arrowVariants: Variants = {
+    idle: { opacity: 0, x: 10 },
+    hover: { 
+        opacity: 1, 
+        x: 0,
+        transition: { type: 'spring', stiffness: 400, damping: 15 }
+    }
+};
+
+const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const handleBubbleClick = (e: React.MouseEvent) => { e.stopPropagation(); };
     const profileSlug = creator.username || (creator.slug as any)?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
     const hasPublicProfile = !!profileSlug;
     
-    const bubbleContent = (
-        <motion.div 
-            className={`${styles.creatorBubble} ${isPressed ? styles.pressed : ''}`}
-            whileHover={{ scale: 1.1, x: -10, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
-            onTouchStart={() => setIsPressed(true)}
-            onTouchEnd={() => setIsPressed(false)}
-            onTouchCancel={() => setIsPressed(false)}
-        >
-            <span className={styles.creatorLabel}>{label}</span>
+    // Icon Selection based on role
+    const IconComponent = label === 'تصميم' ? ColorPaletteIcon : PenEdit02Icon;
+
+    // The inner pill content (Visuals)
+    const InnerContent = (
+        <>
+             <div className={styles.capsuleIcon}>
+                <IconComponent style={{ width: 14, height: 14 }} />
+            </div>
             <span className={styles.creatorName}>{creator.name}</span>
-            <div className={styles.creatorArrow}><ArrowIcon /></div>
-        </motion.div>
+        </>
     );
     
+    // The interactive container
+    const InteractiveWrapper = ({ children }: { children: React.ReactNode }) => (
+        <motion.div 
+            className={styles.capsuleWrapper}
+            initial="idle"
+            whileHover="hover"
+        >
+            <motion.div 
+                className={styles.capsuleArrow} 
+                variants={arrowVariants}
+                style={{ 
+                    left: ARROW_SETTINGS.xOffset, 
+                    marginTop: ARROW_SETTINGS.yOffset 
+                }}
+            >
+                <ArrowIcon />
+            </motion.div>
+            
+            <motion.div className={styles.creditCapsule} variants={capsuleVariants}>
+                {children}
+            </motion.div>
+        </motion.div>
+    );
+
     return (
-        <motion.div variants={creatorBubbleItemVariants}>
+        <motion.div variants={creatorBubbleItemVariants} className={styles.safeBridgeWrapper}>
             {hasPublicProfile ? (
                 <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline" prefetch={false}>
-                    {bubbleContent}
+                    <InteractiveWrapper>
+                        {InnerContent}
+                    </InteractiveWrapper>
                 </Link>
             ) : (
-                <div title={`${creator.name} (no public profile)`}>
-                    {bubbleContent}
+                <div title={`${creator.name}`}>
+                     <InteractiveWrapper>
+                        {InnerContent}
+                    </InteractiveWrapper>
                 </div>
             )}
         </motion.div>
@@ -94,6 +310,16 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
     const scoreRef = useRef<HTMLParagraphElement>(null);
+    
+    // Performance Store
+    const { isFlyingTagsEnabled, isLivingCardEnabled, isCornerAnimationEnabled } = usePerformanceStore();
+    const effectivelyDisabledLiving = !isLivingCardEnabled;
+
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+    const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
+    const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
+
     useEffect(() => {
         if (isInView && scoreRef.current && typeof review.score === 'number') {
             const controls = animate(0, review.score, {
@@ -111,35 +337,51 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
             e.stopPropagation();
             return;
         }
+        if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
         setPrefix(layoutIdPrefix);
     };
     
-    const imageUrl = review.mainImageRef 
-        ? urlFor(review.mainImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
+    const imageRef = review.mainImageVerticalRef || review.mainImageRef;
+    const imageUrl = imageRef 
+        ? urlFor(imageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
 
     const showCredits = isCenter || isHovered;
+    const displayTags = review.tags.slice(0, 3);
     
     const livingCardHandlers = isInteractive ? {
-        onMouseMove: livingCardAnimation.onMouseMove,
-        // TOUCH LOGIC: Trigger hover state
+        onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
+            if (!effectivelyDisabledLiving) {
+                livingCardAnimation.onMouseMove(e);
+                const rect = e.currentTarget.getBoundingClientRect();
+                mouseX.set(e.clientX - rect.left - 125); 
+                mouseY.set(e.clientY - rect.top - 125);
+            }
+        },
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
-            livingCardAnimation.onTouchStart(e);
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
             onHoverChange(true);
         },
         onTouchEnd: () => {
-            livingCardAnimation.onTouchEnd();
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
             onHoverChange(false);
         },
         onTouchCancel: () => {
-             livingCardAnimation.onTouchCancel();
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchCancel();
              onHoverChange(false);
         },
-        onTouchMove: livingCardAnimation.onTouchMove,
-        // MOUSE LOGIC
-        onMouseEnter: () => { livingCardAnimation.onMouseEnter(); onHoverChange(true); },
-        onMouseLeave: () => { livingCardAnimation.onMouseLeave(); onHoverChange(false); },
+        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
+        onMouseEnter: () => { 
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
+            onHoverChange(true); 
+        },
+        onMouseLeave: () => { 
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); 
+            onHoverChange(false); 
+        },
     } : {};
+    
+    const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
     return (
         <div className={styles.cardWrapper}>
@@ -154,24 +396,42 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                 <motion.div
                     ref={livingCardRef}
                     {...livingCardHandlers}
-                    style={{ ...livingCardAnimation.style, transformStyle: 'preserve-3d', height: '100%' }}
+                    style={{ 
+                        ...animationStyles, 
+                        transformStyle: 'preserve-3d', 
+                        height: '100%',
+                        background: 'transparent',
+                        boxShadow: 'none',
+                        backgroundColor: 'transparent'
+                    }}
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
                 >
-                    <VanguardCardFrame />
+                    <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />
+                    
+                    <div className={styles.effectLayer}>
+                        {!isMobile && (
+                            <motion.div 
+                                className={styles.holoSpotlight} 
+                                style={{ x: smoothMouseX, y: smoothMouseY }} 
+                            />
+                        )}
+                        <div className={styles.scanLine} />
+                    </div>
 
                     <AnimatePresence>
                         {showCredits && (
                             <motion.div
-                                className={styles.creatorBubbleContainer}
+                                className={styles.creatorCapsuleContainer}
                                 variants={creatorBubbleContainerVariants}
                                 initial="hidden"
                                 animate="visible"
                                 exit="hidden"
                                 style={{ pointerEvents: 'auto', transform: 'translateZ(50px)' }}
                             >
-                                {review.authors.map(author => <CreatorBubble key={author._id} label="بقلم" creator={author} />)}
-                                {review.designers?.map(designer => <CreatorBubble key={designer._id} label="تصميم" creator={designer} />)}
+                                {/* Safe Bridge overlay now handled in CSS via creatorCapsuleContainer::before */}
+                                {review.authors.map(author => <CreatorCapsule key={author._id} label="بقلم" creator={author} />)}
+                                {review.designers?.map(designer => <CreatorCapsule key={designer._id} label="تصميم" creator={designer} />)}
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -191,10 +451,76 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                             priority={isPriority}
                         />
                     </motion.div>
+                    
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
                         <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${review.legacyId}`}>{review.title}</motion.h3>
-                        {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
+                        
+                        <div className={styles.cardMetaRow}>
+                            {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
+                            <div className={styles.techDecoration}>
+                                <div className={styles.techDot} />
+                                <div className={styles.techDot} />
+                                <div className={styles.techDot} />
+                            </div>
+                        </div>
                     </motion.div>
+                    
+                    {isFlyingTagsEnabled && (
+                        <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
+                            <AnimatePresence>
+                                {isHovered && displayTags.map((tag, i) => (
+                                    <motion.div
+                                        key={`${review.id}-${tag.slug}`}
+                                        className={styles.satelliteShard}
+                                        initial={{ opacity: 0, scale: 0, x: 0, y: 0, z: 0 }}
+                                        animate={{
+                                            opacity: 1,
+                                            scale: 1.15,
+                                            x: SATELLITE_CONFIG[i]?.hoverX || 0,
+                                            y: SATELLITE_CONFIG[i]?.hoverY || 0,
+                                            rotate: SATELLITE_CONFIG[i]?.rotate || 0,
+                                            z: -30 
+                                        }}
+                                        exit={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 180,
+                                            damping: 20,
+                                            delay: i * 0.05
+                                        }}
+                                        style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
+                                        onClick={(e) => e.stopPropagation()}
+                                     >
+                                         <Link 
+                                            href={`/tags/${tag.slug}`} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className={`${styles.satelliteShardLink} no-underline`} 
+                                            prefetch={false}
+                                        >
+                                             {translateTag(tag.title)}
+                                         </Link>
+                                     </motion.div>
+                                ))}
+                            </AnimatePresence>
+                            
+                            {/* --- SAFE BRIDGES --- */}
+                            {/* Invisible lines that ensure hover state persists when moving mouse from center to tags */}
+                            {isHovered && (
+                                <svg className={styles.satelliteBridgeSvg}>
+                                    {displayTags.map((_, i) => (
+                                        <line 
+                                            key={`bridge-${i}`}
+                                            x1="0" y1="0" 
+                                            x2={SATELLITE_CONFIG[i]?.hoverX || 0} 
+                                            y2={SATELLITE_CONFIG[i]?.hoverY || 0} 
+                                            className={styles.satelliteBridgeLine}
+                                        />
+                                    ))}
+                                </svg>
+                            )}
+                        </div>
+                    )}
+
                 </motion.div>
             </Link>
         </div>
@@ -218,8 +544,10 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                             data-active={isActive} 
                             onTap={() => navigateToIndex(index)}
                             whileTap={{ scale: 0.95 }}
-                            animate={{ width: isActive ? 100 : 50, height: isActive ? 60 : 40 }} 
+                            initial={{ scale: 1 }}
+                            animate={{ scale: isActive ? 1.2 : 1 }} 
                             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            style={{ width: 60, height: 40, transformOrigin: 'center' }}
                         >
                             <Image 
                                 loader={sanityLoader}
@@ -245,6 +573,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const isCurrentlyInView = useInView(containerRef, { amount: 0.4 });
     const [initialAnimHasRun, setInitialAnimHasRun] = useState(false);
     const [isManualHover, setIsManualHover] = useState(false);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const {
         currentIndex,
@@ -271,11 +600,27 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         }
     };
     
-    // Explicit Hover State Management for Mobile compatibility
+    // --- DEBOUNCED HOVER LOGIC ---
     const handleCardHoverChange = (id: string, isHovering: boolean) => {
-        if (initialAnimHasRun) {
-            setHoveredId(isHovering ? id : null);
-            setIsManualHover(isHovering);
+        if (!initialAnimHasRun) return;
+
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+
+        if (isHovering) {
+            // ENTER: Wait 50ms (snappy debounce)
+            hoverTimeoutRef.current = setTimeout(() => {
+                setHoveredId(id);
+                setIsManualHover(true);
+            }, 50);
+        } else {
+            // LEAVE: Wait 50ms before clearing
+            hoverTimeoutRef.current = setTimeout(() => {
+                setHoveredId(null);
+                setIsManualHover(false);
+            }, 50);
         }
     };
 
@@ -295,6 +640,9 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             ref={containerRef} 
             className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''}`}
         >
+            {/* Global Definitions for Clip Paths */}
+            <VanguardGlobalDefs />
+
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
             
             <motion.div
@@ -303,7 +651,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.1}
                 onDragEnd={handleDragEnd}
-                // Global fallback touches just in case
                 onTouchEnd={() => initialAnimHasRun && setHoveredId(null)}
                 onTouchCancel={() => initialAnimHasRun && setHoveredId(null)}
             >
@@ -342,3 +689,5 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         </div>
     );
 }
+
+

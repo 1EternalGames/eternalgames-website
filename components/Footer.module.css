@@ -3,7 +3,12 @@
 .footer {
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
+  
+  /* OPTIMIZATION: Skip rendering logic if off-screen */
+  content-visibility: auto;
+  contain-intrinsic-size: 300px; /* Approximate height to prevent scroll bar jumping */
 }
+/* ... rest of existing CSS ... */
 .newFooterLayout {
   padding: 4rem 0;
 }
@@ -43,7 +48,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
-  color: var(--text-primary); /* THE FIX: Changed from --text-secondary */
+  color: var(--text-primary);
   transition: color 0.3s ease, transform 0.3s ease;
 }
 @media (hover: hover) {@media (hover: hover) {
@@ -149,3 +154,5 @@
     gap: 1rem;
   }
 }
+
+

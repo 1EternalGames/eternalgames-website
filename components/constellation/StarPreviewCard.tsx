@@ -114,3 +114,5 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
         </motion.div>
     );
 };
+
+

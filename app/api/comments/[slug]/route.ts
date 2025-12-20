@@ -40,3 +40,5 @@ export async function GET(req: NextRequest, { params: paramsPromise }: { params:
         return NextResponse.json({ error: 'Failed to fetch comments.' }, { status: 500 });
     }
 }
+
+

@@ -24,3 +24,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
 }
+
+

@@ -50,3 +50,5 @@ export default function StudioBar() {
         </AnimatePresence>
     );
 }
+
+

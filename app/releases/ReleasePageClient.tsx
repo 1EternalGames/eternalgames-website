@@ -19,7 +19,7 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
 
   // New Filters
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedYear, setSelectedYear] = useState<number | 'TBA'>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [selectedPlatform, setSelectedPlatform] = useState<string | 'all'>('all');
   
@@ -39,7 +39,6 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
       const monthIdx = now.getMonth();
       const year = now.getFullYear();
       
-      // Update filters to current time
       setSelectedYear(year);
       if (selectedMonth !== 'all' && selectedMonth !== monthIdx) {
           setSelectedMonth(monthIdx);
@@ -51,8 +50,9 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
 
   // 1. Compute Available Years
   const availableYears = useMemo(() => {
-      const years = new Set(releases.map(r => new Date(r.releaseDate).getFullYear()));
-      return Array.from(years).sort((a, b) => b - a);
+      const years = new Set(releases.map(r => r.isTBA ? 'TBA' : new Date(r.releaseDate).getFullYear()));
+      const yearArray = Array.from(years).filter(y => y !== 'TBA') as number[];
+      return yearArray.sort((a, b) => b - a);
   }, [releases]);
 
   // 2. Separate Pinned Games
@@ -68,12 +68,6 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
           // If nothing pinned, take top 3 upcoming non-TBA
           const upcoming = releases.filter(r => !r.isTBA && new Date(r.releaseDate) >= new Date()).sort((a,b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
           pinned = upcoming.slice(0, 3);
-          const pinnedIds = new Set(pinned.map(p => p._id));
-          // REMOVE PINNED FROM TIMELINE so they aren't duplicated at the top
-          // The previous code had `timeline = releases` here to NOT remove them.
-          // But your prompt said "pinned releases will not get filtered like the others, they'll stay even when filtering and searching".
-          // AND "don't make the pinned releases disappear from the list down, it will appear two times".
-          // SO: timeline should include EVERYTHING (except maybe exact duplicates if logic changes, but here we KEEP them in timeline)
           timeline = releases; 
       }
       return { pinnedGames: pinned, timelineGames: timeline };
@@ -83,15 +77,19 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
   const filteredTimeline = useMemo(() => {
       let filtered = timelineGames;
 
-      // Year Filter
-      filtered = filtered.filter(r => new Date(r.releaseDate).getFullYear() === selectedYear);
+      // Year Filter (Handles TBA specifically)
+      if (selectedYear === 'TBA') {
+          filtered = filtered.filter(r => r.isTBA);
+      } else {
+          // If a specific year is selected, exclude TBAs and match year
+          filtered = filtered.filter(r => !r.isTBA && new Date(r.releaseDate).getFullYear() === selectedYear);
+      }
 
-      // Month Filter
-      if (selectedMonth !== 'all') {
+      // Month Filter (Only applies if not TBA)
+      if (selectedMonth !== 'all' && selectedYear !== 'TBA') {
           filtered = filtered.filter(r => new Date(r.releaseDate).getMonth() === selectedMonth);
       }
 
-      // Platform Filter
       if (selectedPlatform !== 'all') {
           filtered = filtered.filter(r => {
               if (!r.platforms) return false;
@@ -102,13 +100,11 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
           });
       }
 
-      // Search Filter
       if (searchTerm) {
           const lowerTerm = searchTerm.toLowerCase();
           filtered = filtered.filter(r => r.title.toLowerCase().includes(lowerTerm));
       }
 
-      // Wishlist Filter
       if (showWishlistOnly) {
           filtered = filtered.filter(r => bookmarks.includes(`release-${r.legacyId}`));
       }
@@ -116,16 +112,24 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
       return filtered;
   }, [timelineGames, selectedYear, selectedMonth, selectedPlatform, searchTerm, showWishlistOnly, bookmarks]);
   
-  // 4. Group by Month for Rendering
+  // 4. Group by Month
   const flatAnimatedContent = useMemo(() => {
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-    const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
-    // Sort
     const sortedReleases = [...filteredTimeline].sort((a, b) => {
+         // Primary Sort: TBA status
          if (a.isTBA && !b.isTBA) return 1;
          if (!a.isTBA && b.isTBA) return -1;
-         return new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
+         
+         // Secondary Sort: Date
+         const dateA = new Date(a.releaseDate).getTime();
+         const dateB = new Date(b.releaseDate).getTime();
+         if (dateA !== dateB) return dateA - dateB;
+
+         // Tertiary Sort: Date Precision (Day < Month < Year)
+         // This ensures "Year Only" (2025) comes AFTER "December 2025" even if both are stored as 12-31
+         const weight = (p?: string) => p === 'year' ? 3 : (p === 'month' ? 2 : 1);
+         return weight(a.datePrecision) - weight(b.datePrecision);
     });
     
     let currentMonth = '';
@@ -136,21 +140,30 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
       let monthIdx = -1;
 
       if (release.isTBA) {
-          monthLabel = 'TBA';
+          monthLabel = 'موعد غير معلن'; 
+      } else if (release.datePrecision === 'year') {
+          monthLabel = 'شهر غير معلن'; // Special group for Year-only precision
       } else {
           const date = new Date(release.releaseDate);
           monthIdx = date.getMonth();
-          monthLabel = `${arabicMonths[monthIdx]} - ${englishMonths[monthIdx]}`;
+          monthLabel = `${arabicMonths[monthIdx]}`;
       }
       
-      if (monthLabel !== currentMonth) {
-        currentMonth = monthLabel;
-        flatList.push({ type: 'header', key: `header-${monthLabel}`, data: monthLabel, monthIndex: monthIdx });
+      if (monthLabel && monthLabel !== currentMonth) {
+          if (selectedYear === 'TBA') {
+               if (flatList.length === 0) {
+                   currentMonth = monthLabel;
+                   flatList.push({ type: 'header', key: `header-${monthLabel}`, data: monthLabel, monthIndex: -1 });
+               }
+          } else {
+               currentMonth = monthLabel;
+               flatList.push({ type: 'header', key: `header-${monthLabel}`, data: monthLabel, monthIndex: monthIdx });
+          }
       }
       flatList.push({ type: 'card', key: `card-${release._id}`, data: release });
     });
     return flatList;
-  }, [filteredTimeline]);
+  }, [filteredTimeline, selectedYear]);
 
   const cardVariants = { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.9 } };
 
@@ -158,13 +171,14 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
     <div className={styles.chronoStreamLayoutWrapper}>
       <div className={styles.chronoContentWrapper}>
           {!hideHeader && (
-              <h1 className="page-title">إصدارات 2025</h1>
+              <h1 className="page-title">إصدارات {selectedYear === 'TBA' ? 'قادمة (TBA)' : selectedYear}</h1>
           )}
           
-          {/* Pinned Section: Now always visible, ignores filters */}
-          <PinnedReleases items={pinnedGames} />
+          <PinnedReleases 
+            items={pinnedGames} 
+            showAdminControls={isAdmin} // Pass Admin Prop
+          />
 
-          {/* Control Bar */}
           <ReleasesControlBar 
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -197,7 +211,7 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
                       <motion.div 
                         key={item.key} 
                         layout 
-                        id={item.monthIndex !== undefined ? `month-header-${item.monthIndex}` : undefined}
+                        id={item.monthIndex !== undefined && item.monthIndex !== -1 ? `month-header-${item.monthIndex}` : undefined}
                         className={styles.stickyHeaderWrapper} 
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       >
@@ -223,3 +237,5 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
     </div>
   );
 }
+
+

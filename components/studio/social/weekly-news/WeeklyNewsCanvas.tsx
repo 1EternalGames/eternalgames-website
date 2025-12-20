@@ -59,7 +59,7 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                     
                     {/* Unified Title Bar with Space */}
                     <text x="980" y="32" direction="rtl" textAnchor="start" fontWeight="900" fontSize="34" fill="#FFFFFF">
-                        النشرة <tspan fill="#00FFF0">الأسبوعية</tspan>
+                        الجريدة <tspan fill="#00FFF0">الأسبوعية</tspan>
                     </text>
 
                     <g transform="translate(0, 5)">
@@ -97,20 +97,10 @@ export default function WeeklyNewsCanvas({ data, onChange, scale = 1 }: Props) {
                 <WeeklyNewsMainCards data={data} onChange={onChange} scale={scale} />
                 <WeeklyNewsList data={data} onChange={onChange} />
 
-                <g transform="translate(40, 1180)">
-                    <path d="M 0,0 L 980,0 L 1000,20 L 1000,130 L 20,130 L 0,110 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="1"></path>
-                    <g transform="translate(950, 70)">
-                        <rect x="0" y="-30" width="4" height="60" fill="#00FFF0"></rect>
-                        <text x="-15" y="0" direction="rtl" textAnchor="start" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="36" fill="#FFF" letterSpacing="-1">ETERNAL</text>
-                        <text x="-15" y="32" direction="rtl" textAnchor="start" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="36" fill="#00FFF0" letterSpacing="-1">GAMES</text>
-                    </g>
-                    
-                    <text x="220" y="60" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#FFF" letterSpacing="1">WWW.ETERNALGAMES.ME</text>
-                    <text x="150" y="90" textAnchor="start" fontFamily="Impact, sans-serif" fontSize="18" fill="#556070">1EternalGames@</text>
-                </g>
-
                 <rect width="100%" height="100%" filter="url(#wn-grain)" opacity="0.06" style={{ mixBlendMode: 'overlay' }} pointerEvents="none"></rect>
             </svg>
         </div>
     );
 }
+
+

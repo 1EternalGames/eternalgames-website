@@ -71,3 +71,5 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ revalidated: true, message: 'Global content tags revalidated', now: Date.now() });
 }
+
+

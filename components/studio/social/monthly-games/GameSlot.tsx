@@ -409,3 +409,5 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
         </g>
     );
 }
+
+

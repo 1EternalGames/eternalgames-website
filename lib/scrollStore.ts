@@ -10,3 +10,5 @@ export const useScrollStore = create<ScrollState>((set) => ({
   scrollPos: 0,
   setScrollPos: (pos) => set({ scrollPos: pos }),
 }));
+
+

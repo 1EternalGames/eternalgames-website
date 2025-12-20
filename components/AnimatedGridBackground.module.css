@@ -1,15 +1,16 @@
 /* components/AnimatedGridBackground.module.css */
 @keyframes gridScroll {
-  from { background-position: 0 0; }
-  to { background-position: 60px 60px; } /* Matches grid size */
+  from { transform: translateY(0) translateX(0); }
+  to { transform: translateY(60px) translateX(60px); } /* Matches grid size */
 }
 
 .animatedGrid {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: -60px; /* Offset to allow movement without showing edges */
+  left: -60px;
+  /* Make element larger than viewport to prevent clipping during movement */
+  width: calc(100vw + 120px);
+  height: calc(100vh + 120px);
   z-index: -1;
   --grid-size: 60px;
   --grid-color: rgba(125, 128, 140, 0.1);
@@ -17,8 +18,14 @@
     linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
   background-size: var(--grid-size) var(--grid-size);
+  
+  /* OPTIMIZATION: Use transform instead of background-position */
   animation: gridScroll 10s linear infinite;
-  /* Optimization: Use GPU */
-  will-change: background-position;
+  
+  /* Hint browser to promote to GPU layer */
+  will-change: transform;
   transform: translateZ(0); 
+  pointer-events: none;
 }
+
+

@@ -40,13 +40,28 @@ body::-webkit-scrollbar{width:8px;}
 body::-webkit-scrollbar-track{background:transparent;}
 body::-webkit-scrollbar-thumb{background-color:var(--accent);border-radius:4px;}
 body{
-background-color:var(--bg-primary);
+background-color: var(--bg-primary); /* Set to primary bg for light mode */
 color:var(--text-primary);
 font-family:var(--font-main), sans-serif;
 font-size:1.8rem;
 line-height:1.7;
 transition:background-color 0.3s ease,color 0.3s ease;
 }
+
+[data-theme="dark"] body {
+  background-color: transparent; /* Transparent in dark mode to show SpaceBackground */
+}
+
+/* --- THE CHEAT CODE: Frustum Culling --- */
+/* Apply this to large containers (lists, grids) */
+.gpu-cull {
+    /* Tells browser to skip layout/paint for off-screen content */
+    content-visibility: auto;
+    /* Estimated height to prevent scrollbar jumping. */
+    contain-intrinsic-size: 1px 500px; 
+}
+/* --- END CHEAT CODE --- */
+
 h1,h2,h3,h4,h5,h6{
 font-family:var(--font-main), sans-serif;
 font-weight:700;
@@ -518,3 +533,5 @@ body.lightbox-active {
 .social-editor-content .ProseMirror p {
     margin: 0 !important;
 }
+
+

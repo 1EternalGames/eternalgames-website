@@ -31,3 +31,5 @@ export async function markAllNotificationsAsRead() {
         return { success: false, error: 'Failed to mark all as read.' };
     }
 }
+
+

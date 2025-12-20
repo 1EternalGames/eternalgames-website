@@ -17,14 +17,17 @@
 @media (min-width:1024px){.profileMain{border-top:none;padding-top:0;border-right:1px solid var(--border-color);border-left: none; padding-right:5rem; padding-left: 0;}}
 .profileSection{margin-top:6rem}
 .profileSection:first-child{margin-top:0}
+
+/* REMOVED: Boxy styling */
 .profileSectionTitle{
     font-size:2.8rem;
     font-family:var(--font-main);
     margin-bottom:2rem;
-    border-bottom:2px solid var(--accent);
-    padding-bottom:1rem;
-    display:inline-block;
-    box-shadow: 0 5px 15px -5px color-mix(in srgb, var(--accent) 30%, transparent);
+    /* REMOVED border-bottom:2px solid var(--accent); */
+    /* REMOVED padding-bottom:1rem; */
+    /* REMOVED display:inline-block; */
+    /* REMOVED box-shadow: ... */
+    color: var(--text-primary);
     transition: color 0.3s ease;
 }
 @media (hover: hover) {@media (hover: hover) {
@@ -70,3 +73,5 @@
     padding-top: 8rem; /* Nudge the content down on mobile to avoid navbar overlap */
   }
 }
+
+

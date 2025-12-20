@@ -34,3 +34,5 @@ export interface MonthlyGamesCanvasProps {
     onDataChange: (newData: Partial<MonthlyGamesTemplateData>) => void;
     scale?: number;
 }
+
+

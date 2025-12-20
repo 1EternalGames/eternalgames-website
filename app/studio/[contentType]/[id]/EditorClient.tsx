@@ -21,18 +21,22 @@ import styles from './Editor.module.css';
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import type { SaveStatus } from './SaveStatusIcons';
 
-// Updated type definition
+// Updated type definition to include mainImageVertical
 type EditorDocument = {
-    _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; mainImage?: { _ref: string | null; url: string | null; metadata?: any }; authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
+    _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; 
+    mainImage?: { _ref: string | null; url: string | null; metadata?: any }; 
+    mainImageVertical?: { _ref: string | null; url: string | null; metadata?: any }; // Added
+    authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
     newsType?: 'official' | 'rumor' | 'leak';
     price?: string; 
     developer?: { _id: string, title: string } | null; 
     publisher?: { _id: string, title: string } | null; 
     isTBA?: boolean; 
-    trailer?: string; // NEW
-    isPinned?: boolean; // NEW
-    onGamePass?: boolean; // NEW
-    onPSPlus?: boolean; // NEW
+    trailer?: string; 
+    isPinned?: boolean; 
+    onGamePass?: boolean; 
+    onPSPlus?: boolean; 
+    datePrecision?: 'day' | 'month' | 'year';
 };
 
 type ColorMapping = {
@@ -43,7 +47,6 @@ type ColorMapping = {
 
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 
-// THE FIX: Initialize all fields with explicit defaults, avoiding undefined.
 const getInitialEditorState = (doc: EditorDocument) => {
     const currentSlug = doc.slug?.current ?? '';
     return {
@@ -63,6 +66,11 @@ const getInitialEditorState = (doc: EditorDocument) => {
             assetId: doc.mainImage?._ref || null,
             assetUrl: doc.mainImage?.url || null
         },
+        // Initialize Vertical Image State
+        mainImageVertical: {
+            assetId: doc.mainImageVertical?._ref || null,
+            assetUrl: doc.mainImageVertical?.url || null
+        },
         authors: (doc.authors || []).filter(Boolean),
         reporters: (doc.reporters || []).filter(Boolean),
         designers: (doc.designers || []).filter(Boolean),
@@ -76,10 +84,11 @@ const getInitialEditorState = (doc: EditorDocument) => {
         developer: doc.developer || null,
         publisher: doc.publisher || null, 
         isTBA: doc.isTBA || false, 
-        trailer: doc.trailer || '', // Default empty string
-        isPinned: doc.isPinned || false, // Default false
-        onGamePass: doc.onGamePass || false, // Default false
-        onPSPlus: doc.onPSPlus || false // Default false
+        trailer: doc.trailer || '', 
+        isPinned: doc.isPinned || false, 
+        onGamePass: doc.onGamePass || false, 
+        onPSPlus: doc.onPSPlus || false,
+        datePrecision: doc.datePrecision || 'day'
     };
 };
 
@@ -132,7 +141,11 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (sourceOfTruth._type !== 'gameRelease' && normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
     if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
     if (normalize(currentState.verdict, '') !== normalize(sourceOfTruth.verdict, '')) patch.verdict = currentState.verdict;
+    
+    // Release Fields
     if (normalize(currentState.releaseDate, '') !== normalize(sourceOfTruth.releaseDate, '')) patch.releaseDate = currentState.releaseDate;
+    if (normalize(currentState.datePrecision, 'day') !== normalize(sourceOfTruth.datePrecision, 'day')) patch.datePrecision = currentState.datePrecision;
+    
     if (normalize(currentState.synopsis, '') !== normalize(sourceOfTruth.synopsis, '')) patch.synopsis = currentState.synopsis;
     if (normalize(currentState.category?._id, null) !== normalize(sourceOfTruth.category?._id, null)) {
         patch.category = currentState.category ? { _type: 'reference', _ref: currentState.category._id } : undefined;
@@ -160,7 +173,17 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
     
     if (normalize(currentState.game?._id, null) !== normalize(sourceOfTruth.game?._id, null)) patch.game = currentState.game ? { _type: 'reference', _ref: currentState.game._id } : undefined;
-    if (normalize(currentState.mainImage.assetId, null) !== normalize(sourceOfTruth.mainImage?._ref, null)) patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
+    
+    // Main Image
+    if (normalize(currentState.mainImage.assetId, null) !== normalize(sourceOfTruth.mainImage?._ref, null)) {
+        patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
+    }
+
+    // Vertical Image
+    if (normalize(currentState.mainImageVertical.assetId, null) !== normalize(sourceOfTruth.mainImageVertical?._ref, null)) {
+        patch.mainImageVertical = currentState.mainImageVertical.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImageVertical.assetId } } : undefined;
+    }
+
     if (!compareIds(currentState.tags, sourceOfTruth.tags)) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
     if (!compareIds(currentState.authors, sourceOfTruth.authors)) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
     if (!compareIds(currentState.reporters, sourceOfTruth.reporters)) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
@@ -181,7 +204,6 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
     return patch;
 };
 
-// ... Rest of the file (EditorClient component) is identical, just using the new types and logic ...
 export function EditorClient({ 
     document: initialDocument, 
     colorDictionary: initialColorDictionary,
@@ -395,6 +417,7 @@ export function EditorClient({
             game: state.game,
             tags: state.tags,
             mainImage: state.mainImage.assetId ? { _ref: state.mainImage.assetId, url: state.mainImage.assetUrl } : undefined,
+            mainImageVertical: state.mainImageVertical.assetId ? { _ref: state.mainImageVertical.assetId, url: state.mainImageVertical.assetUrl } : undefined, // Added
             authors: state.authors,
             reporters: state.reporters,
             designers: state.designers,
@@ -404,13 +427,14 @@ export function EditorClient({
             category: state.category,
             newsType: state.newsType,
             price: state.price, 
-            developer: state.developer, // UPDATED
-            publisher: state.publisher, // UPDATED
+            developer: state.developer,
+            publisher: state.publisher, 
             isTBA: state.isTBA,
             trailer: state.trailer,
             isPinned: state.isPinned,
             onGamePass: state.onGamePass,
             onPSPlus: state.onPSPlus,
+            datePrecision: state.datePrecision,
             content: tiptapToPortableText(JSON.parse(editorContentJson)),
             _updatedAt: new Date().toISOString(),
         };
@@ -538,3 +562,5 @@ export function EditorClient({
         </div>
     );
 }
+
+

@@ -163,3 +163,5 @@ export function FormattingToolbar({ editor, onLinkClick, platform }: FormattingT
         </motion.div>
     );
 }
+
+

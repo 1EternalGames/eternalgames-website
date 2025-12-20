@@ -314,3 +314,5 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         </>
     );
 }
+
+

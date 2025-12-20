@@ -36,3 +36,5 @@ export const calculateWrappedLines = (text: string, fontSize: number, maxWidth: 
     lines.push(currentLine);
     return lines;
 };
+
+

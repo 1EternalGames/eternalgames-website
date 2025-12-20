@@ -30,3 +30,5 @@ export default function KineticSpotlightNews({ items }: { items: CardProps[] }) 
         </div>
     );
 }
+
+

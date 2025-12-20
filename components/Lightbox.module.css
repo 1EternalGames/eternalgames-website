@@ -15,6 +15,10 @@
 @media (max-width: 1024px) {
     .lightboxOverlay {
         padding: 10vh 5vw;
+        /* MOBILE OPTIMIZATION: Kill Blur */
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: rgba(5, 5, 5, 0.95);
     }
 }
 
@@ -71,15 +75,8 @@
     justify-content: center;
     transition: background-color 0.2s, color 0.2s;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .controlButton:hover  {
-    background-color: var(--bg-primary);
-    color: var(--accent);
-}
-}
-
-  .controlButton:active  {
     background-color: var(--bg-primary);
     color: var(--accent);
 }
@@ -113,16 +110,15 @@
     z-index: 9999;
     transition: all 0.2s ease-out;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (max-width: 768px) {
+    .navButton {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: rgba(10, 11, 15, 0.95);
+    }
+}
+@media (hover: hover) {
   .navButton:hover  {
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: translateY(-50%) scale(1.1);
-}
-}
-
-  .navButton:active  {
     border-color: var(--accent);
     color: var(--accent);
     transform: translateY(-50%) scale(1.1);

@@ -105,3 +105,5 @@ export default function NotificationPanel({ notifications, onClose, setUnreadCou
         </motion.div>
     );
 }
+
+

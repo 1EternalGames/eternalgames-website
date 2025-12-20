@@ -23,3 +23,5 @@ export const TextStrokeMark = Mark.create({
     return ['span', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: 'text-stroke-effect' }), 0];
   },
 });
+
+

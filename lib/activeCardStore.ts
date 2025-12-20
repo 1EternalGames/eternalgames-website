@@ -9,3 +9,5 @@ export const useActiveCardStore = create<ActiveCardState>((set) => ({
   activeCardId: null,
   setActiveCardId: (id) => set({ activeCardId: id }),
 }));
+
+

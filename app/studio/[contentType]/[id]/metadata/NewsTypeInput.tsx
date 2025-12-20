@@ -64,3 +64,5 @@ export function NewsTypeInput({ value, onChange }: NewsTypeInputProps) {
         </div>
     );
 }
+
+

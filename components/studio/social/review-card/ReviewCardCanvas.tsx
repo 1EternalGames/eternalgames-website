@@ -100,3 +100,5 @@ export default function ReviewCardCanvas({ data, onDataChange, scale = 1 }: Revi
         </div>
     );
 }
+
+

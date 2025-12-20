@@ -23,3 +23,5 @@ const Constellation = dynamic(() => import('@/components/constellation'), {
 export default function ConstellationWrapper({ initialData }: { initialData: InitialData }) {
     return <Constellation initialData={initialData} />;
 }
+
+

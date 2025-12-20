@@ -111,17 +111,35 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
     };
 
     return (
-        <g transform="translate(40, 660)">
+        <g transform="translate(40, 700)">
+             {/* Header (Title) */}
              <g transform="translate(0, 5)">
                 <rect x="0" y="-15" width="1000" height="1" fill="#333"></rect>
                 <rect x="800" y="-17" width="200" height="4" fill="#00FFF0" filter="url(#wn-neonGlow)"></rect>
                 <text x="1000" y="30" direction="rtl" textAnchor="start" fontWeight="900" fontSize="28" fill="#FFF">بقية الأخبار</text>
             </g>
 
-            <rect x="0" y="40" width="1000" height="480" fill="#0B0D12" rx="4" stroke="#1A202C" strokeWidth="1"></rect>
+            {/* Content Group (Shifted down to avoid overlap) */}
+            <g transform="translate(0, 35)">
+                {/* CUT CORNER BACKGROUND */}
+                <path 
+                    d="M 0,60 L 20,40 L 980,40 L 1000,60 L 1000,500 L 980,520 L 20,520 L 0,500 Z" 
+                    fill="#0B0D12" 
+                    stroke="#1A202C" 
+                    strokeWidth="1"
+                />
+                
+                {/* CORNER ACCENTS */}
+                <path d="M 0,80 L 0,60 L 20,40 L 40,40" fill="none" stroke="#00FFF0" strokeWidth="2" filter="url(#wn-neonGlow)" />
+                <path d="M 960,40 L 980,40 L 1000,60 L 1000,80" fill="none" stroke="#00FFF0" strokeWidth="2" filter="url(#wn-neonGlow)" />
+                <path d="M 1000,480 L 1000,500 L 980,520 L 960,520" fill="none" stroke="#00FFF0" strokeWidth="2" filter="url(#wn-neonGlow)" />
+                <path d="M 40,520 L 20,520 L 0,500 L 0,480" fill="none" stroke="#00FFF0" strokeWidth="2" filter="url(#wn-neonGlow)" />
 
-            {renderColumn(0, 520)}
-            {renderColumn(5, 20)}
+                {renderColumn(0, 520)}
+                {renderColumn(5, 20)}
+            </g>
         </g>
     );
 }
+
+

@@ -45,3 +45,5 @@ export function smartSplitText(text: string, maxLength: number = 400): string[] 
 
     return chunks;
 }
+
+

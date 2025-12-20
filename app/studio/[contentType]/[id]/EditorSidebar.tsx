@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import ButtonLoader from '@/components/ui/ButtonLoader';
 import { ProsConsInput } from './metadata/ProsConsInput';
 import { GameInput } from './metadata/GameInput';
@@ -15,6 +15,7 @@ import { NewsTypeInput } from './metadata/NewsTypeInput';
 import { DeveloperInput } from './metadata/DeveloperInput'; 
 import { PublisherInput } from './metadata/PublisherInput'; 
 import ColorDictionaryManager from './metadata/color-dictionary/ColorDictionaryManager';
+import VerticalImageEditor from './metadata/VerticalImageEditor'; // IMPORTED
 import { UploadQuality } from '@/lib/image-optimizer';
 import styles from './Editor.module.css';
 
@@ -29,14 +30,13 @@ export function EditorSidebar({
     colorDictionary,
     studioMetadata 
 }: any) {
-    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual, newsType, price, developer, publisher, isTBA, trailer, isPinned, onGamePass, onPSPlus } = documentState;
+    const { title, slug, score, verdict, pros, cons, game, tags, mainImage, mainImageVertical, authors, reporters, designers, releaseDate, platforms, synopsis, category, isSlugManual, newsType, price, developer, publisher, isTBA, trailer, isPinned, onGamePass, onPSPlus, datePrecision } = documentState;
     const [scheduledDateTime, setScheduledDateTime] = useState('');
     const [isSaving, startSaveTransition] = useTransition();
     const [isPublishing, startPublishTransition] = useTransition();
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
 
     const publishedAt = document.publishedAt;
-
     const isReview = document._type === 'review';
     const isArticle = document._type === 'article';
     const isNews = document._type === 'news';
@@ -93,6 +93,63 @@ export function EditorSidebar({
     const isUnpublishDisabled = isPublishing || !isSlugValid || isSlugPending || isSaving;
     const handleFieldChange = (field: string, value: any) => { dispatch({ type: 'UPDATE_FIELD', payload: { field, value } }); };
 
+    // --- Date Component Logic ---
+    const [year, setYear] = useState<string>('');
+    const [month, setMonth] = useState<string>('');
+    const [day, setDay] = useState<string>('');
+    const [initializedDate, setInitializedDate] = useState(false);
+
+    // One-time initialization from document state
+    useEffect(() => {
+        if (releaseDate && !initializedDate) {
+            const d = new Date(releaseDate);
+            if (!isNaN(d.getTime())) {
+                setYear(d.getFullYear().toString());
+                if (datePrecision === 'month' || datePrecision === 'day') {
+                    setMonth((d.getMonth() + 1).toString().padStart(2, '0'));
+                }
+                if (datePrecision === 'day') {
+                    setDay(d.getDate().toString().padStart(2, '0'));
+                }
+            }
+            setInitializedDate(true);
+        }
+    }, [releaseDate, datePrecision, initializedDate]);
+
+    // Handle Manual Changes to Date Parts
+    const updateReleaseDate = (newYear: string, newMonth: string, newDay: string) => {
+        setYear(newYear);
+        setMonth(newMonth);
+        const effectiveDay = newMonth ? newDay : ''; 
+        setDay(effectiveDay);
+
+        let newPrecision = 'year';
+        const y = newYear || new Date().getFullYear().toString();
+        let m = '12';
+        let d = '31';
+
+        if (newMonth) {
+            m = newMonth;
+            if (effectiveDay) {
+                 newPrecision = 'day';
+                 d = effectiveDay;
+            } else {
+                 newPrecision = 'month';
+                 const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+                 d = lastDay.toString();
+            }
+        } else {
+            newPrecision = 'year';
+        }
+
+        const mStr = m.padStart(2, '0');
+        const dStr = d.padStart(2, '0');
+        const newDateStr = `${y}-${mStr}-${dStr}`;
+
+        if (newDateStr !== releaseDate) handleFieldChange('releaseDate', newDateStr);
+        if (newPrecision !== datePrecision) handleFieldChange('datePrecision', newPrecision);
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -114,25 +171,38 @@ export function EditorSidebar({
                     <fieldset disabled={isSaving || isPublishing} style={{border: 'none', padding: 0, margin: 0, minWidth: 0}}>
                         <motion.div className={styles.sidebarSection} variants={itemVariants}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                                <label className={styles.sidebarLabel} style={{marginBottom: 0}}>جودة الصورة الرئيسية</label>
+                                <label className={styles.sidebarLabel} style={{marginBottom: 0}}>الصور</label>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'var(--font-main)', fontSize: '1.4rem'}}>
                                     <span>1080p</span>
                                     <ToggleSwitch checked={mainImageUploadQuality === '4k'} onChange={(isChecked) => onMainImageUploadQualityChange(isChecked ? '4k' : '1080p')} />
                                     <span>4K</span>
                                 </div>
                             </div>
-                            <MainImageInput currentAssetId={mainImage.assetId} currentAssetUrl={mainImage.assetUrl} onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} uploadQuality={mainImageUploadQuality} />
+                            
+                            {/* Horizontal Main Image */}
+                            <label className={styles.sidebarLabel} style={{fontSize: '1.2rem', marginTop: '0.5rem'}}>رئيسية (أفقية)</label>
+                            <MainImageInput 
+                                currentAssetId={mainImage.assetId} 
+                                currentAssetUrl={mainImage.assetUrl} 
+                                onImageChange={(assetId, assetUrl) => handleFieldChange('mainImage', { assetId, assetUrl })} 
+                                uploadQuality={mainImageUploadQuality} 
+                            />
+
+                            {/* Vertical Vanguard Image - REPLACED WITH NEW EDITOR */}
+                            <div style={{ marginTop: '2.5rem' }}>
+                                <label className={styles.sidebarLabel} style={{fontSize: '1.2rem'}}>Vanguard (عمودية - 4:5)</label>
+                                <VerticalImageEditor 
+                                    currentImageUrl={mainImageVertical.assetUrl} 
+                                    onImageChange={(assetId, assetUrl) => handleFieldChange('mainImageVertical', { assetId, assetUrl })} 
+                                    uploadQuality={mainImageUploadQuality} 
+                                />
+                            </div>
                         </motion.div>
                         
                         {!isRelease && (
                             <SlugInput 
-                                slug={slug}
-                                title={title}
-                                docId={document._id}
-                                isSlugManual={isSlugManual}
-                                slugValidationStatus={slugValidationStatus}
-                                slugValidationMessage={slugValidationMessage}
-                                dispatch={dispatch}
+                                slug={slug} title={title} docId={document._id} isSlugManual={isSlugManual}
+                                slugValidationStatus={slugValidationStatus} slugValidationMessage={slugValidationMessage} dispatch={dispatch}
                             />
                         )}
                         
@@ -147,32 +217,64 @@ export function EditorSidebar({
                                     </div>
                                 </div>
                                 <label className={styles.sidebarLabel}>رابط العرض الدعائي (YouTube)</label>
-                                <input 
-                                    type="url" 
-                                    value={trailer || ''} 
-                                    onChange={(e) => handleFieldChange('trailer', e.target.value)} 
-                                    placeholder="https://youtube.com/..." 
-                                    className={styles.sidebarInput} 
-                                    dir="ltr"
-                                />
+                                <input type="url" value={trailer || ''} onChange={(e) => handleFieldChange('trailer', e.target.value)} placeholder="https://youtube.com/..." className={styles.sidebarInput} dir="ltr"/>
                             </motion.div>
 
                             <motion.div className={styles.sidebarSection} variants={itemVariants}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <label className={styles.sidebarLabel}>تاريخ الإصدار</label>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <span style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>TBA</span>
                                         <ToggleSwitch name="isTBA" checked={isTBA} onChange={(val) => handleFieldChange('isTBA', val)} />
                                     </div>
                                 </div>
-                                <input 
-                                    type="date" 
-                                    value={releaseDate} 
-                                    onChange={(e) => handleFieldChange('releaseDate', e.target.value)} 
-                                    className={styles.sidebarInput} 
-                                    disabled={isTBA}
-                                    style={{ opacity: isTBA ? 0.5 : 1 }}
-                                /> 
+
+                                {!isTBA && (
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        {/* Year Input (Required) */}
+                                        <div style={{ flex: 1 }}>
+                                            <input 
+                                                type="number" 
+                                                placeholder="السنة (YYYY)" 
+                                                value={year} 
+                                                onChange={(e) => updateReleaseDate(e.target.value, month, day)} 
+                                                className={styles.sidebarInput} 
+                                                min="2000" max="2100"
+                                            />
+                                        </div>
+                                        
+                                        {/* Month Input (Optional) */}
+                                        <div style={{ flex: 1 }}>
+                                            <select 
+                                                value={month} 
+                                                onChange={(e) => updateReleaseDate(year, e.target.value, day)}
+                                                className={styles.sidebarInput}
+                                                style={{ paddingRight: '0.5rem' }}
+                                            >
+                                                <option value="">الشهر (اختياري)</option>
+                                                {Array.from({ length: 12 }).map((_, i) => (
+                                                    <option key={i} value={String(i + 1).padStart(2, '0')}>
+                                                        {new Date(0, i).toLocaleString('ar-EG', { month: 'short' })}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Day Input (Optional, disabled if no month) */}
+                                        <div style={{ flex: 0.6 }}>
+                                            <input 
+                                                type="number" 
+                                                placeholder="اليوم" 
+                                                min="1" max="31"
+                                                value={day} 
+                                                onChange={(e) => updateReleaseDate(year, month, e.target.value)} 
+                                                className={styles.sidebarInput}
+                                                disabled={!month}
+                                                style={{ opacity: !month ? 0.5 : 1 }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </motion.div> 
                             
                             <motion.div className={styles.sidebarSection} variants={itemVariants}>
@@ -194,61 +296,19 @@ export function EditorSidebar({
                                 </div>
                             </motion.div>
 
-                            <motion.div variants={itemVariants}>
-                                <DeveloperInput 
-                                    allDevelopers={studioMetadata?.developers || []} 
-                                    selectedDeveloper={developer} 
-                                    onDeveloperSelect={(dev) => handleFieldChange('developer', dev)} 
-                                />
-                            </motion.div>
-
-                            <motion.div variants={itemVariants}>
-                                <PublisherInput 
-                                    allPublishers={studioMetadata?.publishers || []} 
-                                    selectedPublisher={publisher} 
-                                    onPublisherSelect={(pub) => handleFieldChange('publisher', pub)} 
-                                />
-                            </motion.div>
-
+                            <motion.div variants={itemVariants}><DeveloperInput allDevelopers={studioMetadata?.developers || []} selectedDeveloper={developer} onDeveloperSelect={(dev) => handleFieldChange('developer', dev)} /></motion.div>
+                            <motion.div variants={itemVariants}><PublisherInput allPublishers={studioMetadata?.publishers || []} selectedPublisher={publisher} onPublisherSelect={(pub) => handleFieldChange('publisher', pub)} /></motion.div>
                             <motion.div variants={itemVariants}><PlatformInput selectedPlatforms={platforms} onPlatformsChange={(p: any) => handleFieldChange('platforms', p)} /></motion.div>
                             <motion.div variants={itemVariants}><TagInput allTags={studioMetadata?.tags || []} label="الوسوم (Genres)" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></motion.div>
                             <motion.div variants={itemVariants}><CreatorInput allCreators={studioMetadata?.creators || []} role="DESIGNER" label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></motion.div>
                             <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>نبذة</label> <textarea value={synopsis} onChange={(e) => handleFieldChange('synopsis', e.target.value)} className={styles.sidebarInput} rows={5} /> </motion.div> 
                         </> ) : ( <> 
-                            <div><CreatorInput allCreators={studioMetadata?.creators || []} role={primaryCreatorConfig.sanityType as any} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> 
-                            <div><GameInput allGames={studioMetadata?.games || []} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> 
-                            
-                            {isNews && (
-                                <>
-                                    <motion.div variants={itemVariants}>
-                                        <TagInput
-                                            allTags={studioMetadata?.tags || []}
-                                            label="التصنيف"
-                                            placeholder="اختر تصنيف الخبر..."
-                                            selectedTags={category ? [category] : []}
-                                            onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)}
-                                            singleSelection={true}
-                                            categoryForCreation="News"
-                                        />
-                                    </motion.div>
-                                    <motion.div variants={itemVariants}>
-                                        <NewsTypeInput value={newsType || 'official'} onChange={(val) => handleFieldChange('newsType', val)} />
-                                    </motion.div>
-                                </>
-                            )}
-
-                            {isArticle && (
-                                <>
-                                    <div><TagInput allTags={studioMetadata?.tags || []} label="نوع المقال" placeholder="اختر نوع المقال..." selectedTags={category ? [category] : []} onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)} singleSelection={true} categoryForCreation="Article" /></div>
-                                    <div><TagInput allTags={studioMetadata?.tags || []} label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></div>
-                                </>
-                            )}
-
-                            {isReview && (
-                                <div><TagInput allTags={studioMetadata?.tags || []} label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game"/></div>
-                            )}
-
-                            <div><CreatorInput allCreators={studioMetadata?.creators || []} role="DESIGNER" label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
+                             <div><CreatorInput allCreators={studioMetadata?.creators || []} role={primaryCreatorConfig.sanityType as any} label={primaryCreatorConfig.label} selectedCreators={documentState[primaryCreatorConfig.field]} onCreatorsChange={(c: any) => handleFieldChange(primaryCreatorConfig.field, c)} /></div> 
+                             <div><GameInput allGames={studioMetadata?.games || []} selectedGame={game} onGameSelect={(g: any) => handleFieldChange('game', g)} /></div> 
+                             {isNews && ( <> <motion.div variants={itemVariants}><TagInput allTags={studioMetadata?.tags || []} label="التصنيف" placeholder="اختر تصنيف الخبر..." selectedTags={category ? [category] : []} onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)} singleSelection={true} categoryForCreation="News" /></motion.div> <motion.div variants={itemVariants}><NewsTypeInput value={newsType || 'official'} onChange={(val) => handleFieldChange('newsType', val)} /></motion.div> </> )}
+                             {isArticle && ( <> <div><TagInput allTags={studioMetadata?.tags || []} label="نوع المقال" placeholder="اختر نوع المقال..." selectedTags={category ? [category] : []} onTagsChange={(newCategoryArr: any) => handleFieldChange('category', newCategoryArr[0] || null)} singleSelection={true} categoryForCreation="Article" /></div> <div><TagInput allTags={studioMetadata?.tags || []} label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game" /></div> </> )}
+                             {isReview && ( <div><TagInput allTags={studioMetadata?.tags || []} label="الوسوم" placeholder="ابحث أو أنشئ وسمًا..." selectedTags={tags} onTagsChange={(t: any) => handleFieldChange('tags', t)} categoryForCreation="Game"/></div> )}
+                             <div><CreatorInput allCreators={studioMetadata?.creators || []} role="DESIGNER" label="المصممون (اختياري)" selectedCreators={designers} onCreatorsChange={(c: any) => handleFieldChange('designers', c)} /></div>
                         </> )}
                         
                         {isReview && (<> <motion.hr variants={itemVariants} style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} /> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>التقييم (0-10) {score <= 0 && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}</label> <input type="number" value={score} onChange={(e) => handleFieldChange('score', parseFloat(e.target.value) || 0)} className={styles.sidebarInput} min="0" max="10" step="0.1" /> </motion.div> <motion.div className={styles.sidebarSection} variants={itemVariants}> <label className={styles.sidebarLabel}>الخلاصة {!verdict.trim() && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}</label> <textarea value={verdict} onChange={(e) => handleFieldChange('verdict', e.target.value)} className={styles.sidebarInput} rows={3} /> </motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المحاسن" items={pros} setItems={(p: any) => handleFieldChange('pros', p)} /></motion.div> <motion.div variants={itemVariants}><ProsConsInput label="المساوئ" items={cons} setItems={(c: any) => handleFieldChange('cons', c)} /></motion.div> </>)}
@@ -270,3 +330,5 @@ export function EditorSidebar({
         </AnimatePresence>
     );
 }
+
+

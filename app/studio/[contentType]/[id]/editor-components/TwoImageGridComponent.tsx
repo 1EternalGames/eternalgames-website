@@ -84,3 +84,5 @@ export const TwoImageGridComponent = ({ node, updateAttributes, editor, getPos }
         </NodeViewWrapper>
     );
 };
+
+

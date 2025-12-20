@@ -189,3 +189,5 @@
     .headerLeft { flex-grow: 1; justify-content: space-between; }
     .mobileHeaderIcons { display: flex; align-items: center; gap: 1rem; }
 }
+
+

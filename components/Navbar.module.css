@@ -9,6 +9,10 @@
   height: var(--nav-height);
   display: flex;
   align-items: center;
+  
+  /* OPTIMIZATION: Hint browser about expensive layout changes */
+  will-change: height, background-color, backdrop-filter;
+  
   transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
               background-color 0.4s ease, 
               backdrop-filter 0.4s ease;
@@ -25,9 +29,10 @@
 }
 
 @media (max-width: 768px) {
-  /* MOBILE OPTIMIZATION */
+  /* MOBILE OPTIMIZATION: Kill Blur */
   .navbar.scrolled {
     backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     background-color: rgba(5, 5, 5, 0.95) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
@@ -236,9 +241,13 @@
       z-index: 1200; 
   }
   
-  /* Mobile Opt for Overlay */
+  /* Mobile Opt for Overlay: Kill Blur */
   @media (max-width: 768px) {
-      .mobileNavOverlay { backdrop-filter: none; background-color: rgba(5, 5, 5, 0.95); }
+      .mobileNavOverlay { 
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          background-color: rgba(5, 5, 5, 0.98); /* Higher opacity fallback */
+      }
   }
 
   .mobileNavContent { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
@@ -247,3 +256,5 @@
 body.editor-active .desktopView > nav { display: none; }
 body.editor-active .desktopView { grid-template-columns: auto 1fr; }
 @media (max-width: 1024px) { body.editor-active .mobileView { display: none; } }
+
+

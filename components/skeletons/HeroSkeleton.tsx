@@ -14,3 +14,5 @@ export default function HeroSkeleton({ variant = 'center' }: { variant?: 'center
         </div>
     );
 }
+
+

@@ -44,3 +44,5 @@ export default function AdminPinButton({ releaseId, isPinned }: { releaseId: str
         </button>
     );
 }
+
+

@@ -28,3 +28,5 @@ export const ImageResizeComponent = ({ editor, node, updateAttributes, getPos }:
         </NodeViewWrapper>
     );
 };
+
+

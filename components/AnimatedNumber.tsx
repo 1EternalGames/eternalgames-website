@@ -54,3 +54,6 @@ export const AnimatedNumber = ({ value, isInView, className }: { value: number; 
 };
 
 
+
+
+

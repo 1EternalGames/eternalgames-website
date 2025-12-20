@@ -21,3 +21,5 @@ export const PLATFORM_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElemen
     NSW: SwitchIcon,
     Cloud: CloudIcon,
 };
+
+

@@ -6,8 +6,8 @@ import article from './articleType'
 import news from './newsType'
 import game from './gameType'
 import gameRelease from './gameReleaseType'
-import developer from './developerType' // NEW
-import publisher from './publisherType' // NEW
+import developer from './developerType' 
+import publisher from './publisherType' 
 import imageCompare from './imageCompareType'
 import twoImageGrid from './twoImageGridType'
 import fourImageGrid from './fourImageGridType'
@@ -19,6 +19,7 @@ import reporter from './creators/reporterType'
 import reviewer from './creators/reviewerType'
 import colorDictionary from './custom_inputs/colorDictionaryType'
 import youtube from './custom_objects/youtubeType'
+import homepageSettings from './homepageSettingsType'
 
 export const schemaTypes = [
   // Documents
@@ -28,8 +29,8 @@ export const schemaTypes = [
   game,
   gameRelease,
   tag,
-  developer, // NEW
-  publisher, // NEW
+  developer, 
+  publisher, 
   // Creators
   author,
   designer,
@@ -37,6 +38,7 @@ export const schemaTypes = [
   reviewer,
   // Singleton Documents
   colorDictionary,
+  homepageSettings,
   // Objects & Custom Inputs
   blockContent,
   imageCompare,
@@ -46,3 +48,5 @@ export const schemaTypes = [
   table,
   youtube,
 ]
+
+

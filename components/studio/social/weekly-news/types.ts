@@ -50,3 +50,5 @@ export interface WeeklyNewsTemplateData {
     cards: WeeklyCardData[];
     newsList: WeeklyListItem[];
 }
+
+

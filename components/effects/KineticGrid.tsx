@@ -84,3 +84,5 @@ export const KineticGrid = ({ children }: { children: React.ReactNode }) => {
         </KineticGridContext.Provider>
     );
 };
+
+

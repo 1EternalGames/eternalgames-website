@@ -104,3 +104,5 @@ export default function ReviewCardImage({ data, onDataChange, scale }: ReviewCar
         </>
     );
 }
+
+

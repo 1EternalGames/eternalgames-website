@@ -31,3 +31,5 @@ export interface ReviewCardCanvasProps {
     onDataChange: (newData: Partial<ReviewTemplateData>) => void;
     scale?: number;
 }
+
+

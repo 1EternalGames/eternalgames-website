@@ -42,3 +42,5 @@ export const TableComponent = ({ editor, getPos, deleteNode }: NodeViewProps) =>
         </NodeViewWrapper>
     );
 };
+
+

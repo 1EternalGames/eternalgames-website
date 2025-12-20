@@ -28,3 +28,5 @@ export default function IndexPageSkeleton({ heroVariant = 'center' }: { heroVari
         </>
     );
 }
+
+

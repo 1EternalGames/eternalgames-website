@@ -120,3 +120,5 @@ export default function SanityTable({ value }: { value: any }) {
         </motion.div>
     );
 }
+
+

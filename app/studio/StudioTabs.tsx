@@ -37,3 +37,6 @@ export function StudioTabs({ tabs, activeTab, setActiveTab }: StudioTabsProps) {
 
 
 
+
+
+

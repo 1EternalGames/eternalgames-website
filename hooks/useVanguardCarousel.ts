@@ -157,3 +157,5 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         isMobile,
     };
 }
+
+

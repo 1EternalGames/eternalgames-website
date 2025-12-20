@@ -11,3 +11,5 @@ declare module '@tiptap/core' {
     };
   }
 }
+
+

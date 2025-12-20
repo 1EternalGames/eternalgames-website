@@ -74,3 +74,5 @@ export default function GameDetails({ details }: GameDetailsProps) {
         </motion.div>
     );
 }
+
+

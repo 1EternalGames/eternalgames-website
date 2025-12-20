@@ -10,3 +10,5 @@ export default function GridPageSkeleton({ count = 12 }: { count?: number }) {
         </div>
     );
 }
+
+

@@ -485,3 +485,5 @@ export default function InstagramNewsCanvas({ data, onDataChange, scale = 1, cur
         </div>
     );
 }
+
+

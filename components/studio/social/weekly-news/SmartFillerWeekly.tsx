@@ -296,3 +296,5 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
         </Modal>
     );
 }
+
+

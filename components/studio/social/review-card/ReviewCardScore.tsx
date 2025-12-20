@@ -99,3 +99,5 @@ export default function ReviewCardScore({ data, onDataChange, editingField, setE
         </g>
     );
 }
+
+

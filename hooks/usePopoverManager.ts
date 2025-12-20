@@ -40,3 +40,5 @@ export function usePopoverManager() {
 
     return { popoverRef, openPopover, togglePopover, closePopover };
 }
+
+
