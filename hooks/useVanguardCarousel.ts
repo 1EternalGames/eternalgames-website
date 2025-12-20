@@ -4,9 +4,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const VANGUARD_SLOTS = 5;
-// THE DEFINITIVE FIX: The cooldown is now synchronized with the component's 0.7s animation duration.
-// This prevents new navigation actions from being dispatched while an animation is still in progress.
-export const ANIMATION_COOLDOWN = 700;
+// FIX: Increased cooldown to match the 700ms transition duration to prevent interaction during movement
+export const ANIMATION_COOLDOWN = 750; 
 const AUTO_NAVIGATE_INTERVAL = 2500;
 const MOBILE_BREAKPOINT = 1024;
 const CENTER_SLOT_INDEX = 2;
@@ -41,6 +40,8 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         if (itemCount > 0) {
             intervalRef.current = setInterval(() => {
                 setIsAnimating(true);
+                // FIX: Ensure hover is cleared when auto-navigating
+                setHoveredId(null);
                 setCurrentIndex(prevIndex => (prevIndex + 1) % itemCount);
                 setTimeout(() => setIsAnimating(false), ANIMATION_COOLDOWN);
             }, AUTO_NAVIGATE_INTERVAL);
@@ -50,6 +51,8 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     const navigateToIndex = useCallback((index: number) => {
         if (isAnimating || index === currentIndex) return;
         setIsAnimating(true);
+        // FIX: Force clear hover state on manual navigation to prevent "stuck" large cards
+        setHoveredId(null);
         setCurrentIndex(index);
         startInterval(); 
         setTimeout(() => {
@@ -67,6 +70,7 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     }, [hoveredId, isCurrentlyInView, isPageVisible, startInterval, stopInterval]);
 
     const handleSetHoveredId = useCallback((id: string | number | null) => {
+        // Strict check: Cannot hover while animating
         if (isAnimating) return;
         setHoveredId(id);
     }, [isAnimating]);
@@ -89,52 +93,59 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
 
         const isCenter = slotIndex === CENTER_SLOT_INDEX;
         const style: any = { opacity: 1, zIndex: 0 };
+        
         let transform = '';
+        const isHovered = hoveredId === itemId;
 
         if (isMobile) {
             style.left = '50%';
             const offsetPx = 140; 
-            const baseTranslateX = '-50%';
+            const baseTranslateX = '-50%'; // String literal for interpolation
+
+            let xOffset = 0;
+            let baseScale = 1;
 
             switch (slotIndex) {
-                case 0: // Far Left
-                    transform = `translateX(calc(${baseTranslateX} - ${offsetPx * 1.6}px)) scale(0.75)`;
-                    style.zIndex = 0;
-                    break;
-                case 1: // Near Left
-                    transform = `translateX(calc(${baseTranslateX} - ${offsetPx * 0.9}px)) scale(0.8)`;
-                    style.zIndex = 1;
-                    break;
-                case 2: // Center
-                    transform = `translateX(${baseTranslateX}) scale(1)`;
-                    style.zIndex = 2;
-                    break;
-                case 3: // Near Right
-                    transform = `translateX(calc(${baseTranslateX} + ${offsetPx * 0.9}px)) scale(0.8)`;
-                    style.zIndex = 1;
-                    break;
-                case 4: // Far Right
-                    transform = `translateX(calc(${baseTranslateX} + ${offsetPx * 1.6}px)) scale(0.75)`;
-                    style.zIndex = 0;
-                    break;
+                case 0: xOffset = -offsetPx * 1.6; baseScale = 0.75; style.zIndex = 0; break;
+                case 1: xOffset = -offsetPx * 0.9; baseScale = 0.8;  style.zIndex = 1; break;
+                case 2: xOffset = 0;               baseScale = 1;    style.zIndex = 2; break;
+                case 3: xOffset = offsetPx * 0.9;  baseScale = 0.8;  style.zIndex = 1; break;
+                case 4: xOffset = offsetPx * 1.6;  baseScale = 0.75; style.zIndex = 0; break;
             }
+
+            // Calculate final scale with hover effect
+            // We multiply the base scale instead of appending a second scale transform
+            const hoverScaleMultiplier = isHovered ? 1.05 : 1;
+            const finalScale = baseScale * hoverScaleMultiplier;
+
+            // Apply Z-Index boost on hover
+            if (isHovered) style.zIndex = 3;
+
+            // Construct consistent transform string: translateX(calc) scale(val) translateY(val)
+            // Using calc for ALL mobile states prevents interpolation glitches between "0px" and "calc()"
+            transform = `translateX(calc(${baseTranslateX} + ${xOffset}px)) scale(${finalScale}) translateY(-50px)`;
+            
         } else { // Desktop
             const offset = 250;
-            switch (slotIndex) {
-                case 0: transform = `translateX(${-offset * 1.6}px) scale(0.6)`; break;
-                case 1: transform = `translateX(${-offset * 0.9}px) scale(0.65)`; style.zIndex = 1; break;
-                case 2: transform = `translateX(0) scale(1)`; style.zIndex = 2; break;
-                case 3: transform = `translateX(${offset * 0.9}px) scale(0.65)`; style.zIndex = 1; break;
-                case 4: transform = `translateX(${offset * 1.6}px) scale(0.6)`; break;
-            }
-        }
-        
-        // Apply universal vertical lift
-        transform += ' translateY(-50px)';
+            let x = 0;
+            let baseScale = 1;
 
-        if (hoveredId === itemId && !isMobile) {
-            style.zIndex = 3;
-            transform += ' translateY(-15px)'; // This composes with the base lift
+            switch (slotIndex) {
+                case 0: x = -offset * 1.6; baseScale = 0.6;  style.zIndex = 0; break;
+                case 1: x = -offset * 0.9; baseScale = 0.65; style.zIndex = 1; break;
+                case 2: x = 0;             baseScale = 1;    style.zIndex = 2; break;
+                case 3: x = offset * 0.9;  baseScale = 0.65; style.zIndex = 1; break;
+                case 4: x = offset * 1.6;  baseScale = 0.6;  style.zIndex = 0; break;
+            }
+
+            // Desktop Hover Logic: Lift instead of scale
+            let yLift = -50;
+            if (isHovered) {
+                style.zIndex = 3;
+                yLift -= 15; // Extra lift
+            }
+
+            transform = `translateX(${x}px) scale(${baseScale}) translateY(${yLift}px)`;
         }
         
         const isVisibleOnMobile = isMobile ? slotIndex >= 1 && slotIndex <= 3 : true;
@@ -142,7 +153,6 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
              style.pointerEvents = 'none';
              style.opacity = 0;
         }
-
 
         style.transform = transform;
         return { style, isCenter, isVisible: true };
@@ -155,7 +165,6 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         navigateToIndex,
         getCardState,
         isMobile,
+        isAnimating, // Exporting this for UI consumption
     };
 }
-
-

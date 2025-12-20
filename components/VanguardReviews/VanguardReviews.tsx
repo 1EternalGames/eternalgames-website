@@ -1,7 +1,7 @@
 // components/VanguardReviews/VanguardReviews.tsx
 'use client';
 
-import { useState, useEffect, useRef, memo, useMemo } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, animate, PanInfo, useMotionValue, useSpring, Variants } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -35,7 +35,6 @@ const SATELLITE_CONFIG = [
 ];
 
 // --- MOBILE ADJUSTMENT NUMBER ---
-// Adjust this value to bring tags closer (0.1) or push them further (1.0 = same as desktop)
 const MOBILE_SATELLITE_SCALE = 0.45;
 
 // --- ARROW POSITION SETTINGS ---
@@ -114,9 +113,6 @@ const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabl
     `;
 
     // --- STATIC BOTTOM PATHS (RETREATING) ---
-    // Extends further up to include the notches (middle curves)
-    
-    // Right Side: Bottom -> Up Right Edge -> Notch Curve -> Up Notch Side -> Top of Notch
     const bottomRightPath = `
         M 150,380 
         L 255,380 Q 265,380 272,372 L 292,352 Q 300,345 300,335 
@@ -124,7 +120,6 @@ const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabl
         L 290,130
     `;
     
-    // Left Side: Bottom -> Up Left Edge -> Notch Curve -> Up Notch Side -> Top of Notch
     const bottomLeftPath = `
         M 150,380 
         L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 
@@ -133,9 +128,8 @@ const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabl
     `;
 
     const activeStrokeThickness = "4"; 
-    const staticStrokeThickness = "2"; // Thinner as requested
+    const staticStrokeThickness = "2"; 
 
-    // Transition Configs
     const activeTransition = {
         pathLength: { duration: 0.4, ease: "easeInOut" as const },
         opacity: { duration: 0.05 },
@@ -150,12 +144,9 @@ const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabl
     return (
         <div className={styles.frameSvgContainer}>
             <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none">
-                {/* Base Card Background */}
                 <path d={CARD_SHAPE_PATH} 
                       fill="var(--bg-secondary)" stroke="none" strokeWidth="0" vectorEffect="non-scaling-stroke" />
                 
-                {/* --- STATIC BOTTOM STROKES (Disappear on Hover) --- */}
-                {/* These persist even if isEnabled (Cyber Corners) is false, they are part of the base look */}
                 <motion.path 
                     d={bottomRightPath}
                     fill="none" 
@@ -188,7 +179,6 @@ const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabl
                     transition={bottomTransition}
                 />
 
-                {/* --- ACTIVE CYBER CORNER (Expand on Hover) --- */}
                 {isEnabled && (
                     <>
                         <motion.path 
@@ -602,7 +592,8 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         setHoveredId,
         navigateToIndex,
         getCardState,
-        isMobile
+        isMobile,
+        isAnimating
     } = useVanguardCarousel(reviews.length, isCurrentlyInView);
 
     useEffect(() => {
@@ -622,8 +613,28 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     };
     
     // --- DEBOUNCED HOVER LOGIC ---
-    const handleCardHoverChange = (id: string, isHovering: boolean) => {
+    // MEMOIZED to prevent unnecessary re-renders of VanguardCard
+    const handleCardHoverChange = useCallback((id: string, isHovering: boolean) => {
         if (!initialAnimHasRun) return;
+        // CRITICAL FIX: Ensure we don't apply hover effects if the carousel is actively animating
+        // This prevents the "stuck large card" issue during rapid interaction
+        if (isAnimating) {
+            setHoveredId(null);
+            setIsManualHover(false);
+            return;
+        }
+
+        // NEW: Instant update for mobile to prevent laggy touch feedback
+        if (isMobile) {
+            if (isHovering) {
+                setHoveredId(id);
+                setIsManualHover(true);
+            } else {
+                setHoveredId(null);
+                setIsManualHover(false);
+            }
+            return;
+        }
 
         if (hoverTimeoutRef.current) {
             clearTimeout(hoverTimeoutRef.current);
@@ -643,7 +654,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 setIsManualHover(false);
             }, 50);
         }
-    };
+    }, [initialAnimHasRun, isMobile, setHoveredId, isAnimating]);
 
     if (reviews.length === 0) return null;
 

@@ -26,7 +26,6 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
 
     useEffect(() => {
         // Only scroll if: Not expanded, Not hovered, and IS in view
-        // Reverted to 5
         if (!isExpanded && !isHovered && isInView && listItems.length > 5) {
             intervalRef.current = setInterval(() => {
                 setListItems((prevItems) => {
@@ -46,16 +45,22 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     }, [isHovered, listItems.length, isExpanded, isInView]);
 
     const displayItems = useMemo(() => 
-        // Reverted to 5
         isExpanded ? items.slice(0, 15) : listItems.slice(0, 5),
     [isExpanded, items, listItems]);
+
+    const interactionHandlers = {
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+        onTouchStart: () => setIsHovered(true),
+        onTouchEnd: () => setIsHovered(false),
+        onTouchCancel: () => setIsHovered(false),
+    };
 
     return (
         <div 
             ref={containerRef}
             className={styles.streamContainer}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            {...interactionHandlers}
             style={{ minHeight: isExpanded ? 'auto' : '400px' }}
         >
             <AnimatePresence mode="popLayout" initial={false}>
@@ -85,5 +90,3 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
         </div>
     );
 }
-
-

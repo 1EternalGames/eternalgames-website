@@ -32,7 +32,8 @@ export const usePerformanceStore = create<PerformanceState>()(
       
       // Default Background
       isBackgroundAnimated: false,
-      isBackgroundVisible: true,
+      // MODIFIED: Default to false on mobile devices to improve initial load performance
+      isBackgroundVisible: typeof window !== 'undefined' ? window.innerWidth > 768 : true,
 
       toggleLivingCard: () => set((state) => ({ isLivingCardEnabled: !state.isLivingCardEnabled })),
       toggleFlyingTags: () => set((state) => ({ isFlyingTagsEnabled: !state.isFlyingTagsEnabled })),
@@ -49,5 +50,3 @@ export const usePerformanceStore = create<PerformanceState>()(
     }
   )
 );
-
-

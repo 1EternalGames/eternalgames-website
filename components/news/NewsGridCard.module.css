@@ -378,7 +378,12 @@ a.creatorCapsule:active { transform: scale(0.95); }
         z-index: 200;
     }
 }
+
+/* FIX: Mobile Active State for Tags */
 .satelliteShardLink.clickable:active {
+    background-color: var(--accent);
+    color: #000;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
     transform: scale(0.95);
 }
 

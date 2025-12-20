@@ -90,11 +90,18 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
     const endIndex = startIndex + itemsPerPage;
     const currentItems = items.slice(startIndex, endIndex);
 
+    const interactionHandlers = {
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+        onTouchStart: () => setIsHovered(true),
+        onTouchEnd: () => setIsHovered(false),
+        onTouchCancel: () => setIsHovered(false),
+    };
+
     return (
         <div 
             className={styles.paginatedContainer}
-            onMouseEnter={() => setIsHovered(true)} 
-            onMouseLeave={() => setIsHovered(false)}
+            {...interactionHandlers}
         >
             <div className={styles.paginatedContent}>
                 <AnimatePresence mode="wait">
@@ -130,5 +137,3 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
         </div>
     );
 }
-
-

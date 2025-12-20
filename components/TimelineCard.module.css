@@ -479,6 +479,14 @@
     backface-visibility: hidden;
 }
 
+/* FIX: Mobile Active States */
+.genrePill:active, .shardPill.interactive:active {
+    transform: scale(0.95);
+    background-color: var(--accent);
+    color: #000;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
 @media (hover: hover) {
     .genrePill:hover, .shardPill.interactive:hover {
         background-color: var(--accent);
@@ -489,12 +497,7 @@
         z-index: 200;
     }
 }
-.genrePill:active, .shardPill.interactive:active {
-    transform: scale(0.95);
-    background-color: var(--accent);
-    color: #000;
-    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
-}
+
 
 /* --- VIDEO OVERLAY (HOMEPAGE) --- */
 .videoOverlay {
@@ -594,5 +597,3 @@
         background: #000; 
     }
 }
-
-

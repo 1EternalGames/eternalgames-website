@@ -16,7 +16,6 @@ type PaginatedCarouselProps = {
 export default function PaginatedCarousel({ items, itemsPerPage = 5 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
     
@@ -25,13 +24,6 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
     // Intersection observer to prevent flipping when not visible
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     const resetTimeout = () => { if (timeoutRef.current) { clearTimeout(timeoutRef.current); } };
 
@@ -51,16 +43,19 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
     const endIndex = startIndex + itemsPerPage;
     const currentItems = items.slice(startIndex, endIndex);
     
-    const hoverHandlers = isMobile ? {} : {
+    const interactionHandlers = {
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => setIsHovered(false),
+        onTouchStart: () => setIsHovered(true),
+        onTouchEnd: () => setIsHovered(false),
+        onTouchCancel: () => setIsHovered(false),
     };
 
     return (
         <div 
             ref={containerRef}
             className={styles.paginatedContainer}
-            {...hoverHandlers}
+            {...interactionHandlers}
         >
             <div className={styles.paginatedContent}>
                 <AnimatePresence mode="wait">
@@ -108,5 +103,3 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
         </div>
     );
 }
-
-
