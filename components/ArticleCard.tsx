@@ -60,8 +60,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
-    // CHEAT CODE: On mobile, completely disable living effect to save CPU.
-    const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled || isMobile;
+    // MODIFIED: Enabled on mobile by removing "|| isMobile"
+    const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled;
 
     const handlers = !isMobile ? {
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
@@ -91,9 +91,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                      setActiveCardId(article.id);
                      setIsTextExpanded(true);
             }
-            // NO living effect calculation on touch start for mobile
+            // MODIFIED: Enable touch interaction for living effect on mobile
+            if (!effectivelyDisabledLiving) {
+                livingCardAnimation.onTouchStart(e);
+            }
         },
-        // NO touch move/end handlers
+        // MODIFIED: Restored touch move/end handlers
+        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
+        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
     };
 
     const getLinkBasePath = () => {
@@ -323,5 +328,3 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
 const ArticleCard = memo(ArticleCardComponent);
 export default ArticleCard;
-
-

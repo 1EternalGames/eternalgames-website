@@ -405,8 +405,7 @@ a.creatorCapsule:active { transform: scale(0.95); }
     .creatorCapsule span { display: block; max-width: 100px; }
     .satelliteShardLink { backdrop-filter: none !important; background: #000; }
     
+    /* MODIFIED: Ensure satellite field is visible when active on mobile */
     .satelliteField { display: none; }
     .cardContainer.activeState .satelliteField { display: block; }
 }
-
-

@@ -334,8 +334,10 @@ a.creditCapsule:active { transform: scale(0.95); }
 @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px var(--accent); } }
 
 @media (max-width: 768px) {
-    .livingCardWrapper { perspective: none; overflow: visible !important; border-radius: 12px; background: transparent; margin-bottom: 2.5rem; }
-    .monolithFrame { min-height: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: none !important; mask-image: none; -webkit-mask-image: none; }
+    /* MODIFIED: Allow 3D transforms on mobile */
+    .livingCardWrapper { overflow: visible !important; border-radius: 12px; background: transparent; margin-bottom: 2.5rem; }
+    .monolithFrame { min-height: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); mask-image: none; -webkit-mask-image: none; }
+    
     .cardTitle { font-size: 1.6rem; }
     
     .titleOverlay { padding: 4rem 1.5rem 5rem 1.5rem; }
@@ -358,5 +360,3 @@ a.creditCapsule:active { transform: scale(0.95); }
         background-color: rgba(10, 11, 15, 0.95);
     }
 }
-
-

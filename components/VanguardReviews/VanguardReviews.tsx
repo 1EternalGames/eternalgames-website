@@ -1,7 +1,7 @@
 // components/VanguardReviews/VanguardReviews.tsx
 'use client';
 
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { motion, AnimatePresence, useInView, animate, PanInfo, useMotionValue, useSpring, Variants } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -33,6 +33,10 @@ const SATELLITE_CONFIG = [
     { hoverX: 180, hoverY: 60, rotate: 10 },    // Top Right
     { hoverX: -50, hoverY: -265, rotate: 5 }     // Upper Center (The "Upper Tag")
 ];
+
+// --- MOBILE ADJUSTMENT NUMBER ---
+// Adjust this value to bring tags closer (0.1) or push them further (1.0 = same as desktop)
+const MOBILE_SATELLITE_SCALE = 0.45;
 
 // --- ARROW POSITION SETTINGS ---
 const ARROW_SETTINGS = {
@@ -468,54 +472,71 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     {isFlyingTagsEnabled && (
                         <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                             <AnimatePresence>
-                                {isHovered && displayTags.map((tag, i) => (
-                                    <motion.div
-                                        key={`${review.id}-${tag.slug}`}
-                                        className={styles.satelliteShard}
-                                        initial={{ opacity: 0, scale: 0, x: 0, y: 0, z: 0 }}
-                                        animate={{
-                                            opacity: 1,
-                                            scale: 1.15,
-                                            x: SATELLITE_CONFIG[i]?.hoverX || 0,
-                                            y: SATELLITE_CONFIG[i]?.hoverY || 0,
-                                            rotate: SATELLITE_CONFIG[i]?.rotate || 0,
-                                            z: -30 
-                                        }}
-                                        exit={{ opacity: 0, scale: 0, x: 0, y: 0 }}
-                                        transition={{
-                                            type: "spring",
-                                            stiffness: 180,
-                                            damping: 20,
-                                            delay: i * 0.05
-                                        }}
-                                        style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
-                                        onClick={(e) => e.stopPropagation()}
-                                     >
-                                         <Link 
-                                            href={`/tags/${tag.slug}`} 
+                                {isHovered && displayTags.map((tag, i) => {
+                                    // Calculate config based on device
+                                    const rawConfig = SATELLITE_CONFIG[i];
+                                    
+                                    // Apply mobile scaling if needed
+                                    const hoverX = isMobile && rawConfig ? rawConfig.hoverX * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverX || 0);
+                                    const hoverY = isMobile && rawConfig ? rawConfig.hoverY * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverY || 0);
+                                    const rotate = rawConfig?.rotate || 0;
+
+                                    return (
+                                        <motion.div
+                                            key={`${review.id}-${tag.slug}`}
+                                            className={styles.satelliteShard}
+                                            initial={{ opacity: 0, scale: 0, x: 0, y: 0, z: 0 }}
+                                            animate={{
+                                                opacity: 1,
+                                                scale: 1.15,
+                                                x: hoverX,
+                                                y: hoverY,
+                                                rotate: rotate,
+                                                z: -30 
+                                            }}
+                                            exit={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                                            transition={{
+                                                type: "spring",
+                                                stiffness: 180,
+                                                damping: 20,
+                                                delay: i * 0.05
+                                            }}
+                                            style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
-                                            className={`${styles.satelliteShardLink} no-underline`} 
-                                            prefetch={false}
-                                        >
-                                             {translateTag(tag.title)}
-                                         </Link>
-                                     </motion.div>
-                                ))}
+                                         >
+                                             <Link 
+                                                href={`/tags/${tag.slug}`} 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`${styles.satelliteShardLink} no-underline`} 
+                                                prefetch={false}
+                                            >
+                                                 {translateTag(tag.title)}
+                                             </Link>
+                                         </motion.div>
+                                    );
+                                })}
                             </AnimatePresence>
                             
                             {/* --- SAFE BRIDGES --- */}
                             {/* Invisible lines that ensure hover state persists when moving mouse from center to tags */}
                             {isHovered && (
                                 <svg className={styles.satelliteBridgeSvg}>
-                                    {displayTags.map((_, i) => (
-                                        <line 
-                                            key={`bridge-${i}`}
-                                            x1="0" y1="0" 
-                                            x2={SATELLITE_CONFIG[i]?.hoverX || 0} 
-                                            y2={SATELLITE_CONFIG[i]?.hoverY || 0} 
-                                            className={styles.satelliteBridgeLine}
-                                        />
-                                    ))}
+                                    {displayTags.map((_, i) => {
+                                        // Re-calculate same coordinates for bridge
+                                        const rawConfig = SATELLITE_CONFIG[i];
+                                        const hoverX = isMobile && rawConfig ? rawConfig.hoverX * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverX || 0);
+                                        const hoverY = isMobile && rawConfig ? rawConfig.hoverY * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverY || 0);
+
+                                        return (
+                                            <line 
+                                                key={`bridge-${i}`}
+                                                x1="0" y1="0" 
+                                                x2={hoverX} 
+                                                y2={hoverY} 
+                                                className={styles.satelliteBridgeLine}
+                                            />
+                                        );
+                                    })}
                                 </svg>
                             )}
                         </div>
@@ -689,5 +710,3 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         </div>
     );
 }
-
-
