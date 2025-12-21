@@ -17,7 +17,7 @@ export default function CommentList({ comments, session, slug, onVoteUpdate, onP
         return <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '4rem' }}>كن أول من يخط حرفًا هنا.</p>
     }
     return (
-        <div className={styles.commentList}>
+        <div className={`${styles.commentList} gpu-cull`}>
             {comments.map(comment => (
                 <CommentItem
                     key={comment.id}
@@ -33,5 +33,3 @@ export default function CommentList({ comments, session, slug, onVoteUpdate, onP
         </div>
     )
 }
-
-

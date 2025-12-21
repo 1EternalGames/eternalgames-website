@@ -35,7 +35,12 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
     }
 
     return (
-        <motion.div layout className="content-grid">
+        <motion.div 
+            layout 
+            className="content-grid gpu-cull" // Added gpu-cull
+            // Note: content-grid in globals.css already has the 3rem padding expansion.
+            // Since bookmark cards don't fly out excessively, standard expansion is fine here.
+        >
             <AnimatePresence>
                 {bookmarkedItems.map(item => (
                     <motion.div
@@ -57,5 +62,3 @@ export default function BookmarksGrid({ initialItems }: { initialItems: any[] })
         </motion.div>
     );
 }
-
-

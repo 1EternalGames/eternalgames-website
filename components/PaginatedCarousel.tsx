@@ -65,7 +65,7 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 50 }} 
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        className={styles.itemList}
+                        className={`${styles.itemList} gpu-cull`} 
                         style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
                     >
                         {currentItems.map((item) => (
@@ -76,7 +76,7 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
                                     position: 'relative', 
                                     zIndex: activeCardId === item.id ? 100 : 1 
                                 }}
-                                whileHover={{ zIndex: 100 }}
+                                // FIX: Removed 'whileHover' to prevent event conflict with child NewsGridCard
                             >
                                 <NewsGridCard 
                                     item={item} 

@@ -18,12 +18,13 @@ import { usePerformanceStore } from '@/lib/performanceStore';
 import { translateTag } from '@/lib/translations';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 
+// FIX: Added transitions for hidden state to ensure smooth exit
 const creatorBubbleContainerVariants = {
-    hidden: { opacity: 0 },
+    hidden: { opacity: 0, transition: { duration: 0.2, when: "afterChildren" } },
     visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
 };
 const creatorBubbleItemVariants = {
-    hidden: { opacity: 0, x: 20 },
+    hidden: { opacity: 0, x: 20, transition: { duration: 0.2 } },
     visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } }
 };
 
@@ -312,7 +313,7 @@ interface VanguardCardProps {
     isMobile: boolean;
     isHovered: boolean;
     isInteractive: boolean;
-    isVisible: boolean; // NEW PROP
+    isVisible: boolean; 
     onHoverChange: (isHovering: boolean) => void;
 }
 
@@ -522,7 +523,15 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                                 rotate: rotate,
                                                 z: -30 
                                             }}
-                                            exit={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                                            // FIX: Added smooth exit transition
+                                            exit={{ 
+                                                opacity: 0, 
+                                                scale: 0.4, 
+                                                x: 0, 
+                                                y: 0, 
+                                                rotate: 0,
+                                                z: 0 
+                                            }}
                                             transition={{
                                                 type: "spring",
                                                 stiffness: 180,

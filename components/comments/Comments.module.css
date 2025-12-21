@@ -32,7 +32,25 @@
 .commentFormAvatar { flex-shrink: 0; margin-top: 0.5rem; }
 .commentFormMain { flex-grow: 1; }
 .commentFormMain .profileInput { min-height: 120px; margin-bottom: 1rem; }
-.commentList { position: relative; max-width: 700px; display: flex; flex-direction: column; gap: 4rem; border-right: 2px solid var(--border-color); padding-right: 3rem; border-left: none; padding-left: 0; }
+
+/* GPU CULL FIX: Expanded render boundary for long comment threads */
+.commentList { 
+    position: relative; 
+    max-width: 700px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4rem; 
+    border-right: 2px solid var(--border-color); 
+    padding-right: 3rem; 
+    border-left: none; 
+    padding-left: 0;
+    
+    padding-top: 10rem;
+    padding-bottom: 10rem;
+    margin-top: -10rem;
+    margin-bottom: -10rem;
+}
+
 .commentItem { position: relative; }
 .commentItem::before { content: ''; position: absolute; right: -3.9rem; left: auto; top: 10px; width: 14px; height: 14px; border-radius: 50%; background-color: var(--bg-secondary); border: 3px solid var(--accent); }
 .commentHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.2rem; margin-bottom: 1rem; }
@@ -98,6 +116,11 @@
     .commentList {
         padding-right: 1.5rem;
         border-right-width: 1px;
+        /* Reset margins on mobile */
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: 0;
+        margin-bottom: 0;
     }
     .commentItem::before {
         right: -2.3rem;
@@ -120,5 +143,3 @@
         gap: 0.2rem;
     }
 }
-
-
