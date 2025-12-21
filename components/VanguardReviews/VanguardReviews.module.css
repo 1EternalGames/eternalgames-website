@@ -4,20 +4,42 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 500px;
+    
+    /* FIX: Set min-height to user request (780px) */
+    min-height: 780px;
+    
     position: relative;
-    /* FIX: Increased padding-top to 12rem to prevent the lifted card from exiting the hit-test area */
-    padding: 5rem 0 12rem 0;
+    
+    /* 
+       GPU CULL OPTIMIZATION:
+       We add large padding to expand the render boundary (preventing clipping of 3D elements).
+       We add equal negative margin to pull the layout box back, so it doesn't create huge whitespace.
+    */
+    padding: 15rem 10rem;
+    margin: -15rem -10rem;
+    
     --card-gap: 1.5rem;
     --center-width: 400px;
     --side-width: 280px;
     background-color: transparent; 
-    width: 100%;
+    
+    /* Compensate width for negative margins */
+    width: calc(100% + 20rem);
+    
     /* Keep clip to prevent horizontal scrollbar from flying cards */
     overflow-x: clip; 
+    
     /* Use preserve-3d on container to allow children to exist in shared 3D space */
     transform-style: preserve-3d;
     touch-action: pan-y;
+
+    /* FIX: Pass-through clicks on the huge padding area */
+    pointer-events: none;
+}
+
+/* Restore pointer events for the cards so they remain interactive */
+.vanguardContainer > * {
+    pointer-events: auto;
 }
 
 .spotlightGlow {
@@ -34,7 +56,7 @@
 
 .cardSlot {
     position: absolute;
-    /* FIX: Ensure pointer events are captured */
+    /* FIX: Ensure pointer events are captured via hook logic, but default to auto here for safety */
     pointer-events: auto;
     transform-style: preserve-3d;
     
@@ -78,10 +100,7 @@
 }
 
 /* 
-   THE FIX: 
-   Explicit Hit Layer moved slightly forward in Z-space.
-   This guarantees it sits "above" the container plane and captures hovers 
-   even if the visual elements are complex.
+   THE FIX: Explicit Hit Layer
 */
 .hitArea {
     position: absolute;
@@ -91,7 +110,6 @@
     clip-path: url(#vg-cardClip);
     cursor: pointer;
     pointer-events: auto;
-    /* Move hit area forward to ensure it catches mouse before container background */
     transform: translateZ(10px); 
 }
 
@@ -217,7 +235,6 @@
     z-index: 30; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     
-    /* Ensure badge is well above hit area */
     transform: translateZ(60px);
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease, background-color 0.4s ease, color 0.4s ease;
     pointer-events: none;
@@ -498,8 +515,34 @@
 }
 
 /* --- NAVIGATOR --- */
-.kineticNavigator { position: absolute; bottom: 0; width: 100%; display: flex; justify-content: center; }
-.navTrack { display: flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 8px; background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent); border: 1px solid var(--border-color); border-radius: 16px; backdrop-filter: blur(10px); z-index: 10; max-width: 90vw; overflow-x: auto; scrollbar-width: none; }
+.kineticNavigator { 
+    position: absolute; 
+    /* FIX: Lifted to 15rem per user request */
+    bottom: 15rem; 
+    width: 100%; 
+    display: flex; 
+    justify-content: center; 
+    z-index: 50;
+    pointer-events: none;
+}
+
+.navTrack { 
+    display: flex; 
+    flex-direction: row-reverse; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 8px; 
+    background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent); 
+    border: 1px solid var(--border-color); 
+    border-radius: 16px; 
+    backdrop-filter: blur(10px); 
+    z-index: 10; 
+    max-width: 90vw; 
+    overflow-x: auto; 
+    scrollbar-width: none; 
+    pointer-events: auto; /* Enable clicks on the track */
+}
+
 @media (max-width: 768px) {
     .navTrack {
         backdrop-filter: none !important;
@@ -519,7 +562,14 @@
 }
 
 @media (max-width: 768px) {
-    .vanguardContainer { --center-width: 65vw; --side-width: 45vw; min-height: 420px; padding-top: 5.5rem; padding-bottom: 8rem; }
+    .vanguardContainer { 
+        --center-width: 65vw; --side-width: 45vw; min-height: 420px; 
+        /* Reset on mobile */
+        padding-top: 5.5rem; padding-bottom: 8rem; 
+        padding-left: 0; padding-right: 0;
+        margin: 0;
+        width: 100%;
+    }
     .cardContent { padding: 1.5rem; }
     .cardContent h3 { font-size: 1.8rem; }
     .vanguardScoreBadge { width: 55px; height: 55px; font-size: 2rem; top: 1rem; left: 1rem; }
@@ -540,6 +590,11 @@
     
     .satelliteField { display: none; }
     .cardSlot.activeState .satelliteField { display: block; }
+    
+    /* FIX: Reset navigator position on mobile */
+    .kineticNavigator {
+        bottom: 0;
+    }
 }
 @media (max-width: 480px) {
     .vanguardContainer { --center-width: 70vw; --side-width: 50vw; }

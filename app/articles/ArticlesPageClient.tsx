@@ -172,7 +172,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                         <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
                             <motion.div 
                                 layout 
-                                className="content-grid gpu-cull" // Added gpu-cull
+                                className="content-grid gpu-cull" // Restored
                             >
                                 <AnimatePresence>
                                     {gridArticles.map((article, index) => ( <ArticleCard key={article.id} article={article} layoutIdPrefix="articles-grid" isPriority={index < 3} /> ))}

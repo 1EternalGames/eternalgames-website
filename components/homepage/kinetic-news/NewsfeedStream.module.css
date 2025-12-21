@@ -5,20 +5,32 @@
     flex-direction: column;
     gap: 1.5rem; /* Tighter gap for the list feel */
     width: 100%;
+    position: relative;
+    
+    /* GPU CULL FIX: MASSIVE expansion of render boundary */
+    /* Add extra padding to ensure flying elements don't get clipped by containment */
+    padding: 10rem 12rem 10rem 10rem; /* Top Right(Extra) Bottom Left */
+    margin: -10rem -10rem -10rem -10rem; /* Negative margin to pull back */
+    width: calc(100% + 20rem); /* Compensate width */
+
+    /* FIX: Prevent padding from capturing mouse events */
+    pointer-events: none;
+}
+
+/* Restore interaction for items */
+.streamContainer > * {
+    pointer-events: auto;
 }
 
 /* Optional: Add a connector line for the "Stream" feel */
-.streamContainer {
-    position: relative;
-    padding-right: 2rem; /* Make space for the timeline line */
-}
-
 .streamContainer::before {
     content: '';
     position: absolute;
-    right: 0;
-    top: 2rem;
-    bottom: 2rem;
+    /* Adjust right position based on new padding. */
+    right: 10rem; 
+    
+    top: 10rem; /* Match Top Padding */
+    bottom: 10rem; /* Match Bottom Padding */
     width: 1px;
     background: linear-gradient(to bottom, transparent, var(--border-color) 20%, var(--border-color) 80%, transparent);
 }
@@ -31,7 +43,8 @@
 .streamItemWrapper::before {
     content: '';
     position: absolute;
-    right: -2.4rem; /* Align with container line */
+    right: -2.4rem; 
+    
     top: 50%;
     width: 9px;
     height: 9px;
@@ -51,8 +64,12 @@
 
 @media (max-width: 768px) {
     .streamContainer {
-        padding-right: 0;
+        /* Reset hack for mobile to avoid horizontal scroll if not handled */
+        padding: 0;
+        margin: 0;
+        width: 100%;
         gap: 2rem;
+        pointer-events: auto;
     }
     .streamContainer::before {
         display: none;
@@ -61,5 +78,3 @@
         display: none;
     }
 }
-
-

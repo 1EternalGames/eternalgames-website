@@ -59,20 +59,12 @@ body.no-glass * {
 }
 
 /* --- GROUNDBREAKING OPTIMIZATION: Render Culling --- */
-/* 
-   Tells browser to skip layout/paint for off-screen content.
-   The browser calculates the height based on 'contain-intrinsic-size' until it scrolls into view.
-*/
 .gpu-cull {
     content-visibility: auto;
     contain-intrinsic-size: 1px 500px; /* Estimates height to avoid scroll jumping */
 }
 
 /* --- GROUNDBREAKING OPTIMIZATION: Texture Decoding --- */
-/*
-   1. content-visibility: auto on images makes offscreen images essentially free.
-   2. decoding: async is default in Next.js, but this CSS enforcement helps edge cases.
-*/
 img {
     content-visibility: auto;
 }
@@ -112,7 +104,16 @@ overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;
 }
 .page-container{padding-top:calc(var(--nav-height-scrolled) + 4rem);padding-bottom:6rem;min-height:80vh;}
 .page-title{font-size:4.2rem;font-weight:800;text-align:center;margin-bottom:4rem;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word;}
-.content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:3rem;grid-auto-rows:1fr;}
+
+/* THE FIX: Added padding and negative margin to expand the paint box for 3D elements */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
+  gap: 3rem;
+  grid-auto-rows: 1fr;
+  padding: 3rem; /* Safe zone for 3D transforms */
+  margin: -3rem; /* Pull back to alignment */
+}
 
 .portable-text-content {
   overflow-wrap: break-word;
@@ -504,6 +505,9 @@ body.lightbox-active {
   .content-grid { 
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
+    /* OVERRIDE: Remove padding for mobile to prevent squishing */
+    padding: 0;
+    margin: 0;
   }
   .toast-container-global { bottom: 1.5rem; left: 1.5rem; right: 1.5rem !important; width: auto; }
   .primary-button, .outline-button { padding: 1.2rem 2rem; font-size: 1.6rem; }

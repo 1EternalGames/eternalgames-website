@@ -144,7 +144,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
                     <motion.div 
                         layout 
-                        className="content-grid gpu-cull" // Added gpu-cull
+                        className="content-grid gpu-cull" // Restored
                     >
                         {gridReviews.map((review, index) => (
                             <ArticleCard

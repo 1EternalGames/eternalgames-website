@@ -59,7 +59,7 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     return (
         <div 
             ref={containerRef}
-            className={styles.streamContainer}
+            className={`${styles.streamContainer} gpu-cull`} // Added gpu-cull here
             {...interactionHandlers}
             style={{ minHeight: isExpanded ? 'auto' : '400px' }}
         >

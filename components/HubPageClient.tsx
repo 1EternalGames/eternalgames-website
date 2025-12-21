@@ -300,7 +300,7 @@ export default function HubPageClient({
                         
                         <motion.div 
                             layout 
-                            className="content-grid" 
+                            className="content-grid gpu-cull" // Added gpu-cull here
                             style={{ paddingBottom: '6rem' }}
                         >
                             <AnimatePresence>
@@ -346,5 +346,3 @@ export default function HubPageClient({
         </div>
     );
 }
-
-

@@ -8,11 +8,10 @@ import { useTheme } from 'next-themes';
 
 // Configuration
 const BACKGROUND_BRIGHTNESS = 1.0; 
-// 120s = 2 minutes for a full loop
 const STAR_MOVE_DURATION = "120s"; 
 
 export default function SpaceBackground() {
-    // 1. Hook into the store to get live updates on preferences
+    // 1. Hook into the store
     const { isBackgroundVisible, isBackgroundAnimated } = usePerformanceStore();
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -25,21 +24,16 @@ export default function SpaceBackground() {
     if (!mounted) return <div className={styles.backgroundContainer} />;
 
     // 2. LIGHT MODE DISABLE
-    // If we are in light mode, do not render the space background at all.
-    // This allows the body background (set in globals.css) to show.
     if (resolvedTheme === 'light') {
         return null;
     }
 
     // 3. TOTAL DELETION LOGIC (Dark Mode)
-    // If visible is false, we return a plain div. The SVG tree is NOT in the DOM.
     if (!isBackgroundVisible) {
         return <div className={styles.backgroundContainer} style={{ backgroundColor: '#10121A' }} />;
     }
 
     // 4. ANIMATION KILL SWITCH
-    // If animated is false, we apply the .static class (kills CSS anims) 
-    // AND we conditionally render the SMIL <animate> tags below.
     const containerClass = `${styles.backgroundContainer} ${!isBackgroundAnimated ? styles.static : ''}`;
 
     return (
@@ -51,7 +45,6 @@ export default function SpaceBackground() {
                 preserveAspectRatio="xMidYMid slice"
             >
                 <defs>
-                    {/* Filters: We use 'optimizeSpeed' in static mode implicitly via the CSS overrides if needed */}
                     <filter id="sb_stellarBloom">
                         <feGaussianBlur stdDeviation="2" result="blur"></feGaussianBlur>
                         <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
@@ -69,7 +62,6 @@ export default function SpaceBackground() {
                         <stop offset="100%" stopColor="#10121A" stopOpacity="0"></stop>
                     </linearGradient>
 
-                    {/* ATMOSPHERE: Conditionally render <animate> to save CPU */}
                     <radialGradient id="sb_nebulaTop" cx="50%" cy="0%" r="80%">
                         <stop offset="0%" stopColor="#00FFF0" stopOpacity="0.12"></stop>
                         <stop offset="100%" stopColor="#10121A" stopOpacity="0"></stop>

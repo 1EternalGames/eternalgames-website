@@ -83,16 +83,28 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         if (diff < -itemCount / 2) diff += itemCount;
         const slotIndex = diff + CENTER_SLOT_INDEX;
 
+        // --- VISIBILITY & INTERACTION FIX ---
+        // If the card is outside the 5 visible slots [0, 1, 2, 3, 4]
         if (slotIndex < 0 || slotIndex >= VANGUARD_SLOTS) {
             const isFarRight = diff > 0;
             return {
-                style: { opacity: 0, transform: `translateX(${isFarRight ? '150%' : '-150%'}) scale(0.5)`, zIndex: -1 },
-                isCenter: false, isVisible: false,
+                style: { 
+                    opacity: 0, 
+                    transform: `translateX(${isFarRight ? '150%' : '-150%'}) scale(0.5)`, 
+                    zIndex: -1,
+                    // CRITICAL FIX: Disable pointer events for invisible cards so they can't be clicked/hovered
+                    pointerEvents: 'none' as const,
+                    // Optional: Visibility hidden ensures screen readers ignore it too
+                    visibility: 'hidden' as const
+                },
+                isCenter: false, 
+                isVisible: false,
             };
         }
 
         const isCenter = slotIndex === CENTER_SLOT_INDEX;
-        const style: any = { opacity: 1 };
+        // Ensure visible cards accept pointer events
+        const style: any = { opacity: 1, pointerEvents: 'auto', visibility: 'visible' };
         
         let transform = '';
         const isHovered = hoveredId === itemId;

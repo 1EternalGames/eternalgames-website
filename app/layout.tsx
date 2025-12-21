@@ -13,6 +13,7 @@ import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import SpaceBackground from '@/components/ui/SpaceBackground';
 import type { Metadata } from 'next';
+import FPSAutoTuner from '@/components/FPSAutoTuner'; // IMPORT ADDED
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -84,6 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
           <UserStoreHydration />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
+              <FPSAutoTuner /> {/* MOUNTED AUTO TUNER */}
               <SpaceBackground />
               <ToastProvider />
               <Lightbox />
@@ -103,5 +105,3 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
     </html>
   );
 }
-
-

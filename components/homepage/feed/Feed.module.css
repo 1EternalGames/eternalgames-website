@@ -140,6 +140,19 @@
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     overflow: visible !important;
+    
+    /* GPU CULL FIX: MASSIVE expansion of render boundary */
+    padding: 10rem;
+    margin: -10rem;
+    width: calc(100% + 20rem);
+    
+    /* FIX: Prevent padding from capturing mouse events */
+    pointer-events: none;
+}
+
+/* Restore pointer events for grid items */
+.topArticlesGrid > * {
+    pointer-events: auto;
 }
 
 .topArticleCard {
@@ -451,11 +464,15 @@
         /* FIX: Mobile uses 1 column (Stacked) */
         grid-template-columns: 1fr;
         gap: 1.5rem;
+        /* Reset margins on mobile if needed, though the hack is usually safe */
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        /* Restore pointer events on mobile */
+        pointer-events: auto;
     }
     .topSection, .latestSection {
         padding-left: 1.5rem; 
         padding-right: 1.5rem; 
     }
 }
-
-

@@ -42,7 +42,19 @@
   flex-direction: column;
   position: relative;
   z-index: 2;
-  width: 100%;
+  
+  /* GPU CULL FIX: Expand render boundary */
+  padding: 10rem;
+  margin: -10rem;
+  width: calc(100% + 20rem);
+  
+  /* FIX: Prevent padding from capturing mouse events */
+  pointer-events: none;
+}
+
+/* Restore interaction */
+.timelineItemsWrapper > * {
+    pointer-events: auto;
 }
 
 .timelineItemWrapper {
@@ -204,6 +216,11 @@
   .synopsisContainer p { margin: 0; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
   
   .dotWrapper, .dotBase, .dotActive { width: 8px; height: 8px; }
+  
+  .timelineItemsWrapper {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      pointer-events: auto;
+  }
 }
-
-

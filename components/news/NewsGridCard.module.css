@@ -281,8 +281,9 @@
 a.creatorCapsule { display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(10, 11, 15, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 999px; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); height: 32px; backdrop-filter: blur(8px); text-decoration: none; cursor: pointer; position: relative; z-index: 20; }
 div.creatorCapsule { display: inline-flex; align-items: center; gap: 0.8rem; background: rgba(10, 11, 15, 0.8); border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 999px; height: 32px; backdrop-filter: blur(8px); pointer-events: none; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); z-index: 20; }
 
-:global(body.no-glass) a.creatorCapsule,
-:global(body.no-glass) div.creatorCapsule {
+/* THE FIX: More specific selector to ensure non-hover state gets the dark bg, but hover gets cyan */
+:global(body.no-glass) a.creatorCapsule:not(:hover),
+:global(body.no-glass) div.creatorCapsule:not(:hover) {
     backdrop-filter: none !important;
     background-color: rgba(10, 11, 15, 0.95) !important;
 }

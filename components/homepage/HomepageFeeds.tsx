@@ -40,7 +40,7 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topItems={topArticles}
                         viewAllLink="/articles"
                         viewAllText="عرض كل المقالات"
-                        topItemsContainerClassName={feedStyles.topArticlesGrid}
+                        topItemsContainerClassName={`${feedStyles.topArticlesGrid} gpu-cull`} // Added gpu-cull here
                         renderTopItem={(item) => (
                             <ArticleCard 
                                 key={item.id} 
@@ -88,5 +88,3 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
         </div>
     );
 }
-
-

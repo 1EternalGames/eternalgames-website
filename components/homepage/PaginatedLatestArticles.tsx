@@ -111,7 +111,7 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -30 }}
                         transition={{ duration: 0.4, ease: 'easeInOut' }}
-                        className={styles.itemList}
+                        className={`${styles.itemList} gpu-cull`} // Added gpu-cull
                     >
                         {currentItems.map((item, index) => (
                             <React.Fragment key={item.id}>

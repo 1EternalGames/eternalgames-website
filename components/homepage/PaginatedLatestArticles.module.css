@@ -15,6 +15,20 @@
 .itemList {
     display: flex;
     flex-direction: column;
+    
+    /* GPU CULL FIX: Expand render boundary */
+    padding: 10rem;
+    margin: -10rem;
+    /* Adjust width to compensate for horizontal padding */
+    width: calc(100% + 20rem);
+    
+    /* FIX: Prevent padding from capturing mouse events */
+    pointer-events: none;
+}
+
+/* Restore interaction */
+.itemList > * {
+    pointer-events: auto;
 }
 
 .paginationControls {
@@ -24,6 +38,10 @@
     gap: 1rem;
     padding-top: 1rem; /* Reduced top padding to bring controls closer to content */
     padding-bottom: 1.5rem; /* Added bottom padding for spacing from elements below */
+    
+    /* Ensure controls stay on top of the expanded negative margins */
+    position: relative;
+    z-index: 10;
 }
 
 .paginationDot {
@@ -66,7 +84,11 @@
     }
     .itemList {
         gap: 1rem !important; /* Force smaller gap between items in list */
+        
+        /* Reset Expansion on mobile to prevent overflow issues */
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        pointer-events: auto;
     }
 }
-
-

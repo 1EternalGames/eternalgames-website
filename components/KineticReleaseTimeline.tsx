@@ -145,7 +145,7 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
                         ))}
                     </div>
                 </div>
-                <div className={styles.timelineItemsWrapper}>
+                <div className={`${styles.timelineItemsWrapper} gpu-cull`}>
                     {releasesForThisMonth.length > 0 ? (
                         releasesForThisMonth.map((release, index) => ( 
                             <TimelineItem key={release._id} release={release} index={index} /> 
@@ -190,5 +190,3 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
         </div>
     );
 }
-
-

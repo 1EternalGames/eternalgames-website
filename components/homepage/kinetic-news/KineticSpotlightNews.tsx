@@ -11,7 +11,7 @@ export default function KineticSpotlightNews({ items }: { items: CardProps[] }) 
     if (!items || items.length === 0) return null;
 
     return (
-        <div className={styles.spotlightGrid}>
+        <div className={`${styles.spotlightGrid} gpu-cull`}>
             {items.map((item, index) => (
                 <motion.div
                     key={item.legacyId}
@@ -30,5 +30,3 @@ export default function KineticSpotlightNews({ items }: { items: CardProps[] }) 
         </div>
     );
 }
-
-

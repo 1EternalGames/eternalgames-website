@@ -198,7 +198,7 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
       </div>
       
       <div ref={mainRef} className={styles.chronoTimelineSections}>
-          <motion.div layout className={styles.chronoGamesGrid} initial="hidden" animate={isInView ? "visible" : "hidden"}>
+          <motion.div layout className={`${styles.chronoGamesGrid} gpu-cull`} initial="hidden" animate={isInView ? "visible" : "hidden"}>
             <AnimatePresence mode="popLayout">
               {flatAnimatedContent.length === 0 ? (
                 <motion.p key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0', gridColumn: '1 / -1', fontSize: '1.6rem'}}>
@@ -237,5 +237,3 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
     </div>
   );
 }
-
-

@@ -49,13 +49,31 @@
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); /* Slightly wider cards */
   gap: 3rem;
   margin: 0 auto;
-  width: 100%;
+  
+  /* GPU CULL FIX: Expand render boundary */
+  padding: 10rem;
+  margin: -10rem;
+  width: calc(100% + 20rem);
+  
+  /* FIX: Prevent padding from capturing mouse events */
+  pointer-events: none;
+}
+
+/* Restore interactions */
+.chronoGamesGrid > * {
+    pointer-events: auto;
 }
 
 @media (max-width: 768px) {
     .chronoGamesGrid {
         grid-template-columns: 1fr;
         gap: 2rem;
+        
+        /* Reset Expansion on mobile */
+        padding: 0;
+        margin: 0 auto;
+        width: 100%;
+        pointer-events: auto;
     }
     .chronoTimelineSections {
         padding-right: 1.5rem;
@@ -65,5 +83,3 @@
         /* No override needed as sticky is gone globally */
     }
 }
-
-

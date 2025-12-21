@@ -34,6 +34,11 @@ const SATELLITE_CONFIG = [
     { hoverX: -50, hoverY: -265, rotate: 5 }     // Upper Center (The "Upper Tag")
 ];
 
+// --- POSITIONING ADJUSTMENTS ---
+// ADJUST THESE NUMBERS TO LIFT/LOWER CARDS
+const CARD_VERTICAL_OFFSET_DESKTOP = -80; 
+const CARD_VERTICAL_OFFSET_MOBILE = -70;  
+
 // --- MOBILE ADJUSTMENT NUMBER ---
 const MOBILE_SATELLITE_SCALE = 0.45;
 
@@ -299,7 +304,19 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
     );
 };
 
-const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered, isInteractive, onHoverChange }: { review: CardProps, isCenter: boolean, isInView: boolean, isPriority: boolean, isMobile: boolean, isHovered: boolean, isInteractive: boolean, onHoverChange: (isHovering: boolean) => void }) => {
+interface VanguardCardProps {
+    review: CardProps;
+    isCenter: boolean;
+    isInView: boolean;
+    isPriority: boolean;
+    isMobile: boolean;
+    isHovered: boolean;
+    isInteractive: boolean;
+    isVisible: boolean; // NEW PROP
+    onHoverChange: (isHovering: boolean) => void;
+}
+
+const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered, isInteractive, isVisible, onHoverChange }: VanguardCardProps) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
@@ -315,14 +332,14 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
     useEffect(() => {
-        if (isInView && scoreRef.current && typeof review.score === 'number') {
+        if (isInView && isVisible && scoreRef.current && typeof review.score === 'number') {
             const controls = animate(0, review.score, {
                 duration: 1.5, ease: [0.22, 1, 0.36, 1],
                 onUpdate(value) { if (scoreRef.current) { scoreRef.current.textContent = value.toFixed(1); } }
             });
             return () => controls.stop();
         }
-    }, [isInView, review.score]);
+    }, [isInView, review.score, isVisible]);
 
     const linkPath = `/reviews/${review.slug}`;
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -350,7 +367,8 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const showCredits = isCenter || isHovered;
     const displayTags = review.tags.slice(0, 3);
     
-    const livingCardHandlers = isInteractive ? {
+    // OPTIMIZATION: Disable interaction listeners if card is hidden
+    const livingCardHandlers = (isInteractive && isVisible) ? {
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseMove(e);
@@ -418,20 +436,22 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         className={styles.hitArea}
                     />
 
-                    <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />
+                    {/* OPTIMIZATION: Only render expensive SVG frame if visible */}
+                    {isVisible && <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />}
                     
                     <div className={styles.effectLayer}>
-                        {!isMobile && (
+                        {/* OPTIMIZATION: Only render spotlight/scanline if visible */}
+                        {isVisible && !isMobile && (
                             <motion.div 
                                 className={styles.holoSpotlight} 
                                 style={{ x: smoothMouseX, y: smoothMouseY }} 
                             />
                         )}
-                        <div className={styles.scanLine} />
+                        {isVisible && <div className={styles.scanLine} />}
                     </div>
 
                     <AnimatePresence>
-                        {showCredits && (
+                        {isVisible && showCredits && (
                             <motion.div
                                 className={styles.creatorCapsuleContainer}
                                 variants={creatorBubbleContainerVariants}
@@ -476,7 +496,8 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         </div>
                     </motion.div>
                     
-                    {isFlyingTagsEnabled && (
+                    {/* OPTIMIZATION: Only render flying tags if visible */}
+                    {isVisible && isFlyingTagsEnabled && (
                         <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                             <AnimatePresence>
                                 {isHovered && displayTags.map((tag, i) => {
@@ -560,10 +581,36 @@ VanguardCard.displayName = "VanguardCard";
 
 const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews: CardProps[], currentIndex: number, navigateToIndex: (index: number) => void }) => {
     const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-    useEffect(() => { const activeItem = itemRefs.current[currentIndex]; if (activeItem) { activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [currentIndex]);
+    const trackRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const activeItem = itemRefs.current[currentIndex];
+        const track = trackRef.current;
+
+        if (activeItem && track) {
+            // Replaced scrollIntoView with manual container scrolling to prevent window scroll jumping
+            const itemRect = activeItem.getBoundingClientRect();
+            const trackRect = track.getBoundingClientRect();
+            
+            // Calculate position relative to the track's current scroll view
+            // itemRect.left is relative to viewport. trackRect.left is relative to viewport.
+            // relativeLeft is the pixel distance from the left edge of the visible track area.
+            // Add track.scrollLeft to get the position relative to the start of the scrollable content.
+            const relativeLeft = itemRect.left - trackRect.left + track.scrollLeft;
+            
+            // Center the item: targetScrollLeft = itemCenter - trackHalfWidth
+            const targetScrollLeft = relativeLeft - (trackRect.width / 2) + (itemRect.width / 2);
+
+            track.scrollTo({
+                left: targetScrollLeft,
+                behavior: 'smooth'
+            });
+        }
+    }, [currentIndex]);
+
     return (
         <div className={styles.kineticNavigator}>
-            <div className={styles.navTrack}>
+            <div className={styles.navTrack} ref={trackRef}>
                 {reviews.map((review, index) => {
                     const isActive = currentIndex === index;
                     return (
@@ -690,7 +737,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     return (
         <div 
             ref={containerRef} 
-            className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''}`}
+            className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''} gpu-cull`}
         >
             {/* Global Definitions for Clip Paths */}
             <VanguardGlobalDefs />
@@ -707,15 +754,36 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 onTouchCancel={() => initialAnimHasRun && setHoveredId(null)}
             >
                 {reviews.map((review, reviewIndex) => {
-                    const { style, isCenter } = getCardState(reviewIndex, review.id);
+                    const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
                     const isHovered = hoveredId === review.id;
                     
+                    // --- APPLY LIFT ADJUSTMENTS HERE ---
+                    const currentStyle = { ...style };
+                    if (currentStyle.transform) {
+                        // NOTE: The previous refactoring of getCardState in `useVanguardCarousel` logic handles standard placement.
+                        // However, since we defined constants here, let's override the Y-translation manually for fine control.
+                        
+                        // Parse existing transform to preserve X and Scale
+                        // Format: translateX(...) scale(...) translateY(...)
+                        // We replace the translateY part.
+                        
+                        let yOffset = isMobile ? CARD_VERTICAL_OFFSET_MOBILE : CARD_VERTICAL_OFFSET_DESKTOP;
+                        
+                        if (isHovered && !isMobile) {
+                            yOffset -= 15; // Additional lift for hover
+                        }
+                        
+                        // Replace the translateY(...) part of the string
+                        // Regex looks for translateY followed by anything until closing parenthesis
+                        currentStyle.transform = currentStyle.transform.replace(/translateY\([^)]+\)/, `translateY(${yOffset}px)`);
+                    }
+
                     return (
                         <motion.div 
                             key={review.id} 
                             className={`${styles.cardSlot} ${isHovered ? styles.activeState : ''}`} 
                             initial={!initialAnimHasRun ? initialAnimationConfig : false}
-                            animate={style}
+                            animate={currentStyle}
                             transition={{
                                 ease: [0.4, 0, 0.2, 1],
                                 duration: 0.7,
@@ -730,6 +798,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                                 isMobile={isMobile}
                                 isHovered={isHovered}
                                 isInteractive={initialAnimHasRun}
+                                isVisible={isVisible} // OPTIMIZATION: Pass visibility to card
                                 onHoverChange={(val) => handleCardHoverChange(review.id, val)}
                             />
                         </motion.div>

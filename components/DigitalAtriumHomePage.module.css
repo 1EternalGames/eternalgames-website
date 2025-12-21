@@ -9,7 +9,8 @@
     /* REMOVED: background-color: var(--bg-secondary); */
     background-color: transparent; /* Force transparent for floating look */
     padding-top: 4rem;
-    margin-bottom: 5rem;
+    /* FIX: Set margin-bottom to user request (8rem) */
+    margin-bottom: 8rem;
     overflow-x: clip; 
 }
 
@@ -39,5 +40,3 @@
         padding-bottom: 4rem;
     }
 }
-
-

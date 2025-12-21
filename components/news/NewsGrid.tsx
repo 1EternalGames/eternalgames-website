@@ -14,7 +14,7 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
     return (
         <motion.div 
             layout 
-            className={`${styles.newsGrid} gpu-cull`} // Added gpu-cull
+            className={`${styles.newsGrid} gpu-cull`} // Restored
         >
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (

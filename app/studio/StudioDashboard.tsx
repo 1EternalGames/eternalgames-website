@@ -195,7 +195,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                 <StudioTabs tabs={availableTabs} activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
 
-            <motion.div layout className="content-grid" style={{gap: '1.5rem'}}>
+            <motion.div layout className="content-grid gpu-cull" style={{gap: '1.5rem'}}>
                 <AnimatePresence>
                     {filteredContent.map(item => (
                         <motion.div key={item._id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ type: 'spring' as const, damping: 20, stiffness: 200 }} >
@@ -215,5 +215,3 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
         </>
     );
 }
-
-

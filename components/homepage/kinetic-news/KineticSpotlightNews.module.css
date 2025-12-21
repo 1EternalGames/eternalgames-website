@@ -5,18 +5,39 @@
     /* 1 Column for the spotlight to make them big and impactful */
     grid-template-columns: 1fr; 
     gap: 2rem;
-    width: 100%;
-    margin-bottom: 3rem; /* Spacing before the stream starts */
+    
+    /* GPU CULL FIX: Expand render boundary */
+    padding: 10rem;
+    
+    /* Apply negative margins to offset padding */
+    margin-top: -10rem;
+    margin-left: -10rem;
+    margin-right: -10rem;
+    
+    /* FIX: Calculate bottom margin to include the 3rem visual spacing 
+       while negating the 10rem padding (-10rem + 3rem = -7rem) */
+    margin-bottom: calc(-10rem + 3rem);
+    
+    width: calc(100% + 20rem);
+    
+    /* FIX: Prevent padding from capturing mouse events */
+    pointer-events: none;
 }
 
-/* On larger screens, if we have enough space, maybe 2 columns? 
-   Given the sidebar constraint in HomepageFeeds, 1 column is safer/better 
-   for "Spotlight" impact. */
+/* Restore interactions for the cards */
+.spotlightGrid > * {
+    pointer-events: auto;
+}
 
 @media (max-width: 768px) {
     .spotlightGrid {
         gap: 2rem;
+        /* Reset on mobile */
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        margin-bottom: 3rem;
+        /* Reset pointer events on mobile where cull hack is disabled */
+        pointer-events: auto;
     }
 }
-
-
