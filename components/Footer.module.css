@@ -4,9 +4,7 @@
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   
-  /* OPTIMIZATION: Skip rendering logic if off-screen */
-  content-visibility: auto;
-  contain-intrinsic-size: 300px; /* Approximate height to prevent scroll bar jumping */
+  /* REMOVED: content-visibility: auto; - Causing scroll jump issues */
 }
 /* ... rest of existing CSS ... */
 .newFooterLayout {
@@ -51,15 +49,9 @@
   color: var(--text-primary);
   transition: color 0.3s ease, transform 0.3s ease;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .designerCredit:hover  {
-  color: var(--accent);
-  transform: translateY(-2px);
-}
-}
-
-  .designerCredit:active  {
   color: var(--accent);
   transform: translateY(-2px);
 }
@@ -79,15 +71,9 @@
 .footerSocialsWrapper a {
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .footerSocialsWrapper a:hover  {
-  filter: none !important;
-  transform: translateY(-4px); 
-}
-}
-
-  .footerSocialsWrapper a:active  {
   filter: none !important;
   transform: translateY(-4px); 
 }
@@ -110,16 +96,9 @@
   transition: all 0.2s ease-out;
   flex-shrink: 0;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .footerSocialsWrapper a:hover .socialLinkFrame  {
-  background-color: var(--bg-secondary);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-}
-
-  .footerSocialsWrapper a:active .socialLinkFrame  {
   background-color: var(--bg-secondary);
   border-color: var(--accent);
   color: var(--accent);
@@ -154,5 +133,3 @@
     gap: 1rem;
   }
 }
-
-

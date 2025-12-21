@@ -11,7 +11,15 @@ import { useTheme } from 'next-themes';
 import { useBodyClass } from '@/hooks/useBodyClass';
 
 // --- Icons ---
-const SettingsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>;
+
+// MODIFIED: Replaced with the new icon requested
+const SettingsIcon = () => (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.5 12C15.5 13.933 13.933 15.5 12 15.5C10.067 15.5 8.5 13.933 8.5 12C8.5 10.067 10.067 8.5 12 8.5C13.933 8.5 15.5 10.067 15.5 12Z" stroke="currentColor" strokeWidth="1.5"></path>
+        <path d="M9.77208 2.68377L9 5L7.44016 5.98656L4.88796 5.35506C4.46009 5.2492 4.01337 5.43595 3.78816 5.81484L2.42396 8.10993C2.17813 8.52353 2.26167 9.05356 2.62281 9.37147L4.41294 10.9474V13.0526L2.62337 14.6285C2.26231 14.9464 2.17882 15.4764 2.42463 15.8899L3.78888 18.1851C4.01409 18.564 4.46082 18.7508 4.88868 18.6449L7.44089 18.0134L8.91858 18.8421L9.62394 21.2781C9.74775 21.7057 10.1393 22 10.5845 22H13.4163C13.8614 22 14.253 21.7057 14.3768 21.2781L15.0822 18.8421L16.5591 18.0134L19.1113 18.6449C19.5392 18.7508 19.9859 18.564 20.2111 18.1851L21.6011 15.8466C21.8352 15.4528 21.7717 14.9502 21.4471 14.627L19.6409 12.8287L19.6416 11.1713L21.4478 9.37298C21.7725 9.04974 21.836 8.54721 21.6019 8.15339L20.2118 5.81484C19.9866 5.43595 19.5399 5.2492 19.112 5.35506L16.5598 5.98656L15 5L14.2279 2.68377C14.0918 2.27543 13.7097 2 13.2792 2H10.7208C10.2903 2 9.90819 2.27543 9.77208 2.68377Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+    </svg>
+);
+
 const CloseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const PerfIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93 4.93 19.07"/></svg>;
 const AutoIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 3v18M3 12h18M18 6l-6-3-6 3M6 18l6 3 6-3"/></svg>;
@@ -106,17 +114,23 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                 )}
             </div>
             
-            {/* MAIN AUTO SWITCH */}
-            <div style={{ marginBottom: '1.5rem' }}>
+            {/* 
+               MODIFIED GRID LAYOUT:
+               Updated to 3 columns in CSS.
+               Included the Auto-Tuning button inside the grid or above.
+               The user asked to "make them 3 per row", so utilizing the grid for all items.
+            */}
+            
+            <div className={styles.optionsGrid}>
+                {/* 1. Auto Tuning (Renamed) */}
                 <OptionButton 
-                    label="الضبط التلقائي (FPS)" 
+                    label="الضبط التلقائي" // Renamed from "الضبط التلقائي (FPS)"
                     isActive={store.isAutoTuningEnabled} 
                     onClick={store.toggleAutoTuning} 
                     Icon={AutoIcon}
                 />
-            </div>
-            
-            <div className={styles.optionsGrid}>
+
+                {/* 2. Glass */}
                 <OptionButton 
                     label="تأثير الزجاج" 
                     isActive={store.isGlassmorphismEnabled} 
@@ -125,7 +139,8 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                     isAutoControlled={auto}
                 />
                 
-                 <OptionButton 
+                {/* 3. Background */}
+                <OptionButton 
                     label="إظهار الخلفية" 
                     isActive={store.isBackgroundVisible} 
                     onClick={store.toggleBackgroundVisibility} 
@@ -134,6 +149,7 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                     isAutoControlled={auto}
                 />
 
+                {/* 4. Living Card */}
                 <OptionButton 
                     label="بطاقات حية" 
                     isActive={store.isLivingCardEnabled} 
@@ -142,6 +158,7 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                     isAutoControlled={auto}
                 />
                 
+                {/* 5. Flying Tags */}
                 <OptionButton 
                     label="الوسوم الطائرة" 
                     isActive={store.isFlyingTagsEnabled} 
@@ -149,24 +166,28 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                     Icon={TagIcon}
                     isAutoControlled={auto}
                 />
-                 <OptionButton 
-                    label="إطارات Cyber" 
+                
+                {/* 6. Cyber Frames (Renamed) */}
+                <OptionButton 
+                    label="إطارات مشعة" // Renamed from "إطارات Cyber"
                     isActive={store.isCornerAnimationEnabled} 
                     onClick={store.toggleCornerAnimation} 
                     Icon={BorderIcon}
                     isAutoControlled={auto}
                 />
 
-                {/* Not Controlled by Auto (Keep Manual) */}
-                 <OptionButton 
+                {/* 7. Background Motion */}
+                <OptionButton 
                     label="حركة الخلفية" 
                     isActive={store.isBackgroundAnimated} 
                     onClick={store.toggleBackgroundAnimation} 
                     Icon={PlayPauseIcon}
                     disabled={isAnimationDisabled}
                 />
+                
+                {/* 8. Hero Transition (Renamed) */}
                 <OptionButton 
-                    label="انتقال Hero" 
+                    label="انتقال سلس" // Renamed from "انتقال Hero"
                     isActive={store.isHeroTransitionEnabled} 
                     onClick={store.toggleHeroTransition} 
                     Icon={HeroIcon}

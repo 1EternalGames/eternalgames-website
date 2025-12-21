@@ -23,19 +23,22 @@
 --border-color:#2a2e3c;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+/* THE FIX: Reset height to allow natural flow */
 html, body {
   width: 100%;
-  overflow-x: hidden;
 }
+
 html{
 font-size:62.5%;
 scroll-behavior:smooth;
 scrollbar-width:thin;
 scrollbar-color:var(--accent) transparent;
 direction: rtl;
-/* THE FIX: Prevent layout shift when scrollbar appears/disappears */
-scrollbar-gutter: stable;
+/* THE FIX: Restored overflow-x hidden on HTML to constrain scroll bounds and prevent footer overshoot */
+overflow-x: hidden;
 }
+
 body::-webkit-scrollbar{width:8px;}
 body::-webkit-scrollbar-track{background:transparent;}
 body::-webkit-scrollbar-thumb{background-color:var(--accent);border-radius:4px;}
@@ -46,6 +49,8 @@ font-family:var(--font-main), sans-serif;
 font-size:1.8rem;
 line-height:1.7;
 transition:background-color 0.3s ease,color 0.3s ease;
+/* THE FIX: Ensure body is relative but NOT a scroll container */
+position: relative;
 }
 
 [data-theme="dark"] body {
@@ -85,12 +90,9 @@ background-color:var(--accent);
 transform-origin:bottom right;
 transition:transform 0.3s ease-out;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   a:not(.no-underline):hover::after  {transform:scaleX(1);}
-}
-
-  a:not(.no-underline):active::after  {transform:scaleX(1);}
 }
 a:not(.no-underline):active::after {transform:scaleX(1);}
 
@@ -141,15 +143,9 @@ gap: 1rem;
     left: 2rem;
     right: auto;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .primary-button.delete-forever:hover  {
-  box-shadow: 0 0 20px color-mix(in srgb, #DC2626 50%, transparent) !important;
-  transform: scale(1.05) translateY(-1px) !important;
-}
-}
-
-  .primary-button.delete-forever:active  {
   box-shadow: 0 0 20px color-mix(in srgb, #DC2626 50%, transparent) !important;
   transform: scale(1.05) translateY(-1px) !important;
 }
@@ -161,23 +157,17 @@ gap: 1rem;
 
 
 .primary-button{background-color:var(--accent);color:#050505;border:none;padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:800;cursor:pointer;box-shadow:0 0 15px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform 0.2s ease-out,box-shadow 0.2s ease-out;}
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .primary-button:hover:not(:disabled)  {transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
-}
-
-  .primary-button:active:not(:disabled)  {transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
 }
 .primary-button:active:not(:disabled) {transform:scale(1.05) translateY(-1px);box-shadow:0 0 25px color-mix(in srgb,var(--accent) 50%,transparent);}
 
 .primary-button:disabled{background-color:var(--border-color);color:var(--text-secondary);box-shadow:none;cursor:not-allowed;opacity:0.6;}
 .outline-button{background:transparent;border:1px solid var(--border-color);color:var(--text-secondary);padding:1rem 2.4rem;border-radius:5px;font-family:var(--font-main),sans-serif;font-weight:500;cursor:pointer;transition:background-color 0.15s ease-out,color 0.15s ease-out,border-color 0.15s ease-out;}
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .outline-button:hover:not(:disabled)  {border-color:var(--accent);color:var(--accent);background-color:color-mix(in srgb,var(--accent) 10%,transparent);}
-}
-
-  .outline-button:active:not(:disabled)  {border-color:var(--accent);color:var(--accent);background-color:color-mix(in srgb,var(--accent) 10%,transparent);}
 }
 .outline-button:active:not(:disabled) {border-color:var(--accent);color:var(--accent);background-color:color-mix(in srgb,var(--accent) 10%,transparent);}
 
@@ -271,15 +261,9 @@ gap: 1rem;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .country-picker-button:hover  {
-    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
-    color: var(--accent);
-}
-}
-
-  .country-picker-button:active  {
     background-color: color-mix(in srgb, var(--accent) 10%, transparent);
     color: var(--accent);
 }
@@ -313,15 +297,9 @@ gap: 1rem;
     transition: opacity 0.2s ease-out, visibility 0.2s;
     pointer-events: none;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .info-tooltip-container:hover .info-tooltip-text  {
-    opacity: 1;
-    visibility: visible;
-}
-}
-
-  .info-tooltip-container:active .info-tooltip-text  {
     opacity: 1;
     visibility: visible;
 }
@@ -404,15 +382,9 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
     border-color: transparent !important;
     color: rgba(255,255,255,0.4) !important;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]:hover  {
-    color: var(--accent) !important;
-    box-shadow: none !important;
-}
-}
-
-  body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]:active  {
     color: var(--accent) !important;
     box-shadow: none !important;
 }
@@ -451,14 +423,9 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
     background-position: center 25%;
     padding-top: 40px;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .image-lightbox-trigger:hover::after  {
-    opacity: 1;
-}
-}
-
-  .image-lightbox-trigger:active::after  {
     opacity: 1;
 }
 }
@@ -470,14 +437,9 @@ body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"]
 .image-lightbox-trigger img {
     transition: transform 0.3s ease-out;
 }
-@media (hover: hover) {@media (hover: hover) {
+@media (hover: hover) {
   
   .image-lightbox-trigger:hover img  {
-    transform: scale(1.03);
-}
-}
-
-  .image-lightbox-trigger:active img  {
     transform: scale(1.03);
 }
 }

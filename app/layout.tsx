@@ -43,6 +43,7 @@ export const metadata: Metadata = {
     siteName: 'EternalGames',
     images: [
       {
+        // FIX: Added backticks for template literal
         url: `${siteUrl}/og.png`,
         width: 1200,
         height: 630,
@@ -84,13 +85,15 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         <NextAuthProvider>
           <UserStoreHydration />
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <div style={{ position: 'relative', width: '100%', overflowX: 'clip' }}>
+            {/* THE FIX: Added overflowX: 'clip' to constrain layout overflow */}
+            <div style={{ position: 'relative', width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
               <FPSAutoTuner /> {/* MOUNTED AUTO TUNER */}
               <SpaceBackground />
               <ToastProvider />
               <Lightbox />
               <Navbar />
-              <main>
+              {/* THE FIX: Added overflow: 'clip' here. This prevents negative margins in children from extending the scroll height past the footer. */}
+              <main style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                 <PageTransitionWrapper>
                   {children}
                 </PageTransitionWrapper>

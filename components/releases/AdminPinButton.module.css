@@ -25,6 +25,13 @@
     background-color: #000 !important;
 }
 
+/* THE FIX: Enforce active colors when pinned, even in no-glass mode */
+:global(body.no-glass) .pinButton.pinned {
+    background-color: var(--accent) !important;
+    color: #000000 !important;
+    border-color: var(--accent) !important;
+}
+
 /* Mobile Opt: Kill Blur */
 @media (max-width: 768px) {
     .pinButton {
