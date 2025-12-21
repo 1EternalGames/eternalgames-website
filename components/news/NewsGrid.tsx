@@ -14,8 +14,7 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
     return (
         <motion.div 
             layout 
-            className={styles.newsGrid}
-            // FIX: Removed content-visibility to prevent 3D clipping
+            className={`${styles.newsGrid} gpu-cull`} // Added gpu-cull
         >
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (
@@ -48,5 +47,3 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
         </motion.div>
     );
 }
-
-

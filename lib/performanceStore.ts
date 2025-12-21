@@ -8,9 +8,12 @@ interface PerformanceState {
   isHeroTransitionEnabled: boolean;
   isCornerAnimationEnabled: boolean;
   
-  // New Background Settings
+  // Background Settings
   isBackgroundAnimated: boolean;
   isBackgroundVisible: boolean;
+
+  // New: Glassmorphism
+  isGlassmorphismEnabled: boolean;
   
   toggleLivingCard: () => void;
   toggleFlyingTags: () => void;
@@ -19,6 +22,7 @@ interface PerformanceState {
   
   toggleBackgroundAnimation: () => void;
   toggleBackgroundVisibility: () => void;
+  toggleGlassmorphism: () => void;
 }
 
 export const usePerformanceStore = create<PerformanceState>()(
@@ -32,8 +36,10 @@ export const usePerformanceStore = create<PerformanceState>()(
       
       // Default Background
       isBackgroundAnimated: false,
-      // MODIFIED: Default to false on mobile devices to improve initial load performance
       isBackgroundVisible: typeof window !== 'undefined' ? window.innerWidth > 768 : true,
+
+      // Default Glass (Blur) - Enabled by default
+      isGlassmorphismEnabled: true,
 
       toggleLivingCard: () => set((state) => ({ isLivingCardEnabled: !state.isLivingCardEnabled })),
       toggleFlyingTags: () => set((state) => ({ isFlyingTagsEnabled: !state.isFlyingTagsEnabled })),
@@ -42,6 +48,7 @@ export const usePerformanceStore = create<PerformanceState>()(
       
       toggleBackgroundAnimation: () => set((state) => ({ isBackgroundAnimated: !state.isBackgroundAnimated })),
       toggleBackgroundVisibility: () => set((state) => ({ isBackgroundVisible: !state.isBackgroundVisible })),
+      toggleGlassmorphism: () => set((state) => ({ isGlassmorphismEnabled: !state.isGlassmorphismEnabled })),
     }),
     {
       name: 'eternalgames-performance-settings',

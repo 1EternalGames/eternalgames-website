@@ -144,8 +144,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
                     <motion.div 
                         layout 
-                        className="content-grid"
-                        // FIX: Removed content-visibility to prevent 3D clipping
+                        className="content-grid gpu-cull" // Added gpu-cull
                     >
                         {gridReviews.map((review, index) => (
                             <ArticleCard
@@ -185,5 +184,3 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         </>
     );
 }
-
-

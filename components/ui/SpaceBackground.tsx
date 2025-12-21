@@ -90,11 +90,6 @@ export default function SpaceBackground() {
                         <line x1="0" y1="3" x2="10" y2="3" stroke="#000" strokeWidth="1" opacity="0.4"></line>
                     </pattern>
 
-                    <pattern id="sb_scratchPattern" x="0" y="0" width="500" height="500" patternUnits="userSpaceOnUse">
-                        <path d="M 50 50 L 80 80 M 200 100 L 220 90 M 350 300 L 360 320 M 100 300 L 80 320" stroke="#FFF" strokeWidth="0.5" opacity="0.15" strokeLinecap="square"></path>
-                        <path d="M 400 50 L 420 80 M 10 400 L 30 380" stroke="#FFF" strokeWidth="0.5" opacity="0.1"></path>
-                    </pattern>
-
                     <g id="sb_star"><circle r="1.5" fill="#F0F0FF"></circle></g>
                     <g id="sb_c_A"><path d="M0,0 L30,40 L-20,30" stroke="#556070" strokeWidth="0.5" fill="none"></path><use href="#sb_star" x="0" y="0"></use><use href="#sb_star" x="30" y="40"></use><use href="#sb_star" x="-20" y="30"></use></g>
                     <g id="sb_c_B"><path d="M0,0 L40,0 L80,0" stroke="#556070" strokeWidth="0.5" fill="none"></path><use href="#sb_star" x="0" y="0"></use><use href="#sb_star" x="40" y="0"></use><use href="#sb_star" x="80" y="0"></use></g>
@@ -244,8 +239,6 @@ export default function SpaceBackground() {
                 </g>
 
                 {/* 6. OVERLAYS */}
-                {/* Micro-scratches (Static) */}
-                <rect width="110%" height="110%" fill="url(#sb_scratchPattern)" opacity="0.4"></rect>
                 {/* Scanlines (Drifting, conditional class) */}
                 <rect className={isBackgroundAnimated ? styles.scanlineAnim : ''} width="100%" height="120%" fill="url(#sb_scanlinePattern)" pointerEvents="none"></rect>
 
@@ -260,5 +253,3 @@ export default function SpaceBackground() {
         </div>
     );
 }
-
-

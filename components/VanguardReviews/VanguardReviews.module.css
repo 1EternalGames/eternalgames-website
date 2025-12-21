@@ -6,15 +6,18 @@
     justify-content: center;
     min-height: 500px;
     position: relative;
-    padding: 6rem 0 12rem 0;
+    /* FIX: Increased padding-top to 12rem to prevent the lifted card from exiting the hit-test area */
+    padding: 5rem 0 12rem 0;
     --card-gap: 1.5rem;
     --center-width: 400px;
     --side-width: 280px;
     background-color: transparent; 
     width: 100%;
-    overflow-x: clip;
-    /* FIX: Force hardware acceleration container */
-    transform: translate3d(0,0,0);
+    /* Keep clip to prevent horizontal scrollbar from flying cards */
+    overflow-x: clip; 
+    /* Use preserve-3d on container to allow children to exist in shared 3D space */
+    transform-style: preserve-3d;
+    touch-action: pan-y;
 }
 
 .spotlightGlow {
@@ -31,39 +34,21 @@
 
 .cardSlot {
     position: absolute;
-    /* FIX: Ensure stable rendering context */
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    perspective: 1000px;
+    /* FIX: Ensure pointer events are captured */
+    pointer-events: auto;
+    transform-style: preserve-3d;
     
-    /* OPTIMIZATION: Removed CSS transitions on transform/opacity/left because Framer Motion controls them. */
-    /* This prevents conflict and improves JS animation smoothness. */
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease-out, left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
     width: var(--center-width);
     height: 500px;
-}
-
-.cardSlot:hover,
-.cardSlot.activeState {
-    /* Hint browser of changes, but rely on JS for the actual movement */
-    will-change: transform, opacity, z-index;
+    touch-action: pan-y;
 }
 
 .cardWrapper {
     height: 100%;
-    /* FIX: Stable transform */
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    
+    transform-style: preserve-3d;
     transition: filter 0.4s ease-out;
     position: relative;
-    transform-style: preserve-3d;
-}
-
-.cardSlot:hover .cardWrapper,
-.cardSlot.activeState .cardWrapper {
-    will-change: transform, filter;
 }
 
 .vanguardContainer.manual-hover .cardWrapper {
@@ -89,18 +74,36 @@
     box-shadow: none !important; 
     color: #fff;
     position: relative;
-    backface-visibility: hidden;
-    transform: translateZ(0);
+    transform-style: preserve-3d;
+}
+
+/* 
+   THE FIX: 
+   Explicit Hit Layer moved slightly forward in Z-space.
+   This guarantees it sits "above" the container plane and captures hovers 
+   even if the visual elements are complex.
+*/
+.hitArea {
+    position: absolute;
+    inset: 0;
+    z-index: 20; /* High priority */
+    background-color: transparent; /* Invisible */
+    clip-path: url(#vg-cardClip);
+    cursor: pointer;
+    pointer-events: auto;
+    /* Move hit area forward to ensure it catches mouse before container background */
+    transform: translateZ(10px); 
 }
 
 /* --- FRAME & SVG --- */
 .frameSvgContainer {
     position: absolute;
-    inset: -2px; /* Slight overflow to prevent clipping of thick strokes */
+    inset: -2px;
     width: calc(100% + 4px);
     height: calc(100% + 4px);
     pointer-events: none;
     z-index: 0;
+    transform: translateZ(0);
 }
 .frameSvg {
     width: 100%;
@@ -116,6 +119,8 @@
     clip-path: url(#vg-cardClip);
     z-index: 1;
     background-color: transparent; 
+    pointer-events: none;
+    transform: translateZ(0);
 }
 
 .cardImage {
@@ -135,6 +140,7 @@
     z-index: 10;
     pointer-events: none;
     clip-path: url(#vg-cardClip);
+    transform: translateZ(2px);
 }
 
 /* --- CONTENT --- */
@@ -149,6 +155,7 @@
     pointer-events: none;
     z-index: 2;
     clip-path: url(#vg-cardClip); 
+    transform: translateZ(5px);
 }
 
 .cardContent h3 { 
@@ -162,7 +169,7 @@
 .cardMetaRow {
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* Aligns content to the right in RTL */
+    justify-content: flex-start;
     gap: 1rem;
     width: 100%;
 }
@@ -177,14 +184,12 @@
 
 .cardSlot.activeState .cardContent h3 { 
     color: var(--accent);
-    /* Title Bloom Effect */
     text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent); 
 }
 
 @media (hover: hover) { 
     .cardSlot:hover .cardContent h3 { 
         color: var(--accent);
-        /* Title Bloom Effect */
         text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
     } 
 }
@@ -211,25 +216,24 @@
     letter-spacing: -1px;
     z-index: 30; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    
+    /* Ensure badge is well above hit area */
     transform: translateZ(60px);
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease, background-color 0.4s ease, color 0.4s ease;
+    pointer-events: none;
 }
 
 .cardSlot.activeState .vanguardScoreBadge { 
-    /* Reduced tilt from 15deg to 10deg */
     transform: translateZ(100px) scale(1.3) rotate(10deg); 
     background-color: var(--accent);
     color: #000;
-    /* Added strong bloom effect */
     box-shadow: 0 0 25px var(--accent), 0 10px 40px rgba(0,0,0,0.5); 
 }
 @media (hover: hover) { 
     .cardSlot:hover .vanguardScoreBadge { 
-        /* Reduced tilt from 15deg to 10deg */
         transform: translateZ(100px) scale(1.3) rotate(10deg); 
         background-color: var(--accent);
         color: #000;
-        /* Added strong bloom effect */
         box-shadow: 0 0 25px var(--accent), 0 10px 40px rgba(0,0,0,0.5); 
     } 
 }
@@ -245,17 +249,16 @@
     gap: 0.6rem;
     z-index: 50; 
     transform: translateZ(70px); 
+    pointer-events: none; 
 }
 
-/* --- SAFE BRIDGES --- */
-/* Invisible bridge to allow mouse travel from card to bubbles without losing hover state */
 .creatorCapsuleContainer::before {
     content: '';
     position: absolute;
-    right: 100%; /* Start exactly at the left edge of the container */
+    right: 100%;
     top: -10%;
     height: 120%;
-    width: 50px; /* Safe area width bridging back to the card */
+    width: 50px;
     background: transparent;
     pointer-events: auto;
     z-index: 49;
@@ -263,11 +266,10 @@
 
 .safeBridgeWrapper {
     position: relative;
-    /* Ensure the arrow can be seen outside the wrapper */
     overflow: visible; 
+    pointer-events: auto;
 }
 
-/* Capsule Wrapper (Handles movement/scale) */
 .capsuleWrapper {
     position: relative;
     display: flex;
@@ -275,23 +277,18 @@
     cursor: pointer;
 }
 
-/* The visual pill */
 .creditCapsule {
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
     gap: 0;
-    
     background: #0A0B0F; 
     border: 1px solid rgba(255,255,255,0.15);
     padding: 0;
-    
     border-radius: 999px;
     height: 28px;
-    
     text-decoration: none;
     box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    
     overflow: hidden;
     position: relative;
     z-index: 2;
@@ -302,10 +299,8 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    
     background-color: #000;
     color: var(--accent);
-    
     display: flex;
     align-items: center;
     justify-content: center;
@@ -325,10 +320,8 @@
     padding: 0 12px;
 }
 
-/* The Animated Arrow */
 .capsuleArrow {
     position: absolute;
-    /* Position to the left of the capsule */
     left: -20px; 
     top: 50%;
     transform: translateY(-50%);
@@ -336,34 +329,26 @@
     opacity: 0;
     z-index: 1;
     pointer-events: none;
-    /* Transition handled by Framer Motion in TSX, but base styles here */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* --- HOVER STATES --- */
-
-/* Parent wrapper is hovered */
 .capsuleWrapper:hover .creditCapsule {
     background-color: var(--accent);
     border-color: var(--accent);
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
 }
-
 .capsuleWrapper:hover .capsuleIcon {
     background-color: #000;
     color: var(--accent);
 }
-
 .capsuleWrapper:hover .creditCapsule span {
     color: #000;
 }
 
 /* --- EFFECTS --- */
-.cyberCorner {
-    display: none;
-}
+.cyberCorner { display: none; }
 
 .holoSpotlight {
     position: absolute;
@@ -387,7 +372,7 @@
     top: -50%;
     left: 0;
     width: 100%;
-    height: 10%; /* Thinner */
+    height: 10%;
     background: linear-gradient(to bottom, transparent, rgba(0, 255, 240, 0.3) 50%, transparent);
     z-index: 10;
     pointer-events: none;
@@ -396,10 +381,7 @@
     transition: opacity 0.3s ease;
 }
 
-@keyframes scan {
-    0% { top: -30%; }
-    100% { top: 130%; }
-}
+@keyframes scan { 0% { top: -30%; } 100% { top: 130%; } }
 
 .cardSlot:hover .scanLine,
 .cardSlot.activeState .scanLine {
@@ -410,7 +392,7 @@
 .techDecoration {
     display: flex;
     gap: 5px;
-    align-items: center; /* Center dots relative to date text */
+    align-items: center;
     pointer-events: none;
     opacity: 0.6;
 }
@@ -433,7 +415,7 @@
 .cardSlot.activeState .techDot:nth-child(2) { animation-delay: 0.2s; }
 .cardSlot.activeState .techDot:nth-child(3) { animation-delay: 0.4s; }
 
-/* 5. Satellite Field (Flying Tags) */
+/* Satellite Field */
 .satelliteField {
     position: absolute;
     inset: -200px;
@@ -457,9 +439,9 @@
 
 .satelliteBridgeLine {
     fill: none;
-    stroke: transparent; /* Invisible but interactive */
-    stroke-width: 50px; /* Wide path to catch mouse movement */
-    pointer-events: auto; /* Keeps hover active */
+    stroke: transparent;
+    stroke-width: 50px;
+    pointer-events: auto;
     cursor: auto; 
 }
 
@@ -508,7 +490,6 @@
     }
 }
 
-/* FIX: Mobile Active State for Tags */
 .satelliteShardLink:active {
     background-color: var(--accent);
     color: #000;
@@ -522,7 +503,6 @@
 @media (max-width: 768px) {
     .navTrack {
         backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
         background-color: rgba(20, 20, 25, 0.95);
     }
 }
@@ -544,18 +524,15 @@
     .cardContent h3 { font-size: 1.8rem; }
     .vanguardScoreBadge { width: 55px; height: 55px; font-size: 2rem; top: 1rem; left: 1rem; }
     
-    /* Mobile Kill Features */
     .holoSpotlight, .scanLine { display: none; }
     
     .satelliteShardLink {
         backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
         background: #000;
         font-size: 1.1rem;
         padding: 0.4rem 1rem;
     }
     
-    /* FIX: Ensure tag interaction styles persist on mobile */
     .satelliteShardLink:active {
         background-color: var(--accent) !important;
         color: #000 !important;

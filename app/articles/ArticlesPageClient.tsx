@@ -172,7 +172,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                         <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
                             <motion.div 
                                 layout 
-                                className="content-grid" 
+                                className="content-grid gpu-cull" // Added gpu-cull
                             >
                                 <AnimatePresence>
                                     {gridArticles.map((article, index) => ( <ArticleCard key={article.id} article={article} layoutIdPrefix="articles-grid" isPriority={index < 3} /> ))}
@@ -201,5 +201,3 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         </React.Fragment>
     );
 }
-
-

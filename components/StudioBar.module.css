@@ -17,6 +17,11 @@
   padding: 0.5rem;
 }
 
+:global(body.no-glass) .studioBar {
+  backdrop-filter: none !important;
+  background-color: var(--bg-secondary) !important;
+}
+
 /* Mobile Opt: Kill Blur */
 @media (max-width: 768px) {
     .studioBar {
@@ -77,5 +82,3 @@
 .brand:active {
   color: var(--accent); 
 }
-
-

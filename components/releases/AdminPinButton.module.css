@@ -20,6 +20,11 @@
     transition: all 0.2s ease;
 }
 
+:global(body.no-glass) .pinButton {
+    backdrop-filter: none !important;
+    background-color: #000 !important;
+}
+
 /* Mobile Opt: Kill Blur */
 @media (max-width: 768px) {
     .pinButton {
@@ -54,5 +59,3 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
-
-

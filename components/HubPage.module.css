@@ -94,6 +94,11 @@
     position: relative; /* For pseudo-element handling */
 }
 
+:global(body.no-glass) .hubPill {
+    backdrop-filter: none !important;
+    background-color: #0A0A0F !important;
+}
+
 /* Mobile Opt */
 @media (max-width: 768px) {
     .hubPill {
@@ -186,5 +191,3 @@
       font-size: 1.3rem;
   }
 }
-
-

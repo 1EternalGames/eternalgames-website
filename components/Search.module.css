@@ -15,6 +15,11 @@
   z-index: 2000;
 }
 
+:global(body.no-glass) .searchOverlay {
+    backdrop-filter: none !important;
+    background-color: rgba(5, 5, 5, 0.95) !important;
+}
+
 @media (max-width: 768px) {
     .searchOverlay {
         padding-top: 10vh;
@@ -189,5 +194,3 @@
   height: 100%;
   background-color: var(--border-color);
 }
-
-

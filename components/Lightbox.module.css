@@ -12,6 +12,11 @@
     cursor: zoom-out;
 }
 
+:global(body.no-glass) .lightboxOverlay {
+    backdrop-filter: none !important;
+    background-color: rgba(0,0,0,0.95) !important;
+}
+
 @media (max-width: 1024px) {
     .lightboxOverlay {
         padding: 10vh 5vw;
@@ -62,6 +67,11 @@
     border: 1px solid var(--border-color);
 }
 
+:global(body.no-glass) .controls {
+    background-color: var(--bg-secondary) !important;
+    opacity: 1 !important;
+}
+
 .controlButton {
     width: 44px;
     height: 44px;
@@ -110,6 +120,13 @@
     z-index: 9999;
     transition: all 0.2s ease-out;
 }
+
+:global(body.no-glass) .navButton {
+    backdrop-filter: none !important;
+    background-color: var(--bg-secondary) !important;
+    opacity: 1 !important;
+}
+
 @media (max-width: 768px) {
     .navButton {
         backdrop-filter: none !important;
@@ -138,5 +155,3 @@
     right: 2rem; /* RTL */
     left: auto;
 }
-
-

@@ -28,6 +28,12 @@
   box-shadow: 0 10px 40px -10px rgba(0,0,0,0.9);
 }
 
+:global(body.no-glass) .navbar.scrolled {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: rgba(5, 5, 5, 0.95) !important;
+}
+
 @media (max-width: 768px) {
   /* MOBILE OPTIMIZATION: Kill Blur */
   .navbar.scrolled {
@@ -241,6 +247,11 @@
       z-index: 1200; 
   }
   
+  :global(body.no-glass) .mobileNavOverlay {
+      backdrop-filter: none !important;
+      background-color: rgba(5, 5, 5, 0.98) !important;
+  }
+  
   /* Mobile Opt for Overlay: Kill Blur */
   @media (max-width: 768px) {
       .mobileNavOverlay { 
@@ -256,5 +267,3 @@
 body.editor-active .desktopView > nav { display: none; }
 body.editor-active .desktopView { grid-template-columns: auto 1fr; }
 @media (max-width: 1024px) { body.editor-active .mobileView { display: none; } }
-
-

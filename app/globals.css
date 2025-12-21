@@ -52,15 +52,30 @@ transition:background-color 0.3s ease,color 0.3s ease;
   background-color: transparent; /* Transparent in dark mode to show SpaceBackground */
 }
 
-/* --- THE CHEAT CODE: Frustum Culling --- */
-/* Apply this to large containers (lists, grids) */
-.gpu-cull {
-    /* Tells browser to skip layout/paint for off-screen content */
-    content-visibility: auto;
-    /* Estimated height to prevent scrollbar jumping. */
-    contain-intrinsic-size: 1px 500px; 
+/* --- NO GLASS MODE (Global Fallback) --- */
+body.no-glass * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
-/* --- END CHEAT CODE --- */
+
+/* --- GROUNDBREAKING OPTIMIZATION: Render Culling --- */
+/* 
+   Tells browser to skip layout/paint for off-screen content.
+   The browser calculates the height based on 'contain-intrinsic-size' until it scrolls into view.
+*/
+.gpu-cull {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 500px; /* Estimates height to avoid scroll jumping */
+}
+
+/* --- GROUNDBREAKING OPTIMIZATION: Texture Decoding --- */
+/*
+   1. content-visibility: auto on images makes offscreen images essentially free.
+   2. decoding: async is default in Next.js, but this CSS enforcement helps edge cases.
+*/
+img {
+    content-visibility: auto;
+}
 
 h1,h2,h3,h4,h5,h6{
 font-family:var(--font-main), sans-serif;
@@ -533,5 +548,3 @@ body.lightbox-active {
 .social-editor-content .ProseMirror p {
     margin: 0 !important;
 }
-
-

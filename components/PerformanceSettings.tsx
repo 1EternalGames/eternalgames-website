@@ -7,7 +7,8 @@ import { usePerformanceStore } from '@/lib/performanceStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import styles from './PerformanceSettings.module.css';
 import { createPortal } from 'react-dom';
-import { useTheme } from 'next-themes'; // IMPORT ADDED
+import { useTheme } from 'next-themes';
+import { useBodyClass } from '@/hooks/useBodyClass'; // ADDED
 
 // --- Icons ---
 const SettingsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>;
@@ -21,13 +22,14 @@ const HeroIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const BorderIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8V4a2 2 0 0 1 2-2h4" /><path d="M16 2h4a2 2 0 0 1 2 2v4" /><path d="M22 16v4a2 2 0 0 1-2 2h-4" /><path d="M8 22H4a2 2 0 0 1-2-2v-4" /></svg>;
 const EyeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>;
 const PlayPauseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+const BlurIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path d="M2 12s3 7 10 7 10-7 10-7 3-7 10-7 10 7 10 7Z" opacity="0.3"/></svg>; // Abstract "eye/blur" representation
 
 interface OptionButtonProps {
     label: string;
     isActive: boolean;
     onClick: () => void;
     Icon: React.ComponentType<any>;
-    disabled?: boolean; // NEW PROP
+    disabled?: boolean;
 }
 
 const OptionButton = ({ label, isActive, onClick, Icon, disabled }: OptionButtonProps) => (
@@ -36,8 +38,8 @@ const OptionButton = ({ label, isActive, onClick, Icon, disabled }: OptionButton
         className={`${styles.optionButton} ${isActive ? styles.active : ''}`}
         aria-checked={isActive}
         role="switch"
-        disabled={disabled} // APPLIED PROP
-        style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}} // VISUAL FEEDBACK
+        disabled={disabled}
+        style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
     >
         <div className={styles.buttonIcon}>
             <Icon />
@@ -54,12 +56,15 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
     const containerRef = useRef<HTMLDivElement>(null);
     const store = usePerformanceStore();
     const [mounted, setMounted] = useState(false);
-    const { resolvedTheme } = useTheme(); // GET THEME
+    const { resolvedTheme } = useTheme();
 
     useEffect(() => {
         usePerformanceStore.persist.rehydrate();
         setMounted(true);
     }, []);
+
+    // Apply the "no-glass" class to body when glassmorphism is DISABLED
+    useBodyClass('no-glass', !store.isGlassmorphismEnabled);
 
     useClickOutside(containerRef, () => {
         if (!isMobile) setIsOpen(false);
@@ -75,10 +80,7 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
         );
     }
 
-    // LOGIC: Disable background toggles in Light Mode
     const isLightMode = resolvedTheme === 'light';
-    
-    // LOGIC: Disable animation toggle if background is hidden OR light mode
     const isAnimationDisabled = !store.isBackgroundVisible || isLightMode;
 
     const PanelContent = () => (
@@ -100,20 +102,29 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
             </div>
             
             <div className={styles.optionsGrid}>
+                 {/* Heaviest */}
+                 <OptionButton 
+                    label="حركة الخلفية" 
+                    isActive={store.isBackgroundAnimated} 
+                    onClick={store.toggleBackgroundAnimation} 
+                    Icon={PlayPauseIcon}
+                    disabled={isAnimationDisabled} 
+                />
+                <OptionButton 
+                    label="تأثير الزجاج" 
+                    isActive={store.isGlassmorphismEnabled} 
+                    onClick={store.toggleGlassmorphism} 
+                    Icon={BlurIcon}
+                />
                  <OptionButton 
                     label="إظهار الخلفية" 
                     isActive={store.isBackgroundVisible} 
                     onClick={store.toggleBackgroundVisibility} 
                     Icon={EyeIcon}
-                    disabled={isLightMode} // Disabled in Light Mode
+                    disabled={isLightMode}
                 />
-                <OptionButton 
-                    label="حركة الخلفية" 
-                    isActive={store.isBackgroundAnimated} 
-                    onClick={store.toggleBackgroundAnimation} 
-                    Icon={PlayPauseIcon}
-                    disabled={isAnimationDisabled} // Disabled if hidden or light mode
-                />
+                
+                {/* Moderate */}
                 <OptionButton 
                     label="البطاقات الحية" 
                     isActive={store.isLivingCardEnabled} 
@@ -121,16 +132,18 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                     Icon={CardIcon3D}
                 />
                 <OptionButton 
-                    label="الوسوم الطائرة" 
-                    isActive={store.isFlyingTagsEnabled} 
-                    onClick={store.toggleFlyingTags} 
-                    Icon={TagIcon}
-                />
-                <OptionButton 
                     label="انتقال Hero" 
                     isActive={store.isHeroTransitionEnabled} 
                     onClick={store.toggleHeroTransition} 
                     Icon={HeroIcon}
+                />
+                
+                {/* Light */}
+                <OptionButton 
+                    label="الوسوم الطائرة" 
+                    isActive={store.isFlyingTagsEnabled} 
+                    onClick={store.toggleFlyingTags} 
+                    Icon={TagIcon}
                 />
                  <OptionButton 
                     label="إطارات Cyber" 
@@ -201,5 +214,3 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
         </div>
     );
 }
-
-

@@ -15,6 +15,11 @@
   pointer-events: auto;
 }
 
+:global(body.no-glass) .actionDrawerContainer {
+  backdrop-filter: none !important;
+  background-color: var(--bg-secondary) !important;
+}
+
 .actionDrawerButtons {
   display: flex;
   justify-content: center;
@@ -77,6 +82,3 @@
   background-color: #3f1a1a;
   color: #DC2626;
 }
-
-
-

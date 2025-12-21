@@ -92,37 +92,40 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         }
 
         const isCenter = slotIndex === CENTER_SLOT_INDEX;
-        const style: any = { opacity: 1, zIndex: 0 };
+        const style: any = { opacity: 1 };
         
         let transform = '';
         const isHovered = hoveredId === itemId;
 
+        // FIXED Z-INDEX VALUES
+        // Center card gets high priority (20), hovered gets boosted (30).
+        // Side cards are background (10).
+        // This ensures center card hit area is always on top.
+        const BASE_Z = 10;
+        const CENTER_Z = 20;
+        const HOVER_Z = 30;
+
         if (isMobile) {
             style.left = '50%';
             const offsetPx = 140; 
-            const baseTranslateX = '-50%'; // String literal for interpolation
+            const baseTranslateX = '-50%'; 
 
             let xOffset = 0;
             let baseScale = 1;
 
             switch (slotIndex) {
-                case 0: xOffset = -offsetPx * 1.6; baseScale = 0.75; style.zIndex = 0; break;
-                case 1: xOffset = -offsetPx * 0.9; baseScale = 0.8;  style.zIndex = 1; break;
-                case 2: xOffset = 0;               baseScale = 1;    style.zIndex = 2; break;
-                case 3: xOffset = offsetPx * 0.9;  baseScale = 0.8;  style.zIndex = 1; break;
-                case 4: xOffset = offsetPx * 1.6;  baseScale = 0.75; style.zIndex = 0; break;
+                case 0: xOffset = -offsetPx * 1.6; baseScale = 0.75; style.zIndex = BASE_Z; break;
+                case 1: xOffset = -offsetPx * 0.9; baseScale = 0.8;  style.zIndex = BASE_Z + 1; break;
+                case 2: xOffset = 0;               baseScale = 1;    style.zIndex = CENTER_Z; break;
+                case 3: xOffset = offsetPx * 0.9;  baseScale = 0.8;  style.zIndex = BASE_Z + 1; break;
+                case 4: xOffset = offsetPx * 1.6;  baseScale = 0.75; style.zIndex = BASE_Z; break;
             }
 
-            // Calculate final scale with hover effect
-            // We multiply the base scale instead of appending a second scale transform
             const hoverScaleMultiplier = isHovered ? 1.05 : 1;
             const finalScale = baseScale * hoverScaleMultiplier;
 
-            // Apply Z-Index boost on hover
-            if (isHovered) style.zIndex = 3;
+            if (isHovered) style.zIndex = HOVER_Z;
 
-            // Construct consistent transform string: translateX(calc) scale(val) translateY(val)
-            // Using calc for ALL mobile states prevents interpolation glitches between "0px" and "calc()"
             transform = `translateX(calc(${baseTranslateX} + ${xOffset}px)) scale(${finalScale}) translateY(-50px)`;
             
         } else { // Desktop
@@ -131,18 +134,17 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
             let baseScale = 1;
 
             switch (slotIndex) {
-                case 0: x = -offset * 1.6; baseScale = 0.6;  style.zIndex = 0; break;
-                case 1: x = -offset * 0.9; baseScale = 0.65; style.zIndex = 1; break;
-                case 2: x = 0;             baseScale = 1;    style.zIndex = 2; break;
-                case 3: x = offset * 0.9;  baseScale = 0.65; style.zIndex = 1; break;
-                case 4: x = offset * 1.6;  baseScale = 0.6;  style.zIndex = 0; break;
+                case 0: x = -offset * 1.6; baseScale = 0.6;  style.zIndex = BASE_Z; break;
+                case 1: x = -offset * 0.9; baseScale = 0.65; style.zIndex = BASE_Z + 1; break;
+                case 2: x = 0;             baseScale = 1;    style.zIndex = CENTER_Z; break;
+                case 3: x = offset * 0.9;  baseScale = 0.65; style.zIndex = BASE_Z + 1; break;
+                case 4: x = offset * 1.6;  baseScale = 0.6;  style.zIndex = BASE_Z; break;
             }
 
-            // Desktop Hover Logic: Lift instead of scale
             let yLift = -50;
             if (isHovered) {
-                style.zIndex = 3;
-                yLift -= 15; // Extra lift
+                style.zIndex = HOVER_Z;
+                yLift -= 15; 
             }
 
             transform = `translateX(${x}px) scale(${baseScale}) translateY(${yLift}px)`;
@@ -165,6 +167,6 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         navigateToIndex,
         getCardState,
         isMobile,
-        isAnimating, // Exporting this for UI consumption
+        isAnimating,
     };
 }

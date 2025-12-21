@@ -335,6 +335,13 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
         setPrefix(layoutIdPrefix);
     };
     
+    // FIX: Bridge click handler to trigger main navigation
+    const handleBridgeClick = (e: React.MouseEvent) => {
+        // Only trigger if not clicking tags/creators (though they stopProp anyway)
+        handleClick(e as any);
+        router.push(linkPath);
+    };
+    
     const imageRef = review.mainImageVerticalRef || review.mainImageRef;
     const imageUrl = imageRef 
         ? urlFor(imageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
@@ -401,6 +408,16 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
                     className={styles.vanguardCard}
                 >
+                    {/* 
+                       THE HIT LAYER:
+                       This invisible div covers the entire card and uses the same clip-path 
+                       to ensure the shape is respected. It catches mouse events that fall 
+                       through other transparent layers (like the top half of the card).
+                    */}
+                    <div 
+                        className={styles.hitArea}
+                    />
+
                     <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />
                     
                     <div className={styles.effectLayer}>
@@ -524,6 +541,8 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                                 x2={hoverX} 
                                                 y2={hoverY} 
                                                 className={styles.satelliteBridgeLine}
+                                                // FIX: Added onClick to bridge lines to ensure they act as part of the card
+                                                onClick={handleBridgeClick}
                                             />
                                         );
                                     })}
@@ -616,6 +635,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     // MEMOIZED to prevent unnecessary re-renders of VanguardCard
     const handleCardHoverChange = useCallback((id: string, isHovering: boolean) => {
         if (!initialAnimHasRun) return;
+
         // CRITICAL FIX: Ensure we don't apply hover effects if the carousel is actively animating
         // This prevents the "stuck large card" issue during rapid interaction
         if (isAnimating) {

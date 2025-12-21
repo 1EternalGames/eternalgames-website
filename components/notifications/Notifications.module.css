@@ -87,6 +87,11 @@
     backdrop-filter: blur(10px);
 }
 
+:global(body.no-glass) .panelHeader {
+    backdrop-filter: none !important;
+    background-color: var(--bg-secondary) !important;
+}
+
 .panelHeader h3 {
     margin: 0;
     font-size: 1.6rem;
@@ -214,5 +219,3 @@
         max-height: 60vh;
     }
 }
-
-
