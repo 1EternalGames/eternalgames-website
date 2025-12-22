@@ -11,6 +11,7 @@ import { groq } from 'next-sanity';
 import { profileSchema, signUpSchema } from '@/lib/validations';
 import { sensitiveLimiter } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
+import { validateImageFile } from '@/lib/security'; // SECURITY IMPORT
 
 // ... (Keep existing syncUserToSanity function as is) ...
 async function syncUserToSanity(userId: string) {
@@ -285,8 +286,11 @@ export async function updateUserAvatar(formData: FormData) {
         if (!avatarFile || avatarFile.size === 0) return { success: true, message: 'لا صورة جديدة.' };
         
         // SECURITY: Strict File Validation
-        if (!avatarFile.type.startsWith('image/')) throw new Error('يجب رفع ملف صورة صالح (JPG, PNG, WebP).');
         if (avatarFile.size > 5 * 1024 * 1024) throw new Error('حجم الصورة كبير جدًا (أقصى حد 5 ميجابايت).');
+        
+        // SECURITY: Verify Magic Bytes
+        const validation = await validateImageFile(avatarFile);
+        if (!validation.isValid) throw new Error(validation.error);
 
         const sanitizedFilename = `${session.user.id}-${Date.now()}-${avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
         const blob = await put(sanitizedFilename, avatarFile, { access: 'public', contentType: avatarFile.type });

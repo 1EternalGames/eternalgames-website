@@ -23,7 +23,7 @@ export const profileSchema = z.object({
         .transform(val => val ? sanitize(val) : ""),
     twitterHandle: z.string().max(30).optional().transform(val => val ? sanitize(val) : ""),
     instagramHandle: z.string().max(30).optional().transform(val => val ? sanitize(val) : ""),
-});
+}).strict(); // REJECT UNKNOWN KEYS
 
 // 2. Sign Up Schema
 export const signUpSchema = z.object({
@@ -38,7 +38,7 @@ export const signUpSchema = z.object({
         .max(20)
         .regex(/^[a-z0-9_]+$/, "اسم المستخدم غير صالح")
         .toLowerCase(),
-});
+}).strict();
 
 // 3. Comment Schema
 export const commentSchema = z.object({
@@ -48,10 +48,10 @@ export const commentSchema = z.object({
         .transform(sanitize),
     parentId: z.string().optional(),
     contentSlug: z.string().min(1),
-});
+}).strict();
 
 // 4. Password Reset Schema
 export const passwordResetSchema = z.object({
     token: z.string().min(1),
     newPassword: z.string().min(8, "كلمة السر قصيرة جدًا").max(100),
-});
+}).strict();

@@ -5,31 +5,66 @@ type RateLimitEntry = {
     expiresAt: number;
 };
 
-// In-memory store for rate limiting (Per Serverless Instance)
-// Note: This resets when the serverless function cold starts. 
-// For distributed strict enforcement, use Redis (Upstash/Vercel KV).
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
 interface RateLimitOptions {
-    interval: number;
-    uniqueTokenPerInterval: number;
+    interval: number; // Window size in ms
+    uniqueTokenPerInterval: number; // Max keys to store
 }
+
+class LRUCache<K, V> {
+    private max: number;
+    private cache: Map<K, V>;
+
+    constructor(max: number) {
+        this.max = max;
+        this.cache = new Map();
+    }
+
+    get(key: K): V | undefined {
+        const item = this.cache.get(key);
+        if (item) {
+            // Refresh key position (delete and re-add to end)
+            this.cache.delete(key);
+            this.cache.set(key, item);
+        }
+        return item;
+    }
+
+    set(key: K, value: V): void {
+        // If key exists, update value and refresh position
+        if (this.cache.has(key)) {
+            this.cache.delete(key);
+        } 
+        // If cache is full, delete oldest (first) item
+        else if (this.cache.size >= this.max) {
+            this.cache.delete(this.cache.keys().next().value);
+        }
+        this.cache.set(key, value);
+    }
+}
+
+// Global store to persist across hot-reloads in dev, 
+// though still reset on serverless cold start.
+const globalStore = new Map<string, LRUCache<string, RateLimitEntry>>();
 
 export function rateLimiter(options: RateLimitOptions) {
     const { interval, uniqueTokenPerInterval } = options;
+    
+    // Create a unique namespace for this limiter configuration
+    const namespace = `limit-${interval}-${uniqueTokenPerInterval}`;
+    
+    if (!globalStore.has(namespace)) {
+        globalStore.set(namespace, new LRUCache(uniqueTokenPerInterval));
+    }
+    
+    const tokenCache = globalStore.get(namespace)!;
 
     return {
         check: async (identifier: string, limit: number) => {
             const now = Date.now();
-            const record = rateLimitStore.get(identifier);
-
-            // Cleanup old records if map gets too big
-            if (rateLimitStore.size > uniqueTokenPerInterval) {
-                rateLimitStore.clear();
-            }
+            const record = tokenCache.get(identifier);
 
             if (!record) {
-                rateLimitStore.set(identifier, {
+                tokenCache.set(identifier, {
                     count: 1,
                     expiresAt: now + interval,
                 });
@@ -37,8 +72,8 @@ export function rateLimiter(options: RateLimitOptions) {
             }
 
             if (now > record.expiresAt) {
-                // Window expired, reset
-                rateLimitStore.set(identifier, {
+                // Window expired, reset count but keep entry to maintain LRU warmth
+                tokenCache.set(identifier, {
                     count: 1,
                     expiresAt: now + interval,
                 });
@@ -49,20 +84,23 @@ export function rateLimiter(options: RateLimitOptions) {
                 return { success: false };
             }
 
-            // Increment
+            // Increment count
             record.count += 1;
+            // Update in cache to refresh LRU position
+            tokenCache.set(identifier, record);
+            
             return { success: true };
         },
     };
 }
 
-// 10 requests per 10 seconds for general actions
+// 10 requests per 10 seconds
 export const standardLimiter = rateLimiter({
     interval: 10 * 1000, 
     uniqueTokenPerInterval: 500,
 });
 
-// 3 requests per minute for sensitive actions (Login, Sign up, Commenting)
+// 3 requests per minute (Login/Signup)
 export const sensitiveLimiter = rateLimiter({
     interval: 60 * 1000,
     uniqueTokenPerInterval: 500,

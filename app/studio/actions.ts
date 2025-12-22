@@ -13,11 +13,10 @@ import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery, studioMetadataQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
+import { validateImageFile, sanitizeFilename } from '@/lib/security'; // IMPORT sanitizeFilename
 
-// ... (Rest of imports and helper functions like revalidateContentPaths remain unchanged) ...
-
+// ... (Existing helper functions remain unchanged) ...
 function revalidateContentPaths(docType: string, slug?: string) {
-    // (Implementation unchanged)
     revalidateTag(docType, 'max'); 
     revalidatePath('/'); 
     let sectionPath = '';
@@ -44,9 +43,7 @@ export const getStudioMetadataAction = unstable_cache(
 );
 
 // ... (translateTitleToAction, createDraftAction, updateDocumentAction, deleteDocumentAction, deleteMetadataAction, publishDocumentAction, searchCreatorsAction, createGameAction, createTagAction, createDeveloperAction, createPublisherAction, validateSlugAction remain unchanged) ...
-// (I am omitting them here for brevity as they don't handle file uploads, but in your file they should remain)
 
-// ADD BACK THE MISSING FUNCTIONS HERE IF REPLACING FILE
 export async function translateTitleToAction(title: string): Promise<string> {
     const session = await getAuthenticatedSession();
     const userRoles = session.user.roles;
@@ -84,7 +81,6 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
         const existingCreator = await sanityWriteClient.fetch(`*[_type == "${sanityDocType}" && prismaUserId == $userId][0]`, { userId: user.id });
         if (existingCreator) { sanityCreator = existingCreator; } else {
             const newCreatorPayload: any = { _type: sanityDocType, _id: `${sanityDocType}-${user.id}`, name: user.name, prismaUserId: user.id };
-            // Note: Skipping image upload during draft creation for simplicity/speed, relies on profile sync
             sanityCreator = await sanityWriteClient.create(newCreatorPayload);
         }
         if (contentType === 'review' || contentType === 'article') { doc.authors = [{ _type: 'reference', _ref: sanityCreator._id, _key: sanityCreator._id }] };
@@ -302,21 +298,26 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
     const file = formData.get('file') as File | null;
     if (!file) return { success: false, error: 'لم يُقدَّم ملف.' };
 
-    // SECURITY: Validate File Type & Size on Server
-    // 5MB limit check (though image optimizer on client usually handles this, we enforce it here)
+    // SECURITY: Size Limit (5MB)
     if (file.size > 5 * 1024 * 1024) {
         return { success: false, error: 'حجم الملف يتجاوز الحد الأقصى (5MB).' };
     }
-    if (!file.type.startsWith('image/')) {
-        return { success: false, error: 'نوع الملف غير مدعوم.' };
+    
+    // SECURITY: Magic Byte Validation
+    const validation = await validateImageFile(file);
+    if (!validation.isValid) {
+        return { success: false, error: validation.error || 'نوع الملف غير مدعوم.' };
     }
+    
+    // SECURITY: Filename Sanitization
+    const safeFilename = sanitizeFilename(file.name);
     
     try {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
         const asset = await sanityWriteClient.assets.upload('image', buffer, { 
-            filename: file.name, 
+            filename: safeFilename, 
             contentType: file.type 
         });
         

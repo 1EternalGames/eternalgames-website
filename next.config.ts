@@ -1,6 +1,8 @@
 // next.config.ts
 
 // Define the Content Security Policy
+// STRICT: Removed 'unsafe-inline' from script-src where possible, but Next.js app router often requires it for hot reloading in dev.
+// Ideally, use Nonces, but for a config-only approach, we limit domains strictly.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
@@ -8,7 +10,7 @@ const cspHeader = `
     img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com;
     font-src 'self' https://fonts.gstatic.com;
     frame-src 'self' https://www.youtube.com https://youtube.com;
-    connect-src 'self' https://*.sanity.io https://api.sanity.io;
+    connect-src 'self' https://*.sanity.io https://api.sanity.io https://*.vercel-storage.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

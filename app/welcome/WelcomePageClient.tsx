@@ -11,6 +11,7 @@ import ButtonLoader from '@/components/ui/ButtonLoader';
 import { useToast } from '@/lib/toastStore';
 import { countries } from '@/lib/countries';
 import Link from 'next/link';
+import { sanitizeRedirectUrl } from '@/lib/security'; // SECURITY IMPORT
 
 const InfoTooltip = ({ text }: { text: string }) => (
     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: '0.5rem', cursor: 'pointer' }} className="info-tooltip-container">
@@ -46,8 +47,10 @@ export default function WelcomePageClient() {
     useEffect(() => {
         if (sessionStatus === 'authenticated') {
             if (!(session as any)?.needsOnboarding) {
-                const callbackUrl = searchParams.get('callbackUrl') || '/';
-                router.replace(callbackUrl);
+                // SECURITY: Sanitize callback URL to prevent open redirects
+                const rawCallback = searchParams.get('callbackUrl');
+                const safeCallback = sanitizeRedirectUrl(rawCallback);
+                router.replace(safeCallback);
                 return;
             }
             setFullName(session.user?.name ?? '');
@@ -67,8 +70,12 @@ export default function WelcomePageClient() {
             if (result.success) {
                 toast.success('اكتمل ملفك. أهلًا بك في EternalGames.');
                 await update(); 
-                const callbackUrl = searchParams.get('callbackUrl') || '/';
-                router.push(callbackUrl);
+                
+                // SECURITY: Sanitize callback URL
+                const rawCallback = searchParams.get('callbackUrl');
+                const safeCallback = sanitizeRedirectUrl(rawCallback);
+                
+                router.push(safeCallback);
             } else {
                 toast.error(result.message || 'أخفق إكمال الملف.');
             }
@@ -163,8 +170,3 @@ export default function WelcomePageClient() {
         </div>
     );
 }
-
-
-
-
-

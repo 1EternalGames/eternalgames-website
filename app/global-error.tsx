@@ -11,8 +11,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service (e.g., Sentry)
-    console.error('Global Error caught:', error);
+    // SECURITY: Log to external service (e.g. Sentry) but NOT to console in production
+    if (process.env.NODE_ENV === 'development') {
+        console.error('Global Error caught:', error);
+    }
   }, [error]);
 
   return (
@@ -33,7 +35,8 @@ export default function GlobalError({
             عذراً، حدث خطأ غير متوقع
           </h2>
           <p style={{ color: '#888', marginBottom: '2rem' }}>
-            نحن نعمل على إصلاح الخلل. يرجى المحاولة مرة أخرى لاحقاً.
+             نحن نعمل على إصلاح الخلل. 
+             {error.digest && <span style={{display: 'block', fontSize: '0.8em', marginTop: '0.5rem', opacity: 0.5}}>رمز الخطأ: {error.digest}</span>}
           </p>
           <button
             onClick={() => reset()}
