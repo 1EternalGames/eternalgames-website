@@ -10,10 +10,9 @@
     background-color: #10121A;
     overflow: hidden;
     pointer-events: none;
-    /* Hardware acceleration hint - Active by default */
     transform: translateZ(0); 
     backface-visibility: hidden;
-    transition: background-color 0.3s ease;
+    contain: paint;
 }
 
 .canvasSvg {
@@ -23,40 +22,89 @@
     shape-rendering: geometricPrecision;
 }
 
-/* --- Active Keyframes --- */
+/* --- GPU ANIMATIONS --- */
+
 @keyframes pulse {
     0%, 100% { opacity: 0.8; transform: scale(1); }
     50% { opacity: 0.4; transform: scale(0.95); }
 }
 
-@keyframes scanPan {
-    from { transform: translateY(0); }
-    to { transform: translateY(20px); }
+@keyframes driftTop {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(2%, 2%); }
+    100% { transform: translate(0, 0); }
 }
 
-.animPulseSlow {
-    transform-origin: center center;
-    animation: pulse 6s ease-in-out infinite;
-    will-change: opacity, transform;
+@keyframes driftBottom {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(-2%, -2%); }
+    100% { transform: translate(0, 0); }
 }
 
-.scanlineAnim {
-    animation: scanPan 10s linear infinite;
+@keyframes driftRight {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-1%, 2%) scale(1.05); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+/* NEW: Parallax Star Drifts */
+/* Layer 1: Closest (Fastest, moves diagonal up-left) */
+@keyframes starDrift1 {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-200px, -100px); }
+}
+
+/* Layer 2: Mid-range (Medium speed, moves left) */
+@keyframes starDrift2 {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-150px, 20px); }
+}
+
+/* Layer 3: Farthest (Slowest, moves slight diagonal up-right) */
+@keyframes starDrift3 {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(100px, -50px); }
+}
+
+/* Animation Classes */
+.nebulaAnimTop {
     will-change: transform;
+    animation: driftTop 20s ease-in-out infinite;
 }
 
-/* --- THE KILL SWITCH: Static State --- */
-/* When this class is applied, ALL animations stop and GPU memory is released */
+.nebulaAnimBottom {
+    will-change: transform;
+    animation: driftBottom 25s ease-in-out infinite;
+}
+
+.nebulaAnimRight {
+    will-change: transform;
+    animation: driftRight 30s ease-in-out infinite;
+}
+
+.starsLayer1 {
+    will-change: transform;
+    /* 120s duration for noticeable but smooth movement */
+    animation: starDrift1 120s linear infinite;
+}
+
+.starsLayer2 {
+    will-change: transform;
+    animation: starDrift2 160s linear infinite;
+}
+
+.starsLayer3 {
+    will-change: transform;
+    animation: starDrift3 200s linear infinite;
+}
+
+.starAnim {
+    will-change: opacity, transform;
+    transform-origin: center center;
+    animation: pulse 8s ease-in-out infinite;
+}
+
+/* --- THE FREEZE SWITCH --- */
 .static * {
-    animation: none !important;
-    transform: none !important;
-    will-change: auto !important;
-    filter: none !important;
+    animation-play-state: paused !important;
 }
-
-/* Optional: Make the background slightly darker when static to look "off" */
-.static {
-    background-color: #050608; 
-}
-
-

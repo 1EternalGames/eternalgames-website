@@ -27,7 +27,6 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 import styles from './TimelineCard.module.css';
 
-// ... (Previous Constants kept identical)
 const DESKTOP_TAG_SCALE = 0.8; 
 const MOBILE_TAG_SCALE = 0.8; 
 const YoutubeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>;
@@ -42,7 +41,6 @@ const CheckmarkCircleIcon = () => (
     </svg>
 );
 
-// --- CONFIGS ---
 const PLATFORM_FLY_CONFIG = { LEFT_ANCHOR: '80%', TARGET_TOP: 170, TOP_STEP: 33, BASE_ROT: -5, ROT_STEP: 0, SCALE: 0.75 };
 const PRICE_FLY_CONFIG = { X: 40, Y: -60, ROT: 5, SCALE: 0.75 }; 
 const VIDEO_PRICE_FLY_CONFIG = { X: 40, Y: -115, ROT: 5, SCALE: 0.75 };
@@ -101,7 +99,7 @@ const TimelineCardComponent = ({
 }) => {
     const isMobile = useIsMobile();
     // Performance Settings
-    const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
+    const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
 
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
@@ -113,9 +111,11 @@ const TimelineCardComponent = ({
     const [isVideoActive, setIsVideoActive] = useState(false);
     const [showVideoModal, setShowVideoModal] = useState(false);
     
-    // OPTIMIZATION: Debounce Timer Ref
+    // Timers & Position Refs
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
-    
+    const touchTimeout = useRef<NodeJS.Timeout | null>(null);
+    const lastTouchPos = useRef({ x: 0, y: 0 });
+
     const videoRef = useRef<HTMLIFrameElement>(null);
     const isHovered = isMobile ? activeCardId === release._id : isHoveredLocal;
 
@@ -161,6 +161,7 @@ const TimelineCardComponent = ({
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
     const handlers = !isMobile ? {
+        // DESKTOP
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseMove(e);
@@ -171,35 +172,62 @@ const TimelineCardComponent = ({
                 }
             }
         },
-        onMouseEnter: () => {
-             if (!effectivelyDisabledLiving) {
-                 livingCardAnimation.onMouseEnter();
-             }
-             // OPTIMIZATION: Debounce the hover state
-             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-             hoverTimeout.current = setTimeout(() => {
+        onMouseEnter: () => { 
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
+            
+            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+
+            if (!isHoverDebounceEnabled) {
                  setIsHoveredLocal(true);
-             }, 75); // 75ms delay
+            } else {
+                 hoverTimeout.current = setTimeout(() => setIsHoveredLocal(true), 75);
+            }
         },
-        onMouseLeave: () => {
-             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-             if (!effectivelyDisabledLiving) {
-                 livingCardAnimation.onMouseLeave();
-             }
-             setIsHoveredLocal(false);
-             mouseX.set(0.5); mouseY.set(0.5);
-        }
+        onMouseLeave: () => { 
+            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); 
+            setIsHoveredLocal(false); 
+            mouseX.set(0.5); mouseY.set(0.5);
+        },
     } : {
+        // MOBILE
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
-            if (activeCardId !== release._id) {
-                setActiveCardId(release._id);
+            const touch = e.touches[0];
+            lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+
+            if (touchTimeout.current) clearTimeout(touchTimeout.current);
+            
+            if (!isHoverDebounceEnabled) {
+                const targetElement = document.elementFromPoint(lastTouchPos.current.x, lastTouchPos.current.y);
+                const isOverCard = livingCardRef.current && targetElement && livingCardRef.current.contains(targetElement);
+                if (isOverCard && activeCardId !== release._id) {
+                    setActiveCardId(release._id);
+                }
+            } else {
+                touchTimeout.current = setTimeout(() => {
+                    const targetElement = document.elementFromPoint(lastTouchPos.current.x, lastTouchPos.current.y);
+                    const isOverCard = livingCardRef.current && targetElement && livingCardRef.current.contains(targetElement);
+                    if (isOverCard && activeCardId !== release._id) {
+                        setActiveCardId(release._id);
+                    }
+                }, 75);
             }
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onTouchStart(e);
-            }
+
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
-        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
-        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
+        onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
+             const touch = e.touches[0];
+             lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
+        },
+        onTouchEnd: () => {
+             if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
+        },
+        onTouchCancel: () => {
+             if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchCancel();
+        }
     };
 
     const toggleWishlist = (e: React.MouseEvent | React.TouchEvent) => {
@@ -283,7 +311,6 @@ const TimelineCardComponent = ({
     
     const blurDataURL = release.mainImage?.blurDataURL;
 
-    // --- Flying Items ---
     const flyingItems = useMemo(() => {
         const satellites = [];
         const STATUS_CFG = isMobile ? mobileConfig.status : STATUS_FLY_CONFIG;
@@ -390,7 +417,6 @@ const TimelineCardComponent = ({
                     zIndex: 90
                 }}
                 onMouseEnter={() => {
-                    // Reset timeout to keep it open
                     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
                     setIsHoveredLocal(true);
                 }}

@@ -5,7 +5,6 @@ import React, { memo, useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useScrollStore } from '@/lib/scrollStore';
 import { CardProps } from '@/types';
@@ -70,7 +69,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const isMobile = useIsMobile();
     
     // Performance Settings
-    const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
+    const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
     
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
@@ -81,7 +80,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
-    const lastTouchPos = useRef({ x: 0, y: 0 });
+    const touchStartPos = useRef({ x: 0, y: 0 });
 
     const isHovered = isMobile ? activeCardId === article.id : isHoveredLocal;
 
@@ -100,7 +99,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled;
 
     const handlers = !isMobile ? {
-        // DESKTOP
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseMove(e);
@@ -110,61 +108,70 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             }
         },
         onMouseEnter: () => {
-            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter();
+            if (!effectivelyDisabledLiving) {
+                livingCardAnimation.onMouseEnter();
+            }
+            
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-            hoverTimeout.current = setTimeout(() => {
+
+            if (!isHoverDebounceEnabled) {
                 setIsHoveredLocal(true);
                 setIsTextExpanded(true);
-            }, 75); 
+            } else {
+                hoverTimeout.current = setTimeout(() => {
+                    setIsHoveredLocal(true);
+                    setIsTextExpanded(true);
+                }, 75); 
+            }
         },
         onMouseLeave: () => {
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave();
+            if (!effectivelyDisabledLiving) {
+                livingCardAnimation.onMouseLeave();
+            }
             setIsHoveredLocal(false);
         }
     } : {
-        // MOBILE
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             const touch = e.touches[0];
-            lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+            touchStartPos.current = { x: touch.clientX, y: touch.clientY };
 
-            // 1. Clear any existing timer
             if (touchTimeout.current) clearTimeout(touchTimeout.current);
             
-            // 2. Start new timer (100ms)
-            touchTimeout.current = setTimeout(() => {
-                // 3. HIT TEST: Check if finger is still physically over this card
-                // Note: elementFromPoint uses client coordinates relative to viewport
-                const targetElement = document.elementFromPoint(lastTouchPos.current.x, lastTouchPos.current.y);
-                const isOverCard = livingCardRef.current && targetElement && livingCardRef.current.contains(targetElement);
-                
-                if (isOverCard) {
+            if (!isHoverDebounceEnabled) {
+                if (activeCardId !== article.id) {
+                    setActiveCardId(article.id);
+                    setIsTextExpanded(true);
+                }
+            } else {
+                touchTimeout.current = setTimeout(() => {
                      if (activeCardId !== article.id) {
                          setActiveCardId(article.id);
                          setIsTextExpanded(true);
                     }
-                }
-            }, 100);
+                }, 75);
+            }
 
-            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
+            if (!effectivelyDisabledLiving) {
+                livingCardAnimation.onTouchStart(e);
+            }
         },
         onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-             // Update position for hit-testing in the timeout
+             // Calculate distance moved
              const touch = e.touches[0];
-             lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
-             
-             // WE DO NOT CLEAR TIMEOUT HERE. This allows scrolling to trigger hover if finger stays on card.
+             const diffX = Math.abs(touch.clientX - touchStartPos.current.x);
+             const diffY = Math.abs(touch.clientY - touchStartPos.current.y);
+
+             // If moved more than 10px, assume scrolling and CANCEL the hover activation
+             if (diffX > 10 || diffY > 10) {
+                 if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             }
+
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
         },
         onTouchEnd: () => {
-             // Clear timeout to prevent activation after release
-             if (touchTimeout.current) clearTimeout(touchTimeout.current);
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
         },
-        onTouchCancel: () => {
-             if (touchTimeout.current) clearTimeout(touchTimeout.current);
-             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchCancel();
-        }
     };
 
     const getLinkBasePath = () => {
@@ -199,6 +206,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
+                // OPTIMIZATION: We keep layoutId here for the "Hero Transition" (Shared Element),
+                // but we DO NOT add the generic 'layout' prop.
+                // This ensures the transition works, but random grid re-shuffles don't trigger expensive calculations.
                 layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
                 style={{ 
                     height: '100%',

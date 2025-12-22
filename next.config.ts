@@ -4,6 +4,8 @@ const nextConfig = {
     reactStrictMode: true,
 
     images: {
+        // OPTIMIZATION: Prioritize AVIF for better compression/quality ratio
+        formats: ['image/avif', 'image/webp'],
         remotePatterns: [
             { protocol: 'https', hostname: 'cdn.sanity.io' },
             { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
@@ -20,5 +22,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
-

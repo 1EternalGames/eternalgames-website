@@ -16,6 +16,7 @@ interface PerformanceState {
   isFlyingTagsEnabled: boolean;
   isHeroTransitionEnabled: boolean;
   isCornerAnimationEnabled: boolean;
+  isHoverDebounceEnabled: boolean; // NEW: Controls hover/touch delay
   
   // Background
   isBackgroundAnimated: boolean;
@@ -32,6 +33,7 @@ interface PerformanceState {
   toggleFlyingTags: () => void;
   toggleHeroTransition: () => void;
   toggleCornerAnimation: () => void;
+  toggleHoverDebounce: () => void; // NEW: Action
   
   toggleBackgroundAnimation: () => void;
   toggleBackgroundVisibility: () => void;
@@ -47,20 +49,15 @@ export const usePerformanceStore = create<PerformanceState>()(
   persist(
     (set) => ({
       // --- DEFAULTS ---
-      // UI FX: All ON by default
       isLivingCardEnabled: true,
       isFlyingTagsEnabled: true,
       isHeroTransitionEnabled: true,
       isCornerAnimationEnabled: true,
       isGlassmorphismEnabled: true,
+      isHoverDebounceEnabled: true, // NEW: Debounce is ON by default for performance
       
-      // Background: ON by default (User requested "default everything turned on")
       isBackgroundVisible: true,
-      
-      // Animation: OFF by default (Explicit request: "animation will always be turned off until the user turn it on")
       isBackgroundAnimated: false,
-      
-      // Auto-Tuning: ON by default
       isAutoTuningEnabled: true,
 
       // Manual toggles disable Auto-Tuning to respect user choice
@@ -68,6 +65,7 @@ export const usePerformanceStore = create<PerformanceState>()(
       toggleFlyingTags: () => set((state) => ({ isFlyingTagsEnabled: !state.isFlyingTagsEnabled, isAutoTuningEnabled: false })),
       toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: !state.isHeroTransitionEnabled, isAutoTuningEnabled: false })),
       toggleCornerAnimation: () => set((state) => ({ isCornerAnimationEnabled: !state.isCornerAnimationEnabled, isAutoTuningEnabled: false })),
+      toggleHoverDebounce: () => set((state) => ({ isHoverDebounceEnabled: !state.isHoverDebounceEnabled, isAutoTuningEnabled: false })), // NEW
       
       toggleBackgroundAnimation: () => set((state) => ({ isBackgroundAnimated: !state.isBackgroundAnimated, isAutoTuningEnabled: false })),
       toggleBackgroundVisibility: () => set((state) => ({ isBackgroundVisible: !state.isBackgroundVisible, isAutoTuningEnabled: false })),
@@ -78,53 +76,35 @@ export const usePerformanceStore = create<PerformanceState>()(
       setPerformanceTier: (tier: PerformanceTier) => set((state) => {
           // IMPORTANT: We do NOT touch isBackgroundAnimated. It is purely manual.
           switch (tier) {
-              case 5: // ULTRA: Everything ON
+              case 5: // ULTRA
                   return {
-                      isGlassmorphismEnabled: true,
-                      isBackgroundVisible: true,
-                      isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true,
-                      isCornerAnimationEnabled: true
+                      isGlassmorphismEnabled: true, isBackgroundVisible: true, isLivingCardEnabled: true,
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false, // Instant
                   };
-              case 4: // HIGH: Kill Glass (Heaviest UI effect)
+              case 4: // HIGH
                   return {
-                      isGlassmorphismEnabled: false,
-                      isBackgroundVisible: true,
-                      isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true,
-                      isCornerAnimationEnabled: true
+                      isGlassmorphismEnabled: false, isBackgroundVisible: true, isLivingCardEnabled: true,
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false, // Instant
                   };
-              case 3: // MEDIUM: Kill Background Visibility (Heavy DOM)
+              case 3: // MEDIUM
                   return {
-                      isGlassmorphismEnabled: false,
-                      isBackgroundVisible: false,
-                      isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true,
-                      isCornerAnimationEnabled: true
+                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: true,
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true, // Debounced
                   };
-              case 2: // LOW: Kill Living Cards (JS Overhead)
+              case 2: // LOW
                   return {
-                      isGlassmorphismEnabled: false,
-                      isBackgroundVisible: false,
-                      isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: true,
-                      isCornerAnimationEnabled: true
+                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true, // Debounced
                   };
-              case 1: // POTATO: Kill Flying Tags (Physics)
+              case 1: // POTATO
                   return {
-                      isGlassmorphismEnabled: false,
-                      isBackgroundVisible: false,
-                      isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: false,
-                      isCornerAnimationEnabled: true
+                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true, // Debounced
                   };
-              case 0: // ABYSSAL: Kill Corners (Minimal)
+              case 0: // ABYSSAL
                   return {
-                      isGlassmorphismEnabled: false,
-                      isBackgroundVisible: false,
-                      isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: false,
-                      isCornerAnimationEnabled: false
+                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: false, isHoverDebounceEnabled: true, // Debounced
                   };
               default:
                   return state;

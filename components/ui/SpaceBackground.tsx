@@ -8,10 +8,8 @@ import { useTheme } from 'next-themes';
 
 // Configuration
 const BACKGROUND_BRIGHTNESS = 1.0; 
-const STAR_MOVE_DURATION = "120s"; 
 
 export default function SpaceBackground() {
-    // 1. Hook into the store
     const { isBackgroundVisible, isBackgroundAnimated } = usePerformanceStore();
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -20,20 +18,12 @@ export default function SpaceBackground() {
         setMounted(true);
     }, []);
 
-    // Prevent hydration mismatch
-    if (!mounted) return <div className={styles.backgroundContainer} />;
+    if (!mounted || resolvedTheme === 'light') return null;
 
-    // 2. LIGHT MODE DISABLE
-    if (resolvedTheme === 'light') {
-        return null;
-    }
-
-    // 3. TOTAL DELETION LOGIC (Dark Mode)
     if (!isBackgroundVisible) {
         return <div className={styles.backgroundContainer} style={{ backgroundColor: '#10121A' }} />;
     }
 
-    // 4. ANIMATION KILL SWITCH
     const containerClass = `${styles.backgroundContainer} ${!isBackgroundAnimated ? styles.static : ''}`;
 
     return (
@@ -65,21 +55,23 @@ export default function SpaceBackground() {
                     <radialGradient id="sb_nebulaTop" cx="50%" cy="0%" r="80%">
                         <stop offset="0%" stopColor="#00FFF0" stopOpacity="0.12"></stop>
                         <stop offset="100%" stopColor="#10121A" stopOpacity="0"></stop>
-                        {isBackgroundAnimated && <animate attributeName="r" values="80%; 85%; 80%" dur="15s" repeatCount="indefinite" />}
                     </radialGradient>
                     <radialGradient id="sb_nebulaBottom" cx="10%" cy="100%" r="60%">
                         <stop offset="0%" stopColor="#556070" stopOpacity="0.2"></stop>
                         <stop offset="100%" stopColor="#10121A" stopOpacity="0"></stop>
-                        {isBackgroundAnimated && <animate attributeName="r" values="60%; 65%; 60%" dur="20s" repeatCount="indefinite" />}
                     </radialGradient>
                     <radialGradient id="sb_nebulaRight" cx="95%" cy="50%" r="50%">
                         <stop offset="0%" stopColor="#00FFF0" stopOpacity="0.08"></stop>
                         <stop offset="100%" stopColor="#10121A" stopOpacity="0"></stop>
-                        {isBackgroundAnimated && <animate attributeName="cy" values="50%; 55%; 50%" dur="25s" repeatCount="indefinite" />}
                     </radialGradient>
 
                     <pattern id="sb_scanlinePattern" x="0" y="0" width="10" height="4" patternUnits="userSpaceOnUse">
                         <line x1="0" y1="3" x2="10" y2="3" stroke="#000" strokeWidth="1" opacity="0.4"></line>
+                    </pattern>
+
+                    <pattern id="sb_scratchPattern" x="0" y="0" width="500" height="500" patternUnits="userSpaceOnUse">
+                        <path d="M 50 50 L 80 80 M 200 100 L 220 90 M 350 300 L 360 320 M 100 300 L 80 320" stroke="#FFF" strokeWidth="0.5" opacity="0.15" strokeLinecap="square"></path>
+                        <path d="M 400 50 L 420 80 M 10 400 L 30 380" stroke="#FFF" strokeWidth="0.5" opacity="0.1"></path>
                     </pattern>
 
                     <g id="sb_star"><circle r="1.5" fill="#F0F0FF"></circle></g>
@@ -149,41 +141,50 @@ export default function SpaceBackground() {
                         <use href="#sb_c_K" x="650" y="450" opacity="0.3"></use>
                     </symbol>
 
-                    {/* ANIMATED PATTERNS - Conditional SMIL Rendering */}
+                    {/* PATTERNS (Static for Export) */}
                     <pattern id="sb_pat_Layer1" x="0" y="0" width="800" height="800" patternUnits="userSpaceOnUse">
                         <use href="#sb_stars_Layer1"></use>
-                        {isBackgroundAnimated && <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="800 800" dur={STAR_MOVE_DURATION} repeatCount="indefinite"/>}
                     </pattern>
                     <pattern id="sb_pat_Layer2" x="0" y="0" width="800" height="800" patternUnits="userSpaceOnUse">
                         <use href="#sb_stars_Layer2"></use>
-                        {isBackgroundAnimated && <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="800 800" dur={STAR_MOVE_DURATION} repeatCount="indefinite"/>}
                     </pattern>
                     <pattern id="sb_pat_Layer3" x="0" y="0" width="800" height="800" patternUnits="userSpaceOnUse">
                         <use href="#sb_stars_Layer3"></use>
-                        {isBackgroundAnimated && <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="800 800" dur={STAR_MOVE_DURATION} repeatCount="indefinite"/>}
                     </pattern>
+
+                    {/* VIGNETTE */}
+                    <radialGradient id="sb_vignette" cx="50%" cy="50%" r="80%">
+                        <stop offset="60%" stopColor="#10121A" stopOpacity="0"></stop>
+                        <stop offset="100%" stopColor="#10121A" stopOpacity="0.9"></stop>
+                    </radialGradient>
                 </defs>
 
                 {/* 1. BASE BACKGROUND */}
                 <rect width="100%" height="100%" fill="#10121A"></rect>
 
-                {/* 2. ATMOSPHERE (Static Color Blends) */}
-                <rect width="100%" height="100%" fill="url(#sb_nebulaTop)" style={{ mixBlendMode: 'screen' }}></rect>
-                <rect width="100%" height="100%" fill="url(#sb_nebulaBottom)" style={{ mixBlendMode: 'screen' }}></rect>
-                <rect width="100%" height="100%" fill="url(#sb_nebulaRight)" style={{ mixBlendMode: 'screen' }}></rect>
+                {/* 2. ATMOSPHERE (CSS Animated) */}
+                <rect className={styles.nebulaAnimTop} width="100%" height="100%" fill="url(#sb_nebulaTop)" style={{ mixBlendMode: 'screen' }}></rect>
+                <rect className={styles.nebulaAnimBottom} width="100%" height="100%" fill="url(#sb_nebulaBottom)" style={{ mixBlendMode: 'screen' }}></rect>
+                <rect className={styles.nebulaAnimRight} width="100%" height="100%" fill="url(#sb_nebulaRight)" style={{ mixBlendMode: 'screen' }}></rect>
 
-                {/* 3. MOVING STAR LAYERS */}
-                <g transform="scale(0.5)">
-                    <rect width="200%" height="200%" fill="url(#sb_pat_Layer3)" opacity="0.3"></rect>
+                {/* 3. MOVING STAR LAYERS (Parallax Drift) */}
+                {/* Layer 3: Farthest, Slowest */}
+                <g className={styles.starsLayer3}>
+                     {/* Increased size and offset to prevent clipping during drift */}
+                    <rect x="-50%" y="-50%" width="200%" height="200%" fill="url(#sb_pat_Layer3)" opacity="0.3"></rect>
                 </g>
-                <g transform="translate(100, 50) scale(0.75)">
-                    <rect width="200%" height="200%" fill="url(#sb_pat_Layer2)" opacity="0.4"></rect>
+                
+                {/* Layer 2: Mid */}
+                <g className={styles.starsLayer2}>
+                    <rect x="-50%" y="-50%" width="200%" height="200%" fill="url(#sb_pat_Layer2)" opacity="0.4"></rect>
                 </g>
-                <g transform="scale(1.0)">
-                    <rect width="100%" height="100%" fill="url(#sb_pat_Layer1)" opacity="0.5"></rect>
+                
+                {/* Layer 1: Closest, Fastest */}
+                <g className={styles.starsLayer1}>
+                    <rect x="-50%" y="-50%" width="200%" height="200%" fill="url(#sb_pat_Layer1)" opacity="0.5"></rect>
                 </g>
 
-                {/* 4. STATIC SHARDS (No Movement) */}
+                {/* 4. STATIC SHARDS */}
                 <g style={{ mixBlendMode: 'soft-light' }}>
                     <g>
                         <g fill="url(#sb_shardGradWhite)" stroke="#FFFFFF" strokeOpacity="0.3" strokeWidth="1.5">
@@ -209,8 +210,8 @@ export default function SpaceBackground() {
                     </g>
                 </g>
 
-                {/* 5. STELLAR FLARES (Pulsing handled by CSS Class) */}
-                <g filter="url(#sb_stellarBloom)" className={isBackgroundAnimated ? styles.animPulseSlow : ''}>
+                {/* 5. STELLAR FLARES (Pulse Animation) */}
+                <g filter="url(#sb_stellarBloom)" className={styles.starAnim}>
                     <circle cx="300" cy="300" r="3" fill="#FFF"></circle>
                     <circle cx="1200" cy="150" r="2.5" fill="#FFF"></circle>
                     <circle cx="800" cy="800" r="3" fill="#FFF"></circle>
@@ -231,16 +232,9 @@ export default function SpaceBackground() {
                 </g>
 
                 {/* 6. OVERLAYS */}
-                {/* Scanlines (Drifting, conditional class) */}
-                <rect className={isBackgroundAnimated ? styles.scanlineAnim : ''} width="100%" height="120%" fill="url(#sb_scanlinePattern)" pointerEvents="none"></rect>
-
-                {/* Vignette (Static) */}
-                <radialGradient id="sb_vignette" cx="50%" cy="50%" r="80%">
-                    <stop offset="60%" stopColor="#10121A" stopOpacity="0"></stop>
-                    <stop offset="100%" stopColor="#10121A" stopOpacity="0.9"></stop>
-                </radialGradient>
+                <rect width="110%" height="110%" fill="url(#sb_scratchPattern)" opacity="0.4"></rect>
+                <rect width="100%" height="120%" fill="url(#sb_scanlinePattern)" pointerEvents="none"></rect>
                 <rect width="100%" height="100%" fill="url(#sb_vignette)"></rect>
-
             </svg>
         </div>
     );

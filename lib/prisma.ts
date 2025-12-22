@@ -10,8 +10,13 @@ const prismaClientSingleton = () => {
         throw new Error('DATABASE_URL is not set in your environment variables')
     }
 
-    // Configure the connection pool
-    const pool = new Pool({ connectionString })
+    const pool = new Pool({ 
+        connectionString,
+        max: 10, 
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+    })
+    
     // Create the adapter
     const adapter = new PrismaPg(pool)
     
@@ -28,5 +33,3 @@ const prisma = globalThis.prisma ?? prismaClientSingleton()
 export default prisma
 
 if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma
-
-
