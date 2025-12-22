@@ -1,7 +1,7 @@
 // components/TimelineCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
+import React, { memo, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
@@ -27,6 +27,7 @@ import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
 import styles from './TimelineCard.module.css';
 
+// ... (Previous Constants kept identical)
 const DESKTOP_TAG_SCALE = 0.8; 
 const MOBILE_TAG_SCALE = 0.8; 
 const YoutubeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>;
@@ -44,13 +45,16 @@ const CheckmarkCircleIcon = () => (
 // --- CONFIGS ---
 const PLATFORM_FLY_CONFIG = { LEFT_ANCHOR: '80%', TARGET_TOP: 170, TOP_STEP: 33, BASE_ROT: -5, ROT_STEP: 0, SCALE: 0.75 };
 const PRICE_FLY_CONFIG = { X: 40, Y: -60, ROT: 5, SCALE: 0.75 }; 
+const VIDEO_PRICE_FLY_CONFIG = { X: 40, Y: -115, ROT: 5, SCALE: 0.75 };
 const STATUS_FLY_CONFIG = { X: 0, Y: 140, ROT: -3, SCALE: 0.75 };
 const PLAY_BUTTON_CONFIG = { OFFSET_X: 0, OFFSET_Y: 70, ROTATE: 0, INITIAL_SCALE: 1 };
 const CLICK_MORE_CONFIG = { X: -65, Y: -170, ROT: 0, SCALE: 0.7 };
 const DEV_FLY_CONFIG = { X: -90, Y: -155, ROT: 0, SCALE: 0.65 };
 const PUB_FLY_CONFIG = { X: 100, Y: -155, ROT: 0, SCALE: 0.65 };
 const DESKTOP_GP_CONFIG = { LEFT: '-8%', TOP: 257, ROT: 5, SCALE: 0.7 };
+const VIDEO_DESKTOP_GP_CONFIG = { LEFT: '-8%', TOP: 210, ROT: 5, SCALE: 0.7 };
 const DESKTOP_PS_CONFIG = { LEFT: '-8%', TOP: 225, ROT: 5, SCALE: 0.7 };
+const VIDEO_DESKTOP_PS_CONFIG = { LEFT: '-8%', TOP: 175, ROT: 5, SCALE: 0.7 };
 
 const MOBILE_STANDARD_PLATFORM_FLY_CONFIG = { LEFT_ANCHOR: '75%', TARGET_TOP: 220, TOP_STEP: 35, BASE_ROT: 0, ROT_STEP: 0, SCALE: 0.8 };
 const MOBILE_STANDARD_PRICE_FLY_CONFIG = { X: 55, Y: -45, ROT: -2, SCALE: 0.8 };
@@ -67,7 +71,6 @@ const MOBILE_HOMEPAGE_CLICK_MORE_CONFIG = { X: -40, Y: -110, ROT: 0, SCALE: 0.6 
 const MOBILE_HOMEPAGE_GP_CONFIG = { LEFT: 0, TOP: 165, ROT: -2, SCALE: 0.5 };
 const MOBILE_HOMEPAGE_PS_CONFIG = { RIGHT: 0, TOP: 165, ROT: 2, SCALE: 0.5 };
 const MOBILE_HOMEPAGE_PLAY_BUTTON_CONFIG = { OFFSET_X: 0, OFFSET_Y: 0, ROTATE: 0, INITIAL_SCALE: 0.8 };
-
 
 export const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = { 'PC': PCIcon, 'PlayStation': PS5Icon, 'Xbox': XboxIcon, 'Switch': SwitchIcon };
 export const PlatformNames: Record<string, string> = { 'PC': 'PC', 'PlayStation': 'PS5', 'Xbox': 'Xbox', 'Switch': 'Switch' };
@@ -109,6 +112,9 @@ const TimelineCardComponent = ({
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isVideoActive, setIsVideoActive] = useState(false);
     const [showVideoModal, setShowVideoModal] = useState(false);
+    
+    // OPTIMIZATION: Debounce Timer Ref
+    const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     
     const videoRef = useRef<HTMLIFrameElement>(null);
     const isHovered = isMobile ? activeCardId === release._id : isHoveredLocal;
@@ -169,9 +175,14 @@ const TimelineCardComponent = ({
              if (!effectivelyDisabledLiving) {
                  livingCardAnimation.onMouseEnter();
              }
-             setIsHoveredLocal(true);
+             // OPTIMIZATION: Debounce the hover state
+             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+             hoverTimeout.current = setTimeout(() => {
+                 setIsHoveredLocal(true);
+             }, 75); // 75ms delay
         },
         onMouseLeave: () => {
+             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
              if (!effectivelyDisabledLiving) {
                  livingCardAnimation.onMouseLeave();
              }
@@ -225,7 +236,6 @@ const TimelineCardComponent = ({
     const isTBA = release.isTBA;
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     
-    // UPDATED DATE FORMAT LOGIC
     let formattedDate = '';
     if (isTBA) {
         formattedDate = "غير معلن";
@@ -277,8 +287,12 @@ const TimelineCardComponent = ({
     const flyingItems = useMemo(() => {
         const satellites = [];
         const STATUS_CFG = isMobile ? mobileConfig.status : STATUS_FLY_CONFIG;
-        const PRICE_CFG = isMobile ? mobileConfig.price : PRICE_FLY_CONFIG;
         const CLICK_CFG = isMobile ? mobileConfig.clickMore : CLICK_MORE_CONFIG;
+
+        let PRICE_CFG = isMobile ? mobileConfig.price : PRICE_FLY_CONFIG;
+        if (!isMobile && isVideoActive) {
+            PRICE_CFG = VIDEO_PRICE_FLY_CONFIG;
+        }
 
         satellites.push({ 
             type: 'clickHint', 
@@ -319,7 +333,7 @@ const TimelineCardComponent = ({
         }
         
         return satellites;
-    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, mainHref]);
+    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, mainHref, isVideoActive]);
 
     const platformConfig = useMemo(() => {
         const validPlatforms = platforms.filter(p => PlatformIcons[p]);
@@ -341,7 +355,8 @@ const TimelineCardComponent = ({
                 const cfg = mobileConfig.ps;
                 left = 'auto'; top = cfg.TOP; rotate = cfg.ROT; scale = cfg.SCALE;
             } else {
-                left = DESKTOP_PS_CONFIG.LEFT; top = DESKTOP_PS_CONFIG.TOP; rotate = DESKTOP_PS_CONFIG.ROT; scale = DESKTOP_PS_CONFIG.SCALE;
+                const cfg = isVideoActive ? VIDEO_DESKTOP_PS_CONFIG : DESKTOP_PS_CONFIG;
+                left = cfg.LEFT; top = cfg.TOP; rotate = cfg.ROT; scale = cfg.SCALE;
             }
             items.push({ key: 'ps', name: 'PS Plus', Icon: PS5Icon, left: isMobile ? 'auto' : left, right: isMobile ? mobileConfig.ps.RIGHT : 'auto', top, rotate, scale });
         }
@@ -351,13 +366,14 @@ const TimelineCardComponent = ({
             if (isMobile) { 
                 left = mobileConfig.gp.LEFT; top = mobileConfig.gp.TOP; rotate = mobileConfig.gp.ROT; scale = mobileConfig.gp.SCALE;
             } else {
-                 left = DESKTOP_GP_CONFIG.LEFT; top = DESKTOP_GP_CONFIG.TOP; rotate = DESKTOP_GP_CONFIG.ROT; scale = DESKTOP_GP_CONFIG.SCALE;
+                 const cfg = isVideoActive ? VIDEO_DESKTOP_GP_CONFIG : DESKTOP_GP_CONFIG;
+                 left = cfg.LEFT; top = cfg.TOP; rotate = cfg.ROT; scale = cfg.SCALE;
             }
             items.push({ key: 'gp', name: 'Game Pass', Icon: XboxIcon, left, right: 'auto', top, rotate, scale });
         }
 
         return items;
-    }, [release.onGamePass, release.onPSPlus, isMobile, mobileConfig]);
+    }, [release.onGamePass, release.onPSPlus, isMobile, mobileConfig, isVideoActive]);
 
     const renderHoverBridge = () => {
         if (!isHovered || isMobile) return null; 
@@ -373,7 +389,11 @@ const TimelineCardComponent = ({
                     pointerEvents: 'auto',
                     zIndex: 90
                 }}
-                onMouseEnter={() => setIsHoveredLocal(true)}
+                onMouseEnter={() => {
+                    // Reset timeout to keep it open
+                    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+                    setIsHoveredLocal(true);
+                }}
             />
         );
     };
@@ -483,12 +503,11 @@ const TimelineCardComponent = ({
                             </div>
                             <div className={styles.metaGrid}>
                                 <div className={styles.dateBlock}> 
-                                    {/* FIXED: Text Right, Icon Left */}
-                                    <span>{formattedDate}</span> 
-                                    {!isTBA && (
-                                        <div className={styles.dateIconWrapper}><Calendar03Icon width="100%" height="100%" /></div> 
-                                    )}
-                                </div>
+    {!isTBA && (
+        <div className={styles.dateIconWrapper}><Calendar03Icon width="100%" height="100%" /></div> 
+    )}
+    <span>{formattedDate}</span> 
+</div>
                                 <div className={styles.platformRow}>
                                     {platformConfig.map(p => {
                                         if (!p || (isHovered && isFlyingTagsEnabled && !isMobile)) return null; 
@@ -515,27 +534,28 @@ const TimelineCardComponent = ({
                     {/* --- FLYING ITEMS --- */}
                     {isFlyingTagsEnabled && !isMobile && (
                          <div className={styles.flyingTagsContainer} style={{ right: 'auto', left: 0, width: '100%' }}>
-                            {/* REMOVED AnimatePresence here to force instant unmount of tags */}
-                            {isHovered && platformConfig.map(p => {
-                                const lid = `plat-${release._id}-${p.key}`;
-                                return ( 
-                                    <motion.div 
-                                        key={p.key} 
-                                        layoutId={!isMobile && safeLayoutIdPrefix ? lid : undefined} 
-                                        className={`${styles.platformTagBase} ${styles.flying}`} 
-                                        transition={morphTransition} 
-                                        initial={false} 
-                                        animate={{ rotate: p.rotate, scale: 1.2 * p.scale, backgroundColor: "rgba(0, 0, 0, 0.85)", borderColor: "var(--accent)", color: "var(--accent)", x: 15, z: 60 }} 
-                                        exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                                        whileHover={{ zIndex: 500, scale: 1.3 * p.scale }} 
-                                        style={{ position: 'absolute', left: p.left, top: p.top, padding: "0.4rem 1rem", zIndex: 100, boxShadow: "0 0 15px color-mix(in srgb, var(--accent) 30%, transparent)", transformOrigin: 'center', flexDirection: 'row-reverse', overflow: 'hidden' }} 
-                                        onClick={(e) => e.stopPropagation()}
-                                    > 
-                                        <p.Icon className={styles.platformIcon} style={{ width: '16px', height: '16px' }} /> 
-                                        <span style={{ overflow: 'hidden', fontSize: '1.1rem' }}>{p.name}</span> 
-                                    </motion.div> 
-                                );
-                            })}
+                            <AnimatePresence>
+                                {isHovered && platformConfig.map(p => {
+                                    const lid = `plat-${release._id}-${p.key}`;
+                                    return ( 
+                                        <motion.div 
+                                            key={p.key} 
+                                            layoutId={!isMobile && safeLayoutIdPrefix ? lid : undefined} 
+                                            className={`${styles.platformTagBase} ${styles.flying}`} 
+                                            transition={morphTransition} 
+                                            initial={false} 
+                                            animate={{ rotate: p.rotate, scale: 1.2 * p.scale, backgroundColor: "rgba(0, 0, 0, 0.85)", borderColor: "var(--accent)", color: "var(--accent)", x: 15, z: 60 }} 
+                                            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                                            whileHover={{ zIndex: 500, scale: 1.3 * p.scale }} 
+                                            style={{ position: 'absolute', left: p.left, top: p.top, padding: "0.4rem 1rem", zIndex: 100, boxShadow: "0 0 15px color-mix(in srgb, var(--accent) 30%, transparent)", transformOrigin: 'center', flexDirection: 'row-reverse', overflow: 'hidden' }} 
+                                            onClick={(e) => e.stopPropagation()}
+                                        > 
+                                            <p.Icon className={styles.platformIcon} style={{ width: '16px', height: '16px' }} /> 
+                                            <span style={{ overflow: 'hidden', fontSize: '1.1rem' }}>{p.name}</span> 
+                                        </motion.div> 
+                                    );
+                                })}
+                            </AnimatePresence>
                         </div>
                     )}
                     
@@ -545,18 +565,16 @@ const TimelineCardComponent = ({
                             <AnimatePresence>
                                 {isHovered && subConfig.map((sub, i) => {
                                      const isLeftAnchored = sub.left !== 'auto' && sub.left !== undefined;
-                                     const initialX = isLeftAnchored ? 150 : -150;
-                                     const initialY = (sub.top as number) > 100 ? -50 : 50;
-
+                                     // Center-origin strategy: Start from 50%, animate to final
                                      return ( 
                                         <motion.div 
                                             key={sub.key} 
-                                            initial={{ opacity: 0, x: initialX, y: initialY, z: 0 }} 
-                                            animate={{ opacity: 1, rotate: sub.rotate, scale: 1.2 * sub.scale, x: !isMobile ? 15 : (sub.key === 'gp' ? -15 : 15), y: 0, z: 60 }} 
+                                            initial={{ opacity: 0, left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 0, z: 0 }} 
+                                            animate={{ opacity: 1, left: sub.left, top: sub.top, rotate: sub.rotate, scale: 1.2 * sub.scale, x: !isMobile ? 15 : (sub.key === 'gp' ? -15 : 15), y: 0, z: 60 }} 
                                             whileHover={{ zIndex: 500, scale: 1.3 * sub.scale }} 
-                                            exit={{ opacity: 0, x: 0, y: 0 }} 
+                                            exit={{ opacity: 0, scale: 0, left: '50%', top: '50%', x: '-50%', y: '-50%' }} 
                                             transition={{ ...morphTransition, delay: i * 0.03 }} 
-                                            style={{ position: 'absolute', right: sub.right, left: sub.left, top: sub.top, transformOrigin: 'center', cursor: 'default' }}
+                                            style={{ position: 'absolute', right: sub.right, transformOrigin: 'center', cursor: 'default' }}
                                         > 
                                             <div className={`${styles.genrePill} no-underline`} style={{ flexDirection: 'row' }}> 
                                                 <sub.Icon style={{ width: '16px', height: '16px' }} /> 
@@ -593,7 +611,7 @@ const TimelineCardComponent = ({
                                             whileHover={{ zIndex: 500, scale: 1.2 * item.scale }} 
                                             exit={{ opacity: 0, scale: 0.4, x: initialX, y: 0 }} 
                                             transition={{ ...morphTransition, delay: i * 0.05 }} 
-                                            style={{ position: 'absolute', ...positionStyle, cursor: 'default', zIndex: 100 }}
+                                            style={{ position: 'absolute', ...positionStyle, transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
                                         > 
                                             {item.link ? (
@@ -606,7 +624,6 @@ const TimelineCardComponent = ({
                                                 >
                                                     {item.type === 'clickHint' ? (
                                                         <>
-                                                            {/* FLIPPED ICON POSITION: Icon first, then label */}
                                                             {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
                                                             {item.label}
                                                         </>
@@ -638,5 +655,3 @@ const TimelineCardComponent = ({
 
 const TimelineCard = memo(TimelineCardComponent);
 export default TimelineCard;
-
-

@@ -1,98 +1,58 @@
-// components/homepage/PaginatedLatestArticles.tsx
+// components/PaginatedCarousel.tsx
 'use client';
 
-import React, { useState, useEffect, useRef, memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { CardProps } from '@/types';
-import CreatorCredit from '@/components/CreatorCredit';
-import { Calendar03Icon } from '@/components/icons/index';
-import styles from './PaginatedLatestArticles.module.css';
-import feedStyles from './feed/Feed.module.css';
-import { useRouter } from 'next/navigation';
-import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import styles from './PaginatedCarousel.module.css';
+import NewsGridCard from '@/components/news/NewsGridCard';
+import { useActiveCardStore } from '@/lib/activeCardStore';
 
-const LatestArticleListItem = memo(({ article }: { article: CardProps }) => {
-    const router = useRouter();
-    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const layoutIdPrefix = "homepage-latest-articles";
-    const linkPath = `/articles/${article.slug}`;
-
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        if (e.ctrlKey || e.metaKey) return;
-        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) return;
-        e.preventDefault();
-        setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
-    };
-
-    return (
-        <motion.a
-            href={linkPath}
-            onClick={handleClick}
-            layoutId={`${layoutIdPrefix}-card-container-${article.legacyId}`} 
-            className={`${feedStyles.latestArticleItem} no-underline`}
-            style={{ display: 'grid' }}
-        >
-            <motion.div layoutId={`${layoutIdPrefix}-card-image-${article.legacyId}`} className={feedStyles.latestArticleThumbnail}>
-                <Image 
-                    src={article.imageUrl} 
-                    alt={article.title} 
-                    fill 
-                    sizes="120px" 
-                    placeholder="blur" 
-                    blurDataURL={article.blurDataURL} 
-                    style={{ objectFit: 'cover' }} 
-                />
-            </motion.div>
-            <div className={feedStyles.latestArticleInfo}>
-                <motion.h4 layoutId={`${layoutIdPrefix}-card-title-${article.legacyId}`} className={feedStyles.latestArticleTitle}>{article.title}</motion.h4>
-                <div className={feedStyles.latestArticleMeta}>
-                    <CreatorCredit label="بقلم" creators={article.authors} />
-                    {article.date && (
-                        <div className={feedStyles.latestArticleDate}>
-                            <Calendar03Icon style={{ width: '16px', height: '16px', color: 'var(--accent)' }} />
-                            <span>{article.date}</span>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </motion.a>
-    );
-});
-LatestArticleListItem.displayName = "LatestArticleListItem";
-
-type PaginatedLatestArticlesProps = {
+type PaginatedCarouselProps = {
     items: CardProps[];
     itemsPerPage?: number;
 };
 
-export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: PaginatedLatestArticlesProps) {
+export default function PaginatedCarousel({ items, itemsPerPage = 5 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
+    // isHovered (global for carousel auto-flip pause)
     const [isHovered, setIsHovered] = useState(false);
+    // hoveredIndex (local for z-index stacking fix)
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+    
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
+    
+    const { activeCardId } = useActiveCardStore();
+
+    // Intersection observer to prevent flipping when not visible
+    const containerRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(containerRef, { amount: 0.1 });
 
     const resetTimeout = () => { if (timeoutRef.current) { clearTimeout(timeoutRef.current); } };
 
     useEffect(() => {
         resetTimeout();
-        if (!isHovered && totalPages > 1) {
+        // Only flip if: Not hovered, IS in view, and has more than 1 page
+        if (!isHovered && isInView && totalPages > 1) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
-                3500
+                3800
             );
         }
         return () => resetTimeout();
-    }, [currentPage, isHovered, totalPages]);
+    }, [currentPage, isHovered, totalPages, isInView]);
 
     const startIndex = currentPage * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentItems = items.slice(startIndex, endIndex);
-
+    
     const interactionHandlers = {
         onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
+        onMouseLeave: () => {
+            setIsHovered(false);
+            setHoveredIndex(null); // Clear local hover index on exit
+        },
         onTouchStart: () => setIsHovered(true),
         onTouchEnd: () => setIsHovered(false),
         onTouchCancel: () => setIsHovered(false),
@@ -100,6 +60,7 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
 
     return (
         <div 
+            ref={containerRef}
             className={styles.paginatedContainer}
             {...interactionHandlers}
         >
@@ -107,17 +68,32 @@ export default function PaginatedLatestArticles({ items, itemsPerPage = 3 }: Pag
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentPage}
-                        initial={{ opacity: 0, x: 30 }}
+                        initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -30 }}
-                        transition={{ duration: 0.4, ease: 'easeInOut' }}
-                        className={`${styles.itemList} gpu-cull`} // Added gpu-cull
+                        exit={{ opacity: 0, x: 50 }} 
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                        className={`${styles.itemList} gpu-cull`} 
+                        style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
                     >
                         {currentItems.map((item, index) => (
-                            <React.Fragment key={item.id}>
-                                <LatestArticleListItem article={item} />
-                                {index < currentItems.length - 1 && <div className={feedStyles.listDivider} />}
-                            </React.Fragment>
+                            <motion.div
+                                key={item.legacyId}
+                                style={{ 
+                                    height: 'auto', 
+                                    position: 'relative', 
+                                    // FIX: Raise Z-Index if this specific item is hovered or active.
+                                    // This prevents the card below from clipping flying tags/effects.
+                                    zIndex: (activeCardId === item.id || hoveredIndex === index) ? 100 : 1 
+                                }}
+                                onMouseEnter={() => setHoveredIndex(index)}
+                                onMouseLeave={() => setHoveredIndex(null)}
+                            >
+                                <NewsGridCard 
+                                    item={item} 
+                                    layoutIdPrefix="homepage-latest-articles"
+                                    variant="compact"
+                                />
+                            </motion.div>
                         ))}
                     </motion.div>
                 </AnimatePresence>

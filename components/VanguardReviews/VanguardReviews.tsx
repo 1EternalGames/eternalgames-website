@@ -424,7 +424,8 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         boxShadow: 'none',
                         backgroundColor: 'transparent'
                     }}
-                    layoutId={`${layoutIdPrefix}-card-container-${review.legacyId}`} 
+                    // THE FIX: DISABLE LAYOUT ID ON MOBILE TO PREVENT FLICKERING DURING CAROUSEL NAV
+                    layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${review.legacyId}` : undefined} 
                     className={styles.vanguardCard}
                 >
                     {/* 
@@ -470,7 +471,10 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     
-                    <motion.div layoutId={`${layoutIdPrefix}-card-image-${review.legacyId}`} className={styles.cardImageContainer}>
+                    <motion.div 
+                        layoutId={!isMobile ? `${layoutIdPrefix}-card-image-${review.legacyId}` : undefined} 
+                        className={styles.cardImageContainer}
+                    >
                         <Image 
                             loader={sanityLoader}
                             src={imageUrl} 
@@ -485,7 +489,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     </motion.div>
                     
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
-                        <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${review.legacyId}`}>{review.title}</motion.h3>
+                        <motion.h3 layoutId={!isMobile ? `${layoutIdPrefix}-card-title-${review.legacyId}` : undefined}>{review.title}</motion.h3>
                         
                         <div className={styles.cardMetaRow}>
                             {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}

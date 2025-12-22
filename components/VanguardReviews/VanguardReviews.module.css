@@ -4,40 +4,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    /* FIX: Set min-height to user request (780px) */
     min-height: 780px;
-    
     position: relative;
-    
-    /* 
-       GPU CULL OPTIMIZATION:
-       We add large padding to expand the render boundary (preventing clipping of 3D elements).
-       We add equal negative margin to pull the layout box back, so it doesn't create huge whitespace.
-    */
     padding: 15rem 10rem;
     margin: -15rem -10rem;
-    
     --card-gap: 1.5rem;
     --center-width: 400px;
     --side-width: 280px;
     background-color: transparent; 
-    
-    /* Compensate width for negative margins */
     width: calc(100% + 20rem);
-    
-    /* Keep clip to prevent horizontal scrollbar from flying cards */
     overflow-x: clip; 
-    
-    /* Use preserve-3d on container to allow children to exist in shared 3D space */
     transform-style: preserve-3d;
+    perspective: 1200px;
     touch-action: pan-y;
-
-    /* FIX: Pass-through clicks on the huge padding area */
     pointer-events: none;
 }
 
-/* Restore pointer events for the cards so they remain interactive */
 .vanguardContainer > * {
     pointer-events: auto;
 }
@@ -64,6 +46,11 @@
     width: var(--center-width);
     height: 500px;
     touch-action: pan-y;
+    
+    /* Stability Fixes */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .cardWrapper {
@@ -97,6 +84,10 @@
     color: #fff;
     position: relative;
     transform-style: preserve-3d;
+    
+    /* Stability Fixes */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 /* 
@@ -139,6 +130,10 @@
     background-color: transparent; 
     pointer-events: none;
     transform: translateZ(0);
+    
+    /* Stability */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .cardImage {
@@ -174,6 +169,10 @@
     z-index: 2;
     clip-path: url(#vg-cardClip); 
     transform: translateZ(5px);
+    
+    /* Stability */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .cardContent h3 { 
@@ -563,10 +562,13 @@
 
 @media (max-width: 768px) {
     .vanguardContainer { 
-        --center-width: 65vw; --side-width: 45vw; min-height: 420px; 
-        /* Reset on mobile */
-        padding-top: 5.5rem; padding-bottom: 8rem; 
+        --center-width: 65vw; --side-width: 45vw; 
+        min-height: 780px;
+        padding: 15rem 10rem;
+        margin: -15rem -10rem;
+        width: calc(100% + 20rem);
     }
+    
     .cardContent { padding: 1.5rem; }
     .cardContent h3 { font-size: 1.8rem; }
     .vanguardScoreBadge { width: 55px; height: 55px; font-size: 2rem; top: 1rem; left: 1rem; }
@@ -587,10 +589,9 @@
     
     .satelliteField { display: none; }
     .cardSlot.activeState .satelliteField { display: block; }
-    
-    /* FIX: Reset navigator position on mobile */
+
     .kineticNavigator {
-        bottom: 0;
+        bottom: 17rem;
     }
 }
 @media (max-width: 480px) {

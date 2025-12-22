@@ -1,7 +1,7 @@
 // components/news/NewsGridCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo, useEffect } from 'react';
+import React, { memo, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ import { translateTag } from '@/lib/translations';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
+import { usePerformanceStore } from '@/lib/performanceStore'; 
 
 type NewsGridCardProps = {
     item: CardProps;
@@ -40,15 +40,19 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const isMobile = useIsMobile();
     
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
 
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
     
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
-    const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
+    
+    // Timers & Position Refs
+    const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+    const touchTimeout = useRef<NodeJS.Timeout | null>(null);
+    const lastTouchPos = useRef({ x: 0, y: 0 });
 
+    const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
     useClickOutside(livingCardRef, () => {
@@ -84,47 +88,25 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
     const flyingItems = useMemo(() => {
         const satellites = [];
-        if (item.game && item.gameSlug) {
-            satellites.push({ label: item.game, link: `/games/${item.gameSlug}` });
-        } else { satellites.push(null); }
+        if (item.game && item.gameSlug) satellites.push({ label: item.game, link: `/games/${item.gameSlug}` });
+        else satellites.push(null);
 
-        if (item.category) {
-            satellites.push({ label: translateTag(item.category), link: undefined });
-        } else if (item.tags && item.tags.length > 0) {
-             satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}` });
-        } else { satellites.push(null); }
+        if (item.category) satellites.push({ label: translateTag(item.category), link: undefined });
+        else if (item.tags && item.tags.length > 0) satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}` });
+        else satellites.push(null);
 
         satellites.push({ label: typeDisplayMap[item.type] || 'محتوى', link: undefined });
-
         return satellites;
     }, [item.type, item.category, item.tags, item.game, item.gameSlug]);
     
-    const desktopConfig = [
-        { hoverX: -180, hoverY: 65, rotate: -6 },   
-        { hoverX: 90, hoverY: 70, rotate: 5 },      
-        { hoverX: -50, hoverY: -100, rotate: -3 }   
-    ];
-
-    const mobileConfig = [
-        { hoverX: -90, hoverY: 20, rotate: -4 },
-        { hoverX: 70, hoverY: 40, rotate: 4 },
-        { hoverX: 0, hoverY: -85, rotate: -2 } 
-    ];
-
-    const compactConfig = [
-        { hoverX: -110, hoverY: 30, rotate: -5 },
-        { hoverX: 70, hoverY: 35, rotate: 4 },
-        { hoverX: -20, hoverY: -65, rotate: -2 }
-    ];
+    const desktopConfig = [{ hoverX: -180, hoverY: 65, rotate: -6 }, { hoverX: 90, hoverY: 70, rotate: 5 }, { hoverX: -50, hoverY: -100, rotate: -3 }];
+    const mobileConfig = [{ hoverX: -90, hoverY: 20, rotate: -4 }, { hoverX: 70, hoverY: 40, rotate: 4 }, { hoverX: 0, hoverY: -85, rotate: -2 }];
+    const compactConfig = [{ hoverX: -110, hoverY: 30, rotate: -5 }, { hoverX: 70, hoverY: 35, rotate: 4 }, { hoverX: -20, hoverY: -65, rotate: -2 }];
 
     let satelliteConfig;
-    if (isMobile) {
-        satelliteConfig = mobileConfig;
-    } else if (variant === 'compact' || variant === 'mini') {
-        satelliteConfig = compactConfig;
-    } else {
-        satelliteConfig = desktopConfig;
-    }
+    if (isMobile) satelliteConfig = mobileConfig;
+    else if (variant === 'compact' || variant === 'mini') satelliteConfig = compactConfig;
+    else satelliteConfig = desktopConfig;
 
     const capsuleContent = (
         <>
@@ -136,27 +118,54 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     );
     
     const handlers = !isMobile ? {
+        // DESKTOP
         onMouseEnter: () => { 
             if(!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
-            setIsHoveredLocal(true); 
+            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+            hoverTimeout.current = setTimeout(() => setIsHoveredLocal(true), 75); 
         },
         onMouseLeave: () => { 
+            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
             if(!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); 
             setIsHoveredLocal(false); 
         },
         onMouseMove: !effectivelyDisabledLiving ? livingCardAnimation.onMouseMove : undefined,
     } : {
+        // MOBILE
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
-            if (activeCardId !== item.id) {
-                setActiveCardId(item.id);
-            }
+            const touch = e.touches[0];
+            lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+
+            if (touchTimeout.current) clearTimeout(touchTimeout.current);
+            touchTimeout.current = setTimeout(() => {
+                // HIT TEST
+                const targetElement = document.elementFromPoint(lastTouchPos.current.x, lastTouchPos.current.y);
+                const isOverCard = livingCardRef.current && targetElement && livingCardRef.current.contains(targetElement);
+
+                if (isOverCard) {
+                     if (activeCardId !== item.id) {
+                        setActiveCardId(item.id);
+                    }
+                }
+            }, 100); // 100ms tolerance
+
             if(!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
-        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
-        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
+        onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
+             const touch = e.touches[0];
+             lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
+        },
+        onTouchEnd: () => {
+             if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
+        },
+        onTouchCancel: () => {
+             if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchCancel();
+        }
     };
     
-    // Apply layoutId logic
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
@@ -263,28 +272,10 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         key={`${item.id}-sat-${i}`}
                                         className={styles.satelliteShard}
                                         initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                        animate={{
-                                            opacity: 1,
-                                            scale: 1.15,
-                                            x: config.hoverX,
-                                            y: config.hoverY,
-                                            rotate: config.rotate,
-                                            z: -30 
-                                        }}
-                                        exit={{
-                                            opacity: 0,
-                                            scale: 0.4,
-                                            x: 0,
-                                            y: 50,
-                                            rotate: 0,
-                                            z: 0
-                                        }}
+                                        animate={{ opacity: 1, scale: 1.15, x: config.hoverX, y: config.hoverY, rotate: config.rotate, z: -30 }}
+                                        exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
                                         transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                        style={{ 
-                                            position: 'absolute', 
-                                            ...positionStyle, 
-                                            transformStyle: 'preserve-3d' 
-                                        }}
+                                        style={{ position: 'absolute', ...positionStyle, transformStyle: 'preserve-3d' }}
                                         onClick={(e) => e.stopPropagation()}
                                      >
                                          {sat.link ? (
@@ -314,5 +305,3 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
 const NewsGridCard = memo(NewsGridCardComponent);
 export default NewsGridCard;
-
-

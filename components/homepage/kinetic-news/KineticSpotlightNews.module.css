@@ -14,9 +14,8 @@
     margin-left: -10rem;
     margin-right: -10rem;
     
-    /* FIX: Calculate bottom margin to include the 3rem visual spacing 
-       while negating the 10rem padding (-10rem + 3rem = -7rem) */
-    margin-bottom: calc(-10rem + 3rem);
+    /* FIX: Fully negate the bottom padding to remove excess space */
+    margin-bottom: -10rem;
     
     width: calc(100% + 20rem);
     
@@ -32,8 +31,11 @@
 @media (max-width: 768px) {
     .spotlightGrid {
         gap: 2rem;
+        /* REMOVED: margin-bottom: 3rem; -> This was causing the huge gap on mobile because it overrode the negative margin while keeping the positive padding. */
+        
         /* Reset on mobile */
-        margin-bottom: 3rem;
+        /* width: 100%; <- Removed width reset to keep expansion hack working */
         /* Reset pointer events on mobile where cull hack is disabled */
+        pointer-events: auto;
     }
 }

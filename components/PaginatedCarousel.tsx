@@ -74,9 +74,11 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
                                 style={{ 
                                     height: 'auto', 
                                     position: 'relative', 
+                                    // FIX: Base z-index on Mobile Active state OR default
                                     zIndex: activeCardId === item.id ? 100 : 1 
                                 }}
-                                // FIX: Removed 'whileHover' to prevent event conflict with child NewsGridCard
+                                // FIX: Raise z-index on Desktop Hover to prevent flying tags from being clipped/overlapped by the card below
+                                whileHover={{ zIndex: 100 }}
                             >
                                 <NewsGridCard 
                                     item={item} 

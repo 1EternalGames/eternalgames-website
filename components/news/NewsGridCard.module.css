@@ -432,3 +432,23 @@ a.creatorCapsule:active { transform: scale(0.95); }
     .satelliteField { display: none; }
     .cardContainer.activeState .satelliteField { display: block; }
 }
+
+/* --- NO GLASS HOVER FIXES --- */
+:global(body.no-glass) .cardContainer:hover .creatorCapsule,
+:global(body.no-glass) .cardContainer.activeState .creatorCapsule {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #000 !important;
+    box-shadow: none !important;
+}
+
+:global(body.no-glass) .cardContainer:hover .capsuleIcon,
+:global(body.no-glass) .cardContainer.activeState .capsuleIcon {
+    background-color: #000 !important;
+    color: var(--accent) !important;
+}
+
+:global(body.no-glass) .cardContainer:hover .creatorCapsule :global(span),
+:global(body.no-glass) .cardContainer.activeState .creatorCapsule :global(span) {
+    color: #000 !important;
+}

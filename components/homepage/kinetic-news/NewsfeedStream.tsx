@@ -61,7 +61,8 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
             ref={containerRef}
             className={`${styles.streamContainer} gpu-cull`} // Added gpu-cull here
             {...interactionHandlers}
-            style={{ minHeight: isExpanded ? 'auto' : '400px' }}
+            /* THE FIX: Reduced minHeight from 400px to auto (or a small baseline) to prevent big empty space at bottom */
+            style={{ minHeight: isExpanded ? 'auto' : '150px' }}
         >
             <AnimatePresence mode="popLayout" initial={false}>
                 {displayItems.map((item) => (

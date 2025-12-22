@@ -1,7 +1,7 @@
 // components/ArticleCard.tsx
 'use client';
 
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
@@ -34,7 +34,6 @@ const getCreatorName = (creators: any[]): string | null => {
 };
 
 // COMPONENT: Extracted CreatorCapsule to prevent re-mounting on parent re-render
-// FIX: Updated authorUsername type to allow null
 const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | null, authorUsername?: string | null }) => {
     const content = (
         <>
@@ -78,6 +77,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
+    
+    // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
+    const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+    const touchTimeout = useRef<NodeJS.Timeout | null>(null);
+    const lastTouchPos = useRef({ x: 0, y: 0 });
 
     const isHovered = isMobile ? activeCardId === article.id : isHoveredLocal;
 
@@ -93,10 +97,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 25 });
     const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 25 });
 
-    // MODIFIED: Enabled on mobile by removing "|| isMobile"
     const effectivelyDisabledLiving = disableLivingEffect || !isLivingCardEnabled;
 
     const handlers = !isMobile ? {
+        // DESKTOP
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseMove(e);
@@ -106,32 +110,61 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             }
         },
         onMouseEnter: () => {
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseEnter();
-            }
-            setIsHoveredLocal(true);
-            setIsTextExpanded(true);
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter();
+            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+            hoverTimeout.current = setTimeout(() => {
+                setIsHoveredLocal(true);
+                setIsTextExpanded(true);
+            }, 75); 
         },
         onMouseLeave: () => {
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseLeave();
-            }
+            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave();
             setIsHoveredLocal(false);
         }
     } : {
+        // MOBILE
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
-            if (activeCardId !== article.id) {
-                     setActiveCardId(article.id);
-                     setIsTextExpanded(true);
-            }
-            // MODIFIED: Enable touch interaction for living effect on mobile
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onTouchStart(e);
-            }
+            const touch = e.touches[0];
+            lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+
+            // 1. Clear any existing timer
+            if (touchTimeout.current) clearTimeout(touchTimeout.current);
+            
+            // 2. Start new timer (100ms)
+            touchTimeout.current = setTimeout(() => {
+                // 3. HIT TEST: Check if finger is still physically over this card
+                // Note: elementFromPoint uses client coordinates relative to viewport
+                const targetElement = document.elementFromPoint(lastTouchPos.current.x, lastTouchPos.current.y);
+                const isOverCard = livingCardRef.current && targetElement && livingCardRef.current.contains(targetElement);
+                
+                if (isOverCard) {
+                     if (activeCardId !== article.id) {
+                         setActiveCardId(article.id);
+                         setIsTextExpanded(true);
+                    }
+                }
+            }, 100);
+
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
-        // MODIFIED: Restored touch move/end handlers
-        onTouchMove: !effectivelyDisabledLiving ? livingCardAnimation.onTouchMove : undefined,
-        onTouchEnd: !effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined,
+        onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
+             // Update position for hit-testing in the timeout
+             const touch = e.touches[0];
+             lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
+             
+             // WE DO NOT CLEAR TIMEOUT HERE. This allows scrolling to trigger hover if finger stays on card.
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
+        },
+        onTouchEnd: () => {
+             // Clear timeout to prevent activation after release
+             if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
+        },
+        onTouchCancel: () => {
+             if (touchTimeout.current) clearTimeout(touchTimeout.current);
+             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchCancel();
+        }
     };
 
     const getLinkBasePath = () => {
@@ -163,22 +196,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
             ref={livingCardRef}
             {...handlers}
-            // THE FIX: Reduced zIndex from 9999 to 500 to ensure it stays below the Navbar (1070)
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
-            {/* 
-                THE FIX: SEPARATE LAYOUT AND TILT 
-                1. Outer motion.div handles `layoutId` (Shared Element Transition).
-                2. Inner motion.div handles `animationStyles` (3D Tilt).
-                This prevents the layout engine from locking the transform property needed for the tilt.
-            */}
             <motion.div
                 layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
                 style={{ 
                     height: '100%',
                     position: 'relative',
                     zIndex: 1,
-                    // Note: We don't apply 3D transforms here, only layout size/position
                 }}
             >
                 <motion.div
@@ -209,8 +234,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         />
 
                         <div className={styles.monolithFrame}>
-                            
-                            {/* --- INNER CLIPPING FRAME START --- */}
                             <div className={styles.innerClippingFrame}>
                                 {!isMobile && (
                                     <motion.div 
@@ -235,7 +258,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                         placeholder="blur"
                                         blurDataURL={article.blurDataURL}
                                         priority={isPriority}
-                                        // CHEAT CODE: Texture Streaming
                                         decoding="async" 
                                     />
                                 </motion.div>
@@ -274,13 +296,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                 </div>
                             
                             </div> 
-                            {/* --- INNER CLIPPING FRAME END --- */}
                             
-                            {/* Explicit Cyber Corner Element */}
                             <div className={styles.cyberCorner} />
 
                             <div className={styles.hudContainer} style={{ transform: 'translateZ(60px)' }}>
-                                 {/* FIXED: CreatorCapsule now stable across re-renders */}
                                  {authorName ? <CreatorCapsule authorName={authorName} authorUsername={authorUsername} /> : <div />}
 
                                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
