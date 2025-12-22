@@ -5,14 +5,19 @@ import { useEffect, useRef } from 'react';
 import { usePerformanceStore, PerformanceTier } from '@/lib/performanceStore';
 
 // --- CONFIGURATION ---
-const CHECK_INTERVAL = 300; // Check every 300ms (Very snappy)
-const WARMUP_PERIOD = 500;  // Only wait 0.5s before acting
-const COOLDOWN_AFTER_CHANGE = 2000; // Wait 2s after changing tier to let DOM settle
+const CHECK_INTERVAL = 300; // Check every 300ms
+const WARMUP_PERIOD = 800;  // Warmup time
+const COOLDOWN_AFTER_CHANGE = 3000; // Wait 3s after changing tier
 
 // --- THRESHOLDS ---
-const FPS_CRITICAL = 20; // Slide show -> Drop 2-3 tiers
-const FPS_BAD = 40;      // Laggy -> Drop 1 tier
-const FPS_GOOD = 55;     // Smooth -> Upgrade
+const FPS_CRITICAL = 25; // Slide show -> Drop tiers rapidly
+const FPS_BAD = 45;      // Laggy -> Drop 1 tier
+const FPS_GOOD = 58;     // Smooth -> Upgrade if sustained
+
+// --- STREAK CONFIG ---
+// We want ~6 seconds of smooth performance to upgrade.
+// 6000ms / 300ms interval = 20 checks.
+const REQUIRED_GOOD_STREAK = 20;
 
 export default function FPSAutoTuner() {
     const { 
@@ -20,6 +25,7 @@ export default function FPSAutoTuner() {
         setPerformanceTier,
         isGlassmorphismEnabled,
         isBackgroundVisible,
+        isBackgroundAnimated,
         isLivingCardEnabled,
         isFlyingTagsEnabled,
         isCornerAnimationEnabled
@@ -29,35 +35,79 @@ export default function FPSAutoTuner() {
     const framesSinceCheck = useRef<number>(0);
     const lastCheckTime = useRef<number>(0);
     const startTime = useRef<number>(0);
-    const lastChangeTime = useRef<number>(0); // Cooldown tracker
+    const lastChangeTime = useRef<number>(0); 
+    const lastActivityTime = useRef<number>(0); // Track when user last did something
     
-    // Internal tracking to prevent Redux/Zustand thrashing
     const currentTier = useRef<PerformanceTier>(5); 
     const goodStreak = useRef<number>(0);
 
-    // 1. SYNC REF WITH REALITY
-    // Keeps our local ref updated with the actual state without triggering re-renders
+    // 1. SYNC REF
     useEffect(() => {
         let tier: PerformanceTier = 0;
-        if (isGlassmorphismEnabled) tier = 5;
-        else if (isBackgroundVisible) tier = 4;
-        else if (isLivingCardEnabled) tier = 3;
-        else if (isFlyingTagsEnabled) tier = 2;
-        else if (isCornerAnimationEnabled) tier = 1;
+        if (isGlassmorphismEnabled && isBackgroundAnimated) tier = 5;
+        else if (isBackgroundVisible && isBackgroundAnimated) tier = 4;
+        else if (isBackgroundVisible) tier = 3;
+        else if (isLivingCardEnabled) tier = 2;
+        else if (isFlyingTagsEnabled) tier = 1;
         
         currentTier.current = tier;
-    }, [isGlassmorphismEnabled, isBackgroundVisible, isLivingCardEnabled, isFlyingTagsEnabled, isCornerAnimationEnabled]);
+    }, [isGlassmorphismEnabled, isBackgroundVisible, isLivingCardEnabled, isFlyingTagsEnabled, isCornerAnimationEnabled, isBackgroundAnimated]);
 
-    // 2. THE ENGINE
+    // 2. ACTIVITY TRACKER
+    // We listen to interactions to ensure we only "stress test" upgrades when the engine is under load.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const updateActivity = () => {
+            lastActivityTime.current = performance.now();
+        };
+
+        // Passive listeners for performance
+        window.addEventListener('mousemove', updateActivity, { passive: true });
+        window.addEventListener('touchmove', updateActivity, { passive: true });
+        window.addEventListener('scroll', updateActivity, { passive: true });
+        window.addEventListener('keydown', updateActivity, { passive: true });
+        window.addEventListener('click', updateActivity, { passive: true });
+
+        return () => {
+            window.removeEventListener('mousemove', updateActivity);
+            window.removeEventListener('touchmove', updateActivity);
+            window.removeEventListener('scroll', updateActivity);
+            window.removeEventListener('keydown', updateActivity);
+            window.removeEventListener('click', updateActivity);
+        };
+    }, []);
+
+    // 3. INITIAL HARDWARE SCAN
+    useEffect(() => {
+        if (typeof window !== 'undefined' && isAutoTuningEnabled) {
+            const cores = navigator.hardwareConcurrency || 4;
+            // @ts-ignore
+            const memory = navigator.deviceMemory || 4; 
+            
+            if (cores < 4 || memory < 4) {
+                console.log(`[AutoTuner] Weak Hardware Detected (${cores} cores, ${memory}GB RAM). Initializing at Low Tier.`);
+                setPerformanceTier(2);
+            } else if (cores < 6) {
+                console.log(`[AutoTuner] Mid-Range Hardware Detected (${cores} cores). Initializing at Medium Tier.`);
+                setPerformanceTier(3);
+            } else {
+                setPerformanceTier(5);
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // 4. THE ENGINE
     useEffect(() => {
         if (!isAutoTuningEnabled) {
             cancelAnimationFrame(rafId.current);
             return;
         }
 
-        // Reset timers on mount/enable
         startTime.current = performance.now();
         lastCheckTime.current = performance.now();
+        lastActivityTime.current = performance.now(); // Assume active on mount
         framesSinceCheck.current = 0;
         goodStreak.current = 0;
         lastChangeTime.current = 0;
@@ -69,74 +119,78 @@ export default function FPSAutoTuner() {
             const now = performance.now();
             const elapsed = now - lastCheckTime.current;
 
-            // SAFETY: If elapsed is absurdly high (> 500ms for a single check cycle), 
-            // the user likely tabbed out or the thread froze completely. 
-            // Reset the clock to prevent a false "0 FPS" calculation.
             if (elapsed > 2000) {
                 lastCheckTime.current = now;
                 framesSinceCheck.current = 0;
                 return;
             }
 
-            // Perform Check
             if (elapsed > CHECK_INTERVAL) {
                 const fps = Math.round((framesSinceCheck.current * 1000) / elapsed);
-                
-                // Reset counters
                 lastCheckTime.current = now;
                 framesSinceCheck.current = 0;
 
                 const timeSinceStart = now - startTime.current;
                 const timeSinceChange = now - lastChangeTime.current;
+                const timeSinceActivity = now - lastActivityTime.current;
 
-                // Only act if we are past warmup AND past the modification cooldown
+                // Is the user actively doing something? (interacting within last 1 second)
+                const isUserActive = timeSinceActivity < 1000;
+
                 if (timeSinceStart > WARMUP_PERIOD && timeSinceChange > COOLDOWN_AFTER_CHANGE) {
                     
-                    // --- LOGIC: DOWNGRADES (Fast Reaction) ---
-                    
-                    // CRITICAL LAG (< 20 FPS): Emergency Eject
+                    // --- DOWNGRADE LOGIC (Always active) ---
+                    // Even if user is idle, if background animations cause lag, we drop.
                     if (fps < FPS_CRITICAL) {
                         if (currentTier.current > 1) {
-                            // If we are at Ultra (5), drop straight to Low (2)
-                            // If at Medium (3), drop to Potato (1)
-                            const targetTier = Math.max(1, currentTier.current - 3) as PerformanceTier;
-                            
-                            console.warn(`[AutoTuner] 🚨 CRITICAL LAG (${fps} FPS). Dumping tiers: ${currentTier.current} -> ${targetTier}`);
-                            
+                            const targetTier = Math.max(1, currentTier.current - 2) as PerformanceTier;
+                            console.warn(`[AutoTuner] 🚨 CRITICAL DROP (${fps} FPS). Dumping to Tier ${targetTier}`);
                             setPerformanceTier(targetTier);
                             lastChangeTime.current = now;
                             goodStreak.current = 0;
                         }
                     }
-                    // BAD LAG (< 40 FPS): Step Down
                     else if (fps < FPS_BAD) {
                         if (currentTier.current > 0) {
                             const targetTier = (currentTier.current - 1) as PerformanceTier;
-                            console.log(`[AutoTuner] Lag detected (${fps} FPS). Dropping: ${currentTier.current} -> ${targetTier}`);
+                            console.log(`[AutoTuner] Lag detected (${fps} FPS). Dropping to Tier ${targetTier}`);
                             setPerformanceTier(targetTier);
                             lastChangeTime.current = now;
                             goodStreak.current = 0;
                         }
                     }
-
-                    // --- LOGIC: UPGRADES (Slow Reaction) ---
-                    // Requires sustained smoothness to upgrade
+                    
+                    // --- UPGRADE LOGIC (Interaction Dependent) ---
+                    // Only upgrade if performance is good WHILE the user is stressing the UI.
                     else if (fps >= FPS_GOOD) {
-                        goodStreak.current++;
+                        if (isUserActive) {
+                            goodStreak.current++;
+                            
+                            // Debugging log (Optional, usually removed in prod but useful here)
+                            // if (goodStreak.current % 5 === 0) console.log(`[AutoTuner] Good Streak: ${goodStreak.current}/${REQUIRED_GOOD_STREAK}`);
 
-                        // Need 5 consecutive good checks (1.5 seconds) to upgrade
-                        if (goodStreak.current >= 5) {
-                            if (currentTier.current < 5) {
-                                const targetTier = (currentTier.current + 1) as PerformanceTier;
-                                console.log(`[AutoTuner] Smooth sailing (${fps} FPS). Upgrading: ${currentTier.current} -> ${targetTier}`);
-                                setPerformanceTier(targetTier);
-                                lastChangeTime.current = now;
-                                goodStreak.current = 0;
+                            if (goodStreak.current >= REQUIRED_GOOD_STREAK) { 
+                                if (currentTier.current < 5) {
+                                    const targetTier = (currentTier.current + 1) as PerformanceTier;
+                                    console.log(`[AutoTuner] 🚀 Performance solid under load (${fps} FPS). Upgrading to Tier ${targetTier}`);
+                                    setPerformanceTier(targetTier);
+                                    lastChangeTime.current = now;
+                                    goodStreak.current = 0;
+                                }
+                            }
+                        } else {
+                            // User is idle. FPS is high, but we can't trust it.
+                            // Reset streak? No, just pause it. 
+                            // If they stop scrolling for 1 second, we don't punish them, 
+                            // but we don't reward the idle time either.
+                            // Actually, strict logic: If you stop interacting, we reset the test 
+                            // because we need continuous proof of smoothness.
+                            if (goodStreak.current > 0) {
+                                goodStreak.current = Math.max(0, goodStreak.current - 1); // Decay slowly instead of hard reset
                             }
                         }
                     } else {
-                        // In the grey area (40-55 FPS)
-                        // Reset good streak, but don't drop. Maintain status quo.
+                        // FPS is in the "okay" range (45-57), or low but user idle
                         goodStreak.current = 0;
                     }
                 }
@@ -144,22 +198,8 @@ export default function FPSAutoTuner() {
         };
 
         rafId.current = requestAnimationFrame(loop);
-
         return () => cancelAnimationFrame(rafId.current);
     }, [isAutoTuningEnabled, setPerformanceTier]);
-
-    // 3. HARDWARE CHECK (Run once on mount)
-    useEffect(() => {
-        if (typeof window !== 'undefined' && isAutoTuningEnabled) {
-            const cores = navigator.hardwareConcurrency || 4;
-            // If potato device detected immediately, don't wait for the loop to figure it out.
-            if (cores < 4) {
-                console.log(`[AutoTuner] Weak CPU (${cores} cores). Starting at Tier 2.`);
-                setPerformanceTier(2);
-            }
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     return null;
 }
