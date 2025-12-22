@@ -10,7 +10,8 @@ import { SanityReview } from '@/types/sanity';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
-import { enrichContentList, enrichCreators } from '@/lib/enrichment'; // Imported enrichCreators
+import { enrichContentList, enrichCreators } from '@/lib/enrichment'; 
+import HomeJsonLd from '@/components/seo/HomeJsonLd'; // Import Home Schema
 
 export const dynamic = 'force-static';
 
@@ -144,12 +145,13 @@ export default async function HomePage() {
     const releasesSection = <ReleasesSection releases={releasesRaw} credits={credits || []} />;
 
     return (
-        <DigitalAtriumHomePage 
-            reviews={reviews}
-            feedsContent={feedsContent}
-            releasesSection={releasesSection}
-        />
+        <>
+            <HomeJsonLd />
+            <DigitalAtriumHomePage 
+                reviews={reviews}
+                feedsContent={feedsContent}
+                releasesSection={releasesSection}
+            />
+        </>
     );
 }
-
-

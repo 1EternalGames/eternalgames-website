@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   },
   description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
   alternates: {
+    canonical: './',
   },
   openGraph: {
     title: {
@@ -43,7 +44,6 @@ export const metadata: Metadata = {
     siteName: 'EternalGames',
     images: [
       {
-        // FIX: Added backticks for template literal
         url: `${siteUrl}/og.png`,
         width: 1200,
         height: 630,
@@ -61,6 +61,22 @@ export const metadata: Metadata = {
     },
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
     images: [`${siteUrl}/og.png`],
+  },
+  // SEO: Verification for Google Search Console
+  verification: {
+    google: 'YOUR_GOOGLE_VERIFICATION_CODE', // Replace this after getting it from Search Console
+    yandex: 'YOUR_YANDEX_VERIFICATION_CODE',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 

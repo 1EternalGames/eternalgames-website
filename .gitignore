@@ -42,3 +42,7 @@ yarn-error.log*
 
 # Prisma Generated Client (New in v7)
 /lib/generated/client
+
+# Site
+/EternalGamesWebsite_Full*.txt
+EternalGamesWebsite_Full*.txt
