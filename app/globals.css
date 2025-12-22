@@ -27,6 +27,13 @@
   --border-color: #E5E7EB;
 }
 
+/* --- BRANDED SELECTION --- */
+::selection {
+    background-color: var(--accent);
+    color: #050505;
+    text-shadow: none;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
