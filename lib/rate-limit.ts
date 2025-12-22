@@ -1,110 +1,51 @@
 // lib/rate-limit.ts
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-type RateLimitEntry = {
-    count: number;
-    expiresAt: number;
+// 1. Create the Redis connection
+// This automatically looks for UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+const redis = Redis.fromEnv();
+
+const limiters = new Map<string, Ratelimit>();
+
+const getLimiter = (limit: number, window: "10 s" | "60 s", prefix: string) => {
+  const key = `${prefix}-${limit}`;
+  
+  if (!limiters.has(key)) {
+    limiters.set(key, new Ratelimit({
+      redis: redis, // <--- Using the native Redis client
+      limiter: Ratelimit.slidingWindow(limit, window),
+      prefix: key,
+      analytics: true,
+    }));
+  }
+  return limiters.get(key)!;
 };
 
-interface RateLimitOptions {
-    interval: number; // Window size in ms
-    uniqueTokenPerInterval: number; // Max keys to store
-}
-
-class LRUCache<K, V> {
-    private max: number;
-    private cache: Map<K, V>;
-
-    constructor(max: number) {
-        this.max = max;
-        this.cache = new Map();
+// 1. Standard Limiter (10s window)
+export const standardLimiter = {
+  check: async (identifier: string, limit: number = 10) => {
+    try {
+      const limiter = getLimiter(limit, "10 s", "@upstash/standard");
+      const { success } = await limiter.limit(identifier);
+      return { success };
+    } catch (error) {
+      console.error("Rate limit error:", error);
+      return { success: true };
     }
+  },
+};
 
-    get(key: K): V | undefined {
-        const item = this.cache.get(key);
-        if (item) {
-            // Refresh key position (delete and re-add to end)
-            this.cache.delete(key);
-            this.cache.set(key, item);
-        }
-        return item;
+// 2. Sensitive Limiter (60s window)
+export const sensitiveLimiter = {
+  check: async (identifier: string, limit: number = 5) => {
+    try {
+      const limiter = getLimiter(limit, "60 s", "@upstash/sensitive");
+      const { success } = await limiter.limit(identifier);
+      return { success };
+    } catch (error) {
+      console.error("Rate limit error:", error);
+      return { success: true };
     }
-
-    set(key: K, value: V): void {
-        // If key exists, update value and refresh position
-        if (this.cache.has(key)) {
-            this.cache.delete(key);
-        } 
-        // If cache is full, delete oldest (first) item
-        else if (this.cache.size >= this.max) {
-            const oldestKey = this.cache.keys().next().value;
-            if (oldestKey !== undefined) {
-                this.cache.delete(oldestKey);
-            }
-        }
-        this.cache.set(key, value);
-    }
-}
-
-// Global store to persist across hot-reloads in dev, 
-// though still reset on serverless cold start.
-const globalStore = new Map<string, LRUCache<string, RateLimitEntry>>();
-
-export function rateLimiter(options: RateLimitOptions) {
-    const { interval, uniqueTokenPerInterval } = options;
-    
-    // Create a unique namespace for this limiter configuration
-    const namespace = `limit-${interval}-${uniqueTokenPerInterval}`;
-    
-    if (!globalStore.has(namespace)) {
-        globalStore.set(namespace, new LRUCache(uniqueTokenPerInterval));
-    }
-    
-    const tokenCache = globalStore.get(namespace)!;
-
-    return {
-        check: async (identifier: string, limit: number) => {
-            const now = Date.now();
-            const record = tokenCache.get(identifier);
-
-            if (!record) {
-                tokenCache.set(identifier, {
-                    count: 1,
-                    expiresAt: now + interval,
-                });
-                return { success: true };
-            }
-
-            if (now > record.expiresAt) {
-                // Window expired, reset count but keep entry to maintain LRU warmth
-                tokenCache.set(identifier, {
-                    count: 1,
-                    expiresAt: now + interval,
-                });
-                return { success: true };
-            }
-
-            if (record.count >= limit) {
-                return { success: false };
-            }
-
-            // Increment count
-            record.count += 1;
-            // Update in cache to refresh LRU position
-            tokenCache.set(identifier, record);
-            
-            return { success: true };
-        },
-    };
-}
-
-// 10 requests per 10 seconds
-export const standardLimiter = rateLimiter({
-    interval: 10 * 1000, 
-    uniqueTokenPerInterval: 500,
-});
-
-// 3 requests per minute (Login/Signup)
-export const sensitiveLimiter = rateLimiter({
-    interval: 60 * 1000,
-    uniqueTokenPerInterval: 500,
-});
+  },
+};

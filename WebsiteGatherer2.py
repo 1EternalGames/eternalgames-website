@@ -8,7 +8,6 @@ output_file = "EternalGamesWebsite_Full.txt"
 
 # Whitelist of explicit root-level files to include
 whitelist_files = [
-    ".env",
     "next-auth.d.ts",
     "next.config.ts",
     "package.json",
