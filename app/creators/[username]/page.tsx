@@ -9,6 +9,7 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
+import JsonLd from '@/components/seo/JsonLd'; // IMPORT
 
 export const dynamicParams = true;
 
@@ -16,17 +17,14 @@ type Props = {
   params: Promise<{ username: string }>;
 };
 
-// Optimized cached fetcher for creator page data
 const getCachedCreatorData = unstable_cache(
     async (username: string) => {
-        // 1. Get User
         const user = await prisma.user.findUnique({
             where: { username: username },
-            select: { id: true, name: true, username: true, image: true }, 
+            select: { id: true, name: true, username: true, image: true, bio: true, twitterHandle: true }, 
         });
         if (!user) return null;
 
-        // 2. Get Sanity IDs
         const creatorDocs = await client.fetch< { _id: string }[] >(
             `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id}`,
             { prismaUserId: user.id }
@@ -37,19 +35,16 @@ const getCachedCreatorData = unstable_cache(
         }
         
         const creatorIds = creatorDocs.map(doc => doc._id);
-        
-        // 3. Get Content
         const allItemsRaw = await client.fetch(allContentByCreatorListQuery, { creatorIds });
-
-        // 4. Enrich Content
         const allItems = await enrichContentList(allItemsRaw);
 
         return { user, items: allItems };
     },
     ['creator-page-data'],
-    { tags: ['content'] } // Revalidate on content change
+    { tags: ['content'] }
 );
 
+// ... (Metadata logic remains same)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username: encodedUsername } = await params;
   const username = decodeURIComponent(encodedUsername);
@@ -76,12 +71,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: data.user.name || username }],
       type: 'profile',
     },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [ogImageUrl],
-    },
   };
 }
 
@@ -99,8 +88,7 @@ export const generateStaticParams = cache(async () => {
             username: encodeURIComponent(user.username!),
         }));
     } catch (error) {
-        console.error(`[BUILD ERROR] CRITICAL: Failed to fetch usernames for creator pages.`, error);
-        throw error;
+        return [];
     }
 });
 
@@ -115,6 +103,18 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
     }
 
     const { user, items: allItems } = data;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+
+    // JSON-LD for Person
+    const personSchema = {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": user.name,
+        "url": `${siteUrl}/creators/${user.username}`,
+        "image": user.image,
+        "description": user.bio || `منشئ محتوى في EternalGames`,
+        "sameAs": user.twitterHandle ? [`https://twitter.com/${user.twitterHandle}`] : []
+    };
 
     if (!allItems || allItems.length === 0) {
         return (
@@ -122,7 +122,6 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
                 <h1 className="page-title">{user.name || 'Creator'}</h1>
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُرَ لهذا المستخدمِ أثرٌ بعد.</p>
                 <div style={{textAlign: 'center', marginTop: '2rem'}}>
-                    {/* FIX: Disable prefetch on the empty state button */}
                     <Link href={`/profile/${user.username}`} className="primary-button" prefetch={false}>ملف المستخدم</Link>
                 </div>
             </div>
@@ -130,23 +129,23 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
     }
     
     return (
-        <HubPageClient
-            initialItems={allItems}
-            hubTitle={user.name || 'Creator'}
-            hubType="أعمال"
-            headerAction={
-                // FIX: Disable prefetch on the main header button
-                <Link 
-                    href={`/profile/${user.username}`} 
-                    className="outline-button no-underline" 
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }} 
-                    prefetch={false}
-                >
-                    → الملف الشخصي
-                </Link>
-            }
-        />
+        <>
+            <JsonLd data={personSchema} />
+            <HubPageClient
+                initialItems={allItems}
+                hubTitle={user.name || 'Creator'}
+                hubType="أعمال"
+                headerAction={
+                    <Link 
+                        href={`/profile/${user.username}`} 
+                        className="outline-button no-underline" 
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }} 
+                        prefetch={false}
+                    >
+                        → الملف الشخصي
+                    </Link>
+                }
+            />
+        </>
     );
 }
-
-

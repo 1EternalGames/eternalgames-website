@@ -529,3 +529,58 @@ body.lightbox-active {
 .social-editor-content .ProseMirror p {
     margin: 0 !important;
 }
+
+/* --- PRINT STYLES --- */
+@media print {
+    @page { margin: 2cm; }
+    
+    /* Hide navigational and interactive elements */
+    header, footer, nav, 
+    .studioBar, .scrollToTopButton, 
+    .toast-container-global, 
+    .readingHud, .sidebar, 
+    .content-grid > *:not(main),
+    button, .filterButton, .navSearch {
+        display: none !important;
+    }
+
+    /* Reset background and colors for readability on paper */
+    body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 12pt;
+    }
+
+    /* Ensure text is black */
+    p, h1, h2, h3, h4, h5, h6, li, span, div {
+        color: #000 !important;
+        text-shadow: none !important;
+    }
+
+    /* Expand main content */
+    main {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Handle Images */
+    img {
+        max-width: 100% !important;
+        filter: none !important;
+        break-inside: avoid;
+    }
+
+    /* Links */
+    a {
+        text-decoration: underline;
+        color: #000 !important;
+    }
+    
+    /* Show URLs after links */
+    a[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: 0.8em;
+        color: #666;
+    }
+}

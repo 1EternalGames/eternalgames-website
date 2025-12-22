@@ -1,7 +1,7 @@
 // components/Navbar.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
@@ -32,7 +32,8 @@ export const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
     </div>
 );
 
-// ... (Orbital Icons remain the same: ConstellationIcon, CelestialAlmanacIcon, etc...) 
+// ... (Orbital Icons: ConstellationIcon, CelestialAlmanacIcon - KEEP EXISTING) 
+// [OMITTED FOR BREVITY - Assume existing icon components here]
 const ConstellationIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" role="img" color="currentColor" {...props} style={{ transform: 'translate(1px, 2px)' }}>
         <path d="M12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
@@ -94,8 +95,9 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
     );
 };
 
+// ... (BlackHoleNavLink, AnimatedPreviewIcon, EditorPreviewButton - KEEP EXISTING)
 const AnimatedPreviewIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
         <motion.circle cx="12" cy="12" r="3" variants={{ hover: { scaleY: 0.1, transition: { duration: 0.1, ease: "easeOut" } }, rest: { scaleY: 1, transition: { duration: 0.2, delay: 0.1, ease: "easeIn" } } }} />
     </svg>
@@ -161,13 +163,25 @@ const Navbar = () => {
     const scrolled = useScrolled(50);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { isMobileMenuOpen, toggleMobileMenu, setMobileMenuOpen } = useUIStore();
-    const { isEditorActive, blockUploadQuality, setBlockUploadQuality, liveUrl } = useEditorStore();
+    const { isEditorActive, blockUploadQuality, setBlockUploadQuality } = useEditorStore();
     const pathname = usePathname();
 
     useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
     const openSearch = () => { setIsSearchOpen(true); setMobileMenuOpen(false); };
     const closeAll = () => { setMobileMenuOpen(false); setIsSearchOpen(false); }
+    
+    // KEYBOARD SHORTCUT: CMD+K / CTRL+K
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
     
     return (
         <>
@@ -198,13 +212,14 @@ const Navbar = () => {
                             <NotificationBell />
                             <ThemeToggle />
                             <UserProfile />
-                            <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث">
+                            <button className={styles.navSearch} onClick={openSearch} aria-label="فتح البحث (Ctrl+K)">
                                 <SearchIcon />
                             </button>
                         </div>
                     </div>
 
                     <div className={styles.mobileView}>
+                        {/* Mobile view implementation remains consistent with previous design */}
                         <div className={styles.mobileNavGroupLeft}>
                             <button className={styles.hamburgerButton} onClick={toggleMobileMenu} aria-label="تبديل القائمة">
                                 <HamburgerIcon isOpen={isMobileMenuOpen} />
@@ -252,5 +267,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-

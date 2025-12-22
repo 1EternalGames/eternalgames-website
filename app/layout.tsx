@@ -15,7 +15,8 @@ import SpaceBackground from '@/components/ui/SpaceBackground';
 import type { Metadata } from 'next';
 import FPSAutoTuner from '@/components/FPSAutoTuner'; 
 import KonamiCode from '@/components/effects/KonamiCode';
-import GoogleAnalytics from '@/components/seo/GoogleAnalytics'; // IMPORT ADDED
+import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
+import SmoothScrolling from '@/components/ui/SmoothScrolling';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -103,26 +104,27 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
-          {/* Add GA4 here - Replace '' with your ID or env var */}
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <div style={{ position: 'relative', width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
-              <FPSAutoTuner /> 
-              <KonamiCode />
-              <SpaceBackground />
-              <ToastProvider />
-              <Lightbox />
-              <Navbar />
-              <main style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
-                <PageTransitionWrapper>
-                  {children}
-                </PageTransitionWrapper>
-              </main>
-              <Footer />
-              <StudioBar />
-              <ScrollToTopButton />
-            </div>
+            <SmoothScrolling>
+              <div style={{ position: 'relative', width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
+                <FPSAutoTuner /> 
+                <KonamiCode />
+                <SpaceBackground />
+                <ToastProvider />
+                <Lightbox />
+                <Navbar />
+                <main style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
+                  <PageTransitionWrapper>
+                    {children}
+                  </PageTransitionWrapper>
+                </main>
+                <Footer />
+                <StudioBar />
+                <ScrollToTopButton />
+              </div>
+            </SmoothScrolling>
           </ThemeProvider>
         </NextAuthProvider>
       </body>
