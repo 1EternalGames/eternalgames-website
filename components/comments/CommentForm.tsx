@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import ButtonLoader from '@/components/ui/ButtonLoader';
 import styles from './Comments.module.css';
+import { useToast } from '@/lib/toastStore'; // FIX: Import Toast
 
 export default function CommentForm({
     slug,
@@ -17,12 +18,14 @@ export default function CommentForm({
     slug: string;
     session: Session | null;
     parentId?: string;
-    onPostComment: (content: string, parentId?: string) => Promise<void>;
+    // Update type to reflect it returns a result object now
+    onPostComment: (content: string, parentId?: string) => Promise<any>; 
     onReplySuccess?: () => void;
 }) {
     const [commentText, setCommentText] = useState('');
     const [isPending, startTransition] = useTransition();
     const isButtonDisabled = isPending || commentText.trim().length === 0;
+    const { error: toastError } = useToast(); // FIX: Use Toast Hook
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -30,10 +33,19 @@ export default function CommentForm({
         if (content.trim().length === 0) return;
 
         startTransition(async () => {
-            await onPostComment(content, parentId);
-            setCommentText('');
-            if (parentId && onReplySuccess) {
-                onReplySuccess();
+            const result = await onPostComment(content, parentId);
+            
+            // FIX: Check result success
+            if (result && !result.success) {
+                // Show error toast if rate limited or validaton failed
+                toastError(result.error || "حدث خطأ أثناء نشر التعليق.");
+                // Do NOT clear text so user doesn't lose their comment
+            } else {
+                // Only clear on success
+                setCommentText('');
+                if (parentId && onReplySuccess) {
+                    onReplySuccess();
+                }
             }
         });
     };
@@ -49,7 +61,7 @@ export default function CommentForm({
                         name="comment"
                         placeholder="أدلِ برأيك..."
                         required
-                        className="profile-input" // This global class is okay here
+                        className="profile-input" 
                         disabled={isPending}
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
@@ -65,8 +77,3 @@ export default function CommentForm({
         </div>
     );
 }
-
-
-
-
-

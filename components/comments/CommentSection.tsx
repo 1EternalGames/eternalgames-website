@@ -9,7 +9,7 @@ import CommentForm from './CommentForm';
 import SignInPrompt from './SignInPrompt';
 import CommentList from './CommentList';
 import styles from './Comments.module.css';
-import { useInView } from 'framer-motion'; // FIX: Import for lazy loading
+import { useInView } from 'framer-motion';
 
 const addReplyToState = (comments: any[], parentId: string, reply: any): any[] => {
     return comments.map(comment => {
@@ -36,9 +36,7 @@ export default function CommentSection({
     const { data: session } = useSession();
     const typedSession = session as unknown as Session | null;
 
-    // FIX: Lazy Load Logic
     const containerRef = useRef(null);
-    // Trigger fetch when 10% of the comments section is visible once
     const isInView = useInView(containerRef, { once: true, amount: 0.1 });
 
     const shouldFetch = !initialComments;
@@ -47,7 +45,6 @@ export default function CommentSection({
     const currentPath = `/${contentType}/${slug}`;
 
     useEffect(() => {
-        // FIX: Only fetch if needed AND the user has scrolled it into view
         if (!shouldFetch || !isInView) return;
 
         const fetchComments = async () => {
@@ -77,8 +74,9 @@ export default function CommentSection({
         }
     );
 
+    // FIX: Changed return type to Promise<any> to pass result back to form
     const handlePostComment = async (content: string, parentId?: string) => {
-        if (!typedSession?.user?.id) return;
+        if (!typedSession?.user?.id) return { success: false, error: "Not authenticated" };
 
         const optimisticComment = {
             id: crypto.randomUUID(),
@@ -106,6 +104,9 @@ export default function CommentSection({
                 return [result.comment, ...currentComments.filter(c => c.id !== optimisticComment.id)];
             });
         }
+        
+        // Return result so CommentForm knows if it failed (e.g. Rate Limit)
+        return result;
     };
     
     const handleVoteUpdate = (commentId: string, newVotes: any[]) => {
@@ -174,5 +175,3 @@ export default function CommentSection({
         </div>
     );
 }
-
-

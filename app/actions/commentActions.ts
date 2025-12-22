@@ -4,15 +4,40 @@
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { VoteType, NotificationType } from '@/lib/generated/client';
-import { getAuthenticatedSession } from '@/lib/auth'; 
+import { getAuthenticatedSession } from '@/lib/auth';
+import { sensitiveLimiter } from '@/lib/rate-limit';
+import { commentSchema } from '@/lib/validations';
+import { headers } from 'next/headers';
 
 export async function postReplyOrComment(contentSlug: string, content: string, path: string, parentId?: string) {
     try {
         const session = await getAuthenticatedSession();
-        if (!content || content.trim().length === 0) return { success: false, error: 'لا يمكن نشر تعليق فارغ.' };
+        const userId = session.user.id;
+
+        // 1. Rate Limiting (IP + UserID)
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const limitKey = `comment-${userId}-${ip}`;
+        const limitCheck = await sensitiveLimiter.check(limitKey, 5); // Max 5 comments per minute
+        
+        if (!limitCheck.success) {
+            return { success: false, error: 'تم تجاوز حد التعليقات. يرجى الانتظار قليلاً.' };
+        }
+
+        // 2. Input Validation & Sanitization
+        const validation = commentSchema.safeParse({ content, contentSlug, parentId });
+        if (!validation.success) {
+            return { success: false, error: validation.error.issues[0].message };
+        }
+        
+        const safeData = validation.data;
 
         const newComment = await prisma.comment.create({
-            data: { contentSlug, content, authorId: session.user.id, parentId },
+            data: { 
+                contentSlug: safeData.contentSlug, 
+                content: safeData.content, 
+                authorId: userId, 
+                parentId: safeData.parentId || null 
+            },
             include: {
                 author: { select: { id: true, name: true, image: true, username: true } },
                 votes: true,
@@ -31,8 +56,8 @@ export async function postReplyOrComment(contentSlug: string, content: string, p
                 if (parentComment && parentComment.authorId !== session.user.id) {
                     await prisma.notification.create({
                         data: {
-                            userId: parentComment.authorId, // Recipient
-                            senderId: session.user.id,      // Triggered by
+                            userId: parentComment.authorId,
+                            senderId: session.user.id,
                             type: NotificationType.REPLY,
                             resourceId: newComment.id,
                             resourceSlug: contentSlug,
@@ -56,6 +81,8 @@ export async function postReplyOrComment(contentSlug: string, content: string, p
 export async function deleteComment(commentId: string) {
     try {
         const session = await getAuthenticatedSession();
+        // Validation for ID format could be added here if using uuids strictly
+        
         const commentToDelete = await prisma.comment.findUnique({
             where: { id: commentId },
             include: { _count: { select: { replies: true } } }
@@ -89,14 +116,22 @@ export async function deleteComment(commentId: string) {
 export async function updateComment(commentId: string, content: string) {
     try {
         const session = await getAuthenticatedSession();
-        if (!content || content.trim().length === 0) return { success: false, error: 'لا يمكن نشر تعليق فارغ.' };
+        
+        // Rate Limit Updates too
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const limitCheck = await sensitiveLimiter.check(`update-comment-${session.user.id}-${ip}`, 10);
+        if (!limitCheck.success) return { success: false, error: "مهلاً، أبطئ قليلاً." };
+
+        // Validation
+        const validation = commentSchema.pick({ content: true }).safeParse({ content });
+        if (!validation.success) return { success: false, error: validation.error.issues[0].message };
 
         const comment = await prisma.comment.findUnique({ where: { id: commentId }, select: { authorId: true, contentSlug: true } });
         if (!comment || comment.authorId !== session.user.id) return { success: false, error: 'غير مصرح لك.' };
 
         const updatedComment = await prisma.comment.update({
             where: { id: commentId },
-            data: { content },
+            data: { content: validation.data.content },
             include: {
                 author: { select: { id: true, name: true, image: true, username: true } },
                 votes: true,
@@ -116,6 +151,11 @@ export async function updateComment(commentId: string, content: string) {
 export async function voteOnComment(commentId: string, voteType: VoteType) {
     try {
         const session = await getAuthenticatedSession();
+        // Rate limit voting to prevent spam clicking
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const limitCheck = await sensitiveLimiter.check(`vote-${session.user.id}-${ip}`, 30); // 30 votes per minute
+        if (!limitCheck.success) throw new Error("تم تجاوز حد التصويت.");
+
         const existingVote = await prisma.commentVote.findUnique({ where: { userId_commentId: { userId: session.user.id, commentId } } });
         
         if (existingVote) {
@@ -149,5 +189,3 @@ export async function getReplies(parentId: string) {
         return { success: false, error: 'أبت الردودُ أن تُجلَب.' };
     }
 }
-
-

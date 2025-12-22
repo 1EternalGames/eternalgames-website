@@ -9,7 +9,8 @@ export default function CommentList({ comments, session, slug, onVoteUpdate, onP
     session: Session | null,
     slug: string,
     onVoteUpdate: (commentId: string, newVotes: any[]) => void,
-    onPostReply: (content: string, parentId?: string) => Promise<void>,
+    // FIX: Updated return type from Promise<void> to Promise<any>
+    onPostReply: (content: string, parentId?: string) => Promise<any>,
     onDeleteSuccess: (deletedId: string, wasDeleted: boolean, updatedComment?: any) => void,
     onUpdateSuccess: (updatedComment: any) => void,
 }) {
@@ -26,8 +27,8 @@ export default function CommentList({ comments, session, slug, onVoteUpdate, onP
                     slug={slug}
                     onVoteUpdate={onVoteUpdate}
                     onPostReply={onPostReply}
-                    onDeleteSuccess={onDeleteSuccess} // Pass down callback
-                    onUpdateSuccess={onUpdateSuccess} // Pass down callback
+                    onDeleteSuccess={onDeleteSuccess}
+                    onUpdateSuccess={onUpdateSuccess}
                 />
             ))}
         </div>

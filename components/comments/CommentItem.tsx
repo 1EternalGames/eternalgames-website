@@ -2,7 +2,7 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Session } from 'next-auth';
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition } from 'react';
 import { deleteComment, updateComment, getReplies } from '@/app/actions/commentActions';
 import ConfirmationModal from '../ConfirmationModal';
 import CommentVoteButtons from './CommentVoteButtons';
@@ -23,7 +23,8 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
     session: Session | null;
     slug: string;
     onVoteUpdate: (commentId: string, newVotes: any[]) => void;
-    onPostReply: (content: string, parentId?: string) => Promise<void>;
+    // FIX: Updated return type from Promise<void> to Promise<any>
+    onPostReply: (content: string, parentId?: string) => Promise<any>;
     onDeleteSuccess: (deletedId: string, wasDeleted: boolean, updatedComment?: any) => void,
     onUpdateSuccess: (updatedComment: any) => void,
 }) {
@@ -69,10 +70,8 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
     if (comment.isDeleted) { return ( <> <DeletedState /> {replyCount > 0 && ( <div className={styles.commentRepliesList}> {(replies || []).map((reply: any) => ( <CommentItem key={reply.id} comment={reply} session={session} slug={slug} onVoteUpdate={onVoteUpdate} onPostReply={onPostReply} onDeleteSuccess={onDeleteSuccess} onUpdateSuccess={onUpdateSuccess} /> ))} </div> )} </> ); }
 
     return ( <> <motion.div className={styles.commentItem} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}> <div className={styles.commentHeader}> <div className={styles.commentAuthorInfo}>
-        {/* FIX: Disable prefetch to avoid loading every commenter's profile */}
         <Link href={`/profile/${comment.author.username}`} prefetch={false}><Image src={comment.author.image || '/default-avatar.svg'} alt={comment.author.name || 'User Avatar'} width={40} height={40} className="user-avatar" /></Link>
         <div className={styles.authorAndTimestamp}>
-            {/* FIX: Disable prefetch here too */}
             <Link 
                 href={`/profile/${comment.author.username}`} 
                 prefetch={false}
@@ -101,5 +100,3 @@ export default function CommentItem({ comment, session, slug, onVoteUpdate, onPo
     )}
     </div> </motion.div> ) : ( <motion.div key="edit" variants={animationVariants} initial="initial" animate="animate" exit="exit" className={styles.commentEditForm}> <textarea defaultValue={comment.content} onChange={(e) => setEditText(e.target.value)} className="profile-input" disabled={isPending} autoFocus /> <div className={styles.commentEditActions}> <button onClick={handleUpdate} className="primary-button" disabled={isPending || editText.trim() === ''}>حفظ</button> <button onClick={() => setIsEditing(false)} className="outline-button" disabled={isPending}>إلغاء</button> </div> </motion.div> )} </AnimatePresence> <AnimatePresence> {isReplying && ( <motion.div className={styles.commentReplyFormContainer} variants={animationVariants} initial="initial" animate="animate" exit="exit"> <CommentForm slug={slug} session={session} parentId={comment.id} onPostComment={onPostReply} onReplySuccess={() => setIsReplying(false)} /> </motion.div> )} </AnimatePresence> {areRepliesVisible && ( <div className={styles.commentRepliesList}> {isLoadingReplies && <div className="spinner" />} {!isLoadingReplies && (replies).map((reply: any) => ( <CommentItem key={reply.id} comment={reply} session={session} slug={slug} onVoteUpdate={onVoteUpdate} onPostReply={onPostReply} onDeleteSuccess={onDeleteSuccess} onUpdateSuccess={onUpdateSuccess} /> ))} </div> )} </motion.div> <ConfirmationModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteConfirm} title="حذف التعليق" message="أمتأكدٌ من الحذف؟" /> </> );
 }
-
-

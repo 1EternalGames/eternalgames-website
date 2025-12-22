@@ -4,6 +4,7 @@ import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 const prismaClientSingleton = () => {
+    // Determine if we are using the pooled connection string
     const connectionString = process.env.DATABASE_URL
 
     if (!connectionString) {
@@ -12,15 +13,13 @@ const prismaClientSingleton = () => {
 
     const pool = new Pool({ 
         connectionString,
-        max: 10, 
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        max: 5, // REDUCE max connections to prevent exhaustion during dev
+        idleTimeoutMillis: 10000, // Close idle clients faster
+        connectionTimeoutMillis: 10000, // Fail fast if DB is sleeping
     })
     
-    // Create the adapter
     const adapter = new PrismaPg(pool)
     
-    // Pass the adapter to the client
     return new PrismaClient({ adapter })
 }
 

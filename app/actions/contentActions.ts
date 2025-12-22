@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import { getAuthenticatedSession } from '@/lib/auth';
 import { EngagementType } from '@/lib/generated/client';
 import { revalidateTag } from 'next/cache';
+import { standardLimiter } from '@/lib/rate-limit'; // Security Import
+import { headers } from 'next/headers';
 
 async function setEngagement(userId: string, contentId: number, contentType: string, engagementType: EngagementType, isEngaged: boolean) {
     const whereClause = {
@@ -27,7 +29,12 @@ async function setEngagement(userId: string, contentId: number, contentType: str
 export async function setBookmarkAction(contentId: number, contentType: string, isBookmarked: boolean) {
     try {
         const session = await getAuthenticatedSession();
-        // NOTE: We use the 'BOOKMARK' type for Wishlist behavior on 'release' items as well.
+        
+        // Rate Limit (10 requests per 10s is generous enough for clicking, but stops scripts)
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const limitCheck = await standardLimiter.check(`bookmark-${session.user.id}-${ip}`, 10);
+        if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
+
         await setEngagement(session.user.id, contentId, contentType, 'BOOKMARK', isBookmarked);
         return { success: true };
     } catch (error: any) {
@@ -39,6 +46,12 @@ export async function setBookmarkAction(contentId: number, contentType: string, 
 export async function setLikeAction(contentId: number, contentType: string, contentSlug: string, isLiked: boolean) {
     try {
         const session = await getAuthenticatedSession();
+
+        // Rate Limit
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const limitCheck = await standardLimiter.check(`like-${session.user.id}-${ip}`, 20); // Higher limit for rapid liking
+        if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
+
         await setEngagement(session.user.id, contentId, contentType, 'LIKE', isLiked);
         revalidateTag('engagement-scores', 'max');
         return { success: true };
@@ -52,6 +65,11 @@ export async function recordShareAction(contentId: number, contentType: string, 
     try {
         const session = await getAuthenticatedSession();
         const userId = session.user.id;
+
+        // Rate Limit (Strict - sharing is heavy)
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const limitCheck = await standardLimiter.check(`share-${userId}-${ip}`, 5);
+        if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
 
         await prisma.share.create({
             data: { userId, contentId, contentType },
@@ -69,5 +87,3 @@ export async function recordShareAction(contentId: number, contentType: string, 
         return { success: false, error: error.message || 'Could not record share.' };
     }
 }
-
-

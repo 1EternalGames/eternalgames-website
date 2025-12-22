@@ -1,60 +1,72 @@
-:root{
---bg-primary:#F9FAFB;
---bg-secondary:#FFFFFF;
---text-primary:#1F2937;
---text-secondary:#6B7280;
---accent:#00FFF0; /* Updated to Cyan */
---warning:#FFD700; /* Amber */
---critical:#DC2626; /* Crimson */
---overlay-color:rgba(249,250,251,0.7);
---border-color:#E5E7EB;
---nav-height:8rem;
---nav-height-scrolled:6rem;
+:root {
+  /* --- DEFAULT (DARK) --- */
+  /* Swapped: Dark is now the default for immediate painting */
+  --bg-primary: #0A0B0F; 
+  --bg-secondary: #14161D;
+  --text-primary: #E1E1E6;
+  --text-secondary: #7D808C;
+  --accent: #00FFF0; 
+  --warning: #FFD700; 
+  --critical: #DC2626; 
+  --overlay-color: rgba(10, 11, 15, 0.7);
+  --border-color: #2a2e3c;
+  --nav-height: 8rem;
+  --nav-height-scrolled: 6rem;
 }
-[data-theme="dark"]{
---bg-primary:#0A0B0F; /* Kept close to Void Black but respected "don't change background" instruction */
---bg-secondary:#14161D;
---text-primary:#E1E1E6;
---text-secondary:#7D808C;
---accent:#00FFF0; /* Cyan */
---warning:#FFD700; /* Amber */
---critical:#DC2626; /* Crimson */
---overlay-color:rgba(10,11,15,0.7);
---border-color:#2a2e3c;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
-/* THE FIX: Reset height to allow natural flow */
+[data-theme="light"] {
+  /* --- LIGHT THEME OVERRIDES --- */
+  --bg-primary: #F9FAFB;
+  --bg-secondary: #FFFFFF;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --accent: #00FFF0; /* Cyan maintained */
+  --warning: #FFD700; 
+  --critical: #DC2626; 
+  --overlay-color: rgba(249, 250, 251, 0.7);
+  --border-color: #E5E7EB;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 html, body {
   width: 100%;
 }
 
-html{
-font-size:62.5%;
-scroll-behavior:smooth;
-scrollbar-width:thin;
-scrollbar-color:var(--accent) transparent;
-direction: rtl;
-/* THE FIX: Restored overflow-x hidden on HTML to constrain scroll bounds and prevent footer overshoot */
-overflow-x: hidden;
+html {
+  font-size: 62.5%;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+  direction: rtl;
+  overflow-x: hidden;
+  
+  /* CRITICAL FIX: Paint the canvas immediately with the primary background */
+  background-color: var(--bg-primary);
 }
 
-body::-webkit-scrollbar{width:8px;}
-body::-webkit-scrollbar-track{background:transparent;}
-body::-webkit-scrollbar-thumb{background-color:var(--accent);border-radius:4px;}
-body{
-background-color: var(--bg-primary); /* Set to primary bg for light mode */
-color:var(--text-primary);
-font-family:var(--font-main), sans-serif;
-font-size:1.8rem;
-line-height:1.7;
-transition:background-color 0.3s ease,color 0.3s ease;
-/* THE FIX: Ensure body is relative but NOT a scroll container */
-position: relative;
+body::-webkit-scrollbar { width: 8px; }
+body::-webkit-scrollbar-track { background: transparent; }
+body::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 4px; }
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-main), sans-serif;
+  font-size: 1.8rem;
+  line-height: 1.7;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
 }
 
 [data-theme="dark"] body {
-  background-color: transparent; /* Transparent in dark mode to show SpaceBackground */
+  /* In dark mode, we allow transparency so the SpaceBackground (if visible) can shine through */
+  /* Note: html background color is still #0A0B0F behind this, preventing white flash */
+  background-color: transparent; 
 }
 
 /* --- NO GLASS MODE (Global Fallback) --- */
@@ -66,7 +78,7 @@ body.no-glass * {
 /* --- GROUNDBREAKING OPTIMIZATION: Render Culling --- */
 .gpu-cull {
     content-visibility: auto;
-    contain-intrinsic-size: 1px 500px; /* Estimates height to avoid scroll jumping */
+    contain-intrinsic-size: 1px 500px;
 }
 
 /* --- GROUNDBREAKING OPTIMIZATION: Texture Decoding --- */
@@ -107,14 +119,13 @@ overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;
 .page-container{padding-top:calc(var(--nav-height-scrolled) + 4rem);padding-bottom:6rem;min-height:80vh;}
 .page-title{font-size:4.2rem;font-weight:800;text-align:center;margin-bottom:4rem;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word;}
 
-/* THE FIX: Added padding and negative margin to expand the paint box for 3D elements */
 .content-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
   gap: 3rem;
   grid-auto-rows: 1fr;
-  padding: 3rem; /* Safe zone for 3D transforms */
-  margin: -3rem; /* Pull back to alignment */
+  padding: 3rem; 
+  margin: -3rem; 
 }
 
 .portable-text-content {
@@ -467,7 +478,6 @@ body.lightbox-active {
   .content-grid { 
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
-    /* OVERRIDE: Remove padding for mobile to prevent squishing */
   }
   .toast-container-global { bottom: 1.5rem; left: 1.5rem; right: 1.5rem !important; width: auto; }
   .primary-button, .outline-button { padding: 1.2rem 2rem; font-size: 1.6rem; }
