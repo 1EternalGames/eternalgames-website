@@ -1,7 +1,6 @@
 // next.config.ts
 
 // Define the Content Security Policy
-// This strict list prevents loading malicious scripts/images from unauthorized domains.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
@@ -22,7 +21,7 @@ const cspHeader = `
 const nextConfig = {
     reactStrictMode: true,
 
-    // SECURITY: Hardened Headers with CSP
+    // SECURITY: Hardened Headers with CSP + HSTS
     async headers() {
         return [
             {
@@ -30,7 +29,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: cspHeader.replace(/\n/g, ''), // Minify the string
+                        value: cspHeader.replace(/\n/g, ''),
                     },
                     {
                         key: 'X-Content-Type-Options',
@@ -51,6 +50,11 @@ const nextConfig = {
                     {
                         key: 'Permissions-Policy',
                         value: 'camera=(), microphone=(), geolocation=()',
+                    },
+                    // NEW: HSTS (Force HTTPS for 2 years)
+                    {
+                        key: 'Strict-Transport-Security',
+                        value: 'max-age=63072000; includeSubDomains; preload',
                     },
                 ],
             },

@@ -8,7 +8,7 @@ import { useToast } from '@/lib/toastStore';
 import { optimizeImageForUpload, UploadQuality } from '@/lib/image-optimizer';
 import { uploadSanityAssetAction } from '../../../actions';
 import avatarStyles from '../../../../components/ProfileEditForm.module.css';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
 
 const UploadIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24"> <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /> </svg> );
 
@@ -32,6 +32,16 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
     const fileInputRef = useRef<HTMLInputElement>(null);
     const toast = useToast();
 
+    // --- FIX: MEMORY LEAK CLEANUP ---
+    // Track blob URLs to revoke them when component unmounts or preview changes
+    useEffect(() => {
+        return () => {
+            if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
     useEffect(() => {
         setPreviewUrl(currentAssetUrl);
     }, [currentAssetUrl]);
@@ -46,6 +56,12 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
             try {
                 toast.info('جارٍ تهيئة الصورة...', 'left');
                 const { file: optimizedFile, finalQuality } = await optimizeImageForUpload(file, uploadQuality);
+                
+                // Clean up previous blob if exists
+                if (previewUrl && previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewUrl);
+                }
+
                 const localUrl = URL.createObjectURL(optimizedFile);
                 setPreviewUrl(localUrl);
 
@@ -57,6 +73,8 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
                 
                 if (result.success && result.asset) {
                     onImageChange(result.asset._id, result.asset.url);
+                    // We don't revoke localUrl here immediately to prevent flicker, 
+                    // but it will be cleaned up by the useEffect when currentAssetUrl updates and triggers a prop change
                     toast.success('رُفِعت الصورة الرئيسية.', 'left');
                 } else {
                     throw new Error(result.error || 'فشل رفع الصورة إلى Sanity.');
@@ -67,7 +85,7 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
                 toast.error(error.message || 'أخفقت تهيئة الصورة.', 'left');
             }
         });
-    }, [onImageChange, toast, currentAssetUrl, currentAssetId, uploadQuality]);
+    }, [onImageChange, toast, currentAssetUrl, currentAssetId, uploadQuality, previewUrl]);
     
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -78,6 +96,9 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
     }, [handleFile]);
 
     const handleClear = () => {
+        if (previewUrl && previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
+        }
         setPreviewUrl(null);
         onImageChange(null, null);
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -141,5 +162,3 @@ export function MainImageInput({ currentAssetId, currentAssetUrl, onImageChange,
         </>
     );
 }
-
-

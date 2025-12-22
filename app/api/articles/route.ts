@@ -5,6 +5,7 @@ import { paginatedArticlesQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 import { enrichContentList } from '@/lib/enrichment';
+import { standardLimiter } from '@/lib/rate-limit'; // Import Limiter
 
 const getCachedPaginatedArticles = unstable_cache(
     async (
@@ -22,13 +23,21 @@ const getCachedPaginatedArticles = unstable_cache(
     },
     ['paginated-articles-list'],
     { 
-        revalidate: false, // Infinite cache
-        tags: ['article', 'content'] // Revalidated on publish/edit
+        revalidate: false, 
+        tags: ['article', 'content'] 
     }
 );
 
 export async function GET(req: NextRequest) {
     try {
+        // --- RATE LIMITING ---
+        const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        const limitCheck = await standardLimiter.check(`api-articles-${ip}`, 20); // 20 reqs/10s per IP
+        if (!limitCheck.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+        // ---------------------
+
         const { searchParams } = new URL(req.url);
         
         const offset = parseInt(searchParams.get('offset') || '0');
@@ -53,7 +62,6 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        // OPTIMIZATION: Infinite CDN Cache (1 Year).
         response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
 
         return response;
@@ -63,5 +71,3 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch articles data' }, { status: 500 });
     }
 }
-
-

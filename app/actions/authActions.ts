@@ -4,28 +4,32 @@
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { passwordResetSchema } from '@/lib/validations'; // Import schema
-import { sensitiveLimiter } from '@/lib/rate-limit'; // Import rate limiter
+import { sensitiveLimiter } from '@/lib/rate-limit'; // Rate Limiter
+import { passwordResetSchema } from '@/lib/validations'; // Zod Schema
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
-// This would be your email sending function. For now, it logs to the console.
+// This would be your email sending function.
 async function sendPasswordResetEmail(email: string, token: string) {
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
-    console.log(`--- PASSWORD RESET EMAIL ---`);
-    console.log(`To: ${email}`);
-    console.log(`Link: ${resetLink}`);
-    console.log(`--------------------------`);
-    // In production, you would use a service like Resend, SendGrid, or Nodemailer here.
+    
+    // --- SECURITY FIX: REMOVED CONSOLE.LOG OF SECRETS ---
+    // Only log that an email *attempt* was made, never the token itself in production.
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV ONLY] Reset Link: ${resetLink}`);
+    } else {
+        console.log(`[Email Service] Sending password reset to ${email}`);
+        // TODO: Integrate real email provider here (e.g., Resend, SendGrid)
+        // await resend.emails.send({ ... })
+    }
 }
 
 export async function requestPasswordReset(email: string) {
     try {
         const ip = (await headers()).get('x-forwarded-for') || 'unknown';
-        const limitCheck = await sensitiveLimiter.check(`reset-req-${ip}`, 3); // 3 requests per minute
+        const limitCheck = await sensitiveLimiter.check(`reset-req-${ip}`, 3); 
         if (!limitCheck.success) return { success: false, message: 'محاولات كثيرة جدًا. انتظر قليلاً.' };
 
-        // Validate Email
         const emailValidation = z.string().email().safeParse(email);
         if (!emailValidation.success) return { success: false, message: 'البريد الإلكتروني غير صالح.' };
 
@@ -33,7 +37,7 @@ export async function requestPasswordReset(email: string) {
         const user = await prisma.user.findUnique({ where: { email: lowercasedEmail } });
         
         if (!user || !user.password) {
-            // Don't reveal if a user exists or not
+            // Security: Always return success to prevent Email Enumeration
             return { success: true, message: 'إن صَحَّ بريدُك، أتاك الرابط.' };
         }
 
@@ -65,7 +69,6 @@ export async function resetPassword(token: string, newPassword: string) {
         const limitCheck = await sensitiveLimiter.check(`reset-submit-${ip}`, 3);
         if (!limitCheck.success) return { success: false, message: 'محاولات كثيرة جدًا.' };
 
-        // Validate Input
         const validation = passwordResetSchema.safeParse({ token, newPassword });
         if (!validation.success) {
             return { success: false, message: validation.error.issues[0].message };

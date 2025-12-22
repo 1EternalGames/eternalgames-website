@@ -69,6 +69,10 @@ export default function VerticalImageEditor({ currentImageUrl, onImageChange, up
 
     const loadImage = (src: string) => {
         const img = new window.Image();
+        
+        // --- FIX: ALLOW CROSS-ORIGIN CANVAS ACCESS ---
+        img.crossOrigin = "anonymous";
+        
         img.src = src;
         img.onload = () => {
             const w = img.naturalWidth;
@@ -89,6 +93,10 @@ export default function VerticalImageEditor({ currentImageUrl, onImageChange, up
             setTransform({ x: 0, y: 0, scale: 1 });
             setLocalImageSrc(src);
             setIsEditing(true);
+        };
+        
+        img.onerror = () => {
+            toast.error("تعذر تحميل الصورة. قد تكون هناك مشكلة في المصدر.");
         };
     };
 
@@ -193,8 +201,14 @@ export default function VerticalImageEditor({ currentImageUrl, onImageChange, up
                 if (!ctx) throw new Error("Canvas context failed");
 
                 const img = new window.Image();
+                // --- FIX: CORS ---
+                img.crossOrigin = "anonymous";
                 img.src = localImageSrc;
-                await new Promise((resolve) => { img.onload = resolve; });
+                
+                await new Promise((resolve, reject) => { 
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
 
                 // Fill background
                 ctx.fillStyle = "#000";
@@ -243,7 +257,7 @@ export default function VerticalImageEditor({ currentImageUrl, onImageChange, up
 
             } catch (error) {
                 console.error(error);
-                toast.error("فشل حفظ الصورة");
+                toast.error("فشل حفظ الصورة - تحقق من الصلاحيات.");
             }
         });
     };
@@ -256,17 +270,11 @@ export default function VerticalImageEditor({ currentImageUrl, onImageChange, up
 
     const displayImageSrc = isEditing ? localImageSrc : currentImageUrl;
     
-    // CSS Transform Logic (The Fix)
-    // 1. responsiveScale adjusts the 800px virtual unit to current container pixels.
-    // 2. transform.x is in 800px units.
-    // 3. baseScale * transform.scale is the logical scale relative to 800px.
-    // We must apply responsiveScale to ALL positional and scalar values to map them to visual pixels.
-    
     const responsiveScale = containerWidth / 800;
     
     const previewTransform = isEditing 
         ? `translate(-50%, -50%) translate(${transform.x * responsiveScale}px, ${transform.y * responsiveScale}px) scale(${baseScale * transform.scale * responsiveScale})`
-        : `translate(-50%, -50%) scale(1)`; // Saved image is ALREADY cropped, so it fits cover perfectly
+        : `translate(-50%, -50%) scale(1)`; 
 
     return (
         <div className={styles.container}>
@@ -377,5 +385,3 @@ export default function VerticalImageEditor({ currentImageUrl, onImageChange, up
         </div>
     );
 }
-
-

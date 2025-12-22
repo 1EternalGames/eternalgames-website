@@ -6,6 +6,7 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 import { ScoreFilter } from '@/components/filters/ReviewFilters';
 import { enrichContentList } from '@/lib/enrichment';
+import { standardLimiter } from '@/lib/rate-limit'; // Import Limiter
 
 const getCachedPaginatedReviews = unstable_cache(
     async (
@@ -24,13 +25,21 @@ const getCachedPaginatedReviews = unstable_cache(
     },
     ['paginated-reviews-list'], 
     { 
-        revalidate: false, // Infinite cache
-        tags: ['review', 'content'] // Revalidated on publish/edit
+        revalidate: false, 
+        tags: ['review', 'content'] 
     }
 );
 
 export async function GET(req: NextRequest) {
     try {
+        // --- RATE LIMITING ---
+        const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        const limitCheck = await standardLimiter.check(`api-reviews-${ip}`, 20);
+        if (!limitCheck.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+        // ---------------------
+
         const { searchParams } = new URL(req.url);
         
         const offset = parseInt(searchParams.get('offset') || '0');
@@ -66,5 +75,3 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch reviews data' }, { status: 500 });
     }
 }
-
-

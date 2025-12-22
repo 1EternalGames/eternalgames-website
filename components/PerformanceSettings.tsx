@@ -75,7 +75,14 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                 <OptionButton label="الضبط التلقائي" isActive={store.isAutoTuningEnabled} onClick={store.toggleAutoTuning} Icon={AutoIcon} />
                 <OptionButton label="استجابة فورية" isActive={!store.isHoverDebounceEnabled} onClick={store.toggleHoverDebounce} Icon={BoltIcon} isAutoControlled={auto} />
                 <OptionButton label="تأثير الزجاج" isActive={store.isGlassmorphismEnabled} onClick={store.toggleGlassmorphism} Icon={BlurIcon} isAutoControlled={auto} />
-                <OptionButton label="إظهار الخلفية" isActive={store.isBackgroundVisible} onClick={store.toggleBackgroundVisibility} Icon={EyeIcon} disabled={isLightMode} isAutoControlled={auto} />
+                <OptionButton 
+                    label="إظهار الخلفية" 
+                    isActive={store.isBackgroundVisible} 
+                    onClick={store.toggleBackgroundVisibility} 
+                    Icon={EyeIcon} 
+                    disabled={isLightMode} 
+                    isAutoControlled={isMobile ? false : auto} 
+                />
                 <OptionButton label="بطاقات حية" isActive={store.isLivingCardEnabled} onClick={store.toggleLivingCard} Icon={CardIcon3D} isAutoControlled={auto} />
                 <OptionButton label="الوسوم الطائرة" isActive={store.isFlyingTagsEnabled} onClick={store.toggleFlyingTags} Icon={TagIcon} isAutoControlled={auto} />
                 <OptionButton label="إطارات مشعة" isActive={store.isCornerAnimationEnabled} onClick={store.toggleCornerAnimation} Icon={BorderIcon} isAutoControlled={auto} />

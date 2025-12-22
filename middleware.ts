@@ -1,45 +1,57 @@
 // middleware.ts
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export default withAuth(
-  function middleware(req) {
+export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
 
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
+  // 1. Get the token (Standard NextAuth way)
+  // You need to set NEXTAUTH_SECRET in .env for this to work
+  const token = await getToken({ 
+    req, 
+    secret: process.env.NEXTAUTH_SECRET 
+  });
 
-    // Double check: If they are on studio routes but lack roles (User role only)
-    if (path.startsWith('/studio') && token) {
-      const userRoles = (token.roles as string[]) || [];
-      const hasStudioAccess = userRoles.some(role => 
-        ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
-      );
+  // 2. Define Protected Routes
+  const isStudioRoute = path.startsWith('/studio');
+  const isApiRoute = path.startsWith('/api/blob') || path.startsWith('/api/translate');
+  const isWelcomeRoute = path.startsWith('/welcome');
 
-      if (!hasStudioAccess) {
-        // Redirect regular users to homepage if they try to access studio
-        return NextResponse.rewrite(new URL('/404', req.url));
-      }
+  // 3. Logic: If no token, redirect to login (or home)
+  if ((isStudioRoute || isApiRoute || isWelcomeRoute) && !token) {
+    // If trying to access API without auth, return 401
+    if (isApiRoute) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, 
+        headers: { 'content-type': 'application/json' } 
+      });
     }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token, // Returns true if logged in
-    },
+    // Otherwise redirect to home/login
+    return NextResponse.redirect(new URL('/', req.url));
   }
-);
 
-// Define which paths require authentication
+  // 4. Strict Role Check for Studio (The "Director Gate")
+  if (isStudioRoute && token) {
+    const userRoles = (token.roles as string[]) || [];
+    const hasStudioAccess = userRoles.some(role => 
+      ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
+    );
+
+    if (!hasStudioAccess) {
+      // User is logged in but NOT authorized for Studio -> Kick to home
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+  }
+
+  // 5. Allow request to proceed
+  return NextResponse.next();
+}
+
+// 6. Matcher Configuration
 export const config = {
   matcher: [
-    // Protect the entire Studio
-    "/studio/:path*",
-    // Protect Blob Upload API
-    "/api/blob/:path*",
-    // Protect Translation API
-    "/api/translate/:path*",
-    // Protect User onboarding
-    "/welcome",
+
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
