@@ -1,28 +1,14 @@
-import json
 import os
 
-# 1. Load package.json
-try:
-    with open('package.json', 'r') as f:
-        data = json.load(f)
+# 1. Delete the insecure/unused blob upload route (we use Server Actions now)
+# This removes a potential attack vector.
+if os.path.exists("app/api/blob/upload/route.ts"):
+    os.remove("app/api/blob/upload/route.ts")
+    print("Removed insecure route: app/api/blob/upload/route.ts")
 
-    # 2. Remove the broken dependency if it exists
-    if 'devDependencies' in data and '@types/xss' in data['devDependencies']:
-        del data['devDependencies']['@types/xss']
-    if 'dependencies' in data and '@types/xss' in data['dependencies']:
-        del data['dependencies']['@types/xss']
-
-    # 3. Save clean package.json
-    with open('package.json', 'w') as f:
-        json.dump(data, f, indent=2)
-    
-    print("Fixed package.json")
-
-except FileNotFoundError:
-    print("package.json not found, skipping fix.")
-
-# 4. Install correctly
-os.system("npm install zod xss")
-
-# 5. Ensure lib directory exists
-os.makedirs("lib", exist_ok=True)
+# 2. Remove the folder if empty
+if os.path.exists("app/api/blob/upload"):
+    try:
+        os.rmdir("app/api/blob/upload")
+    except:
+        pass # Folder not empty

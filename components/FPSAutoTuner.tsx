@@ -3,21 +3,30 @@
 
 import { useEffect, useRef } from 'react';
 import { usePerformanceStore, PerformanceTier } from '@/lib/performanceStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 // --- CONFIGURATION ---
-const CHECK_INTERVAL = 300;
-const WARMUP_PERIOD = 800;
-const COOLDOWN_AFTER_CHANGE = 3000;
+const CHECK_INTERVAL = 500; // Increased to average out spikes
+const WARMUP_PERIOD = 3000; // Significantly increased to let mobile browsers settle
+const COOLDOWN_AFTER_CHANGE = 5000; // Longer cooldown to prevent oscillation
 
-// --- THRESHOLDS ---
-const FPS_CRITICAL = 25;
-const FPS_BAD = 45;
-const FPS_GOOD = 58;
+// --- DESKTOP THRESHOLDS ---
+const DESKTOP_FPS_CRITICAL = 25;
+const DESKTOP_FPS_BAD = 48;
+const DESKTOP_FPS_GOOD = 58;
+
+// --- MOBILE THRESHOLDS ---
+// Mobile browsers often throttle or have varying refresh rates (e.g. 120hz vs 60hz vs 30hz power save)
+// We allow a lower baseline before killing effects.
+const MOBILE_FPS_CRITICAL = 20;
+const MOBILE_FPS_BAD = 35; 
+const MOBILE_FPS_GOOD = 55;
 
 // --- STREAK CONFIG ---
-const REQUIRED_GOOD_STREAK = 20;
+const REQUIRED_GOOD_STREAK = 15;
 
 export default function FPSAutoTuner() {
+    const isMobile = useIsMobile();
     const { 
         isAutoTuningEnabled, 
         setPerformanceTier,
@@ -82,13 +91,15 @@ export default function FPSAutoTuner() {
             // @ts-ignore
             const memory = navigator.deviceMemory || 4; 
             
-            if (cores < 4 || memory < 4) {
+            // Relaxed initial hardware check
+            if (cores < 4 || memory < 2) {
                 console.log(`[AutoTuner] Weak Hardware Detected (${cores} cores, ${memory}GB RAM). Initializing at Low Tier.`);
                 setPerformanceTier(2);
-            } else if (cores < 6) {
-                console.log(`[AutoTuner] Mid-Range Hardware Detected (${cores} cores). Initializing at Medium Tier.`);
+            } else if (cores < 6 && memory < 4) {
+                console.log(`[AutoTuner] Mid-Range Hardware Detected. Initializing at Medium Tier.`);
                 setPerformanceTier(3);
             } else {
+                // Default to Ultra for capable devices
                 setPerformanceTier(5);
             }
         }
@@ -116,6 +127,7 @@ export default function FPSAutoTuner() {
             const elapsed = now - lastCheckTime.current;
 
             if (elapsed > 2000) {
+                // If elapsed is huge (tab inactive), reset
                 lastCheckTime.current = now;
                 framesSinceCheck.current = 0;
                 return;
@@ -130,13 +142,19 @@ export default function FPSAutoTuner() {
                 const timeSinceChange = now - lastChangeTime.current;
                 const timeSinceActivity = now - lastActivityTime.current;
 
+                // Thresholds based on device type
+                const fpsCritical = isMobile ? MOBILE_FPS_CRITICAL : DESKTOP_FPS_CRITICAL;
+                const fpsBad = isMobile ? MOBILE_FPS_BAD : DESKTOP_FPS_BAD;
+                const fpsGood = isMobile ? MOBILE_FPS_GOOD : DESKTOP_FPS_GOOD;
+
                 // Is the user actively doing something? (interacting within last 1 second)
                 const isUserActive = timeSinceActivity < 1000;
 
                 if (timeSinceStart > WARMUP_PERIOD && timeSinceChange > COOLDOWN_AFTER_CHANGE) {
                     
-                    // --- DOWNGRADE LOGIC (Always active) ---
-                    if (fps < FPS_CRITICAL) {
+                    // --- DOWNGRADE LOGIC ---
+                    if (fps < fpsCritical) {
+                        // Critical drop: Dump 2 tiers immediately
                         if (currentTier.current > 1) {
                             const targetTier = Math.max(1, currentTier.current - 2) as PerformanceTier;
                             console.warn(`[AutoTuner] 🚨 CRITICAL DROP (${fps} FPS). Dumping to Tier ${targetTier}`);
@@ -145,7 +163,8 @@ export default function FPSAutoTuner() {
                             goodStreak.current = 0;
                         }
                     }
-                    else if (fps < FPS_BAD) {
+                    else if (fps < fpsBad) {
+                        // Bad performance: Drop 1 tier
                         if (currentTier.current > 0) {
                             const targetTier = (currentTier.current - 1) as PerformanceTier;
                             console.log(`[AutoTuner] Lag detected (${fps} FPS). Dropping to Tier ${targetTier}`);
@@ -156,7 +175,7 @@ export default function FPSAutoTuner() {
                     }
                     
                     // --- UPGRADE LOGIC (Interaction Dependent) ---
-                    else if (fps >= FPS_GOOD) {
+                    else if (fps >= fpsGood) {
                         if (isUserActive) {
                             goodStreak.current++;
 
@@ -183,7 +202,7 @@ export default function FPSAutoTuner() {
 
         rafId.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafId.current);
-    }, [isAutoTuningEnabled, setPerformanceTier]);
+    }, [isAutoTuningEnabled, setPerformanceTier, isMobile]);
 
     return null;
 }
