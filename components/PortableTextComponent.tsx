@@ -127,12 +127,16 @@ const SanityImageComponent = ({value}: {value: any}) => {
   const blurDataURL = asset.metadata?.lqip
 
   const optimizedSrc = urlFor(asset).width(1920).auto('format').url()
-
   const fullResSrc = urlFor(asset).auto('format').url()
 
   return (
-    <div style={{margin: '4rem 0'}}>
-      <div onClick={() => openLightbox([fullResSrc], 0)} className="image-lightbox-trigger">
+    <figure style={{ margin: '4rem 0', display: 'block' }}>
+      <div 
+        onClick={() => openLightbox([fullResSrc], 0)} 
+        className="image-lightbox-trigger"
+        role="button"
+        aria-label="View full size image"
+      >
         <NextImage
           loader={sanityLoader}
           src={optimizedSrc}
@@ -150,7 +154,18 @@ const SanityImageComponent = ({value}: {value: any}) => {
           }}
         />
       </div>
-    </div>
+      {alt && (
+        <figcaption style={{ 
+            textAlign: 'center', 
+            color: 'var(--text-secondary)', 
+            fontSize: '1.4rem', 
+            marginTop: '1rem',
+            fontStyle: 'italic'
+        }}>
+            {alt}
+        </figcaption>
+      )}
+    </figure>
   )
 }
 
@@ -196,15 +211,13 @@ const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock
 
 export default function PortableTextComponent({
   content,
-  colorDictionary, // Allow undefined
+  colorDictionary, 
 }: {
   content: any[]
   colorDictionary?: ColorMapping[]
 }) {
   if (!content) return null
 
-  // --- DEFENSIVE CODING ---
-  // Ensure colorDictionary is an array to prevent .map crashes
   const safeColorDictionary = Array.isArray(colorDictionary) ? colorDictionary : [];
 
   const components: PortableTextComponents = useMemo(() => {
@@ -298,5 +311,3 @@ export default function PortableTextComponent({
     </div>
   )
 }
-
-

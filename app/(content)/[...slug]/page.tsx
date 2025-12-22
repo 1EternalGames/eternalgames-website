@@ -7,6 +7,7 @@ import { getCachedContentAndDictionary, getCachedMetadata } from '@/lib/sanity.f
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 import JsonLd from '@/components/seo/JsonLd';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // IMPORT ADDED
 import { urlFor } from '@/sanity/lib/image';
 
 export const dynamic = 'force-static';
@@ -15,6 +16,13 @@ const typeMap: Record<string, string> = {
     reviews: 'review',
     articles: 'article',
     news: 'news',
+};
+
+// Map URL segments to Arabic labels for Breadcrumbs
+const sectionLabelMap: Record<string, string> = {
+    reviews: 'المراجعات',
+    articles: 'المقالات',
+    news: 'الأخبار',
 };
 
 function generateStructuredData(item: any, type: string, url: string) {
@@ -99,10 +107,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (!item) return {};
     
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
-    
-    // UPDATED: Point to the new API route for dynamic OG image generation
     const ogImageUrl = `${siteUrl}/api/og?slug=${slug}`;
-        
     const canonicalUrl = `${siteUrl}/${section}/${slug}`;
 
     return { 
@@ -165,9 +170,17 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
     const jsonLdData = generateStructuredData(enrichedItem, sanityType, `${siteUrl}/${section}/${slug}`);
 
+    // Build Breadcrumbs
+    const breadcrumbItems = [
+        { name: 'الرئيسية', item: '/' },
+        { name: sectionLabelMap[section] || section, item: `/${section}` },
+        { name: enrichedItem.title, item: `/${section}/${slug}` }
+    ];
+
     return (
         <>
             <JsonLd data={jsonLdData} />
+            <BreadcrumbJsonLd items={breadcrumbItems} />
             <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
                  <CommentSection 
                     slug={slug} 

@@ -13,7 +13,9 @@ import ScrollToTopButton from '@/components/ui/ScrollToTopButton';
 import PageTransitionWrapper from '@/components/PageTransitionWrapper';
 import SpaceBackground from '@/components/ui/SpaceBackground';
 import type { Metadata } from 'next';
-import FPSAutoTuner from '@/components/FPSAutoTuner'; // IMPORT ADDED
+import FPSAutoTuner from '@/components/FPSAutoTuner'; 
+import KonamiCode from '@/components/effects/KonamiCode';
+import GoogleAnalytics from '@/components/seo/GoogleAnalytics'; // IMPORT ADDED
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -33,6 +35,9 @@ export const metadata: Metadata = {
   description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
   alternates: {
     canonical: './',
+    types: {
+      'application/rss+xml': [{ url: '/feed.xml', title: 'EternalGames RSS Feed' }],
+    },
   },
   openGraph: {
     title: {
@@ -62,9 +67,8 @@ export const metadata: Metadata = {
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
     images: [`${siteUrl}/og.png`],
   },
-  // SEO: Verification for Google Search Console
   verification: {
-    google: 'YOUR_GOOGLE_VERIFICATION_CODE', // Replace this after getting it from Search Console
+    google: 'YOUR_GOOGLE_VERIFICATION_CODE', 
     yandex: 'YOUR_YANDEX_VERIFICATION_CODE',
   },
   robots: {
@@ -80,7 +84,6 @@ export const metadata: Metadata = {
   },
 };
 
-// FIX: Removed async, getServerSession, and Prisma. This layout is now STATIC.
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
@@ -100,15 +103,17 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
+          {/* Add GA4 here - Replace '' with your ID or env var */}
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-            {/* THE FIX: Added overflowX: 'clip' to constrain layout overflow */}
             <div style={{ position: 'relative', width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
-              <FPSAutoTuner /> {/* MOUNTED AUTO TUNER */}
+              <FPSAutoTuner /> 
+              <KonamiCode />
               <SpaceBackground />
               <ToastProvider />
               <Lightbox />
               <Navbar />
-              {/* THE FIX: Added overflow: 'clip' here. This prevents negative margins in children from extending the scroll height past the footer. */}
               <main style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                 <PageTransitionWrapper>
                   {children}
