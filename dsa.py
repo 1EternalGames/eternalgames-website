@@ -1,86 +1,36 @@
 import os
-import shutil
 
-# 1. Determine the correct location (Root or src/)
-target_dir = "."
-if os.path.exists("src") and os.path.isdir("src"):
-    target_dir = "src"
+# 1. Define the ONLY valid location
+valid_middleware = os.path.abspath("middleware.ts")
 
-correct_path = os.path.join(target_dir, "middleware.ts")
+print("Scanning for rogue middleware files...")
 
-# 2. List of "Illegal" locations for middleware in Next.js 13+
-illegal_locations = [
-    "app/middleware.ts",
-    "app/middleware.js",
-    "pages/middleware.ts",
-    "pages/middleware.js",
-    "middleware.ts", # If using src/, root is illegal
-    "middleware.js", # If using src/, root is illegal
-    "src/app/middleware.ts", # Cannot be inside app
-    "_middleware.ts", # Old convention
-    "app/_middleware.ts"
-]
+# Walk through every folder
+for root, dirs, files in os.walk("."):
+    # Skip node_modules and .git and .next
+    if "node_modules" in dirs:
+        dirs.remove("node_modules")
+    if ".git" in dirs:
+        dirs.remove(".git")
+    if ".next" in dirs:
+        dirs.remove(".next")
 
-# 3. Content of the middleware (to ensure we don't lose it)
-middleware_content = """import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+    for file in files:
+        # Case insensitive check for "middleware"
+        if "middleware" in file.lower() and (file.endswith(".ts") or file.endswith(".js")):
+            full_path = os.path.abspath(os.path.join(root, file))
+            
+            # If it's NOT the root middleware.ts, DESTROY IT
+            if full_path != valid_middleware:
+                try:
+                    os.remove(full_path)
+                    print(f"❌ DELETED rogue file: {full_path}")
+                except Exception as e:
+                    print(f"⚠️ Could not delete {full_path}: {e}")
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
+print("Cleanup complete.")
 
-    if (path.startsWith('/studio') && token) {
-      const userRoles = (token.roles as string[]) || [];
-      const hasStudioAccess = userRoles.some(role => 
-        ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role)
-      );
-
-      if (!hasStudioAccess) {
-        return NextResponse.rewrite(new URL('/', req.url));
-      }
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-  }
-);
-
-export const config = {
-  matcher: [
-    "/studio/:path*",
-    "/api/blob/:path*",
-    "/api/translate/:path*",
-    "/welcome",
-  ],
-};
-"""
-
-# 4. Cleanup Logic
-print(f"Targeting correct location: {correct_path}")
-
-# If targeting src/middleware.ts, remove root/middleware.ts first
-if target_dir == "src":
-    if os.path.exists("middleware.ts"):
-        os.remove("middleware.ts")
-        print("Removed root middleware.ts (Moving to src/)")
-
-# Check and remove illegal files
-for loc in illegal_locations:
-    # Don't delete the target if it matches the list (unlikely given list logic)
-    if os.path.normpath(loc) == os.path.normpath(correct_path):
-        continue
-        
-    if os.path.exists(loc):
-        os.remove(loc)
-        print(f"DELETED CONFLICTING FILE: {loc}")
-
-# 5. Write the correct file fresh
-with open(correct_path, "w") as f:
-    f.write(middleware_content)
-
-print(f"SUCCESS: Middleware secured at {correct_path}")
+# 2. Create the NEW 'Pure' Middleware (No NextAuth wrapper)
+# This removes the dependency on the deprecated export style
+with open("middleware.ts", "w", encoding='utf-8') as f:
+    f.write("") # Clear file content for overwrite

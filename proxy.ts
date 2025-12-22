@@ -1,13 +1,13 @@
-// middleware.ts
+// proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-export async function middleware(req: NextRequest) {
+// Next.js 16 requires this function to be named 'proxy' or default exported
+export default async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   // 1. Get the token (Standard NextAuth way)
-  // You need to set NEXTAUTH_SECRET in .env for this to work
   const token = await getToken({ 
     req, 
     secret: process.env.NEXTAUTH_SECRET 
@@ -51,7 +51,13 @@ export async function middleware(req: NextRequest) {
 // 6. Matcher Configuration
 export const config = {
   matcher: [
-
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
