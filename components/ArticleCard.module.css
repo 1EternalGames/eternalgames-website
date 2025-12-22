@@ -324,7 +324,17 @@ a.creditCapsule:active { transform: scale(0.95); }
 .creditCapsule :global(span) { font-size: 1.2rem; font-weight: 700; color: #fff; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1.2rem; padding-right: 0.8rem; transition: color 0.4s ease; }
 .satelliteField { position: absolute; inset: -100px; pointer-events: none; z-index: 100; overflow: visible; transform-style: preserve-3d; }
 .satelliteShard { position: absolute; padding: 0; background: transparent; pointer-events: none; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
-.satelliteShardLink { display: flex; align-items: center; justify-content: center; padding: 0.4rem 1rem; background: #000; border: 2px solid var(--accent); color: var(--accent); font-family: var(--font-ui); font-size: 1.2rem; font-weight: 800; border-radius: 6px; white-space: nowrap; box-shadow: 0 15px 40px rgba(0,0,0,0.8); filter: drop-shadow(0 0 10px rgba(0,255,240,0.3)); text-decoration: none; transition: background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; cursor: pointer; pointer-events: auto; position: relative; z-index: 101; }
+
+.satelliteShardLink { 
+    display: flex; align-items: center; justify-content: center; 
+    padding: 0.4rem 1rem; background: #000; border: 2px solid var(--accent); 
+    color: var(--accent); font-family: var(--font-ui); font-size: 1.2rem; 
+    font-weight: 800; border-radius: 6px; white-space: nowrap; 
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8); filter: drop-shadow(0 0 10px rgba(0,255,240,0.3)); 
+    text-decoration: none; 
+    transition: background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; 
+    cursor: pointer; pointer-events: auto; position: relative; z-index: 101; 
+}
 .satelliteShardLink.small { padding: 0.2rem 0.6rem; font-size: 1rem; border-width: 1px; }
 
 /* FIX: Mobile Active State for Tags */
@@ -336,6 +346,19 @@ a.creditCapsule:active { transform: scale(0.95); }
 }
 
 @media (hover: hover) { .satelliteShardLink:hover { background-color: var(--accent); color: #000; transform: scale(1.15) translateY(-3px); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent); z-index: 200; } }
+
+/* NO GLASS HOVER FIXES */
+:global(body.no-glass) .satelliteShardLink:hover {
+    background-color: var(--accent) !important;
+    color: #000 !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent) !important;
+}
+:global(body.no-glass) .satelliteShardLink:active {
+    background-color: var(--accent) !important;
+    color: #000 !important;
+    border-color: var(--accent) !important;
+}
 
 .dateReadout { font-family: var(--font-ui); font-size: 1.1rem; color: rgba(255,255,255,0.7); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem; pointer-events: none; }
 .techDecoration { display: flex; gap: 5px; padding: 0.5rem 0; justify-content: flex-end; pointer-events: none; }
@@ -368,4 +391,24 @@ a.creditCapsule:active { transform: scale(0.95); }
         -webkit-backdrop-filter: none !important;
         background-color: rgba(10, 11, 15, 0.95);
     }
+}
+
+/* NO GLASS HOVER FIXES */
+:global(body.no-glass) .livingCardWrapper:hover .creditCapsule,
+:global(body.no-glass) .livingCardWrapper.activeState .creditCapsule {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #000 !important;
+    box-shadow: none !important;
+}
+
+:global(body.no-glass) .livingCardWrapper:hover .capsuleIcon,
+:global(body.no-glass) .livingCardWrapper.activeState .capsuleIcon {
+    background-color: #000 !important;
+    color: var(--accent) !important;
+}
+
+:global(body.no-glass) .livingCardWrapper:hover .creditCapsule :global(span),
+:global(body.no-glass) .livingCardWrapper.activeState .creditCapsule :global(span) {
+    color: #000 !important;
 }

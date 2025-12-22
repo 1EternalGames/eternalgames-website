@@ -62,7 +62,6 @@
     pointer-events: none;
 }
 
-/* ... (rest of the file remains unchanged) ... */
 .newsCard::before {
     content: '';
     position: absolute;
@@ -372,9 +371,18 @@ a.creatorCapsule:active { transform: scale(0.95); }
     color: var(--accent);
 }
 
+/* NO GLASS OVERRIDES */
 :global(body.no-glass) .satelliteShardLink {
     backdrop-filter: none !important;
     background: #000 !important;
+}
+
+/* THE DEFINITIVE FIX: Explicitly define hover state for no-glass mode to override the !important above */
+:global(body.no-glass) .satelliteShardLink.clickable:hover {
+    background-color: var(--accent) !important;
+    color: #000 !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent) !important;
 }
 
 .satelliteShardLink.small {
@@ -403,6 +411,13 @@ a.creatorCapsule:active { transform: scale(0.95); }
     color: #000;
     box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent);
     transform: scale(0.95);
+}
+
+/* NO GLASS ACTIVE FIX */
+:global(body.no-glass) .satelliteShardLink.clickable:active {
+    background-color: var(--accent) !important;
+    color: #000 !important;
+    border-color: var(--accent) !important;
 }
 
 .satelliteShardLink.static {
