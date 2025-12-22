@@ -33,11 +33,7 @@
     .spotlightGrid {
         gap: 2rem;
         /* Reset on mobile */
-        padding: 0;
-        margin: 0;
-        width: 100%;
         margin-bottom: 3rem;
         /* Reset pointer events on mobile where cull hack is disabled */
-        pointer-events: auto;
     }
 }

@@ -566,9 +566,6 @@
         --center-width: 65vw; --side-width: 45vw; min-height: 420px; 
         /* Reset on mobile */
         padding-top: 5.5rem; padding-bottom: 8rem; 
-        padding-left: 0; padding-right: 0;
-        margin: 0;
-        width: 100%;
     }
     .cardContent { padding: 1.5rem; }
     .cardContent h3 { font-size: 1.8rem; }

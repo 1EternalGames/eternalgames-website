@@ -73,9 +73,5 @@
 @media (max-width: 768px) {
     .itemList {
         /* Reset on mobile */
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        pointer-events: auto;
     }
 }

@@ -70,10 +70,6 @@
         gap: 2rem;
         
         /* Reset Expansion on mobile */
-        padding: 0;
-        margin: 0 auto;
-        width: 100%;
-        pointer-events: auto;
     }
     .chronoTimelineSections {
         padding-right: 1.5rem;

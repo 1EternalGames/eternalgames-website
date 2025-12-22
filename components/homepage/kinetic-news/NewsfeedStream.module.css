@@ -65,11 +65,7 @@
 @media (max-width: 768px) {
     .streamContainer {
         /* Reset hack for mobile to avoid horizontal scroll if not handled */
-        padding: 0;
-        margin: 0;
-        width: 100%;
         gap: 2rem;
-        pointer-events: auto;
     }
     .streamContainer::before {
         display: none;

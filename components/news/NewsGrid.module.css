@@ -5,13 +5,25 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 3rem;
     grid-auto-rows: 1fr;
+
+    /* GPU CULL FIX: Expand render boundary to prevent clipping */
+    padding: 10rem;
+    margin: -10rem;
+    width: calc(100% + 20rem);
+    
+    /* FIX: Prevent padding from capturing mouse events */
+    pointer-events: none;
+}
+
+/* Restore interaction */
+.newsGrid > * {
+    pointer-events: auto;
 }
 
 @media (max-width: 768px) {
     .newsGrid {
         grid-template-columns: 1fr;
         gap: 2rem;
+        /* Mobile inherits the expansion hack to prevent clipping */
     }
 }
-
-

@@ -31,8 +31,7 @@ const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) =>
   
 const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps[], onActiveIndexChange: (index: number) => void }) => {
     const [[page, direction], setPage] = useState([0, 0]);
-    const router = useRouter();
-    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    // Removed unused router/store hooks since ArticleCard handles navigation internally
     
     const paginate = (newDirection: number) => {
         const newIndex = (page + newDirection + articles.length) % articles.length;
@@ -42,42 +41,39 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
 
     const activeArticle = articles[page];
     const layoutIdPrefix = "articles-showcase";
-    const handleClick = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setPrefix(layoutIdPrefix);
-        router.push(`/articles/${activeArticle.slug}`, { scroll: false });
-    };
-    
+
+    // Standard slide variants
     const variants = {
-        enter: (direction: number) => ({ opacity: 0, x: direction > 0 ? 100 : -100 }),
-        center: { opacity: 1, x: 0 },
-        exit: (direction: number) => ({ opacity: 0, x: direction < 0 ? 100 : -100 }),
+        enter: (direction: number) => ({ opacity: 0, x: direction > 0 ? 50 : -50, scale: 0.9 }),
+        center: { opacity: 1, x: 0, scale: 1 },
+        exit: (direction: number) => ({ opacity: 0, x: direction < 0 ? 50 : -50, scale: 0.9 }),
     };
 
     return (
         <div className={styles.mobileShowcaseContainer}>
              <AnimatePresence initial={false} custom={direction} mode="wait">
-                <motion.div key={page} custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className={styles.mobileShowcaseCardWrapper} transition={{ duration: 0.4, ease: 'easeInOut' }}>
-                    <motion.div
-                        layoutId={`${layoutIdPrefix}-card-container-${activeArticle.legacyId}`}
-                        onClick={handleClick}
-                        className={`no-underline ${styles.showcaseCardLink}`}
-                    >
-                        <motion.div layoutId={`${layoutIdPrefix}-card-image-${activeArticle.legacyId}`} className={styles.showcaseCardImageWrapper}>
-                            <Image 
-                                loader={sanityLoader}
-                                src={activeArticle.imageUrl} 
-                                alt={activeArticle.title} 
-                                fill 
-                                sizes="80vw" 
-                                style={{ objectFit: 'cover' }} 
-                                className={styles.showcaseCardImage}
-                            />
-                        </motion.div>
-                        <div className={styles.showcaseCardContent}><motion.h3 layoutId={`${layoutIdPrefix}-card-title-${activeArticle.legacyId}`} className={styles.showcaseCardTitle}>{activeArticle.title}</motion.h3><p className={styles.showcaseCardGame}>{activeArticle.game}</p></div>
-                    </motion.div>
+                <motion.div 
+                    key={page} 
+                    custom={direction} 
+                    variants={variants} 
+                    initial="enter" 
+                    animate="center" 
+                    exit="exit" 
+                    className={styles.mobileShowcaseCardWrapper} 
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    style={{ height: '100%', width: '100%' }}
+                >
+                    {/* THE FIX: Use ArticleCard directly to get all visual features (3D, Tags, Credits, Scanlines) */}
+                    <ArticleCard 
+                        article={activeArticle}
+                        layoutIdPrefix={layoutIdPrefix}
+                        isPriority={true}
+                        disableLivingEffect={false} // Ensure it's "alive" on mobile
+                    />
                 </motion.div>
             </AnimatePresence>
+            
+            {/* Navigation Arrows */}
             <button className={`${styles.showcaseArrow} ${styles.left}`} onClick={() => paginate(-1)}><ArrowIcon direction="left" /></button>
             <button className={`${styles.showcaseArrow} ${styles.right}`} onClick={() => paginate(1)}><ArrowIcon direction="right" /></button>
         </div>

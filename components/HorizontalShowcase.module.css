@@ -31,11 +31,13 @@
 /* --- Desktop Horizontal Showcase --- */
 .horizontalShowcaseWrapper {
   position: relative;
-  height: 450px;
+  height: 500px; /* Increased height */
   display: flex;
   align-items: center;
-  overflow: visible; /* Allow satellites to fly out */
+  overflow: visible; 
   cursor: grab;
+  /* THE FIX: Add padding-top to push cards down */
+  padding-top: 5rem;
 }
 .horizontalShowcaseWrapper:active {
   cursor: grabbing;
@@ -146,15 +148,18 @@
     transition: all 0.3s ease;
     z-index: 20; 
     pointer-events: none;
-    /* GPU FIX: Removed will-change */
 }
 
-/* GPU FIX: Only hint GPU on hover */
 .showcaseCardLink:hover .cyberCorner {
-    will-change: width, height, border-color;
+    width: calc(100% + 2px);
+    height: calc(100% + 2px);
+    border-radius: 12px;
+    border-color: var(--accent);
+    filter: drop-shadow(0 0 4px var(--accent));
+    border-right: none;
+    border-bottom: none;
 }
 
-/* PERFORMANCE OVERRIDE */
 :global(.noCornerAnimation) .cyberCorner {
     display: none !important;
 }
@@ -165,17 +170,6 @@
 }
 .showcaseCardLink:hover .monolithFrame::after {
     opacity: 1; /* Fade in shadow */
-}
-
-/* Active State for Corner */
-.showcaseCardLink:hover .cyberCorner {
-    width: calc(100% + 2px);
-    height: calc(100% + 2px);
-    border-radius: 12px;
-    border-color: var(--accent);
-    filter: drop-shadow(0 0 4px var(--accent));
-    border-right: none;
-    border-bottom: none;
 }
 
 .showcaseCardLink:hover .showcaseCardImage { transform: scale(1.1); }
@@ -324,16 +318,19 @@
 /* --- Mobile Vertical Showcase --- */
 .mobileShowcaseContainer {
     position: relative;
-    width: 70%; 
+    width: 85%; 
     max-width: 400px;
-    margin: 0 auto;
+    margin: 4rem auto 2rem auto; 
     display: flex;
     align-items: center;
     justify-content: center;
+    /* THE FIX: Force aspect ratio to prevent collapse and ensure space for full card */
+    aspect-ratio: 16 / 10;
 }
 
 .mobileShowcaseCardWrapper {
     width: 100%;
+    height: 100%;
 }
 
 /* --- MOBILE RESPONSIVENESS --- */
@@ -356,16 +353,14 @@
   }
 
   .showcaseArrow.left {
-    left: -5rem; 
+    left: -2rem; /* Move arrows closer */
   }
 
   .showcaseArrow.right {
-    right: -5rem; 
+    right: -2rem; /* Move arrows closer */
   }
 
   .showcaseCardTitle {
     font-size: 2.2rem;
   }
 }
-
-

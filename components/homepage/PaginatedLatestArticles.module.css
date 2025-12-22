@@ -86,9 +86,5 @@
         gap: 1rem !important; /* Force smaller gap between items in list */
         
         /* Reset Expansion on mobile to prevent overflow issues */
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        pointer-events: auto;
     }
 }
