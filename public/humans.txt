@@ -1,0 +1,15 @@
+# EternalGamesWeb.com Team
+
+/* TEAM */
+Director: EternalGames
+Development: X-@MoVisionX (Mohammed Alsaad)
+Location: Global
+
+/* SITE */
+Last update: 2025
+Language: Arabic (ar)
+Standards: HTML5, CSS3, React, Next.js
+Components: Sanity.io, Tailwind, Framer Motion
+
+/* THANKS */
+To all the gamers who keep the industry alive.

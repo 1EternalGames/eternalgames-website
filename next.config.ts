@@ -1,8 +1,5 @@
 // next.config.ts
 
-// Define the Content Security Policy
-// STRICT: Removed 'unsafe-inline' from script-src where possible, but Next.js app router often requires it for hot reloading in dev.
-// Ideally, use Nonces, but for a config-only approach, we limit domains strictly.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;

@@ -1,7 +1,7 @@
 import os
 
-with open('components/CookieSettingsModal.tsx', 'w') as f:
+with open('app/global-error.tsx', 'w') as f:
     pass
 
-with open('components/CookieSettingsModal.module.css', 'w') as f:
+with open('public/humans.txt', 'w') as f:
     pass

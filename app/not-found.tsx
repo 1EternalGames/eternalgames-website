@@ -27,7 +27,7 @@ export default function NotFound() {
         الطريق مسدود
       </h2>
       <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto 4rem auto', fontSize: '1.6rem' }}>
-        الصفحة التي تبحث عنها قد تكون حُذفت، نُقلت، أو أنها لم تكن موجودة من الأساس في هذا البُعد.
+        الصفحة التي تبحث عنها قد تكون حُذفت، نُقلت، أو أنها لم تكن موجودة من الأساس في هذا الموقع.
       </p>
 
       {/* Retention Links */}
@@ -44,7 +44,7 @@ export default function NotFound() {
       </div>
 
       <Link href="/" className="primary-button no-underline">
-        العودة إلى القاعدة
+        العودة إلى الصفحة الرئيسية
       </Link>
     </div>
   );

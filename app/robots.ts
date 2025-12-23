@@ -2,20 +2,20 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgamesweb.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
 
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      // SECURITY & SEO: Prevent crawling of admin areas and infinite filter parameters
+      // UPDATED: Removed '/*?*' to allow pagination crawling (?offset=20)
+      // We rely on Canonical Tags (implemented in Phase 3) to prevent duplicate content penalties.
       disallow: [
         '/studio/',
         '/api/',
         '/admin/',
         '/private/',
-        '/*?*',
-        '/search',
+        '/search', // Internal search results pages should still be blocked
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
