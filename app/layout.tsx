@@ -17,7 +17,8 @@ import FPSAutoTuner from '@/components/FPSAutoTuner';
 import KonamiCode from '@/components/effects/KonamiCode';
 import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
 import SmoothScrolling from '@/components/ui/SmoothScrolling';
-import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd'; // ADDED
+import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
+import SkipLink from '@/components/ui/SkipLink'; 
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -40,6 +41,10 @@ export const metadata: Metadata = {
     types: {
       'application/rss+xml': [{ url: '/feed.xml', title: 'EternalGames RSS Feed' }],
     },
+  },
+  // ADDED: OpenSearch Definition
+  other: {
+      'application/opensearchdescription+xml': '/opensearch.xml',
   },
   openGraph: {
     title: {
@@ -106,18 +111,19 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         <NextAuthProvider>
           <UserStoreHydration />
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
-          <OrganizationJsonLd /> {/* ADDED: Global Organization Schema */}
+          <OrganizationJsonLd />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <SmoothScrolling>
               <div style={{ position: 'relative', width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
+                <SkipLink /> 
                 <FPSAutoTuner /> 
                 <KonamiCode />
                 <SpaceBackground />
                 <ToastProvider />
                 <Lightbox />
                 <Navbar />
-                <main style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
+                <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                   <PageTransitionWrapper>
                     {children}
                   </PageTransitionWrapper>

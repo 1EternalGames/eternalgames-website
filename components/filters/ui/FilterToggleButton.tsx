@@ -2,7 +2,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FilterHorizontalIcon } from '@/components/icons';
+import { FilterHorizontalIcon } from '@/components/icons/index';
 import styles from '../Filters.module.css';
 
 export default function FilterToggleButton({ onClick, hasActiveFilters }: { onClick: () => void, hasActiveFilters: boolean }) {
@@ -19,8 +19,3 @@ export default function FilterToggleButton({ onClick, hasActiveFilters }: { onCl
         </motion.button>
     );
 }
-
-
-
-
-

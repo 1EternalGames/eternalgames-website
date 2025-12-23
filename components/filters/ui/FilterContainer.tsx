@@ -16,8 +16,3 @@ const FilterContainer = React.forwardRef<HTMLDivElement, FilterContainerProps>((
 
 FilterContainer.displayName = 'FilterContainer';
 export default FilterContainer;
-
-
-
-
-

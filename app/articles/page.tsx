@@ -3,13 +3,10 @@ import { client } from '@/lib/sanity.client';
 import { articlesIndexQuery } from '@/lib/sanity.queries';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import ArticlesPageClient from './ArticlesPageClient';
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
-import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 import { unstable_cache } from 'next/cache';
 
-// THE FIX: Enforce static generation for the main articles index.
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
@@ -39,7 +36,6 @@ const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
     return Array.from(uniqueMap.values());
 };
 
-// OPTIMIZATION: Cache the entire articles page data fetch + enrichment
 const getCachedArticlesPageData = unstable_cache(
   async () => {
     const data = await client.fetch(articlesIndexQuery);
@@ -85,7 +81,6 @@ export default async function ArticlesPage() {
   }
 
   return (
-    <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
       <ArticlesPageClient
         featuredArticles={featuredArticles as SanityArticle[]}
         initialGridArticles={initialGridArticles as SanityArticle[]}
@@ -93,8 +88,5 @@ export default async function ArticlesPage() {
         allGameTags={allGameTags}
         allArticleTypeTags={allArticleTypeTags}
       />
-    </Suspense>
   );
 }
-
-

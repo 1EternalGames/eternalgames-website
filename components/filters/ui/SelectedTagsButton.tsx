@@ -4,6 +4,7 @@
 import { motion } from 'framer-motion';
 import styles from '../Filters.module.css';
 import type { SanityTag } from '@/types/sanity';
+import { translateTag } from '@/lib/translations';
 
 interface SelectedTagsButtonProps {
     selectedTags: SanityTag[];
@@ -23,22 +24,13 @@ export default function SelectedTagsButton({ selectedTags, onOpenPopover }: Sele
     }
     
     return (
-        <motion.button
+        <motion.div
             layout
             className={`${styles.filterButton} ${styles.active}`}
             onClick={onOpenPopover}
-            whileHover={{ scale: 1.05 }}
         >
-            <motion.div layoutId="tags-highlight" className={styles.filterHighlight} />
+            <motion.div layoutId="tags-filter-highlight" className={styles.filterHighlight} />
             <span style={{ zIndex: 1, position: 'relative' }}>{label}</span>
-        </motion.button>
+        </motion.div>
     );
 }
-
-
-
-
-
-
-
-

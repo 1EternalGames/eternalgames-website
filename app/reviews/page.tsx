@@ -1,14 +1,12 @@
 // app/reviews/page.tsx
 import { client } from '@/lib/sanity.client';
 import { reviewsIndexQuery } from '@/lib/sanity.queries'; 
-import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
+import type { SanityReview } from '@/types/sanity';
 import ReviewsPageClient from './ReviewsPageClient';
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
-import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 import { unstable_cache } from 'next/cache';
-import CollectionPageJsonLd from '@/components/seo/CollectionPageJsonLd'; // ADDED
+import CollectionPageJsonLd from '@/components/seo/CollectionPageJsonLd';
 
 export const dynamic = 'force-static';
 
@@ -68,7 +66,6 @@ export default async function ReviewsPage() {
       tags: allTags
   } = data;
 
-  // Prepare List for Schema
   const itemList = (initialGridReviews || []).map((item: any) => ({
       headline: item.title,
       url: `${siteUrl}/reviews/${item.slug}`,
@@ -94,7 +91,7 @@ export default async function ReviewsPage() {
   const gridReviews = (initialGridReviews || []).filter((review: SanityReview) => review._id !== heroReview._id);
 
   return (
-    <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
+    <>
       <CollectionPageJsonLd 
         name="مراجعات الألعاب" 
         description="أحدث مراجعات الألعاب من فريق EternalGames" 
@@ -107,6 +104,6 @@ export default async function ReviewsPage() {
         allGames={allGames}
         allTags={allTags}
       />
-    </Suspense>
+    </>
   );
 }
