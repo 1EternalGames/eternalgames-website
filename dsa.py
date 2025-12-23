@@ -1,18 +1,10 @@
 import os
-import shutil
 
-# 1. Remove loading files
-loading_files = [
-    'app/reviews/loading.tsx',
-    'app/articles/loading.tsx',
-    'app/news/loading.tsx',
-    'app/releases/loading.tsx'
-]
+os.makedirs('app/privacy-policy', exist_ok=True)
+os.makedirs('app/terms-of-service', exist_ok=True)
 
-for file in loading_files:
-    if os.path.exists(file):
-        os.remove(file)
+with open('components/CookieConsent.tsx', 'w') as f:
+    pass
 
-# 2. Remove skeletons directory
-if os.path.exists('components/skeletons'):
-    shutil.rmtree('components/skeletons')
+with open('components/CookieConsent.module.css', 'w') as f:
+    pass

@@ -39,10 +39,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: './',
     types: {
-      'application/rss+xml': [{ url: '/feed.xml', title: 'EternalGames RSS Feed' }],
+      'application/rss+xml': [
+          { url: '/feed.xml', title: 'EternalGames Main Feed' },
+          { url: '/feed/reviews', title: 'EternalGames Reviews' },
+          { url: '/feed/news', title: 'EternalGames News' },
+          { url: '/feed/articles', title: 'EternalGames Articles' },
+      ],
     },
   },
-  // ADDED: OpenSearch Definition
   other: {
       'application/opensearchdescription+xml': '/opensearch.xml',
   },
