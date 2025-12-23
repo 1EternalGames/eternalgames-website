@@ -1,7 +1,6 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-// ... (Imports remain the same)
 import { useEffect, useState, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -21,15 +20,15 @@ import ContentActionBar from '@/components/ContentActionBar';
 import TagLinks from '@/components/TagLinks';
 import ReadingHud from '@/components/ReadingHud';
 import { ContentBlock } from '@/components/ContentBlock';
-import { SparklesIcon, Calendar03Icon, ClockIcon } from '@/components/icons/index'; // Assume ClockIcon exists or add it
+import { SparklesIcon, Calendar03Icon } from '@/components/icons/index'; 
 import CreatorCredit from '@/components/CreatorCredit';
 import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
+import { formatArabicDuration } from '@/lib/text-utils';
 
-// ... (Types & Helpers remain the same)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
 type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { slug: Slug; relatedContent?: any[]; readingTime?: number; };
@@ -40,7 +39,6 @@ const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transit
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 'إشاعة', 'leak': 'تسريب' };
 
-// NEW: Simple Clock Icon for Reading Time
 const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
 export default function ContentPageClient({ item, type, children, colorDictionary }: { item: ContentItem; type: ContentType; children: React.ReactNode; colorDictionary: ColorMapping[]; }) {
@@ -127,7 +125,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 
     if (!item) return null;
 
-    // ... (Data processing logic remains the same) ...
     const rawRelatedReviews = (item as any).relatedReviews;
     const rawRelatedArticles = (item as any).relatedArticles;
     const rawRelatedNews = (item as any).relatedNews;
@@ -158,9 +155,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
 
     return (
         <>
-            {/* Standard ReadingHud is kept for the progress bar, but markers might be redundant if ToC is used. 
-                We can hide markers via CSS or props if desired, or keep both. 
-                For now, keeping it as the progress indicator is valuable. */}
             <ReadingHud contentContainerRef={scrollTrackerRef} headings={headings} isMobile={isMobile} />
 
             <motion.div layout layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined} transition={springTransition} style={{ backgroundColor: 'var(--bg-primary)', zIndex: 50, position: 'relative' }}>
@@ -171,15 +165,8 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                 <div className="container page-container" style={{ paddingTop: '0' }}>
                     <motion.div initial="hidden" animate="visible" variants={contentVariants} >
                         
-                        {/* 3-COLUMN LAYOUT START */}
                         <div className={styles.contentLayout}>
-                            
-                            {/* LEFT COLUMN: Table of Contents (Desktop Sticky) */}
-                            <aside className={styles.tocSidebar}>
-                                {!isMobile && <TableOfContents headings={tocItems} />}
-                            </aside>
 
-                            {/* CENTER COLUMN: Main Content */}
                             <main ref={scrollTrackerRef}>
                                 <div className={styles.titleWrapper}>
                                     {isNews && ( <div className={styles.headerBadges}> <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> </div> )}
@@ -197,19 +184,21 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                         <div className={styles.dateContainer}>
                                              {item.readingTime && ( 
                                                 <span className={styles.readTimeMinimal} title="وقت القراءة المقدر">
-                                                    {item.readingTime} دقيقة
-                                                    <TimeIcon />
+                                                    <span className={styles.timeIcon}><TimeIcon /></span>
+                                                    {formatArabicDuration(item.readingTime)}
                                                 </span>
                                              )}
                                              {item.readingTime && <span style={{color: 'var(--border-color)', margin: '0 0.5rem'}}>|</span>}
-                                             <p className={styles.dateText}>{formattedDate}</p>
-                                             <Calendar03Icon className={styles.metadataIcon} />
+                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                 <Calendar03Icon className={styles.metadataIcon} />
+                                                 <p className={styles.dateText}>{formattedDate}</p>
+                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                {/* Mobile ToC (Collapsible) */}
-                                {isMobile && <TableOfContents headings={tocItems} />}
+                                {/* Updated: Table of Contents moved here, full width */}
+                                <TableOfContents headings={tocItems} />
 
                                 <div ref={articleBodyRef} className="article-body">
                                     <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
@@ -220,9 +209,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                 </div>
                             </main>
 
-                            {/* RIGHT COLUMN: Sidebar (Widgets) */}
                             <aside className={styles.sidebar}>
-                                {/* INJECTED: The Vanguard Card */}
                                 <JoinVanguardCard /> 
                                 
                                 <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
@@ -237,7 +224,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                             </aside>
 
                         </div>
-                        {/* 3-COLUMN LAYOUT END */}
 
                     </motion.div>
                 </div>

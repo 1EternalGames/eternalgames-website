@@ -1,28 +1,38 @@
 /* components/content/TableOfContents.module.css */
 
 .tocContainer {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    position: sticky;
+    top: calc(var(--nav-height-scrolled) + 2rem);
+    background-color: rgba(10, 11, 15, 0.6);
+    backdrop-filter: blur(12px);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 3rem;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transition: border-color 0.3s ease;
+}
+
+.tocContainer:hover {
+    border-color: rgba(0, 255, 240, 0.2);
 }
 
 .tocHeader {
     font-family: var(--font-heading);
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-size: 1.6rem;
+    font-weight: 800;
     margin-bottom: 1.5rem;
-    color: var(--text-primary);
+    color: var(--accent);
     display: flex;
     align-items: center;
     gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .tocIcon {
-    color: var(--accent);
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 
 .tocList {
@@ -31,29 +41,95 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0; 
+    position: relative;
+}
+
+/* Vertical track line */
+.tocList::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    right: 6px; 
+    width: 2px;
+    background-color: var(--border-color);
+    border-radius: 2px;
+    opacity: 0.3;
 }
 
 .tocItem {
     font-family: var(--font-main);
-    font-size: 1.5rem;
-}
-
-.tocLink {
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: color 0.2s ease, transform 0.2s ease;
-    display: block;
-}
-
-.tocLink:hover {
-    color: var(--accent);
-    transform: translateX(-5px); /* RTL hover move left */
+    font-size: 1.4rem;
+    position: relative;
+    padding-right: 2.5rem; 
 }
 
 /* Indent H3s */
 .tocItem.level-2 {
-    padding-right: 1.5rem; /* RTL Indent */
-    font-size: 1.4rem;
-    border-right: 2px solid var(--border-color);
+    font-weight: 500;
+}
+
+.tocItem.level-3 {
+    font-size: 1.3rem;
+    padding-right: 4rem; 
+    margin-top: 0.25rem;
+}
+
+.tocLink {
+    display: block;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.6rem 0;
+    transition: all 0.2s ease;
+    position: relative;
+    line-height: 1.4;
+}
+
+/* Interactive Marker (The Dot) */
+.tocLink::before {
+    content: '';
+    position: absolute;
+    right: -2.3rem; /* Aligns with the track line */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-secondary);
+    transition: all 0.2s ease;
+    z-index: 2;
+    border: 2px solid var(--bg-secondary);
+}
+
+.tocLink:hover {
+    color: var(--text-primary);
+}
+
+.tocLink:hover::before {
+    background-color: var(--accent);
+    transform: translateY(-50%) scale(1.2);
+}
+
+/* Active State (Triggered by parent logic or click) */
+.tocLink.active {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.tocLink.active::before {
+    background-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    width: 10px;
+    height: 10px;
+    right: -2.5rem; /* Adjust for size increase */
+}
+
+@media (max-width: 1024px) {
+    .tocContainer {
+        position: relative;
+        top: 0;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+    }
 }

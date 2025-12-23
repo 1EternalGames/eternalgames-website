@@ -42,6 +42,6 @@ export function formatArabicDuration(minutes: number): string {
     if (m === 1) return 'دقيقة واحدة';
     if (m === 2) return 'دقيقتين';
     if (m >= 3 && m <= 10) return `${m} دقائق`;
-    // 11+ (and technically 0, though handled above) use singular accusative "دقيقة"
+    // 11+ is singular accusative (e.g., 15 دقيقة)
     return `${m} دقيقة`;
 }

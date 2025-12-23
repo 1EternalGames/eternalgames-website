@@ -7,15 +7,14 @@
 }
 @media (min-width: 1024px) {
   .contentLayout {
-    /* Updated Grid: ToC (Left), Content (Center), Sidebar (Right) */
-    /* RTL: ToC (Right), Content (Center), Sidebar (Left) */
-    grid-template-columns: 280px 1fr 300px;
-    gap: 3rem;
+    /* Updated Grid: Content (Left/Center 2fr), Sidebar (Right 1fr) */
+    /* Note: In RTL, grid columns are naturally flipped visually */
+    grid-template-columns: 1fr 320px;
+    gap: 4rem;
     align-items: start;
   }
 }
 
-/* ... (Hero, Sidebar, RelatedGrid styles remain the same) ... */
 .heroImage {
     position: relative;
     width: 100%;
@@ -27,7 +26,7 @@
 }
 
 .sidebar {
-    margin-top: 3rem;
+    margin-top: 0;
     /* Sticky sidebar on desktop */
     position: sticky;
     top: calc(var(--nav-height-scrolled) + 2rem);
@@ -98,7 +97,7 @@
 .dateContainer {
     display: flex;
     align-items: center;
-    gap: 1.2rem; /* Increased gap */
+    gap: 1.2rem; 
     justify-content: flex-end;
 }
 
@@ -106,14 +105,19 @@
 .readTimeMinimal {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.6rem;
     font-size: 1.3rem;
     color: var(--text-secondary);
     font-weight: 500;
     position: relative;
 }
 
-/* Optional dot separator via CSS if needed, but handled in JSX layout */
+.timeIcon {
+    width: 16px;
+    height: 16px;
+    color: var(--accent); /* Cyan color */
+    flex-shrink: 0;
+}
 
 .metadataIcon {
     width: 16px;
@@ -130,7 +134,7 @@
 
 /* Article Body Adjustments */
 .article-body {
-    max-width: 100%; /* Ensure it fills the center column */
+    max-width: 100%;
 }
 
 @media (max-width: 1024px) {
