@@ -1,7 +1,6 @@
 import os
 
-with open('components/seo/VideoGameJsonLd.tsx', 'w') as f:
-    pass
+os.makedirs('components/about', exist_ok=True)
 
-with open('components/seo/CollectionPageJsonLd.tsx', 'w') as f:
+with open('components/about/StaffCard.tsx', 'w') as f:
     pass

@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app'; // Fixed URL to main
 
 // 1. Fetch ALL dynamic routes. 
 // We explicitly exclude drafts and ensure slugs are defined.
@@ -45,6 +45,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/celestial-almanac`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/tools/upscaler`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 }, // ADDED
+    { url: `${baseUrl}/sitemap-html`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 }, // ADDED
   ];
 
   // 2. Dynamic Content Routes

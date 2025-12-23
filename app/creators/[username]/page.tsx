@@ -9,7 +9,8 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
-import JsonLd from '@/components/seo/JsonLd'; // IMPORT
+import ProfilePageJsonLd from '@/components/seo/ProfilePageJsonLd'; // UPDATED: Specialized Schema
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
 
 export const dynamicParams = true;
 
@@ -21,7 +22,7 @@ const getCachedCreatorData = unstable_cache(
     async (username: string) => {
         const user = await prisma.user.findUnique({
             where: { username: username },
-            select: { id: true, name: true, username: true, image: true, bio: true, twitterHandle: true }, 
+            select: { id: true, name: true, username: true, image: true, bio: true, twitterHandle: true, instagramHandle: true }, 
         });
         if (!user) return null;
 
@@ -44,7 +45,6 @@ const getCachedCreatorData = unstable_cache(
     { tags: ['content'] }
 );
 
-// ... (Metadata logic remains same)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username: encodedUsername } = await params;
   const username = decodeURIComponent(encodedUsername);
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
   const title = `أعمال ${data.user.name || username}`;
   const description = `استكشف جميع مساهمات ${data.user.name || username} على منصة EternalGames.`;
-  const ogImageUrl = data.user.image || `${siteUrl}/og-image.png`;
+  const ogImageUrl = data.user.image || `${siteUrl}/og.png`;
   const canonicalUrl = `/creators/${username}`;
 
   return {
@@ -104,48 +104,56 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
 
     const { user, items: allItems } = data;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    const profileUrl = `${siteUrl}/creators/${user.username}`;
 
-    // JSON-LD for Person
-    const personSchema = {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        "name": user.name,
-        "url": `${siteUrl}/creators/${user.username}`,
-        "image": user.image,
-        "description": user.bio || `منشئ محتوى في EternalGames`,
-        "sameAs": user.twitterHandle ? [`https://twitter.com/${user.twitterHandle}`] : []
-    };
+    const socialLinks = [];
+    if (user.twitterHandle) socialLinks.push(`https://twitter.com/${user.twitterHandle}`);
+    if (user.instagramHandle) socialLinks.push(`https://instagram.com/${user.instagramHandle}`);
 
-    if (!allItems || allItems.length === 0) {
-        return (
-             <div className="container page-container">
-                <h1 className="page-title">{user.name || 'Creator'}</h1>
-                <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُرَ لهذا المستخدمِ أثرٌ بعد.</p>
-                <div style={{textAlign: 'center', marginTop: '2rem'}}>
-                    <Link href={`/profile/${user.username}`} className="primary-button" prefetch={false}>ملف المستخدم</Link>
-                </div>
-            </div>
-        );
-    }
-    
+    const breadcrumbItems = [
+        { name: 'الرئيسية', item: '/' },
+        { name: 'فريق العمل', item: '#' },
+        { name: user.name || username, item: profileUrl }
+    ];
+
     return (
         <>
-            <JsonLd data={personSchema} />
-            <HubPageClient
-                initialItems={allItems}
-                hubTitle={user.name || 'Creator'}
-                hubType="أعمال"
-                headerAction={
-                    <Link 
-                        href={`/profile/${user.username}`} 
-                        className="outline-button no-underline" 
-                        style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }} 
-                        prefetch={false}
-                    >
-                        → الملف الشخصي
-                    </Link>
-                }
+            <BreadcrumbJsonLd items={breadcrumbItems} />
+            <ProfilePageJsonLd 
+                name={user.name || username}
+                username={user.username || username}
+                image={user.image || undefined}
+                description={user.bio || `منشئ محتوى في EternalGames`}
+                url={profileUrl}
+                sameAs={socialLinks}
+                mainEntityOfPage={profileUrl}
             />
+            
+            {!allItems || allItems.length === 0 ? (
+                 <div className="container page-container">
+                    <h1 className="page-title">{user.name || 'Creator'}</h1>
+                    <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُرَ لهذا المستخدمِ أثرٌ بعد.</p>
+                    <div style={{textAlign: 'center', marginTop: '2rem'}}>
+                        <Link href={`/profile/${user.username}`} className="primary-button" prefetch={false}>ملف المستخدم</Link>
+                    </div>
+                </div>
+            ) : (
+                <HubPageClient
+                    initialItems={allItems}
+                    hubTitle={user.name || 'Creator'}
+                    hubType="أعمال"
+                    headerAction={
+                        <Link 
+                            href={`/profile/${user.username}`} 
+                            className="outline-button no-underline" 
+                            style={{ backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)', backdropFilter: 'blur(4px)' }} 
+                            prefetch={false}
+                        >
+                            → الملف الشخصي
+                        </Link>
+                    }
+                />
+            )}
         </>
     );
 }

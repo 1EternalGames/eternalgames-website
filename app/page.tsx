@@ -11,7 +11,9 @@ import HomepageFeeds from '@/components/homepage/HomepageFeeds';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment'; 
-import HomeJsonLd from '@/components/seo/HomeJsonLd'; // Import Home Schema
+import HomeJsonLd from '@/components/seo/HomeJsonLd'; 
+import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; // ADDED
+import { urlFor } from '@/sanity/lib/image';
 
 export const dynamic = 'force-static';
 
@@ -82,12 +84,11 @@ export default async function HomePage() {
 
     const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw, releases: releasesRaw, credits: creditsRaw } = consolidatedData;
 
-    // Enrich content AND credits
     const [reviews, homepageArticles, homepageNews, credits] = await Promise.all([
         enrichContentList(reviewsRaw),
         enrichContentList(homepageArticlesRaw),
         enrichContentList(homepageNewsRaw),
-        enrichCreators(creditsRaw) // Enrich credits here
+        enrichCreators(creditsRaw)
     ]) as [SanityReview[], any[], any[], any[]];
 
     if (reviews.length > 0) {
@@ -144,9 +145,20 @@ export default async function HomePage() {
 
     const releasesSection = <ReleasesSection releases={releasesRaw} credits={credits || []} />;
 
+    // Generate Carousel Schema Data
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    const carouselItems = reviews.slice(0, 5).map((review, index) => ({
+        url: `${siteUrl}/reviews/${review.slug}`,
+        position: index + 1,
+        name: review.title,
+        image: review.mainImage ? urlFor(review.mainImage).width(1200).url() : undefined
+    }));
+
     return (
         <>
             <HomeJsonLd />
+            {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
+            
             <DigitalAtriumHomePage 
                 reviews={reviews}
                 feedsContent={feedsContent}

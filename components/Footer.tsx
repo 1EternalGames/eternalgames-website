@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link'; // ADDED
 import { usePathname } from 'next/navigation';
 import styles from './Footer.module.css';
 
@@ -66,6 +67,12 @@ const Footer = () => {
         </div>
 
         <div className={styles.footerDivider}></div>
+        
+        {/* ADDED: Link Section */}
+        <div style={{ display: 'flex', gap: '2rem', fontSize: '1.4rem' }}>
+            <Link href="/about" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>من نحن</Link>
+            <Link href="/sitemap-html" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>خريطة الموقع</Link>
+        </div>
 
         <div className={styles.footerInfo}>
           <p className={styles.footerCopyright}>&copy; {new Date().getFullYear()} EternalGames</p>
@@ -81,5 +88,3 @@ const Footer = () => {
 };
 
 export default Footer;
-
-
