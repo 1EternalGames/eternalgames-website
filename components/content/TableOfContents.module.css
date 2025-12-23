@@ -1,38 +1,50 @@
 /* components/content/TableOfContents.module.css */
 
 .tocContainer {
-    position: sticky;
-    top: calc(var(--nav-height-scrolled) + 2rem);
-    background-color: rgba(10, 11, 15, 0.6);
-    backdrop-filter: blur(12px);
+    position: relative; /* Changed from sticky to relative to fix scrolling issue */
+    background-color: #080a0f; /* Darker background */
     border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 3rem;
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    transition: border-color 0.3s ease;
+    padding: 2.5rem;
+    margin-bottom: 4rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
 }
 
 .tocContainer:hover {
-    border-color: rgba(0, 255, 240, 0.2);
+    border-color: var(--accent);
+    box-shadow: 0 4px 30px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .tocHeader {
     font-family: var(--font-heading);
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     font-weight: 800;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     color: var(--accent);
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding-bottom: 1rem;
+    justify-content: space-between; /* Pushes items to edges */
+    padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--border-color);
+    flex-direction: row-reverse; /* Ensure Icon is Left, Text is Right in RTL context if needed, or rely on order */
 }
 
+/* If the DOM order is Text then Icon, row-reverse puts Icon Left, Text Right in RTL? 
+   Actually in RTL: row direction starts right. 
+   Item 1 (Right), Item 2 (Left).
+   If we want Text Right and Icon Left:
+   DOM: Text, Icon.
+   Flex Row (RTL): Text (Right), Icon (Left).
+   Justify Between pushes them apart.
+*/
+
 .tocIcon {
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
+    color: var(--accent);
+    opacity: 0.8;
 }
 
 .tocList {
@@ -41,28 +53,38 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0; 
+    gap: 1.2rem;
     position: relative;
-}
-
-/* Vertical track line */
-.tocList::before {
-    content: '';
-    position: absolute;
-    top: 5px;
-    bottom: 5px;
-    right: 6px; 
-    width: 2px;
-    background-color: var(--border-color);
-    border-radius: 2px;
-    opacity: 0.3;
 }
 
 .tocItem {
     font-family: var(--font-main);
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     position: relative;
-    padding-right: 2.5rem; 
+    padding-right: 2rem; /* Space for bullet */
+    transition: transform 0.2s ease;
+}
+
+.tocItem:hover {
+    transform: translateX(-5px); /* Move slightly left on hover for RTL feel */
+}
+
+/* Custom Bullet on the Right */
+.tocItem::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10px; /* Vertically center relative to line-height approx */
+    width: 6px;
+    height: 6px;
+    background-color: var(--text-secondary);
+    border-radius: 50%;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.tocItem:hover::before {
+    background-color: var(--accent);
+    transform: scale(1.2);
 }
 
 /* Indent H3s */
@@ -71,65 +93,33 @@
 }
 
 .tocItem.level-3 {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     padding-right: 4rem; 
     margin-top: 0.25rem;
+    opacity: 0.9;
+}
+
+.tocItem.level-3::before {
+    right: 2rem;
+    width: 4px;
+    height: 4px;
+    background-color: var(--border-color);
 }
 
 .tocLink {
     display: block;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     text-decoration: none;
-    padding: 0.6rem 0;
-    transition: all 0.2s ease;
-    position: relative;
-    line-height: 1.4;
-}
-
-/* Interactive Marker (The Dot) */
-.tocLink::before {
-    content: '';
-    position: absolute;
-    right: -2.3rem; /* Aligns with the track line */
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--text-secondary);
-    transition: all 0.2s ease;
-    z-index: 2;
-    border: 2px solid var(--bg-secondary);
+    transition: color 0.2s ease;
+    line-height: 1.5;
 }
 
 .tocLink:hover {
-    color: var(--text-primary);
+    color: var(--accent);
 }
 
-.tocLink:hover::before {
-    background-color: var(--accent);
-    transform: translateY(-50%) scale(1.2);
-}
-
-/* Active State (Triggered by parent logic or click) */
+/* Active State */
 .tocLink.active {
     color: var(--accent);
     font-weight: 700;
-}
-
-.tocLink.active::before {
-    background-color: var(--accent);
-    box-shadow: 0 0 10px var(--accent);
-    width: 10px;
-    height: 10px;
-    right: -2.5rem; /* Adjust for size increase */
-}
-
-@media (max-width: 1024px) {
-    .tocContainer {
-        position: relative;
-        top: 0;
-        background-color: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-    }
 }
