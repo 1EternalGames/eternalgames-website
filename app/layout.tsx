@@ -19,7 +19,7 @@ import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
 import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
-import CookieConsent from '@/components/CookieConsent'; // ADDED
+import CookieConsent from '@/components/CookieConsent';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -51,6 +51,11 @@ export const metadata: Metadata = {
   other: {
       'application/opensearchdescription+xml': '/opensearch.xml',
   },
+  // ADDED: Authors link to humans.txt
+  authors: [
+      { name: 'EternalGames Team', url: siteUrl },
+      { name: 'MoVisionX', url: '/humans.txt' }
+  ],
   openGraph: {
     title: {
       default: 'EternalGames | حيث لا تُفنى الألعاب',
@@ -126,7 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 <KonamiCode />
                 <SpaceBackground />
                 <ToastProvider />
-                <CookieConsent /> {/* ADDED */}
+                <CookieConsent />
                 <Lightbox />
                 <Navbar />
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
