@@ -7,13 +7,15 @@
 }
 @media (min-width: 1024px) {
   .contentLayout {
-    grid-template-columns: 2fr 1fr;
-  }
-  .contentLayout > main {
-    min-width: 0;
+    /* Updated Grid: ToC (Left), Content (Center), Sidebar (Right) */
+    /* RTL: ToC (Right), Content (Center), Sidebar (Left) */
+    grid-template-columns: 280px 1fr 300px;
+    gap: 3rem;
+    align-items: start;
   }
 }
 
+/* ... (Hero, Sidebar, RelatedGrid styles remain the same) ... */
 .heroImage {
     position: relative;
     width: 100%;
@@ -26,6 +28,9 @@
 
 .sidebar {
     margin-top: 3rem;
+    /* Sticky sidebar on desktop */
+    position: sticky;
+    top: calc(var(--nav-height-scrolled) + 2rem);
 }
 
 .relatedGrid {
@@ -34,22 +39,20 @@
   gap: 2rem;
 }
 
-/* --- Header Layout --- */
+/* ... (Header, Badges) ... */
 .titleWrapper {
     margin-bottom: 1.5rem;
     min-width: 0;
 }
 
-/* NEW: Header Badges Container */
 .headerBadges {
     display: flex;
     gap: 1rem;
     align-items: center;
-    justify-content: flex-start; /* RTL: Aligns to the right */
+    justify-content: flex-start;
     margin-bottom: 1.5rem;
 }
 
-/* Refined Page Badge Style */
 .pageClassificationBadge {
     display: inline-flex;
     align-items: center;
@@ -62,27 +65,18 @@
     color: #fff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
+.pageClassificationBadge.official { background-color: var(--accent); box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent); }
+.pageClassificationBadge.rumor { background-color: #F59E0B; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3); }
+.pageClassificationBadge.leak { background-color: #DC2626; box-shadow: 0 2px 10px rgba(220, 38, 38, 0.3); }
 
-.pageClassificationBadge.official {
-    background-color: var(--accent);
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-.pageClassificationBadge.rumor {
-    background-color: #F59E0B;
-    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
-}
-.pageClassificationBadge.leak {
-    background-color: #DC2626;
-    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.3);
-}
-
+/* ... (Meta Container) ... */
 .metaContainer {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     margin-bottom: 3rem;
     gap: 1.5rem;
-    flex-direction: row-reverse; /* This places metaBlockLeft on the left and metaBlockRight on the right in RTL */
+    flex-direction: row-reverse;
 }
 
 .metaBlockLeft {
@@ -104,9 +98,22 @@
 .dateContainer {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1.2rem; /* Increased gap */
     justify-content: flex-end;
 }
+
+/* NEW: Sleek Reading Time */
+.readTimeMinimal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    position: relative;
+}
+
+/* Optional dot separator via CSS if needed, but handled in JSX layout */
 
 .metadataIcon {
     width: 16px;
@@ -121,39 +128,25 @@
     margin: 0;
 }
 
-.readTimeBadge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
-    color: var(--text-secondary);
-    padding: 0.4rem 1rem;
-    border-radius: 999px;
-    font-size: 1.2rem;
-    font-weight: 500;
-    border: 1px solid var(--border-color);
+/* Article Body Adjustments */
+.article-body {
+    max-width: 100%; /* Ensure it fills the center column */
+}
+
+@media (max-width: 1024px) {
+    .contentLayout {
+        grid-template-columns: 1fr; /* Stack everything */
+    }
+    .sidebar {
+        position: static;
+        margin-top: 4rem;
+    }
 }
 
 @media (max-width: 768px) {
-    .heroImage {
-        aspect-ratio: 3 / 1;
-        margin-bottom: 2rem;
-    }
-    .titleWrapper {
-        margin-bottom: 2rem;
-    }
-
-    .metaContainer {
-        flex-direction: row-reverse;
-        align-items: flex-end;
-        gap: 1rem;
-    }
-
-    .metaBlockLeft {
-      align-items: center;
-    }
-
-    .metaBlockRight {
-      align-items: right;
-    }
+    .heroImage { aspect-ratio: 3 / 1; margin-bottom: 2rem; }
+    .titleWrapper { margin-bottom: 2rem; }
+    .metaContainer { flex-direction: row-reverse; align-items: flex-end; gap: 1rem; }
+    .metaBlockLeft { align-items: center; }
+    .metaBlockRight { align-items: right; }
 }

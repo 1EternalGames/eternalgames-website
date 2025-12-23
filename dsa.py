@@ -1,7 +1,7 @@
 import os
 
-with open('app/global-error.tsx', 'w') as f:
+with open('components/ui/JoinVanguardCard.module.css', 'w') as f:
     pass
 
-with open('public/humans.txt', 'w') as f:
+with open('components/ui/JoinVanguardCard.tsx', 'w') as f:
     pass

@@ -17,25 +17,11 @@ export function smartSplitText(text: string, maxLength: number = 400): string[] 
             break;
         }
 
-        // Search for a good break point within the allowed range
         let breakIndex = remaining.lastIndexOf('.', maxLength);
-        
-        // If no period found, try newline
-        if (breakIndex === -1) {
-            breakIndex = remaining.lastIndexOf('\n', maxLength);
-        }
+        if (breakIndex === -1) breakIndex = remaining.lastIndexOf('\n', maxLength);
+        if (breakIndex === -1) breakIndex = remaining.lastIndexOf(' ', maxLength);
+        if (breakIndex === -1) breakIndex = maxLength;
 
-        // If no newline, try space
-        if (breakIndex === -1) {
-            breakIndex = remaining.lastIndexOf(' ', maxLength);
-        }
-
-        // If no space found (giant word?), force break
-        if (breakIndex === -1) {
-            breakIndex = maxLength;
-        }
-
-        // Include the delimiter in the current chunk if it's a period
         const includeDelimiter = remaining[breakIndex] === '.';
         const cutIndex = includeDelimiter ? breakIndex + 1 : breakIndex;
 
@@ -46,4 +32,16 @@ export function smartSplitText(text: string, maxLength: number = 400): string[] 
     return chunks;
 }
 
-
+/**
+ * Formats a duration in minutes according to Arabic grammatical rules for numbers.
+ */
+export function formatArabicDuration(minutes: number): string {
+    const m = Math.round(minutes);
+    
+    if (m < 1) return 'أقل من دقيقة';
+    if (m === 1) return 'دقيقة واحدة';
+    if (m === 2) return 'دقيقتين';
+    if (m >= 3 && m <= 10) return `${m} دقائق`;
+    // 11+ (and technically 0, though handled above) use singular accusative "دقيقة"
+    return `${m} دقيقة`;
+}

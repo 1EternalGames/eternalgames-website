@@ -17,21 +17,17 @@
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .userAvatarButton:hover .userAvatar  {
-  border-color: var(--accent);
-}
-}
-
+    border-color: var(--accent);
+  }
   .userAvatarButton:active .userAvatar  {
-  border-color: var(--accent);
-}
+    border-color: var(--accent);
+  }
 }
 .userAvatarButton:active .userAvatar {
   border-color: var(--accent);
 }
-
 
 .userAvatarFallback {
   width: 36px;
@@ -48,25 +44,21 @@
   border: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .userAvatarButton:hover .userAvatarFallback  {
-  border-color: var(--accent);
-}
-}
-
+    border-color: var(--accent);
+  }
   .userAvatarButton:active .userAvatarFallback  {
-  border-color: var(--accent);
-}
+    border-color: var(--accent);
+  }
 }
 .userAvatarButton:active .userAvatarFallback {
   border-color: var(--accent);
 }
 
-
 .userAvatarSkeleton {
-  width: 99px; /* Matches Sign In button */
-  height: 39px; /* Matches Sign In button */
+  width: 99px; /* Matches Sign In button width approx */
+  height: 39px; 
   background-color: var(--border-color);
   border-radius: 5px;
   animation: pulse 1.5s infinite ease-in-out;
@@ -77,10 +69,11 @@
   50% { opacity: 0.5; }
 }
 
+/* Dropdown Menu */
 .userDropdown {
   position: absolute;
   top: calc(100% + 15px);
-  left: 0; /* RTL */
+  left: 0; /* RTL alignment */
   right: auto;
   width: 240px;
   background-color: var(--bg-secondary);
@@ -90,12 +83,12 @@
   z-index: 1100;
   overflow: hidden;
   padding: 0.5rem 0;
-  transform-origin: top left; /* RTL */
+  transform-origin: top left; 
 }
 
 .dropdownUserInfo {
   padding: 0.75rem 1.25rem;
-  text-align: right; /* RTL */
+  text-align: right; 
 }
 
 .dropdownUserName {
@@ -128,7 +121,7 @@
   align-items: center;
   gap: 1rem;
   width: 100%;
-  text-align: right; /* RTL */
+  text-align: right; 
   padding: 0.75rem 1.25rem;
   font-family: var(--font-main);
   font-size: 1.6rem;
@@ -145,82 +138,70 @@
     color: var(--text-secondary);
     transition: color 0.2s ease;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
-  .userDropdownItem:hover  {
-  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
-}
 
+@media (hover: hover) {
+  .userDropdownItem:hover  {
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
   .userDropdownItem:active  {
-  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
+  .userDropdownItem:hover .dropdownItemIcon  {
+    color: var(--accent);
+  }
+  .userDropdownItem:active .dropdownItemIcon  {
+    color: var(--accent);
+  }
 }
 .userDropdownItem:active {
   background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
 }
-
-@media (hover: hover) {@media (hover: hover) {
-  
-  .userDropdownItem:hover .dropdownItemIcon  {
-    color: var(--accent);
-}
-}
-
-  .userDropdownItem:active .dropdownItemIcon  {
-    color: var(--accent);
-}
-}
 .userDropdownItem:active .dropdownItemIcon {
     color: var(--accent);
 }
 
-
+/* Sign Out Item Specifics */
 .userDropdownItem.signout {
   color: #DC2626;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .userDropdownItem.signout:hover  {
-  background-color: color-mix(in srgb, #DC2626 15%, transparent);
-  color: #DC2626;
-}
-}
-
+    background-color: color-mix(in srgb, #DC2626 15%, transparent);
+    color: #DC2626;
+  }
   .userDropdownItem.signout:active  {
-  background-color: color-mix(in srgb, #DC2626 15%, transparent);
-  color: #DC2626;
-}
+    background-color: color-mix(in srgb, #DC2626 15%, transparent);
+    color: #DC2626;
+  }
+  .userDropdownItem.signout:hover .dropdownItemIcon  {
+    color: #DC2626;
+  }
+  .userDropdownItem.signout:active .dropdownItemIcon  {
+    color: #DC2626;
+  }
 }
 .userDropdownItem.signout:active {
   background-color: color-mix(in srgb, #DC2626 15%, transparent);
   color: #DC2626;
 }
-
-@media (hover: hover) {@media (hover: hover) {
-  
-  .userDropdownItem.signout:hover .dropdownItemIcon  {
-    color: #DC2626;
-}
-}
-
-  .userDropdownItem.signout:active .dropdownItemIcon  {
-    color: #DC2626;
-}
-}
 .userDropdownItem.signout:active .dropdownItemIcon {
     color: #DC2626;
 }
 
+/* Sign In Button Animation */
+@keyframes buttonPulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 255, 240, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 255, 240, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 255, 240, 0); }
+}
 
 .signInButton {
   background: var(--accent);
   color: #fff;
   border: none;
-  /* MODIFIED: Reduced padding and font-size for desktop */
   padding: 0.8rem 1.8rem;
   font-size: 1.2rem;
   border-radius: 5px;
@@ -228,36 +209,35 @@
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.2s ease, transform 0.2s ease-out;
+  
+  /* Periodic Pulse Animation */
+  animation: buttonPulse 3s infinite;
 }
 
 [data-theme="dark"] .signInButton {
   color: var(--bg-primary);
 }
-@media (hover: hover) {@media (hover: hover) {
-  
-  .signInButton:hover  {
-  opacity: 0.85;
-  transform: scale(1.05);
-}
-}
 
+@media (hover: hover) {
+  .signInButton:hover  {
+    opacity: 0.85;
+    transform: scale(1.05);
+    /* Pause animation on hover to avoid jitter */
+    animation: none;
+  }
   .signInButton:active  {
-  opacity: 0.85;
-  transform: scale(1.05);
-}
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
 }
 .signInButton:active {
   opacity: 0.85;
   transform: scale(1.05);
 }
 
-
-/* ADDED: Media query for mobile-specific button size */
 @media (max-width: 768px) {
   .signInButton {
     padding: 0.6rem 0.9rem;
     font-size: 1.3rem;
   }
 }
-
-
