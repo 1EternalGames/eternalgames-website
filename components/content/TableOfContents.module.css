@@ -1,0 +1,59 @@
+/* components/content/TableOfContents.module.css */
+
+.tocContainer {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+}
+
+.tocHeader {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.tocIcon {
+    color: var(--accent);
+    width: 20px;
+    height: 20px;
+}
+
+.tocList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.tocItem {
+    font-family: var(--font-main);
+    font-size: 1.5rem;
+}
+
+.tocLink {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: block;
+}
+
+.tocLink:hover {
+    color: var(--accent);
+    transform: translateX(-5px); /* RTL hover move left */
+}
+
+/* Indent H3s */
+.tocItem.level-2 {
+    padding-right: 1.5rem; /* RTL Indent */
+    font-size: 1.4rem;
+    border-right: 2px solid var(--border-color);
+}

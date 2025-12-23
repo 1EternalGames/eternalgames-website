@@ -7,8 +7,10 @@ import { getCachedContentAndDictionary, getCachedMetadata } from '@/lib/sanity.f
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 import JsonLd from '@/components/seo/JsonLd';
-import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // IMPORT ADDED
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; 
+import SpeakableJsonLd from '@/components/seo/SpeakableJsonLd'; // ADDED
 import { urlFor } from '@/sanity/lib/image';
+import { calculateReadingTime, toPlainText } from '@/lib/readingTime'; 
 
 export const dynamic = 'force-static';
 
@@ -18,7 +20,6 @@ const typeMap: Record<string, string> = {
     news: 'news',
 };
 
-// Map URL segments to Arabic labels for Breadcrumbs
 const sectionLabelMap: Record<string, string> = {
     reviews: 'المراجعات',
     articles: 'المقالات',
@@ -125,6 +126,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             publishedTime: item.publishedAt,
             authors: [item.authors?.[0]?.name || 'EternalGames'],
             siteName: 'EternalGames',
+            modifiedTime: item._updatedAt, 
         },
         twitter: {
             card: 'summary_large_image',
@@ -164,13 +166,16 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     if (!rawItem) notFound();
 
     const [enrichedItem] = await enrichContentList([rawItem]);
+
+    const plainText = toPlainText(enrichedItem.content);
+    const readingTime = calculateReadingTime(plainText);
+    enrichedItem.readingTime = readingTime;
     
     const colorDictionary = dictionary?.autoColors || [];
     
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
     const jsonLdData = generateStructuredData(enrichedItem, sanityType, `${siteUrl}/${section}/${slug}`);
 
-    // Build Breadcrumbs
     const breadcrumbItems = [
         { name: 'الرئيسية', item: '/' },
         { name: sectionLabelMap[section] || section, item: `/${section}` },
@@ -181,6 +186,11 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
         <>
             <JsonLd data={jsonLdData} />
             <BreadcrumbJsonLd items={breadcrumbItems} />
+            {/* ADDED: Speakable Schema for News (targets Title and Synopsis classes) */}
+            {sanityType === 'news' && (
+                <SpeakableJsonLd cssSelectors={['.page-title', '.article-body p:first-of-type']} />
+            )}
+            
             <ContentPageClient item={enrichedItem} type={section as any} colorDictionary={colorDictionary}>
                  <CommentSection 
                     slug={slug} 

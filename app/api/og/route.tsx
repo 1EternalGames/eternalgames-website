@@ -11,7 +11,9 @@ const query = groq`
     "imageUrl": mainImage.asset->url,
     score,
     "category": category->title,
-    _type
+    _type,
+    // ADDED: Fetch author name
+    "authorName": coalesce(authors[0]->name, reporters[0]->name, "EternalGames")
   }
 `;
 
@@ -19,7 +21,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
 
-  // Fallback if no slug provided
   if (!slug) {
     return new ImageResponse(
       (
@@ -33,7 +34,6 @@ export async function GET(request: Request) {
 
   const data = await client.fetch(query, { slug });
 
-  // Fallback if content not found
   if (!data) {
      return new ImageResponse(
       (
@@ -55,9 +55,9 @@ export async function GET(request: Request) {
           display: 'flex',
           position: 'relative',
           overflow: 'hidden',
+          fontFamily: 'sans-serif',
         }}
       >
-        {/* Background Image with Dark Overlay */}
         {data.imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
             left: 0,
             width: '100%',
             height: '100%',
-            background: 'linear-gradient(to top, #0A0B0F 10%, transparent 100%)',
+            background: 'linear-gradient(to top, #0A0B0F 15%, rgba(10,11,15,0.8) 50%, transparent 100%)',
           }}
         />
 
@@ -98,14 +98,15 @@ export async function GET(request: Request) {
             padding: '60px',
             width: '100%',
             height: '100%',
+            direction: 'rtl', // Ensure RTL layout for Arabic
           }}
         >
-            {/* Metadata Pill */}
+            {/* Metadata Pill Row */}
             <div
                 style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
+                    gap: '20px',
                     marginBottom: '20px',
                 }}
             >
@@ -118,7 +119,6 @@ export async function GET(request: Request) {
                             fontWeight: 900,
                             padding: '4px 16px',
                             borderRadius: '50px',
-                            fontFamily: 'sans-serif',
                         }}
                     >
                         {data.score}/10
@@ -126,19 +126,30 @@ export async function GET(request: Request) {
                 )}
                 <div
                      style={{
-                        background: 'rgba(255,255,255,0.1)',
+                        background: 'rgba(255,255,255,0.15)',
                         color: '#00FFF0',
                         fontSize: '24px',
                         fontWeight: 700,
                         padding: '8px 24px',
                         borderRadius: '50px',
                         border: '1px solid #00FFF0',
-                        fontFamily: 'sans-serif',
                         textTransform: 'uppercase',
                     }}
                 >
                     {data._type === 'review' ? 'مراجعة' : (data.category || 'مقال')}
                 </div>
+                
+                {/* ADDED: Author Name Badge */}
+                {data.authorName && (
+                   <div style={{
+                       color: '#cccccc',
+                       fontSize: '24px',
+                       fontWeight: 600,
+                       marginLeft: 'auto' // Pushes to left in RTL
+                   }}>
+                       بقلم: {data.authorName}
+                   </div>
+                )}
             </div>
 
             {/* Title */}
@@ -150,23 +161,21 @@ export async function GET(request: Request) {
                     lineHeight: 1.1,
                     margin: 0,
                     textShadow: '0 4px 20px rgba(0,0,0,0.8)',
-                    fontFamily: 'sans-serif',
-                    maxWidth: '90%',
+                    maxWidth: '95%',
                 }}
             >
                 {data.title}
             </h1>
             
-            {/* Brand Watermark */}
+            {/* Brand Watermark (Moved to top-left for RTL consistency) */}
             <div 
                 style={{
                     position: 'absolute',
                     top: '60px',
-                    right: '60px',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: 'rgba(255,255,255,0.8)',
-                    fontFamily: 'sans-serif',
+                    left: '60px',
+                    fontSize: '32px',
+                    fontWeight: 900,
+                    color: '#00FFF0',
                 }}
             >
                 EternalGames.

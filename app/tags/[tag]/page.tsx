@@ -8,6 +8,7 @@ import { getCachedTagPageData } from '@/lib/sanity.fetch';
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 import { unstable_cache } from 'next/cache';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
 
 export const dynamicParams = true;
 
@@ -15,7 +16,6 @@ type Props = {
   params: Promise<{ tag: string }>;
 };
 
-// Cache the tag data fetch + enrichment
 const getEnrichedTagData = unstable_cache(
     async (slug: string) => {
         const data = await getCachedTagPageData(slug);
@@ -81,23 +81,31 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
     }
 
     const { title: tagTitle, items: allItems } = data;
+    const translatedTitle = translateTag(tagTitle);
 
     if (!allItems || allItems.length === 0) {
         return (
             <div className="container page-container">
-                <h1 className="page-title">وسم: &quot;{translateTag(tagTitle)}&quot;</h1>
+                <h1 className="page-title">وسم: &quot;{translatedTitle}&quot;</h1>
                 <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>لم يُنشر عملٌ بهذا الوسم بعد.</p>
             </div>
         );
     }
+
+    const breadcrumbItems = [
+        { name: 'الرئيسية', item: '/' },
+        { name: 'الوسوم', item: '#' },
+        { name: translatedTitle, item: `/tags/${tagSlug}` }
+    ];
     
     return (
-         <HubPageClient
-            initialItems={allItems}
-            hubTitle={translateTag(tagTitle)}
-            hubType="وسم"
-        />
+        <>
+            <BreadcrumbJsonLd items={breadcrumbItems} />
+            <HubPageClient
+                initialItems={allItems}
+                hubTitle={translatedTitle}
+                hubType="وسم"
+            />
+        </>
     );
 }
-
-

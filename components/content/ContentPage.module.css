@@ -121,6 +121,19 @@
     margin: 0;
 }
 
+.readTimeBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+    color: var(--text-secondary);
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-size: 1.2rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+}
+
 @media (max-width: 768px) {
     .heroImage {
         aspect-ratio: 3 / 1;
@@ -144,5 +157,3 @@
       align-items: right;
     }
 }
-
-

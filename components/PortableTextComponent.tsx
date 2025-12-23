@@ -154,13 +154,17 @@ const SanityImageComponent = ({value}: {value: any}) => {
           }}
         />
       </div>
+      {/* IMPROVED SEO: VISIBLE CAPTION */}
       {alt && (
         <figcaption style={{ 
             textAlign: 'center', 
             color: 'var(--text-secondary)', 
             fontSize: '1.4rem', 
             marginTop: '1rem',
-            fontStyle: 'italic'
+            fontStyle: 'italic',
+            maxWidth: '80%',
+            marginLeft: 'auto',
+            marginRight: 'auto'
         }}>
             {alt}
         </figcaption>

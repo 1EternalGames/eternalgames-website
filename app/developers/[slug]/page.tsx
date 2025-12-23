@@ -4,8 +4,8 @@ import { notFound } from 'next/navigation';
 import { groq } from 'next-sanity';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
 import type { SanityGameRelease } from '@/types/sanity';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
 
-// 1. Generate Static Params by finding all unique developers
 export async function generateStaticParams() {
     const developers = await client.fetch<string[]>(`
         *[_type == "developer"].slug.current
@@ -14,12 +14,11 @@ export async function generateStaticParams() {
     return developers.map(slug => ({ slug }));
 }
 
-export const dynamicParams = true; // Allow dynamic generation for new ones
+export const dynamicParams = true;
 
 export default async function DeveloperPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
 
-    // Fetch all releases where developer->slug.current matches
     const query = groq`*[_type == "gameRelease" && developer->slug.current == $slug && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(releaseDate asc) { 
         _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
         "developer": developer->{title, "slug": slug.current}, 
@@ -38,12 +37,19 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
     
     const studioName = releases[0].developer?.title || "Unknown Studio";
 
+    const breadcrumbItems = [
+        { name: 'الرئيسية', item: '/' },
+        { name: 'المطورون', item: '#' }, 
+        { name: studioName, item: `/developers/${slug}` }
+    ];
+
     return (
-        <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
-            <h1 className="page-title">أعمال الاستوديو: {studioName}</h1>
-            <ReleasePageClient releases={releases} hideHeader={true} />
-        </div>
+        <>
+            <BreadcrumbJsonLd items={breadcrumbItems} />
+            <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
+                <h1 className="page-title">أعمال الاستوديو: {studioName}</h1>
+                <ReleasePageClient releases={releases} hideHeader={true} />
+            </div>
+        </>
     );
 }
-
-

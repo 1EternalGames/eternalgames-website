@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { groq } from 'next-sanity';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
 import type { SanityGameRelease } from '@/types/sanity';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
 
 export async function generateStaticParams() {
     const publishers = await client.fetch<string[]>(`
@@ -36,12 +37,19 @@ export default async function PublisherPage({ params }: { params: Promise<{ slug
     
     const publisherName = releases[0].publisher?.title || "Unknown Publisher";
 
+    const breadcrumbItems = [
+        { name: 'الرئيسية', item: '/' },
+        { name: 'الناشرون', item: '#' },
+        { name: publisherName, item: `/publishers/${slug}` }
+    ];
+
     return (
-        <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
-            <h1 className="page-title">أعمال الناشر: {publisherName}</h1>
-            <ReleasePageClient releases={releases} hideHeader={true} />
-        </div>
+        <>
+            <BreadcrumbJsonLd items={breadcrumbItems} />
+            <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
+                <h1 className="page-title">أعمال الناشر: {publisherName}</h1>
+                <ReleasePageClient releases={releases} hideHeader={true} />
+            </div>
+        </>
     );
 }
-
-

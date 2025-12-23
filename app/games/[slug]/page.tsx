@@ -8,6 +8,7 @@ import { getCachedGamePageData } from '@/lib/sanity.fetch';
 import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
 
 export const dynamicParams = true;
 
@@ -15,7 +16,6 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// FIX: Updated query to include ALL release metadata (price, dev, pub, platforms) AND subscription status
 const getEnrichedGameData = unstable_cache(
     async (slug: string) => {
         const data = await getCachedGamePageData(slug);
@@ -29,7 +29,6 @@ const getEnrichedGameData = unstable_cache(
             "developer": developer->title,
             "publisher": publisher->title,
             platforms,
-            // UPDATED: Added subscription fields
             "onGamePass": coalesce(onGamePass, false),
             "onPSPlus": coalesce(onPSPlus, false),
             tags[]->{title, "slug": slug.current},
@@ -46,7 +45,6 @@ const getEnrichedGameData = unstable_cache(
             developer: releaseData?.developer,
             publisher: releaseData?.publisher,
             platforms: releaseData?.platforms,
-            // Pass subscription info
             onGamePass: releaseData?.onGamePass,
             onPSPlus: releaseData?.onPSPlus,
             mainImage: data.mainImage || releaseData?.releaseImage 
@@ -106,23 +104,29 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
 
     const { title: gameTitle, items: allItems, synopsis, releaseTags, mainImage, price, developer, publisher, platforms, onGamePass, onPSPlus } = data;
 
+    const breadcrumbItems = [
+        { name: 'الرئيسية', item: '/' },
+        { name: 'الألعاب', item: '/releases' }, // Linking to releases as a "Games" index
+        { name: gameTitle, item: `/games/${gameSlug}` }
+    ];
+
     return (
-        <HubPageClient
-            initialItems={allItems}
-            hubTitle={gameTitle}
-            hubType="اللعبة"
-            synopsis={synopsis}
-            tags={releaseTags}
-            fallbackImage={mainImage} 
-            price={price}
-            developer={developer}
-            publisher={publisher}
-            platforms={platforms}
-            // Pass subscription info to HubPageClient (you'll need to update HubPageClient to accept/render these)
-            onGamePass={onGamePass}
-            onPSPlus={onPSPlus}
-        />
+        <>
+            <BreadcrumbJsonLd items={breadcrumbItems} />
+            <HubPageClient
+                initialItems={allItems}
+                hubTitle={gameTitle}
+                hubType="اللعبة"
+                synopsis={synopsis}
+                tags={releaseTags}
+                fallbackImage={mainImage} 
+                price={price}
+                developer={developer}
+                publisher={publisher}
+                platforms={platforms}
+                onGamePass={onGamePass}
+                onPSPlus={onPSPlus}
+            />
+        </>
     );
 }
-
-

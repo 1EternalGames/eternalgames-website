@@ -17,6 +17,7 @@ import FPSAutoTuner from '@/components/FPSAutoTuner';
 import KonamiCode from '@/components/effects/KonamiCode';
 import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
 import SmoothScrolling from '@/components/ui/SmoothScrolling';
+import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd'; // ADDED
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -105,6 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         <NextAuthProvider>
           <UserStoreHydration />
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          <OrganizationJsonLd /> {/* ADDED: Global Organization Schema */}
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
             <SmoothScrolling>

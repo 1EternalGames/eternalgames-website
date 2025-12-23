@@ -1,3 +1,4 @@
+// app/robots.ts
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
@@ -7,12 +8,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      // SECURITY: Keep bots out of admin/studio areas to save crawl budget
+      // SECURITY & SEO: Prevent crawling of admin areas and infinite filter parameters
       disallow: [
         '/studio/',
         '/api/',
         '/admin/',
         '/private/',
+        '/*?*',
+        '/search',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

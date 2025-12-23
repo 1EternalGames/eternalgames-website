@@ -13,9 +13,8 @@ import { portableTextToTiptap } from './utils/portableTextToTiptap';
 import { editorDocumentQuery, studioMetadataQuery } from '@/lib/sanity.queries';
 import type { IdentifiedSanityDocumentStub } from '@sanity/client';
 import { v4 as uuidv4 } from 'uuid';
-import { validateImageFile, sanitizeFilename } from '@/lib/security'; // IMPORT sanitizeFilename
+import { validateImageFile } from '@/lib/security'; 
 
-// ... (Existing helper functions remain unchanged) ...
 function revalidateContentPaths(docType: string, slug?: string) {
     revalidateTag(docType, 'max'); 
     revalidatePath('/'); 
@@ -41,8 +40,6 @@ export const getStudioMetadataAction = unstable_cache(
   ['studio-metadata-full'],
   { tags: ['studio-metadata'], revalidate: 3600 } 
 );
-
-// ... (translateTitleToAction, createDraftAction, updateDocumentAction, deleteDocumentAction, deleteMetadataAction, publishDocumentAction, searchCreatorsAction, createGameAction, createTagAction, createDeveloperAction, createPublisherAction, validateSlugAction remain unchanged) ...
 
 export async function translateTitleToAction(title: string): Promise<string> {
     const session = await getAuthenticatedSession();
@@ -309,8 +306,15 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
         return { success: false, error: validation.error || 'نوع الملف غير مدعوم.' };
     }
     
-    // SECURITY: Filename Sanitization
-    const safeFilename = sanitizeFilename(file.name);
+    // SEO: Filename Sanitization (Slugify)
+    // Instead of just removing non-alphanumeric, we slugify the name to be SEO friendly
+    // e.g. "My Game Screenshot.jpg" -> "my-game-screenshot.jpg"
+    const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
+    const extension = file.name.substring(file.name.lastIndexOf('.'));
+    
+    // Fallback if name is empty after processing
+    const safeBaseName = slugify(originalName, { lowercase: true, separator: '-', allowedChars: 'a-zA-Z0-9' }) || `image-${Date.now()}`;
+    const safeFilename = `${safeBaseName}${extension}`;
     
     try {
         const arrayBuffer = await file.arrayBuffer();

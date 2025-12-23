@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -9,7 +9,7 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
+import { usePerformanceStore } from '@/lib/performanceStore'; 
 
 import type { SanityReview, SanityArticle, SanityNews } from '@/types/sanity';
 import PortableTextComponent from '@/components/PortableTextComponent';
@@ -25,6 +25,7 @@ import CreatorCredit from '@/components/CreatorCredit';
 import styles from './ContentPage.module.css';
 import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
+import TableOfContents, { TocItem } from '@/components/content/TableOfContents'; // NEW
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -32,7 +33,8 @@ type Slug = { current: string } | string;
 
 type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
     slug: Slug; 
-    relatedContent?: any[] 
+    relatedContent?: any[];
+    readingTime?: number; // ADDED
 };
 
 type ContentType = 'reviews' | 'articles' | 'news';
@@ -65,6 +67,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const { isHeroTransitionEnabled } = usePerformanceStore();
 
     const [headings, setHeadings] = useState<Heading[]>([]);
+    const [tocItems, setTocItems] = useState<TocItem[]>([]); // New state for static ToC
     const [isMobile, setIsMobile] = useState(false);
     
     const articleBodyRef = useRef<HTMLDivElement>(null); 
@@ -86,8 +89,11 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         const seenIds = new Set<string>();
         
         let newHeadings: Heading[] = [];
+        let newTocItems: TocItem[] = [];
 
-        const headingElements = Array.from(contentElement.querySelectorAll('h1'));
+        // Select h1 (which acts as h2 in PortableText config) and h2 (h3 in portable text)
+        const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
+        
         headingElements.forEach((h, index) => {
             let id = h.id;
             if (!id || seenIds.has(id)) { 
@@ -99,7 +105,11 @@ export default function ContentPageClient({ item, type, children, colorDictionar
             const topPosition = h.getBoundingClientRect().top + documentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
             
-            newHeadings.push({ id: id, title: h.textContent || '', top: Math.max(0, scrollToPosition), level: 1 });
+            const level = parseInt(h.tagName.substring(1));
+            const title = h.textContent || '';
+            
+            newHeadings.push({ id, title, top: Math.max(0, scrollToPosition), level });
+            newTocItems.push({ id, text: title, level });
         });
 
         if (isReview) {
@@ -108,17 +118,21 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                  const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
                  const scoreBoxScrollPosition = topPosition - navbarOffset;
                  
-                 newHeadings.push({ 
+                 const verdictHeading = { 
                      id: 'verdict-summary', 
                      title: 'الخلاصة', 
                      top: Math.max(0, scoreBoxScrollPosition),
-                     level: 1 
-                 });
+                     level: 2
+                 };
+
+                 newHeadings.push(verdictHeading);
+                 newTocItems.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
              }
         }
         
         if (newHeadings.length > 0) {
             setHeadings(newHeadings);
+            setTocItems(newTocItems);
         }
 
     }, [isReview]);
@@ -272,6 +286,11 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                         <CreatorCredit label="بقلم" creators={primaryCreators} />
                                         {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
                                         <div className={styles.dateContainer}>
+                                             {item.readingTime && (
+                                                 <span className={styles.readTimeBadge} title="وقت القراءة المقدر">
+                                                     {item.readingTime} دقيقة
+                                                 </span>
+                                             )}
                                              <p className={styles.dateText} style={{marginRight: '1rem'}}>{formattedDate}</p>
                                              <Calendar03Icon className={styles.metadataIcon} />
                                         </div>
@@ -279,6 +298,9 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                 </div>
 
                                 <div ref={articleBodyRef} className="article-body">
+                                    {/* Table of Contents Injection */}
+                                    <TableOfContents headings={tocItems} />
+                                    
                                     <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
                                     {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
                                 </div>
@@ -314,5 +336,3 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         </>
     );
 }
-
-
