@@ -8,8 +8,8 @@ import type { Metadata } from 'next';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import IndexPageSkeleton from '@/components/skeletons/IndexPageSkeleton';
 import { unstable_cache } from 'next/cache';
+import CollectionPageJsonLd from '@/components/seo/CollectionPageJsonLd'; // ADDED
 
-// THE FIX: Enforce static generation for the main reviews index.
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
@@ -28,13 +28,11 @@ export const metadata: Metadata = {
   }
 };
 
-// OPTIMIZATION: Cache the entire reviews page data fetch + enrichment
 const getCachedReviewsPageData = unstable_cache(
   async () => {
     const data = await client.fetch(reviewsIndexQuery);
     const { hero: heroReviewRaw, grid: initialGridReviewsRaw } = data;
 
-    // Enrich data inside the cache
     let heroReview = null;
     if (heroReviewRaw) {
         heroReview = {
@@ -54,13 +52,14 @@ const getCachedReviewsPageData = unstable_cache(
   },
   ['reviews-page-index'],
   { 
-    revalidate: false, // Cache indefinitely
-    tags: ['review', 'content'] // Revalidate when reviews are published/edited
+    revalidate: false, 
+    tags: ['review', 'content'] 
   }
 );
 
 export default async function ReviewsPage() {
   const data = await getCachedReviewsPageData();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
 
   const {
       hero: heroReview,
@@ -68,6 +67,20 @@ export default async function ReviewsPage() {
       games: allGames,
       tags: allTags
   } = data;
+
+  // Prepare List for Schema
+  const itemList = (initialGridReviews || []).map((item: any) => ({
+      headline: item.title,
+      url: `${siteUrl}/reviews/${item.slug}`,
+      datePublished: item.publishedAt
+  }));
+  if (heroReview) {
+      itemList.unshift({
+          headline: heroReview.title,
+          url: `${siteUrl}/reviews/${heroReview.slug}`,
+          datePublished: heroReview.publishedAt
+      });
+  }
 
   if (!heroReview) {
     return (
@@ -82,6 +95,12 @@ export default async function ReviewsPage() {
 
   return (
     <Suspense fallback={<IndexPageSkeleton heroVariant="center" />}>
+      <CollectionPageJsonLd 
+        name="مراجعات الألعاب" 
+        description="أحدث مراجعات الألعاب من فريق EternalGames" 
+        url={`${siteUrl}/reviews`}
+        hasPart={itemList}
+      />
       <ReviewsPageClient 
         heroReview={heroReview} 
         initialGridReviews={gridReviews}
@@ -91,5 +110,3 @@ export default async function ReviewsPage() {
     </Suspense>
   );
 }
-
-

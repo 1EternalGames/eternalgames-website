@@ -8,7 +8,8 @@ import { getCachedGamePageData } from '@/lib/sanity.fetch';
 import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
-import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
+import VideoGameJsonLd from '@/components/seo/VideoGameJsonLd'; // ADDED
 
 export const dynamicParams = true;
 
@@ -26,6 +27,7 @@ const getEnrichedGameData = unstable_cache(
         const releaseQuery = groq`*[_type == "gameRelease" && game->slug.current == $slug][0]{ 
             synopsis,
             price,
+            releaseDate, // ADDED: Need date for schema
             "developer": developer->title,
             "publisher": publisher->title,
             platforms,
@@ -41,6 +43,7 @@ const getEnrichedGameData = unstable_cache(
             items: enrichedItems, 
             releaseTags: releaseData?.tags || [],
             synopsis: releaseData?.synopsis || null,
+            releaseDate: releaseData?.releaseDate, // ADDED
             price: releaseData?.price,
             developer: releaseData?.developer,
             publisher: releaseData?.publisher,
@@ -102,17 +105,30 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
         notFound();
     }
 
-    const { title: gameTitle, items: allItems, synopsis, releaseTags, mainImage, price, developer, publisher, platforms, onGamePass, onPSPlus } = data;
+    const { title: gameTitle, items: allItems, synopsis, releaseTags, mainImage, price, developer, publisher, platforms, onGamePass, onPSPlus, releaseDate } = data;
 
     const breadcrumbItems = [
         { name: 'الرئيسية', item: '/' },
-        { name: 'الألعاب', item: '/releases' }, // Linking to releases as a "Games" index
+        { name: 'الألعاب', item: '/releases' },
         { name: gameTitle, item: `/games/${gameSlug}` }
     ];
+
+    const genreNames = releaseTags.map((t: any) => t.title);
+    const imageUrl = mainImage ? urlFor(mainImage).width(800).url() : undefined;
 
     return (
         <>
             <BreadcrumbJsonLd items={breadcrumbItems} />
+            <VideoGameJsonLd 
+                name={gameTitle}
+                description={synopsis || `Game Hub for ${gameTitle}`}
+                image={imageUrl}
+                releaseDate={releaseDate}
+                genre={genreNames}
+                platforms={platforms}
+                developer={developer}
+                publisher={publisher}
+            />
             <HubPageClient
                 initialItems={allItems}
                 hubTitle={gameTitle}

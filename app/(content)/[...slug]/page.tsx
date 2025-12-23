@@ -8,7 +8,7 @@ import { client } from '@/lib/sanity.client';
 import { enrichContentList } from '@/lib/enrichment'; 
 import JsonLd from '@/components/seo/JsonLd';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; 
-import SpeakableJsonLd from '@/components/seo/SpeakableJsonLd'; // ADDED
+import SpeakableJsonLd from '@/components/seo/SpeakableJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
 import { calculateReadingTime, toPlainText } from '@/lib/readingTime'; 
 
@@ -63,6 +63,7 @@ function generateStructuredData(item: any, type: string, url: string) {
     };
 
     if (type === 'review') {
+        // ENHANCED REVIEW SCHEMA
         return {
             ...baseSchema,
             "itemReviewed": {
@@ -76,7 +77,24 @@ function generateStructuredData(item: any, type: string, url: string) {
                 "bestRating": "10",
                 "worstRating": "0"
             },
-            "description": item.synopsis || item.verdict
+            "description": item.synopsis || item.verdict,
+            // ADDED: Explicitly map Pros/Cons to schema if available (Google understands this)
+            "positiveNotes": item.pros ? {
+                "@type": "ItemList",
+                "itemListElement": item.pros.map((p: string, i: number) => ({
+                    "@type": "ListItem",
+                    "position": i + 1,
+                    "name": p
+                }))
+            } : undefined,
+            "negativeNotes": item.cons ? {
+                "@type": "ItemList",
+                "itemListElement": item.cons.map((c: string, i: number) => ({
+                    "@type": "ListItem",
+                    "position": i + 1,
+                    "name": c
+                }))
+            } : undefined
         };
     }
 
@@ -186,7 +204,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
         <>
             <JsonLd data={jsonLdData} />
             <BreadcrumbJsonLd items={breadcrumbItems} />
-            {/* ADDED: Speakable Schema for News (targets Title and Synopsis classes) */}
+            {/* Speakable Schema for News */}
             {sanityType === 'news' && (
                 <SpeakableJsonLd cssSelectors={['.page-title', '.article-body p:first-of-type']} />
             )}
