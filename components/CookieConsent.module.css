@@ -1,0 +1,169 @@
+/* components/CookieConsent.module.css */
+
+.consentBanner {
+    position: fixed;
+    /* FIX: Changed positioning strategy for absolute center stability */
+    bottom: 2rem;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    
+    width: 90%;
+    max-width: 900px;
+    z-index: 9999;
+    
+    background-color: rgba(10, 11, 15, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    
+    box-shadow: 
+        0 20px 50px -10px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(0, 255, 240, 0.1);
+    
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    overflow: hidden;
+}
+
+/* The cyan top line */
+.consentBanner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+}
+
+:global(body.no-glass) .consentBanner {
+    backdrop-filter: none !important;
+    background-color: #0A0B0F !important;
+    border-color: var(--border-color);
+}
+
+.content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    font-weight: 500;
+}
+
+.iconContainer {
+    width: 42px;
+    height: 42px;
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.textContainer p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.acceptBtn {
+    background-color: var(--accent);
+    color: #050505;
+    font-weight: 800;
+    border: none;
+    padding: 0.8rem 2.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.declineBtn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    transition: all 0.2s ease;
+    font-weight: 600;
+}
+
+.settingsBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 1.3rem;
+    transition: color 0.2s;
+    margin-right: 1rem;
+}
+
+@media (hover: hover) {
+    .acceptBtn:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 5px 20px color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+    .declineBtn:hover { 
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border-color: var(--text-primary);
+    }
+    .settingsBtn:hover {
+        color: var(--accent);
+        text-decoration-color: var(--accent);
+    }
+}
+
+@media (max-width: 860px) {
+    .consentBanner {
+        flex-direction: column;
+        align-items: flex-start;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
+        padding: 2.5rem 2rem;
+        margin: 0; /* Reset margin on mobile */
+    }
+    
+    .actions {
+        width: 100%;
+        margin-top: 1rem;
+        justify-content: stretch;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .settingsBtn {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin: 0;
+        padding: 1rem;
+    }
+}

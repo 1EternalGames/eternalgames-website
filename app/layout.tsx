@@ -19,6 +19,7 @@ import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
 import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
+import CookieConsent from '@/components/CookieConsent'; // ADDED
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -125,6 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 <KonamiCode />
                 <SpaceBackground />
                 <ToastProvider />
+                <CookieConsent /> {/* ADDED */}
                 <Lightbox />
                 <Navbar />
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>

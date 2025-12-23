@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link'; // ADDED
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Footer.module.css';
 
@@ -37,13 +37,9 @@ const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const Footer = () => {
   const pathname = usePathname();
-
-  // Updated regex to include social-templates
   const isStudioEditor = /^\/studio\/(reviews|articles|news|releases|social-templates)\/.+/.test(pathname);
 
-  if (isStudioEditor) {
-    return null;
-  }
+  if (isStudioEditor) return null;
 
   return (
     <footer className={`${styles.footer} ${styles.newFooterLayout}`}>
@@ -68,10 +64,12 @@ const Footer = () => {
 
         <div className={styles.footerDivider}></div>
         
-        {/* ADDED: Link Section */}
-        <div style={{ display: 'flex', gap: '2rem', fontSize: '1.4rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', fontSize: '1.4rem', justifyContent: 'center' }}>
             <Link href="/about" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>من نحن</Link>
             <Link href="/sitemap-html" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>خريطة الموقع</Link>
+            {/* ADDED LINKS */}
+            <Link href="/privacy-policy" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>سياسة الخصوصية</Link>
+            <Link href="/terms-of-service" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>شروط الخدمة</Link>
         </div>
 
         <div className={styles.footerInfo}>

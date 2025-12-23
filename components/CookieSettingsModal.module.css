@@ -1,0 +1,171 @@
+/* components/CookieSettingsModal.module.css */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin: 2rem 0;
+}
+
+/* THE NEW CARD BUTTON */
+.preferenceCard {
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    text-align: right;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* Hover Effect */
+@media (hover: hover) {
+    .preferenceCard:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+    }
+}
+
+/* Active (Selected) State */
+.preferenceCard.active {
+    background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px -5px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* Disabled (Required) State */
+.preferenceCard.disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+@media (hover: hover) {
+    .preferenceCard.disabled:hover {
+        transform: none;
+    }
+}
+
+.labelContainer {
+    flex-grow: 1;
+    padding-left: 2rem;
+}
+
+.headerRow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-family: var(--font-main);
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    transition: color 0.2s;
+}
+
+.preferenceCard.active .title {
+    color: var(--accent);
+}
+
+.badge {
+    font-size: 1rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    background: var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.preferenceCard.required .badge {
+    background-color: var(--accent);
+    color: #000;
+    border: none;
+}
+
+.description {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* --- THE STATUS INDICATOR (Replaces the Toggle) --- */
+.statusIndicator {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 99px;
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.statusDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.statusText {
+    font-family: var(--font-ui);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+/* Active Status Styles */
+.preferenceCard.active .statusIndicator {
+    border-color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.preferenceCard.active .statusDot {
+    background-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+}
+
+.preferenceCard.active .statusText {
+    color: var(--accent);
+}
+
+/* Action Bar */
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1rem;
+}
+
+.saveButton {
+    background-color: var(--accent);
+    color: #000;
+    font-weight: 800;
+    padding: 1rem 3rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.saveButton:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
+}
