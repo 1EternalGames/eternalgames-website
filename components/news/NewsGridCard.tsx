@@ -224,7 +224,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                     href={linkPath} 
                     className={`${styles.cardLink} no-underline`}
                     onClick={handleClick}
-                    prefetch={false} 
                 >
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
@@ -266,7 +265,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                             href={`/creators/${authorUsername}`}
                                             className={`${styles.creatorCapsule} no-underline`}
                                             onClick={(e) => e.stopPropagation()} 
-                                            prefetch={false}
                                         >
                                             {capsuleContent}
                                         </Link>
@@ -341,8 +339,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                                 href={sat.link} 
                                                 onClick={(e) => e.stopPropagation()}
                                                 className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                                prefetch={false}
-                                             >
+                                            >
                                                  {sat.label}
                                              </Link>
                                          ) : (

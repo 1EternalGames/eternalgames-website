@@ -18,7 +18,6 @@ import { usePerformanceStore } from '@/lib/performanceStore';
 import { translateTag } from '@/lib/translations';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 
-// FIX: Added transitions for hidden state to ensure smooth exit
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0, transition: { duration: 0.2, when: "afterChildren" } },
     visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
@@ -36,7 +35,6 @@ const SATELLITE_CONFIG = [
 ];
 
 // --- POSITIONING ADJUSTMENTS ---
-// ADJUST THESE NUMBERS TO LIFT/LOWER CARDS
 const CARD_VERTICAL_OFFSET_DESKTOP = -80; 
 const CARD_VERTICAL_OFFSET_MOBILE = -70;  
 
@@ -249,10 +247,8 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
     const profileSlug = creator.username || (creator.slug as any)?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
     const hasPublicProfile = !!profileSlug;
     
-    // Icon Selection based on role
     const IconComponent = label === 'تصميم' ? ColorPaletteIcon : PenEdit02Icon;
 
-    // The inner pill content (Visuals)
     const InnerContent = (
         <>
              <div className={styles.capsuleIcon}>
@@ -262,7 +258,6 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
         </>
     );
     
-    // The interactive container
     const InteractiveWrapper = ({ children }: { children: React.ReactNode }) => (
         <motion.div 
             className={styles.capsuleWrapper}
@@ -319,11 +314,11 @@ interface VanguardCardProps {
 
 const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, isHovered, isInteractive, isVisible, onHoverChange }: VanguardCardProps) => {
     const { livingCardRef, livingCardAnimation } = useLivingCard();
-    const router = useRouter(); const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const router = useRouter(); 
+    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
     const scoreRef = useRef<HTMLParagraphElement>(null);
     
-    // Performance Store
     const { isFlyingTagsEnabled, isLivingCardEnabled, isCornerAnimationEnabled } = usePerformanceStore();
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
@@ -353,9 +348,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
         setPrefix(layoutIdPrefix);
     };
     
-    // FIX: Bridge click handler to trigger main navigation
     const handleBridgeClick = (e: React.MouseEvent) => {
-        // Only trigger if not clicking tags/creators (though they stopProp anyway)
         handleClick(e as any);
         router.push(linkPath);
     };
@@ -368,7 +361,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const showCredits = isCenter || isHovered;
     const displayTags = review.tags.slice(0, 3);
     
-    // OPTIMIZATION: Disable interaction listeners if card is hidden
     const livingCardHandlers = (isInteractive && isVisible) ? {
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!effectivelyDisabledLiving) {
@@ -410,8 +402,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                 onClick={handleClick}
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
-                prefetch={false}
-                scroll={false} 
+                // IMPORTANT: Removed prefetch={false} to enable instant nav
             >
                 <motion.div
                     ref={livingCardRef}
@@ -424,25 +415,16 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         boxShadow: 'none',
                         backgroundColor: 'transparent'
                     }}
-                    // THE FIX: DISABLE LAYOUT ID ON MOBILE TO PREVENT FLICKERING DURING CAROUSEL NAV
                     layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${review.legacyId}` : undefined} 
                     className={styles.vanguardCard}
                 >
-                    {/* 
-                       THE HIT LAYER:
-                       This invisible div covers the entire card and uses the same clip-path 
-                       to ensure the shape is respected. It catches mouse events that fall 
-                       through other transparent layers (like the top half of the card).
-                    */}
                     <div 
                         className={styles.hitArea}
                     />
 
-                    {/* OPTIMIZATION: Only render expensive SVG frame if visible */}
                     {isVisible && <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />}
                     
                     <div className={styles.effectLayer}>
-                        {/* OPTIMIZATION: Only render spotlight/scanline if visible */}
                         {isVisible && !isMobile && (
                             <motion.div 
                                 className={styles.holoSpotlight} 
@@ -462,7 +444,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                 exit="hidden"
                                 style={{ pointerEvents: 'auto', transform: 'translateZ(50px)' }}
                             >
-                                {/* Safe Bridge overlay now handled in CSS via creatorCapsuleContainer::before */}
                                 {review.authors.map(author => <CreatorCapsule key={author._id} label="بقلم" creator={author} />)}
                                 {review.designers?.map(designer => <CreatorCapsule key={designer._id} label="تصميم" creator={designer} />)}
                             </motion.div>
@@ -501,15 +482,12 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         </div>
                     </motion.div>
                     
-                    {/* OPTIMIZATION: Only render flying tags if visible */}
                     {isVisible && isFlyingTagsEnabled && (
                         <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                             <AnimatePresence>
                                 {isHovered && displayTags.map((tag, i) => {
-                                    // Calculate config based on device
                                     const rawConfig = SATELLITE_CONFIG[i];
                                     
-                                    // Apply mobile scaling if needed
                                     const hoverX = isMobile && rawConfig ? rawConfig.hoverX * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverX || 0);
                                     const hoverY = isMobile && rawConfig ? rawConfig.hoverY * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverY || 0);
                                     const rotate = rawConfig?.rotate || 0;
@@ -527,7 +505,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                                 rotate: rotate,
                                                 z: -30 
                                             }}
-                                            // FIX: Added smooth exit transition
                                             exit={{ 
                                                 opacity: 0, 
                                                 scale: 0.4, 
@@ -558,12 +535,9 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                 })}
                             </AnimatePresence>
                             
-                            {/* --- SAFE BRIDGES --- */}
-                            {/* Invisible lines that ensure hover state persists when moving mouse from center to tags */}
                             {isHovered && (
                                 <svg className={styles.satelliteBridgeSvg}>
                                     {displayTags.map((_, i) => {
-                                        // Re-calculate same coordinates for bridge
                                         const rawConfig = SATELLITE_CONFIG[i];
                                         const hoverX = isMobile && rawConfig ? rawConfig.hoverX * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverX || 0);
                                         const hoverY = isMobile && rawConfig ? rawConfig.hoverY * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverY || 0);
@@ -575,7 +549,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                                 x2={hoverX} 
                                                 y2={hoverY} 
                                                 className={styles.satelliteBridgeLine}
-                                                // FIX: Added onClick to bridge lines to ensure they act as part of the card
                                                 onClick={handleBridgeClick}
                                             />
                                         );
@@ -601,17 +574,9 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
         const track = trackRef.current;
 
         if (activeItem && track) {
-            // Replaced scrollIntoView with manual container scrolling to prevent window scroll jumping
             const itemRect = activeItem.getBoundingClientRect();
             const trackRect = track.getBoundingClientRect();
-            
-            // Calculate position relative to the track's current scroll view
-            // itemRect.left is relative to viewport. trackRect.left is relative to viewport.
-            // relativeLeft is the pixel distance from the left edge of the visible track area.
-            // Add track.scrollLeft to get the position relative to the start of the scrollable content.
             const relativeLeft = itemRect.left - trackRect.left + track.scrollLeft;
-            
-            // Center the item: targetScrollLeft = itemCenter - trackHalfWidth
             const targetScrollLeft = relativeLeft - (trackRect.width / 2) + (itemRect.width / 2);
 
             track.scrollTo({
@@ -691,20 +656,15 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         }
     };
     
-    // --- DEBOUNCED HOVER LOGIC ---
-    // MEMOIZED to prevent unnecessary re-renders of VanguardCard
     const handleCardHoverChange = useCallback((id: string, isHovering: boolean) => {
         if (!initialAnimHasRun) return;
 
-        // CRITICAL FIX: Ensure we don't apply hover effects if the carousel is actively animating
-        // This prevents the "stuck large card" issue during rapid interaction
         if (isAnimating) {
             setHoveredId(null);
             setIsManualHover(false);
             return;
         }
 
-        // NEW: Instant update for mobile to prevent laggy touch feedback
         if (isMobile) {
             if (isHovering) {
                 setHoveredId(id);
@@ -722,13 +682,11 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         }
 
         if (isHovering) {
-            // ENTER: Wait 50ms (snappy debounce)
             hoverTimeoutRef.current = setTimeout(() => {
                 setHoveredId(id);
                 setIsManualHover(true);
             }, 50);
         } else {
-            // LEAVE: Wait 50ms before clearing
             hoverTimeoutRef.current = setTimeout(() => {
                 setHoveredId(null);
                 setIsManualHover(false);
@@ -752,7 +710,6 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             ref={containerRef} 
             className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''} gpu-cull`}
         >
-            {/* Global Definitions for Clip Paths */}
             <VanguardGlobalDefs />
 
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
@@ -770,24 +727,12 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                     const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
                     const isHovered = hoveredId === review.id;
                     
-                    // --- APPLY LIFT ADJUSTMENTS HERE ---
                     const currentStyle = { ...style };
                     if (currentStyle.transform) {
-                        // NOTE: The previous refactoring of getCardState in `useVanguardCarousel` logic handles standard placement.
-                        // However, since we defined constants here, let's override the Y-translation manually for fine control.
-                        
-                        // Parse existing transform to preserve X and Scale
-                        // Format: translateX(...) scale(...) translateY(...)
-                        // We replace the translateY part.
-                        
                         let yOffset = isMobile ? CARD_VERTICAL_OFFSET_MOBILE : CARD_VERTICAL_OFFSET_DESKTOP;
-                        
                         if (isHovered && !isMobile) {
-                            yOffset -= 15; // Additional lift for hover
+                            yOffset -= 15; 
                         }
-                        
-                        // Replace the translateY(...) part of the string
-                        // Regex looks for translateY followed by anything until closing parenthesis
                         currentStyle.transform = currentStyle.transform.replace(/translateY\([^)]+\)/, `translateY(${yOffset}px)`);
                     }
 
@@ -811,7 +756,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                                 isMobile={isMobile}
                                 isHovered={isHovered}
                                 isInteractive={initialAnimHasRun}
-                                isVisible={isVisible} // OPTIMIZATION: Pass visibility to card
+                                isVisible={isVisible} 
                                 onHoverChange={(val) => handleCardHoverChange(review.id, val)}
                             />
                         </motion.div>

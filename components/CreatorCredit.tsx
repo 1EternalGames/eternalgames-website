@@ -121,7 +121,6 @@ export default function CreatorCredit({ label, creators, disableLink = false }: 
                             key={creator._id}
                             href={`/creators/${creator.username}`}
                             className={`${styles.creditCapsule} no-underline`}
-                            prefetch={false}
                         >
                             {content}
                         </Link>

@@ -10,6 +10,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
 import { usePerformanceStore } from '@/lib/performanceStore'; 
+import { useContentStore } from '@/lib/contentStore'; // <-- NEW
 
 import type { SanityReview, SanityArticle, SanityNews } from '@/types/sanity';
 import PortableTextComponent from '@/components/PortableTextComponent';
@@ -27,7 +28,7 @@ import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
-import { formatArabicDuration, generateId } from '@/lib/text-utils'; // IMPORT generateId
+import { formatArabicDuration, generateId } from '@/lib/text-utils'; 
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
@@ -48,10 +49,20 @@ const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 
 
 const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
-export default function ContentPageClient({ item, type, children, colorDictionary }: { item: ContentItem; type: ContentType; children: React.ReactNode; colorDictionary: ColorMapping[]; }) {
+export default function ContentPageClient({ item: initialItem, type, children, colorDictionary }: { item: ContentItem; type: ContentType; children: React.ReactNode; colorDictionary: ColorMapping[]; }) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     const openLightbox = useLightboxStore((state) => state.openLightbox);
     const { isHeroTransitionEnabled } = usePerformanceStore();
+    const getBySlug = useContentStore((state) => state.getBySlug);
+
+    // --- INSTANT CACHE CHECK ---
+    // If the data exists in the store (from homepage prefetch), use it immediately.
+    // The server prop `initialItem` is the fallback/SEO data.
+    const slugKey = typeof initialItem.slug === 'string' ? initialItem.slug : initialItem.slug?.current || '';
+    const cachedItem = getBySlug(slugKey);
+    
+    // Prioritize cachedItem if available, it avoids the hydration flicker if cache is hot
+    const item = cachedItem || initialItem;
 
     const isReview = type === 'reviews';
     const isNews = type === 'news';
@@ -80,13 +91,10 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
         
         headingElements.forEach((h, index) => {
-            // FIX: Use the exact same ID generation logic as the server
-            // If the element has no ID (rare), generate one using the shared utility
             let id = h.id;
             
             if (!id || seenIds.has(id)) { 
                 const textContent = h.textContent || '';
-                // Use the shared Arabic-preserving generator
                 id = generateId(textContent) || `heading-${index}`;
             }
             

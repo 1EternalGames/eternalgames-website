@@ -508,7 +508,13 @@ const TimelineCardComponent = ({
                         )}
                     </div>
 
-                    <Link href={mainHref} className="no-underline block h-full" onClick={handleClick} prefetch={false} style={{ position: 'relative', zIndex: 1 }}>
+                    <Link 
+                        href={mainHref} 
+                        className="no-underline block h-full" 
+                        onClick={handleClick} 
+                        prefetch={false} 
+                        style={{ position: 'relative', zIndex: 1 }}
+                    >
                         <motion.div className={styles.glare} style={{ '--mouse-x': glareX, '--mouse-y': glareY } as any} />
                         
                         <div className={styles.monolithFrame}>

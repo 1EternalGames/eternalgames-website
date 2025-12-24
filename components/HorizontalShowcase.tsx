@@ -92,7 +92,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
             onClick={handleClick}
             className={`no-underline ${styles.showcaseCardLink}`}
             draggable="false"
-            prefetch={false}
         >
             <div className={styles.monolithFrame}>
                 {/* NEW: Explicit Cyber Corner Div */}
@@ -146,7 +145,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                                     onClick={(e) => e.stopPropagation()} 
                                     className={`${styles.creditCapsule} no-underline`}
                                     style={{ flexDirection: 'row-reverse' }} 
-                                    prefetch={false}
                                 >
                                     <div className={styles.capsuleIcon}>
                                         <PenEdit02Icon style={{ width: 14, height: 14 }} />
@@ -196,7 +194,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                                     href={`/tags/${tag.slug}`} 
                                     onClick={(e) => e.stopPropagation()}
                                     className={`${styles.satelliteShardLink} no-underline`}
-                                    prefetch={false}
                                 >
                                      {translateTag(tag.title)}
                                  </Link>
@@ -306,5 +303,3 @@ export default function HorizontalShowcase({ articles, onActiveIndexChange }: { 
     </div>
   );
 }
-
-

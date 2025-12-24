@@ -49,7 +49,6 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
                 href={`/creators/${authorUsername}`}
                 className={`${styles.creditCapsule} no-underline`}
                 onClick={(e) => e.stopPropagation()} 
-                prefetch={false}
             >
                 {content}
             </Link>
@@ -232,7 +231,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         <Link 
                             href={linkPath} 
                             className={`${styles.cardOverlayLink} no-underline`}
-                            prefetch={false}
                             onClick={() => {
                                 if (!isMobile) {
                                     setScrollPos(window.scrollY);
@@ -365,7 +363,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                                 href={`/tags/${tag.slug}`} 
                                                 onClick={(e) => e.stopPropagation()}
                                                 className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
-                                                prefetch={false}
                                             >
                                                  {translateTag(tag.title)}
                                              </Link>

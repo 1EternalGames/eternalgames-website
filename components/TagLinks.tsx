@@ -32,5 +32,3 @@ export default function TagLinks({ tags, small = false }: { tags: string[], smal
     </div>
   );
 }
-
-

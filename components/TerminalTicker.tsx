@@ -77,7 +77,6 @@ export default function TerminalTicker({ headlines }: { headlines: SanityNews[] 
             <Link 
                 href={`/news/${headlines[index].slug}`} 
                 className="no-underline"
-                prefetch={false} // THE FIX: Disable prefetch
             >
               <p className={styles.terminalTickerCategory}>{headlines[index].category}</p>
               <h4 className={styles.terminalTickerHeadline}>
@@ -90,5 +89,3 @@ export default function TerminalTicker({ headlines }: { headlines: SanityNews[] 
     </div>
   );
 }
-
-

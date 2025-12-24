@@ -12,8 +12,9 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment'; 
 import HomeJsonLd from '@/components/seo/HomeJsonLd'; 
-import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; // ADDED
+import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
+import GlobalContentHydrator from '@/components/utils/GlobalContentHydrator'; // <-- NEW
 
 export const dynamic = 'force-static';
 
@@ -59,7 +60,7 @@ const getCachedHomepageContent = unstable_cache(
     async () => {
         return await client.fetch(consolidatedHomepageQuery);
     },
-    ['homepage-content-consolidated-v2'],
+    ['homepage-content-consolidated-v3'], // Updated Cache Key for new fat payload
     {
         revalidate: false,
         tags: ['review', 'article', 'news', 'content', 'gameRelease', 'releases']
@@ -90,6 +91,9 @@ export default async function HomePage() {
         enrichContentList(homepageNewsRaw),
         enrichCreators(creditsRaw)
     ]) as [SanityReview[], any[], any[], any[]];
+
+    // --- NEW: Combine all full data for hydration ---
+    const allHydrationData = [...reviews, ...homepageArticles, ...homepageNews];
 
     if (reviews.length > 0) {
         const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
@@ -158,6 +162,9 @@ export default async function HomePage() {
         <>
             <HomeJsonLd />
             {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
+            
+            {/* HYDRATE THE STORE WITH FULL CONTENT */}
+            <GlobalContentHydrator items={allHydrationData} />
             
             <DigitalAtriumHomePage 
                 reviews={reviews}
