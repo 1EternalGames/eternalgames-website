@@ -220,3 +220,17 @@
   .timelineItemsWrapper {
   }
 }
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .synopsisContainer {
+  background-color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(0,0,0,0.05);
+  color: var(--text-primary);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  backdrop-filter: blur(12px);
+}
+:global([data-theme="light"]) .dotBase {
+  background-color: rgba(0,0,0,0.1);
+}
+:global([data-theme="light"]) .timelineSpineTrack {
+  background-color: rgba(0,0,0,0.05);
+}

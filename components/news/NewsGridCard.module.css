@@ -467,3 +467,41 @@ a.creatorCapsule:active { transform: scale(0.95); }
 :global(body.no-glass) .cardContainer.activeState .creatorCapsule :global(span) {
     color: #000 !important;
 }
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .imageBadge {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  color: var(--text-primary);
+}
+:global([data-theme="light"] body.no-glass) .imageBadge {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+:global([data-theme="light"]) a.creatorCapsule,
+:global([data-theme="light"]) div.creatorCapsule {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .creatorCapsule :global(span) {
+  color: var(--text-primary);
+}
+:global([data-theme="light"]) .capsuleIcon {
+  color: #fff;
+}
+:global([data-theme="light"]) .satelliteShardLink {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+:global([data-theme="light"]) .satelliteShardLink:hover {
+  background-color: var(--accent);
+  color: #fff;
+}
+:global([data-theme="light"] body.no-glass) .satelliteShardLink {
+  background: #fff !important;
+}
+:global([data-theme="light"]) .techDot {
+  background-color: rgba(0,0,0,0.2);
+}

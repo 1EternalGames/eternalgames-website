@@ -176,3 +176,12 @@
 .tocLink:hover {
     color: var(--accent);
 }
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .tocContainer {
+  background-color: #ffffff;
+  border-color: var(--border-color);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .listWrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}

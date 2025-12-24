@@ -110,3 +110,34 @@
     transition: color 0.4s ease;
     font-family: var(--font-main);
 }
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .creditCapsule {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .creditCapsule :global(span),
+:global([data-theme="light"]) .creatorLink {
+  color: var(--text-primary);
+}
+:global([data-theme="light"]) .capsuleIcon {
+  color: #fff;
+  background-color: var(--accent);
+}
+/* Hover states for Light Mode */
+:global([data-theme="light"]) .creditCapsule:hover {
+  background-color: var(--accent);
+  color: #fff;
+}
+:global([data-theme="light"]) .creditCapsule:hover .creatorLink,
+:global([data-theme="light"]) .creditCapsule:hover :global(span) {
+  color: #000;
+}
+:global([data-theme="light"]) .creditCapsule:hover .capsuleIcon {
+  background-color: #000;
+  color: var(--accent);
+}
+/* No-glass overrides */
+:global([data-theme="light"] body.no-glass) .creditCapsule {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}

@@ -412,3 +412,50 @@ a.creditCapsule:active { transform: scale(0.95); }
 :global(body.no-glass) .livingCardWrapper.activeState .creditCapsule :global(span) {
     color: #000 !important;
 }
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .titleOverlay {
+  background: linear-gradient(to top, rgba(255,255,255,0.98) 25%, rgba(255,255,255,0.7) 65%, transparent 100%);
+}
+:global([data-theme="light"]) .cardTitle {
+  color: #1F2937;
+  text-shadow: 0 2px 15px rgba(255,255,255,0.9);
+}
+:global([data-theme="light"]) .dateReadout {
+  color: rgba(0,0,0,0.7);
+}
+:global([data-theme="light"]) .techDot {
+  background-color: rgba(0,0,0,0.2);
+}
+/* Flying Tags in Light Mode */
+:global([data-theme="light"]) .satelliteShardLink {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+:global([data-theme="light"]) .satelliteShardLink:hover {
+  background-color: var(--accent);
+  color: #fff;
+}
+:global([data-theme="light"] body.no-glass) .satelliteShardLink {
+  background: #fff !important;
+}
+/* Capsule Overrides inherit from CreatorCredit logic but defined locally here too */
+:global([data-theme="light"]) .creditCapsule {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .creditCapsule :global(span) {
+  color: var(--text-primary);
+}
+:global([data-theme="light"]) .capsuleIcon {
+  color: #fff;
+}
+:global([data-theme="light"]) .creditCapsule:hover :global(span) {
+  color: #000;
+}
+:global([data-theme="light"]) .creditCapsule:hover .capsuleIcon {
+  background-color: #000;
+  color: var(--accent);
+}

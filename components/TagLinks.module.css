@@ -74,3 +74,16 @@
 
 
 
+
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .tagLink {
+  background-color: rgba(0, 255, 240, 0.1);
+  color: #008F86; /* Darker Cyan for better contrast on white */
+  border: 1px solid rgba(0, 255, 240, 0.3);
+  box-shadow: none;
+}
+:global([data-theme="light"]) .tagLink:hover {
+  background-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 255, 240, 0.3);
+}

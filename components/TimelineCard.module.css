@@ -597,3 +597,45 @@
         background: #000; 
     }
 }
+/* --- Light Mode Overrides --- */
+:global([data-theme="light"]) .cardBody {
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, #f3f4f6 100%);
+}
+:global([data-theme="light"]) .statusBadge.upcoming {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.1);
+}
+:global([data-theme="light"]) .creditCapsule {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .creditCapsule :global(span) {
+  color: var(--text-primary);
+}
+:global([data-theme="light"]) .capsuleIcon {
+  color: #fff;
+}
+:global([data-theme="light"]) .shardPill,
+:global([data-theme="light"]) .genrePill,
+:global([data-theme="light"]) .playButtonContainer {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
+  border-color: var(--accent);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .shardPill {
+  color: var(--accent);
+}
+:global([data-theme="light"]) .genrePill {
+  color: var(--accent);
+}
+/* Ensure dark text on golden status pills for readability */
+:global([data-theme="light"]) .statusPill.golden { color: #854D0E; border-color: #EAB308; }
+:global([data-theme="light"]) .devPill {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--accent);
+}
+:global([data-theme="light"]) .techDot {
+  background-color: rgba(0,0,0,0.2);
+}
