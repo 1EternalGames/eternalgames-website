@@ -6,195 +6,186 @@ import { usePerformanceStore, PerformanceTier } from '@/lib/performanceStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 // --- CONFIGURATION ---
-const CHECK_INTERVAL = 500; 
-const WARMUP_PERIOD = 3000; 
-const COOLDOWN_AFTER_CHANGE = 5000; 
+const CHECK_INTERVAL = 250; 
+const STARTUP_GRACE_PERIOD = 4000; 
+const COOLDOWN_AFTER_CHANGE = 2000; 
 
-const DESKTOP_FPS_CRITICAL = 25;
-const DESKTOP_FPS_BAD = 48;
-const DESKTOP_FPS_GOOD = 58;
+// --- THRESHOLDS ---
+const DESKTOP_FPS_CRITICAL = 22; // Slide show -> Rocket Drop
+const DESKTOP_FPS_BAD = 30;      // Stutter -> Step Drop
+const DESKTOP_FPS_GOOD = 42;     // Smooth -> Step Up
+const DESKTOP_FPS_PERFECT = 58;  // Butter -> Rocket Up
 
-const MOBILE_FPS_CRITICAL = 20;
-const MOBILE_FPS_BAD = 35; 
-const MOBILE_FPS_GOOD = 55;
+const MOBILE_FPS_CRITICAL = 22;
+const MOBILE_FPS_BAD = 32; 
+const MOBILE_FPS_GOOD = 45;
+const MOBILE_FPS_PERFECT = 58;
 
-const REQUIRED_GOOD_STREAK = 15;
+// How many times can a tier fail before we ban it?
+// 2 Failures = "Soft Experimentation" -> "Lock"
+const MAX_FAILURES_PER_TIER = 2; 
 
 export default function FPSAutoTuner() {
     const isMobile = useIsMobile();
     const { 
         isAutoTuningEnabled, 
         setPerformanceTier,
-        setBackgroundVisibility, // Import setter
         isGlassmorphismEnabled,
         isBackgroundVisible,
-        isBackgroundAnimated,
         isLivingCardEnabled,
         isFlyingTagsEnabled,
-        isCornerAnimationEnabled
+        isCornerAnimationEnabled,
+        isCarouselAutoScrollEnabled
     } = usePerformanceStore();
     
     const rafId = useRef<number>(0);
-    const framesSinceCheck = useRef<number>(0);
     const lastCheckTime = useRef<number>(0);
-    const startTime = useRef<number>(0);
-    const lastChangeTime = useRef<number>(0); 
-    const lastActivityTime = useRef<number>(0);
+    const frameCount = useRef<number>(0);
+    const goodFpsStreak = useRef<number>(0); 
+    const lastTierChangeTime = useRef<number>(0);
+    const startTimeRef = useRef<number>(0); 
+    const currentTierRef = useRef<PerformanceTier>(6);
     
-    const currentTier = useRef<PerformanceTier>(5); 
-    const goodStreak = useRef<number>(0);
+    // Tracks failures per tier (Index 0-6).
+    // failuresRef.current[5] = number of times Tier 5 caused lag.
+    const failuresRef = useRef<number[]>([0,0,0,0,0,0,0]);
 
-    // 1. SYNC REF
+    // 1. Sync Ref to Store State
     useEffect(() => {
         let tier: PerformanceTier = 0;
-        if (isGlassmorphismEnabled && isBackgroundAnimated) tier = 5;
-        else if (isBackgroundVisible && isBackgroundAnimated) tier = 4;
-        else if (isBackgroundVisible) tier = 3;
-        else if (isLivingCardEnabled) tier = 2;
-        else if (isFlyingTagsEnabled) tier = 1;
+        if (isGlassmorphismEnabled) tier = 6;      
+        else if (isLivingCardEnabled) tier = 5;    
+        else if (isFlyingTagsEnabled) tier = 4;    
+        else if (isCornerAnimationEnabled) tier = 3; 
+        else if (isCarouselAutoScrollEnabled) tier = 2; 
+        else if (isBackgroundVisible) tier = 1;    
+        else tier = 0;                             
         
-        currentTier.current = tier;
-    }, [isGlassmorphismEnabled, isBackgroundVisible, isLivingCardEnabled, isFlyingTagsEnabled, isCornerAnimationEnabled, isBackgroundAnimated]);
+        currentTierRef.current = tier;
+    }, [
+        isGlassmorphismEnabled, 
+        isBackgroundVisible, 
+        isLivingCardEnabled, 
+        isFlyingTagsEnabled, 
+        isCornerAnimationEnabled,
+        isCarouselAutoScrollEnabled
+    ]);
 
-    // 2. ACTIVITY TRACKER
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-
-        const updateActivity = () => {
-            lastActivityTime.current = performance.now();
-        };
-
-        window.addEventListener('mousemove', updateActivity, { passive: true });
-        window.addEventListener('touchmove', updateActivity, { passive: true });
-        window.addEventListener('scroll', updateActivity, { passive: true });
-        window.addEventListener('keydown', updateActivity, { passive: true });
-        window.addEventListener('click', updateActivity, { passive: true });
-
-        return () => {
-            window.removeEventListener('mousemove', updateActivity);
-            window.removeEventListener('touchmove', updateActivity);
-            window.removeEventListener('scroll', updateActivity);
-            window.removeEventListener('keydown', updateActivity);
-            window.removeEventListener('click', updateActivity);
-        };
-    }, []);
-
-    // 3. INITIAL HARDWARE SCAN
-    useEffect(() => {
-        if (typeof window !== 'undefined' && isAutoTuningEnabled) {
-            const cores = navigator.hardwareConcurrency || 4;
-            // @ts-ignore
-            const memory = navigator.deviceMemory || 4; 
-            
-            // Relaxed initial hardware check
-            if (cores < 4 || memory < 2) {
-                console.log(`[AutoTuner] Weak Hardware Detected (${cores} cores, ${memory}GB RAM). Initializing at Low Tier.`);
-                setPerformanceTier(2);
-            } else if (cores < 6 && memory < 4) {
-                console.log(`[AutoTuner] Mid-Range Hardware Detected. Initializing at Medium Tier.`);
-                setPerformanceTier(3);
-            } else {
-                // Default to Ultra for capable devices
-                setPerformanceTier(5);
-            }
-
-            // MOBILE OVERRIDE: Keep tier full (features enabled) but disable background
-            if (isMobile) {
-                console.log('[AutoTuner] Mobile detected. Disabling background visibility by default.');
-                setBackgroundVisibility(false);
-            }
-        }
-    }, [isMobile, isAutoTuningEnabled, setPerformanceTier, setBackgroundVisibility]);
-
-    // 4. THE ENGINE
+    // 2. The Tuner Loop
     useEffect(() => {
         if (!isAutoTuningEnabled) {
             cancelAnimationFrame(rafId.current);
             return;
         }
 
-        startTime.current = performance.now();
-        lastCheckTime.current = performance.now();
-        lastActivityTime.current = performance.now();
-        framesSinceCheck.current = 0;
-        goodStreak.current = 0;
-        lastChangeTime.current = 0;
+        // RESET: If user toggles Auto on manually, clear failures to allow re-testing.
+        failuresRef.current = [0,0,0,0,0,0,0];
 
-        const loop = (timestamp: number) => {
+        const now = performance.now();
+        lastCheckTime.current = now;
+        lastTierChangeTime.current = now;
+        startTimeRef.current = now;
+        frameCount.current = 0;
+        goodFpsStreak.current = 0;
+        
+        const loop = () => {
             rafId.current = requestAnimationFrame(loop);
-            
-            framesSinceCheck.current++;
-            const now = performance.now();
-            const elapsed = now - lastCheckTime.current;
+            frameCount.current++;
 
-            if (elapsed > 2000) {
-                lastCheckTime.current = now;
-                framesSinceCheck.current = 0;
-                return;
-            }
+            const loopNow = performance.now();
+            const elapsed = loopNow - lastCheckTime.current;
 
-            if (elapsed > CHECK_INTERVAL) {
-                const fps = Math.round((framesSinceCheck.current * 1000) / elapsed);
-                lastCheckTime.current = now;
-                framesSinceCheck.current = 0;
+            if (elapsed >= CHECK_INTERVAL) {
+                const fps = Math.round((frameCount.current * 1000) / elapsed);
+                
+                lastCheckTime.current = loopNow;
+                frameCount.current = 0;
 
-                const timeSinceStart = now - startTime.current;
-                const timeSinceChange = now - lastChangeTime.current;
-                const timeSinceActivity = now - lastActivityTime.current;
+                if (loopNow - startTimeRef.current < STARTUP_GRACE_PERIOD) return; 
+                if (loopNow - lastTierChangeTime.current < COOLDOWN_AFTER_CHANGE) return; 
 
-                const fpsCritical = isMobile ? MOBILE_FPS_CRITICAL : DESKTOP_FPS_CRITICAL;
-                const fpsBad = isMobile ? MOBILE_FPS_BAD : DESKTOP_FPS_BAD;
-                const fpsGood = isMobile ? MOBILE_FPS_GOOD : DESKTOP_FPS_GOOD;
+                const current = currentTierRef.current;
+                const CRITICAL = isMobile ? MOBILE_FPS_CRITICAL : DESKTOP_FPS_CRITICAL;
+                const BAD = isMobile ? MOBILE_FPS_BAD : DESKTOP_FPS_BAD;
+                const GOOD = isMobile ? MOBILE_FPS_GOOD : DESKTOP_FPS_GOOD;
+                const PERFECT = isMobile ? MOBILE_FPS_PERFECT : DESKTOP_FPS_PERFECT;
 
-                const isUserActive = timeSinceActivity < 1000;
+                // --- DOWNGRADE LOGIC ---
+                if (fps < BAD) {
+                    if (current > 0) {
+                        let target: PerformanceTier = (current - 1) as PerformanceTier;
+                        
+                        // Mark current tier as failed (Strike 1)
+                        failuresRef.current[current] = (failuresRef.current[current] || 0) + 1;
 
-                if (timeSinceStart > WARMUP_PERIOD && timeSinceChange > COOLDOWN_AFTER_CHANGE) {
-                    
-                    if (fps < fpsCritical) {
-                        if (currentTier.current > 1) {
-                            const targetTier = Math.max(1, currentTier.current - 2) as PerformanceTier;
-                            console.warn(`[AutoTuner] 🚨 CRITICAL DROP (${fps} FPS). Dumping to Tier ${targetTier}`);
-                            setPerformanceTier(targetTier);
-                            lastChangeTime.current = now;
-                            goodStreak.current = 0;
-                        }
-                    }
-                    else if (fps < fpsBad) {
-                        if (currentTier.current > 0) {
-                            const targetTier = (currentTier.current - 1) as PerformanceTier;
-                            console.log(`[AutoTuner] Lag detected (${fps} FPS). Dropping to Tier ${targetTier}`);
-                            setPerformanceTier(targetTier);
-                            lastChangeTime.current = now;
-                            goodStreak.current = 0;
-                        }
-                    }
-                    else if (fps >= fpsGood) {
-                        if (isUserActive) {
-                            goodStreak.current++;
-                            if (goodStreak.current >= REQUIRED_GOOD_STREAK) { 
-                                if (currentTier.current < 5) {
-                                    const targetTier = (currentTier.current + 1) as PerformanceTier;
-                                    console.log(`[AutoTuner] 🚀 Performance solid under load (${fps} FPS). Upgrading to Tier ${targetTier}`);
-                                    setPerformanceTier(targetTier);
-                                    lastChangeTime.current = now;
-                                    goodStreak.current = 0;
-                                }
+                        if (fps < CRITICAL) {
+                            // CRITICAL: Rocket Drop (Skip tiers)
+                            const jump = current > 2 ? 2 : 1; 
+                            target = Math.max(0, current - jump) as PerformanceTier;
+                            
+                            // Penalize intermediate tiers max immediately because performance was critical
+                            for (let t = current; t > target; t--) {
+                                failuresRef.current[t] = MAX_FAILURES_PER_TIER; 
                             }
+                            console.warn(`[AutoTuner] 🚨 CRITICAL (${fps}fps). Rocket Drop ${current} -> ${target}`);
                         } else {
-                            if (goodStreak.current > 0) {
-                                goodStreak.current = Math.max(0, goodStreak.current - 1);
-                            }
+                            // BAD: Step Drop (Soft experiment)
+                            console.warn(`[AutoTuner] 📉 Lag (${fps}fps). Soft Drop ${current} -> ${target}`);
                         }
-                    } else {
-                        goodStreak.current = 0;
+
+                        setPerformanceTier(target);
+                        lastTierChangeTime.current = loopNow;
+                        goodFpsStreak.current = 0;
                     }
+                    return; // Don't check for upgrade in the same tick
+                }
+
+                // --- UPGRADE LOGIC ---
+                if (fps >= GOOD) {
+                    goodFpsStreak.current++;
+
+                    let target: PerformanceTier = current;
+                    
+                    // ROCKET JUMP: Perfect FPS
+                    if (fps >= PERFECT && goodFpsStreak.current >= 6) { // 1.5s stable
+                        let rocketTarget = current;
+                        if (current <= 2) rocketTarget = 4;
+                        else if (current === 3) rocketTarget = 5;
+                        else if (current >= 4) rocketTarget = 6;
+                        
+                        // Only jump if target hasn't failed too many times
+                        if (failuresRef.current[rocketTarget as number] < MAX_FAILURES_PER_TIER) {
+                            target = rocketTarget as PerformanceTier;
+                        }
+                    }
+                    
+                    // STEP JUMP: Good FPS (Fallback if Rocket blocked)
+                    if (target === current && current < 6 && goodFpsStreak.current >= 10) { // 2.5s stable
+                         const stepTarget = (current + 1) as PerformanceTier;
+                         // Only step up if target hasn't failed too many times
+                         if (failuresRef.current[stepTarget] < MAX_FAILURES_PER_TIER) {
+                             target = stepTarget;
+                         }
+                    }
+
+                    // Apply Upgrade
+                    if (target > current) {
+                         console.log(`[AutoTuner] 📈 Stable (${fps}fps). Upgrading ${current} -> ${target}`);
+                         setPerformanceTier(target);
+                         lastTierChangeTime.current = loopNow;
+                         goodFpsStreak.current = 0;
+                    }
+                } else {
+                    // FPS is Okay (Not Good, Not Bad). Hold.
+                    goodFpsStreak.current = 0;
                 }
             }
         };
 
         rafId.current = requestAnimationFrame(loop);
+        
         return () => cancelAnimationFrame(rafId.current);
-    }, [isAutoTuningEnabled, setPerformanceTier, isMobile]);
+    }, [isAutoTuningEnabled, isMobile, setPerformanceTier]);
 
     return null;
 }

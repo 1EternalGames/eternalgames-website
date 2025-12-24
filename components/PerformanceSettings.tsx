@@ -23,8 +23,8 @@ const EyeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none
 const PlayPauseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
 const BlurIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path d="M2 12s3 7 10 7 10-7 10-7 3-7 10-7 10 7 10 7Z" opacity="0.3"/></svg>;
 const BoltIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-// NEW: Mouse/Scroll Icon
-const ScrollIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="2" width="14" height="20" rx="7" ry="7"></rect><path d="M12 6v4"></path></svg>;
+const TimerIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2h4"/><path d="M12 14v-4"/><path d="M4 13a8 8 0 0 1 8-7 8 8 0 1 1-8 8"/></svg>;
+const ScrollIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 9l4-4 4 4"/><path d="M16 15l-4 4-4-4"/></svg>; 
 
 interface OptionButtonProps { label: string; isActive: boolean; onClick: () => void; Icon: React.ComponentType<any>; disabled?: boolean; isAutoControlled?: boolean; }
 
@@ -32,7 +32,7 @@ const OptionButton = ({ label, isActive, onClick, Icon, disabled, isAutoControll
     <button onClick={onClick} className={`${styles.optionButton} ${isActive ? styles.active : ''}`} aria-checked={isActive} role="switch" disabled={disabled} style={{ ...(disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}), ...(isAutoControlled ? { borderColor: 'var(--accent)', opacity: 0.9 } : {}) }}>
         <div className={styles.buttonIcon}><Icon /></div>
         <span>{label}</span>
-        {isAutoControlled && <span style={{position:'absolute', top:2, right:4, fontSize:'0.7rem', color:'var(--accent)', fontWeight:800}}>AUTO</span>}
+        {isAutoControlled && <span style={{position:'absolute', top:2, right:4, fontSize:'0.7rem', color:'var(--accent)', fontWeight:800}}>تلقائي</span>}
         <div className={styles.indicator}><div className={styles.indicatorFill} /></div>
     </button>
 );
@@ -75,8 +75,12 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
             
             <div className={styles.optionsGrid}>
                 <OptionButton label="الضبط التلقائي" isActive={store.isAutoTuningEnabled} onClick={store.toggleAutoTuning} Icon={AutoIcon} />
-                <OptionButton label="تمرير ناعم" isActive={store.isSmoothScrollingEnabled} onClick={store.toggleSmoothScrolling} Icon={ScrollIcon} isAutoControlled={false} />
                 <OptionButton label="استجابة فورية" isActive={!store.isHoverDebounceEnabled} onClick={store.toggleHoverDebounce} Icon={BoltIcon} isAutoControlled={auto} />
+                <OptionButton label="تقليب تلقائي" isActive={store.isCarouselAutoScrollEnabled} onClick={store.toggleCarouselAutoScroll} Icon={TimerIcon} isAutoControlled={auto} />
+                
+                {/* SMOOTH SCROLLING: Manually Controlled (No Auto Badge) */}
+                <OptionButton label="تمرير سلس" isActive={store.isSmoothScrollingEnabled} onClick={store.toggleSmoothScrolling} Icon={ScrollIcon} isAutoControlled={false} />
+
                 <OptionButton label="تأثير الزجاج" isActive={store.isGlassmorphismEnabled} onClick={store.toggleGlassmorphism} Icon={BlurIcon} isAutoControlled={auto} />
                 <OptionButton 
                     label="إظهار الخلفية" 
@@ -86,6 +90,7 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                     disabled={isLightMode} 
                     isAutoControlled={isMobile ? false : auto} 
                 />
+                
                 <OptionButton label="بطاقات حية" isActive={store.isLivingCardEnabled} onClick={store.toggleLivingCard} Icon={CardIcon3D} isAutoControlled={auto} />
                 <OptionButton label="الوسوم الطائرة" isActive={store.isFlyingTagsEnabled} onClick={store.toggleFlyingTags} Icon={TagIcon} isAutoControlled={auto} />
                 <OptionButton label="إطارات مشعة" isActive={store.isCornerAnimationEnabled} onClick={store.toggleCornerAnimation} Icon={BorderIcon} isAutoControlled={auto} />

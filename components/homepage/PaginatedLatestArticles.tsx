@@ -1,12 +1,13 @@
-// components/PaginatedCarousel.tsx
+// components/homepage/PaginatedLatestArticles.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { CardProps } from '@/types';
-import styles from './PaginatedCarousel.module.css';
+import styles from './PaginatedLatestArticles.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
 import { useActiveCardStore } from '@/lib/activeCardStore';
+import { usePerformanceStore } from '@/lib/performanceStore';
 
 type PaginatedCarouselProps = {
     items: CardProps[];
@@ -15,17 +16,16 @@ type PaginatedCarouselProps = {
 
 export default function PaginatedCarousel({ items, itemsPerPage = 5 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
-    // isHovered (global for carousel auto-flip pause)
     const [isHovered, setIsHovered] = useState(false);
-    // hoveredIndex (local for z-index stacking fix)
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
     
     const { activeCardId } = useActiveCardStore();
+    // Use Store
+    const { isCarouselAutoScrollEnabled } = usePerformanceStore();
 
-    // Intersection observer to prevent flipping when not visible
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
 
@@ -33,15 +33,15 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
 
     useEffect(() => {
         resetTimeout();
-        // Only flip if: Not hovered, IS in view, and has more than 1 page
-        if (!isHovered && isInView && totalPages > 1) {
+        // Check toggle
+        if (!isHovered && isInView && totalPages > 1 && isCarouselAutoScrollEnabled) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
                 3800
             );
         }
         return () => resetTimeout();
-    }, [currentPage, isHovered, totalPages, isInView]);
+    }, [currentPage, isHovered, totalPages, isInView, isCarouselAutoScrollEnabled]);
 
     const startIndex = currentPage * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -51,7 +51,7 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => {
             setIsHovered(false);
-            setHoveredIndex(null); // Clear local hover index on exit
+            setHoveredIndex(null); 
         },
         onTouchStart: () => setIsHovered(true),
         onTouchEnd: () => setIsHovered(false),
@@ -81,8 +81,6 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
                                 style={{ 
                                     height: 'auto', 
                                     position: 'relative', 
-                                    // FIX: Raise Z-Index if this specific item is hovered or active.
-                                    // This prevents the card below from clipping flying tags/effects.
                                     zIndex: (activeCardId === item.id || hoveredIndex === index) ? 100 : 1 
                                 }}
                                 onMouseEnter={() => setHoveredIndex(index)}

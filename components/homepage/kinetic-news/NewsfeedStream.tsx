@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { CardProps } from '@/types';
 import styles from './NewsfeedStream.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
+import { usePerformanceStore } from '@/lib/performanceStore';
 
 interface NewsfeedStreamProps {
     items: CardProps[];
@@ -17,6 +18,9 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     const [isHovered, setIsHovered] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     
+    // Use Store
+    const { isCarouselAutoScrollEnabled } = usePerformanceStore();
+    
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
 
@@ -25,8 +29,8 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     }, [items]);
 
     useEffect(() => {
-        // Only scroll if: Not expanded, Not hovered, and IS in view
-        if (!isExpanded && !isHovered && isInView && listItems.length > 5) {
+        // Check toggle
+        if (!isExpanded && !isHovered && isInView && listItems.length > 5 && isCarouselAutoScrollEnabled) {
             intervalRef.current = setInterval(() => {
                 setListItems((prevItems) => {
                     const newItems = [...prevItems];
@@ -42,7 +46,7 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [isHovered, listItems.length, isExpanded, isInView]);
+    }, [isHovered, listItems.length, isExpanded, isInView, isCarouselAutoScrollEnabled]);
 
     const displayItems = useMemo(() => 
         isExpanded ? items.slice(0, 15) : listItems.slice(0, 5),
@@ -59,9 +63,8 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     return (
         <div 
             ref={containerRef}
-            className={`${styles.streamContainer} gpu-cull`} // Added gpu-cull here
+            className={`${styles.streamContainer} gpu-cull`}
             {...interactionHandlers}
-            /* THE FIX: Reduced minHeight from 400px to auto (or a small baseline) to prevent big empty space at bottom */
             style={{ minHeight: isExpanded ? 'auto' : '150px' }}
         >
             <AnimatePresence mode="popLayout" initial={false}>

@@ -7,6 +7,7 @@ import { CardProps } from '@/types';
 import styles from './PaginatedCarousel.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
 import { useActiveCardStore } from '@/lib/activeCardStore';
+import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
 
 type PaginatedCarouselProps = {
     items: CardProps[];
@@ -16,12 +17,15 @@ type PaginatedCarouselProps = {
 export default function PaginatedCarousel({ items, itemsPerPage = 5 }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
     
     const { activeCardId } = useActiveCardStore();
+    // Use Store Check
+    const { isCarouselAutoScrollEnabled } = usePerformanceStore();
 
-    // Intersection observer to prevent flipping when not visible
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
 
@@ -29,15 +33,15 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
 
     useEffect(() => {
         resetTimeout();
-        // Only flip if: Not hovered, IS in view, and has more than 1 page
-        if (!isHovered && isInView && totalPages > 1) {
+        // Check toggle
+        if (!isHovered && isInView && totalPages > 1 && isCarouselAutoScrollEnabled) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
                 3800
             );
         }
         return () => resetTimeout();
-    }, [currentPage, isHovered, totalPages, isInView]);
+    }, [currentPage, isHovered, totalPages, isInView, isCarouselAutoScrollEnabled]);
 
     const startIndex = currentPage * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -45,7 +49,10 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
     
     const interactionHandlers = {
         onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
+        onMouseLeave: () => {
+            setIsHovered(false);
+            setHoveredIndex(null);
+        },
         onTouchStart: () => setIsHovered(true),
         onTouchEnd: () => setIsHovered(false),
         onTouchCancel: () => setIsHovered(false),
@@ -68,17 +75,16 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
                         className={`${styles.itemList} gpu-cull`} 
                         style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
                     >
-                        {currentItems.map((item) => (
+                        {currentItems.map((item, index) => (
                             <motion.div
                                 key={item.legacyId}
                                 style={{ 
                                     height: 'auto', 
                                     position: 'relative', 
-                                    // FIX: Base z-index on Mobile Active state OR default
-                                    zIndex: activeCardId === item.id ? 100 : 1 
+                                    zIndex: (activeCardId === item.id || hoveredIndex === index) ? 100 : 1 
                                 }}
-                                // FIX: Raise z-index on Desktop Hover to prevent flying tags from being clipped/overlapped by the card below
-                                whileHover={{ zIndex: 100 }}
+                                onMouseEnter={() => setHoveredIndex(index)}
+                                onMouseLeave={() => setHoveredIndex(null)}
                             >
                                 <NewsGridCard 
                                     item={item} 

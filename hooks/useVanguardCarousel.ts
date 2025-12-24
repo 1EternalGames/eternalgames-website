@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePerformanceStore } from '@/lib/performanceStore';
 
 const VANGUARD_SLOTS = 5;
-// FIX: Increased cooldown to match the 700ms transition duration to prevent interaction during movement
 export const ANIMATION_COOLDOWN = 750; 
 const AUTO_NAVIGATE_INTERVAL = 2500;
 const MOBILE_BREAKPOINT = 1024;
@@ -17,6 +17,9 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     const [isPageVisible, setIsPageVisible] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // Check performance settings
+    const { isCarouselAutoScrollEnabled } = usePerformanceStore();
     
     useEffect(() => {
         const checkDevice = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
@@ -37,21 +40,20 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
 
     const startInterval = useCallback(() => {
         stopInterval();
-        if (itemCount > 0) {
+        // Only start if auto-scroll is enabled
+        if (itemCount > 0 && isCarouselAutoScrollEnabled) {
             intervalRef.current = setInterval(() => {
                 setIsAnimating(true);
-                // FIX: Ensure hover is cleared when auto-navigating
                 setHoveredId(null);
                 setCurrentIndex(prevIndex => (prevIndex + 1) % itemCount);
                 setTimeout(() => setIsAnimating(false), ANIMATION_COOLDOWN);
             }, AUTO_NAVIGATE_INTERVAL);
         }
-    }, [itemCount, stopInterval]);
+    }, [itemCount, stopInterval, isCarouselAutoScrollEnabled]);
 
     const navigateToIndex = useCallback((index: number) => {
         if (isAnimating || index === currentIndex) return;
         setIsAnimating(true);
-        // FIX: Force clear hover state on manual navigation to prevent "stuck" large cards
         setHoveredId(null);
         setCurrentIndex(index);
         startInterval(); 
@@ -61,16 +63,17 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
     }, [isAnimating, currentIndex, startInterval]);
 
     useEffect(() => {
-        if (!hoveredId && isCurrentlyInView && isPageVisible) {
+        // Only run if auto-scroll enabled
+        if (!hoveredId && isCurrentlyInView && isPageVisible && isCarouselAutoScrollEnabled) {
             startInterval();
         } else {
             stopInterval();
         }
         return () => stopInterval();
-    }, [hoveredId, isCurrentlyInView, isPageVisible, startInterval, stopInterval]);
+    }, [hoveredId, isCurrentlyInView, isPageVisible, startInterval, stopInterval, isCarouselAutoScrollEnabled]);
 
+    // ... (rest of the file remains same, ensure handleSetHoveredId and getCardState are included)
     const handleSetHoveredId = useCallback((id: string | number | null) => {
-        // Strict check: Cannot hover while animating
         if (isAnimating) return;
         setHoveredId(id);
     }, [isAnimating]);
@@ -83,8 +86,6 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         if (diff < -itemCount / 2) diff += itemCount;
         const slotIndex = diff + CENTER_SLOT_INDEX;
 
-        // --- VISIBILITY & INTERACTION FIX ---
-        // If the card is outside the 5 visible slots [0, 1, 2, 3, 4]
         if (slotIndex < 0 || slotIndex >= VANGUARD_SLOTS) {
             const isFarRight = diff > 0;
             return {
@@ -92,9 +93,7 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
                     opacity: 0, 
                     transform: `translateX(${isFarRight ? '150%' : '-150%'}) scale(0.5)`, 
                     zIndex: -1,
-                    // CRITICAL FIX: Disable pointer events for invisible cards so they can't be clicked/hovered
                     pointerEvents: 'none' as const,
-                    // Optional: Visibility hidden ensures screen readers ignore it too
                     visibility: 'hidden' as const
                 },
                 isCenter: false, 
@@ -103,16 +102,11 @@ export function useVanguardCarousel(itemCount: number, isCurrentlyInView: boolea
         }
 
         const isCenter = slotIndex === CENTER_SLOT_INDEX;
-        // Ensure visible cards accept pointer events
         const style: any = { opacity: 1, pointerEvents: 'auto', visibility: 'visible' };
         
         let transform = '';
         const isHovered = hoveredId === itemId;
 
-        // FIXED Z-INDEX VALUES
-        // Center card gets high priority (20), hovered gets boosted (30).
-        // Side cards are background (10).
-        // This ensures center card hit area is always on top.
         const BASE_Z = 10;
         const CENTER_Z = 20;
         const HOVER_Z = 30;

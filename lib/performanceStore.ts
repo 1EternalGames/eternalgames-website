@@ -2,13 +2,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-// Tier 5 = Ultra (All UI FX On)
-// Tier 4 = High (Glass Off)
-// Tier 3 = Medium (Glass Off, BG Off)
-// Tier 2 = Low (Glass Off, BG Off, Living Off)
-// Tier 1 = Potato (Glass Off, BG Off, Living Off, Tags Off)
-// Tier 0 = Abyssal (Everything Off)
-export type PerformanceTier = 0 | 1 | 2 | 3 | 4 | 5;
+export type PerformanceTier = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 interface PerformanceState {
   // Toggles
@@ -17,7 +11,8 @@ interface PerformanceState {
   isHeroTransitionEnabled: boolean;
   isCornerAnimationEnabled: boolean;
   isHoverDebounceEnabled: boolean;
-  isSmoothScrollingEnabled: boolean; // NEW
+  isCarouselAutoScrollEnabled: boolean;
+  isSmoothScrollingEnabled: boolean; 
   
   // Background
   isBackgroundAnimated: boolean;
@@ -35,16 +30,15 @@ interface PerformanceState {
   toggleHeroTransition: () => void;
   toggleCornerAnimation: () => void;
   toggleHoverDebounce: () => void;
-  toggleSmoothScrolling: () => void; // NEW
+  toggleCarouselAutoScroll: () => void;
+  toggleSmoothScrolling: () => void; 
   
   toggleBackgroundAnimation: () => void;
   toggleBackgroundVisibility: () => void;
-  setBackgroundVisibility: (visible: boolean) => void; // NEW: For AutoTuner mobile override
   toggleGlassmorphism: () => void;
   
   toggleAutoTuning: () => void;
   
-  // Used by Auto-Tuner
   setPerformanceTier: (tier: PerformanceTier) => void;
 }
 
@@ -58,11 +52,12 @@ export const usePerformanceStore = create<PerformanceState>()(
       isCornerAnimationEnabled: true,
       isGlassmorphismEnabled: true,
       isHoverDebounceEnabled: true,
+      isCarouselAutoScrollEnabled: true,
+      isSmoothScrollingEnabled: false, // Default OFF
       
+      // Default: Visible (Image), but NOT Animated (SVG)
       isBackgroundVisible: true,
-      isBackgroundAnimated: false,
-      isSmoothScrollingEnabled: false, // Default OFF as requested
-      
+      isBackgroundAnimated: false, 
       isAutoTuningEnabled: true,
 
       // Manual toggles disable Auto-Tuning to respect user choice
@@ -71,49 +66,90 @@ export const usePerformanceStore = create<PerformanceState>()(
       toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: !state.isHeroTransitionEnabled, isAutoTuningEnabled: false })),
       toggleCornerAnimation: () => set((state) => ({ isCornerAnimationEnabled: !state.isCornerAnimationEnabled, isAutoTuningEnabled: false })),
       toggleHoverDebounce: () => set((state) => ({ isHoverDebounceEnabled: !state.isHoverDebounceEnabled, isAutoTuningEnabled: false })),
-      toggleSmoothScrolling: () => set((state) => ({ isSmoothScrollingEnabled: !state.isSmoothScrollingEnabled, isAutoTuningEnabled: false })), // NEW
+      toggleCarouselAutoScroll: () => set((state) => ({ isCarouselAutoScrollEnabled: !state.isCarouselAutoScrollEnabled, isAutoTuningEnabled: false })),
+      
+      // Smooth Scrolling does NOT disable auto-tuning because it is a personal preference outside the tier system now
+      toggleSmoothScrolling: () => set((state) => ({ isSmoothScrollingEnabled: !state.isSmoothScrollingEnabled })), 
       
       toggleBackgroundAnimation: () => set((state) => ({ isBackgroundAnimated: !state.isBackgroundAnimated, isAutoTuningEnabled: false })),
       toggleBackgroundVisibility: () => set((state) => ({ isBackgroundVisible: !state.isBackgroundVisible, isAutoTuningEnabled: false })),
-      setBackgroundVisibility: (visible: boolean) => set({ isBackgroundVisible: visible }), // Does NOT disable auto-tuning (used by auto-tuner itself)
-
       toggleGlassmorphism: () => set((state) => ({ isGlassmorphismEnabled: !state.isGlassmorphismEnabled, isAutoTuningEnabled: false })),
       
       toggleAutoTuning: () => set((state) => ({ isAutoTuningEnabled: !state.isAutoTuningEnabled })),
 
       setPerformanceTier: (tier: PerformanceTier) => set((state) => {
           // IMPORTANT: We do NOT touch isBackgroundAnimated or isSmoothScrollingEnabled here.
-          // Smooth Scrolling remains OFF unless manually toggled (User request).
+          // They are purely manual preferences.
           switch (tier) {
-              case 5: // ULTRA
+              case 6: // ULTRA
                   return {
-                      isGlassmorphismEnabled: true, isBackgroundVisible: true, isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false,
+                      isGlassmorphismEnabled: true, 
+                      isBackgroundVisible: true, 
+                      isLivingCardEnabled: true,
+                      isFlyingTagsEnabled: true, 
+                      isCornerAnimationEnabled: true, 
+                      isHoverDebounceEnabled: false, 
+                      isCarouselAutoScrollEnabled: true,
                   };
-              case 4: // HIGH
+              case 5: // HIGH
                   return {
-                      isGlassmorphismEnabled: false, isBackgroundVisible: true, isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false,
+                      isGlassmorphismEnabled: false, 
+                      isBackgroundVisible: true, 
+                      isLivingCardEnabled: true,
+                      isFlyingTagsEnabled: true, 
+                      isCornerAnimationEnabled: true, 
+                      isHoverDebounceEnabled: false, 
+                      isCarouselAutoScrollEnabled: true,
+                  };
+              case 4: // MEDIUM-HIGH
+                  return {
+                      isGlassmorphismEnabled: false, 
+                      isBackgroundVisible: true, 
+                      isLivingCardEnabled: false, 
+                      isFlyingTagsEnabled: true, 
+                      isCornerAnimationEnabled: true, 
+                      isHoverDebounceEnabled: false, 
+                      isCarouselAutoScrollEnabled: true,
                   };
               case 3: // MEDIUM
                   return {
-                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true,
+                      isGlassmorphismEnabled: false, 
+                      isBackgroundVisible: true, 
+                      isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: false, 
+                      isCornerAnimationEnabled: true, 
+                      isHoverDebounceEnabled: false, 
+                      isCarouselAutoScrollEnabled: true,
                   };
               case 2: // LOW
                   return {
-                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true,
+                      isGlassmorphismEnabled: false, 
+                      isBackgroundVisible: true, 
+                      isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: false, 
+                      isCornerAnimationEnabled: false, 
+                      isHoverDebounceEnabled: true, 
+                      isCarouselAutoScrollEnabled: true,
                   };
               case 1: // POTATO
                   return {
-                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true,
+                      isGlassmorphismEnabled: false, 
+                      isBackgroundVisible: true, 
+                      isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: false, 
+                      isCornerAnimationEnabled: false, 
+                      isHoverDebounceEnabled: true, 
+                      isCarouselAutoScrollEnabled: false, 
                   };
               case 0: // ABYSSAL
                   return {
-                      isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: false, isHoverDebounceEnabled: true,
+                      isGlassmorphismEnabled: false, 
+                      isBackgroundVisible: false, 
+                      isLivingCardEnabled: false,
+                      isFlyingTagsEnabled: false, 
+                      isCornerAnimationEnabled: false, 
+                      isHoverDebounceEnabled: true, 
+                      isCarouselAutoScrollEnabled: false,
                   };
               default:
                   return state;

@@ -6,7 +6,7 @@ import { usePerformanceStore } from '@/lib/performanceStore';
 import { useEffect, useState } from 'react';
 
 export default function SmoothScrolling({ children }: { children: React.ReactNode }) {
-  // Access store to check if enabled
+  // FIXED: Property now exists in the store interface
   const isEnabled = usePerformanceStore((state) => state.isSmoothScrollingEnabled);
   const [mounted, setMounted] = useState(false);
 
@@ -21,16 +21,17 @@ export default function SmoothScrolling({ children }: { children: React.ReactNod
     return <>{children}</>;
   }
   
-  // Physics-based easing for premium feel
+  // FIXED: Explicitly cast 'vertical' strings to the specific type expected by LenisOptions
+  // or cast the whole object to any if the types are strict.
   const lenisOptions = {
     duration: 1.2,
     easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    orientation: 'vertical',
-    gestureOrientation: 'vertical',
+    orientation: 'vertical' as const, // Fixes type error
+    gestureOrientation: 'vertical' as const, // Fixes type error
     wheelMultiplier: 1,
     smoothWheel: true,
     touchMultiplier: 2,
-    smoothTouch: false, // Disable on touch devices natively inside Lenis too
+    smoothTouch: false,
   };
 
   return (

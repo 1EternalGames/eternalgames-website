@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import styles from './SpaceBackground.module.css';
 import { usePerformanceStore } from '@/lib/performanceStore';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 
 // Configuration
 const BACKGROUND_BRIGHTNESS = 1.0; 
@@ -18,13 +19,42 @@ export default function SpaceBackground() {
         setMounted(true);
     }, []);
 
+    // 1. GLOBAL OFF SWITCH
+    // If not mounted or light mode, render nothing immediately.
     if (!mounted || resolvedTheme === 'light') return null;
 
+    // 2. PERFORMANCE OFF SWITCH
+    // If background is toggled off (Tier 0), render a simple div color.
     if (!isBackgroundVisible) {
         return <div className={styles.backgroundContainer} style={{ backgroundColor: '#10121A' }} />;
     }
 
-    const containerClass = `${styles.backgroundContainer} ${!isBackgroundAnimated ? styles.static : ''}`;
+    // 3. STATIC MODE (The Default)
+    // If animation is OFF, we return the Image component directly.
+    // The code stops here. The SVG below is never reached or calculated.
+    if (!isBackgroundAnimated) {
+        return (
+            <div className={styles.backgroundContainer} style={{ filter: `brightness(${BACKGROUND_BRIGHTNESS})` }}>
+                <Image 
+                    src="/EGBG.jpg" 
+                    alt="" 
+                    fill 
+                    priority 
+                    // High quality for 4K background
+                    quality={90} 
+                    // "100vw" tells the browser: "This image is always 100% of the viewport width".
+                    // The browser then selects the most appropriate size from the srcset automatically.
+                    sizes="100vw"
+                    style={{ objectFit: 'cover', objectPosition: 'center' }} 
+                    draggable={false}
+                />
+            </div>
+        );
+    }
+
+    // 4. ANIMATED MODE (Only runs if manually enabled)
+    // This code is isolated and won't impact performance in Static Mode.
+    const containerClass = `${styles.backgroundContainer}`;
 
     return (
         <div className={containerClass} style={{ filter: `brightness(${BACKGROUND_BRIGHTNESS})` }}>
