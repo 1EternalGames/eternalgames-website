@@ -691,3 +691,43 @@
     border-color: #F59E0B !important;
     background-color: rgba(255,255,255,0.95) !important;
 }
+
+/* --- Light Mode Overrides (No Black) --- */
+
+/* Status Badge (Released/Upcoming Circle) */
+:global([data-theme="light"]) .statusBadge {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+:global([data-theme="light"]) .statusBadge.released {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+:global([data-theme="light"]) .statusBadge.upcoming {
+    color: var(--text-secondary);
+}
+
+/* Wishlist Button */
+:global([data-theme="light"]) .wishlistButton {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: var(--accent);
+    color: var(--accent) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+}
+:global([data-theme="light"]) .wishlistButton:hover {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+    transform: scale(1.1);
+}
+
+/* Play Button (Video Overlay Trigger) */
+:global([data-theme="light"]) .playButtonContainer {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+:global([data-theme="light"]) .playButtonContainer:hover {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+}

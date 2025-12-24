@@ -66,3 +66,16 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+/* --- Light Mode Overrides (No Black) --- */
+:global([data-theme="light"]) .pinButton {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .pinButton:hover,
+:global([data-theme="light"]) .pinButton.pinned {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+    border-color: var(--accent);
+}
