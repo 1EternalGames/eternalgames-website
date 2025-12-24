@@ -320,7 +320,7 @@ div.creditCapsule { display: inline-flex; align-items: center; gap: 0.8rem; back
 @media (hover: hover) { a.creditCapsule:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--accent) 50%, transparent); z-index: 100; } }
 a.creditCapsule:active { transform: scale(0.95); }
 .capsuleIcon { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease; }
-.capsuleIcon svg { width: 16px; height: 16px; }
+.capsuleIcon svg { width: 14px; height: 14px; }
 .creditCapsule :global(span) { font-size: 1.2rem; font-weight: 700; color: #fff; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1.2rem; padding-right: 0.8rem; transition: color 0.4s ease; }
 .satelliteField { position: absolute; inset: -100px; pointer-events: none; z-index: 100; overflow: visible; transform-style: preserve-3d; }
 .satelliteShard { position: absolute; padding: 0; background: transparent; pointer-events: none; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
@@ -412,83 +412,187 @@ a.creditCapsule:active { transform: scale(0.95); }
 :global(body.no-glass) .livingCardWrapper.activeState .creditCapsule :global(span) {
     color: #000 !important;
 }
+
 /* --- Light Mode Overrides --- */
-:global([data-theme="light"]) .titleOverlay {
-  background: linear-gradient(to top, rgba(255,255,255,0.98) 25%, rgba(255,255,255,0.7) 65%, transparent 100%);
+:global([data-theme="light"]) .imageBadge {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  color: var(--text-primary);
 }
-:global([data-theme="light"]) .cardTitle {
-  color: #1F2937;
-  text-shadow: 0 2px 15px rgba(255,255,255,0.9);
+:global([data-theme="light"] body.no-glass) .imageBadge {
+  background-color: rgba(255, 255, 255, 0.95) !important;
 }
-:global([data-theme="light"]) .dateReadout {
-  color: rgba(0,0,0,0.7);
+:global([data-theme="light"]) a.creatorCapsule,
+:global([data-theme="light"]) div.creatorCapsule {
+  background: #ffffff !important; /* White Background Default */
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+:global([data-theme="light"]) .creatorCapsule :global(span) {
+  color: var(--accent) !important; /* Cyan Text Default */
+}
+:global([data-theme="light"]) .capsuleIcon {
+  color: #fff !important;
+  background-color: var(--accent) !important; /* Cyan Circle Default */
+}
+:global([data-theme="light"]) .satelliteShardLink {
+  background: #ffffff !important;
+  border-color: var(--accent);
+  color: var(--accent) !important; /* Cyan Text Default */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+:global([data-theme="light"]) .satelliteShardLink:hover {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+}
+:global([data-theme="light"] body.no-glass) .satelliteShardLink {
+  background: #ffffff !important;
+  color: var(--accent) !important;
+}
+:global([data-theme="light"] body.no-glass) .satelliteShardLink:hover {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
 }
 :global([data-theme="light"]) .techDot {
   background-color: rgba(0,0,0,0.2);
 }
-/* Flying Tags in Light Mode */
-:global([data-theme="light"]) .satelliteShardLink {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: var(--accent);
-  color: var(--text-primary);
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-}
-:global([data-theme="light"]) .satelliteShardLink:hover {
-  background-color: var(--accent);
-  color: #fff;
-}
-:global([data-theme="light"] body.no-glass) .satelliteShardLink {
-  background: #fff !important;
-}
-/* Capsule Overrides inherit from CreatorCredit logic but defined locally here too */
-:global([data-theme="light"]) .creditCapsule {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(0,0,0,0.1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-:global([data-theme="light"]) .creditCapsule :global(span) {
-  color: var(--text-primary);
-}
-:global([data-theme="light"]) .capsuleIcon {
-  color: #fff;
-}
-:global([data-theme="light"]) .creditCapsule:hover :global(span) {
-  color: #000;
-}
-:global([data-theme="light"]) .creditCapsule:hover .capsuleIcon {
-  background-color: #000;
-  color: var(--accent);
-}
 
-/* --- Light Mode Fixes (No Black) --- */
-:global([data-theme="light"]) .creditCapsule {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-color: rgba(0, 0, 0, 0.1);
-    color: var(--text-primary);
-}
-:global([data-theme="light"]) .creditCapsule :global(span),
-:global([data-theme="light"]) .creatorName {
-    color: var(--text-primary);
-}
-:global([data-theme="light"]) .capsuleIcon {
-    background-color: var(--accent);
-    color: #fff;
-}
-/* Hover: Capsule becomes Accent, Icon Circle becomes WHITE */
-:global([data-theme="light"]) .livingCardWrapper:hover .creditCapsule,
-:global([data-theme="light"]) .livingCardWrapper.activeState .creditCapsule {
+/* --- Light Mode Fixes (NO BLACK) --- */
+
+/* 1. Card Hover/Active: Capsule turns Cyan */
+:global([data-theme="light"]) .livingCardWrapper:hover a.creatorCapsule,
+:global([data-theme="light"]) .livingCardWrapper.activeState a.creatorCapsule {
     background-color: var(--accent) !important;
     border-color: var(--accent) !important;
 }
-:global([data-theme="light"]) .livingCardWrapper:hover .creditCapsule :global(span),
-:global([data-theme="light"]) .livingCardWrapper.activeState .creditCapsule :global(span),
-:global([data-theme="light"]) .livingCardWrapper:hover .creatorName,
-:global([data-theme="light"]) .livingCardWrapper.activeState .creatorName {
+
+/* 2. Card Hover/Active: Name Text turns White */
+:global([data-theme="light"]) .livingCardWrapper:hover .creatorCapsule :global(span),
+:global([data-theme="light"]) .livingCardWrapper.activeState .creatorCapsule :global(span) {
     color: #fff !important;
 }
+
+/* 3. Card Hover/Active: Icon Circle turns White, Icon turns Cyan */
 :global([data-theme="light"]) .livingCardWrapper:hover .capsuleIcon,
 :global([data-theme="light"]) .livingCardWrapper.activeState .capsuleIcon {
     background-color: #ffffff !important;
     color: var(--accent) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 4. Direct Hover on Capsule (Overrides above) */
+:global([data-theme="light"]) a.creatorCapsule:hover,
+:global([data-theme="light"]) div.creatorCapsule:hover {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+:global([data-theme="light"]) a.creatorCapsule:hover :global(span),
+:global([data-theme="light"]) div.creatorCapsule:hover :global(span) {
+    color: #fff !important;
+}
+:global([data-theme="light"]) a.creatorCapsule:hover .capsuleIcon,
+:global([data-theme="light"]) div.creatorCapsule:hover .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+}
+
+/* 5. Light Mode No-Glass Override (Specific Fix for the black issue) */
+:global([data-theme="light"] body.no-glass) a.creatorCapsule,
+:global([data-theme="light"] body.no-glass) div.creatorCapsule {
+    background-color: #ffffff !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+:global([data-theme="light"] body.no-glass) .creatorCapsule :global(span) {
+    color: var(--accent) !important;
+}
+:global([data-theme="light"] body.no-glass) .capsuleIcon {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+}
+
+/* Ensure Hover/Active via Card triggers Cyan BG, White Text, White Icon Circle */
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover a.creatorCapsule,
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState a.creatorCapsule,
+:global([data-theme="light"] body.no-glass) a.creatorCapsule:hover,
+:global([data-theme="light"] body.no-glass) div.creatorCapsule:hover {
+     background-color: var(--accent) !important;
+     border-color: var(--accent) !important;
+}
+
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover .creatorCapsule :global(span),
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState .creatorCapsule :global(span),
+:global([data-theme="light"] body.no-glass) a.creatorCapsule:hover :global(span),
+:global([data-theme="light"] body.no-glass) div.creatorCapsule:hover :global(span) {
+     color: #ffffff !important;
+}
+
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover .capsuleIcon,
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState .capsuleIcon,
+:global([data-theme="light"] body.no-glass) a.creatorCapsule:hover .capsuleIcon,
+:global([data-theme="light"] body.no-glass) div.creatorCapsule:hover .capsuleIcon {
+     background-color: #ffffff !important;
+     color: var(--accent) !important;
+}
+
+/* --- LIGHT MODE + NO-GLASS SPECIAL FIXES --- */
+
+/* 1. Gradient Overlay -> White in Light/No-Glass */
+:global([data-theme="light"] body.no-glass) .titleOverlay {
+    background: linear-gradient(to top, rgba(255,255,255,0.98) 30%, rgba(255,255,255,0.8) 60%, transparent 100%);
+}
+
+:global([data-theme="light"] body.no-glass) .cardTitle {
+    color: #000000;
+    text-shadow: none;
+}
+
+/* 2. Credits Capsule - Idle State (Light/No-Glass) */
+/* "credits pill should be white and the author's name black" */
+:global([data-theme="light"] body.no-glass) a.creditCapsule,
+:global([data-theme="light"] body.no-glass) div.creditCapsule {
+    background-color: #ffffff !important;
+    border-color: rgba(0,0,0,0.1) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+}
+
+:global([data-theme="light"] body.no-glass) .creditCapsule :global(span) {
+    color: #000000 !important;
+}
+
+:global([data-theme="light"] body.no-glass) .capsuleIcon {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+}
+
+/* 3. Credits Capsule - Hover State (Light/No-Glass) */
+/* "after hovering the name's font should turn white and the pill turns cyan" */
+/* Triggered by Card Hover OR Direct Capsule Hover */
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover a.creditCapsule,
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState a.creditCapsule,
+:global([data-theme="light"] body.no-glass) a.creditCapsule:hover,
+:global([data-theme="light"] body.no-glass) div.creditCapsule:hover {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover .creditCapsule :global(span),
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState .creditCapsule :global(span),
+:global([data-theme="light"] body.no-glass) a.creditCapsule:hover :global(span),
+:global([data-theme="light"] body.no-glass) div.creditCapsule:hover :global(span) {
+    color: #ffffff !important;
+}
+
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover .capsuleIcon,
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState .capsuleIcon,
+:global([data-theme="light"] body.no-glass) a.creditCapsule:hover .capsuleIcon,
+:global([data-theme="light"] body.no-glass) div.creditCapsule:hover .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+}
+
+/* Also ensure title turns Cyan on card hover in light mode */
+:global([data-theme="light"] body.no-glass) .livingCardWrapper:hover .cardTitle,
+:global([data-theme="light"] body.no-glass) .livingCardWrapper.activeState .cardTitle {
+    color: var(--accent) !important;
 }

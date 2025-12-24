@@ -479,60 +479,112 @@ a.creatorCapsule:active { transform: scale(0.95); }
 }
 :global([data-theme="light"]) a.creatorCapsule,
 :global([data-theme="light"]) div.creatorCapsule {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff !important; /* White Background Default */
   border-color: rgba(0,0,0,0.1);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 :global([data-theme="light"]) .creatorCapsule :global(span) {
-  color: var(--text-primary);
+  color: var(--accent) !important; /* Cyan Text Default */
 }
 :global([data-theme="light"]) .capsuleIcon {
-  color: #fff;
+  color: #fff !important;
+  background-color: var(--accent) !important; /* Cyan Circle Default */
 }
 :global([data-theme="light"]) .satelliteShardLink {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff !important; /* White Background Default */
   border-color: var(--accent);
-  color: var(--text-primary);
+  color: var(--accent) !important; /* Cyan Text Default */
   box-shadow: 0 5px 20px rgba(0,0,0,0.1);
 }
 :global([data-theme="light"]) .satelliteShardLink:hover {
-  background-color: var(--accent);
-  color: #fff;
+  background-color: var(--accent) !important;
+  color: #fff !important;
 }
 :global([data-theme="light"] body.no-glass) .satelliteShardLink {
-  background: #fff !important;
+  background: #ffffff !important;
+  color: var(--accent) !important;
+}
+:global([data-theme="light"] body.no-glass) .satelliteShardLink:hover {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
 }
 :global([data-theme="light"]) .techDot {
   background-color: rgba(0,0,0,0.2);
 }
 
-/* --- Light Mode Fixes (No Black) --- */
-:global([data-theme="light"]) a.creatorCapsule,
-:global([data-theme="light"]) div.creatorCapsule {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-color: rgba(0, 0, 0, 0.1);
-    color: var(--text-primary);
-}
-:global([data-theme="light"]) .creatorCapsule :global(span) {
-    color: var(--text-primary);
-}
-:global([data-theme="light"]) .capsuleIcon {
-    background-color: var(--accent);
-    color: #fff;
-}
-/* Hover: Capsule becomes Accent, Icon Circle becomes WHITE */
+/* --- Light Mode Fixes (NO BLACK) --- */
+
+/* 1. Card Hover/Active: Capsule turns Cyan */
 :global([data-theme="light"]) .cardContainer:hover a.creatorCapsule,
 :global([data-theme="light"]) .cardContainer.activeState a.creatorCapsule {
     background-color: var(--accent) !important;
     border-color: var(--accent) !important;
 }
+
+/* 2. Card Hover/Active: Name Text turns White */
 :global([data-theme="light"]) .cardContainer:hover .creatorCapsule :global(span),
 :global([data-theme="light"]) .cardContainer.activeState .creatorCapsule :global(span) {
     color: #fff !important;
 }
+
+/* 3. Card Hover/Active: Icon Circle turns White, Icon turns Cyan */
 :global([data-theme="light"]) .cardContainer:hover .capsuleIcon,
 :global([data-theme="light"]) .cardContainer.activeState .capsuleIcon {
     background-color: #ffffff !important;
     color: var(--accent) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 4. Direct Hover on Capsule (Overrides above) */
+:global([data-theme="light"]) a.creatorCapsule:hover,
+:global([data-theme="light"]) div.creatorCapsule:hover {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+:global([data-theme="light"]) a.creatorCapsule:hover :global(span),
+:global([data-theme="light"]) div.creatorCapsule:hover :global(span) {
+    color: #fff !important;
+}
+:global([data-theme="light"]) a.creatorCapsule:hover .capsuleIcon,
+:global([data-theme="light"]) div.creatorCapsule:hover .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+}
+
+/* 5. Light Mode No-Glass Override (Specific Fix for the black issue) */
+:global([data-theme="light"] body.no-glass) a.creatorCapsule,
+:global([data-theme="light"] body.no-glass) div.creatorCapsule {
+    background-color: #ffffff !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+:global([data-theme="light"] body.no-glass) .creatorCapsule :global(span) {
+    color: var(--accent) !important;
+}
+:global([data-theme="light"] body.no-glass) .capsuleIcon {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+}
+
+/* Ensure Hover/Active via Card triggers Cyan BG, White Text, White Icon Circle */
+:global([data-theme="light"] body.no-glass) .cardContainer:hover a.creatorCapsule,
+:global([data-theme="light"] body.no-glass) .cardContainer.activeState a.creatorCapsule,
+:global([data-theme="light"] body.no-glass) a.creatorCapsule:hover,
+:global([data-theme="light"] body.no-glass) div.creatorCapsule:hover {
+     background-color: var(--accent) !important;
+     border-color: var(--accent) !important;
+}
+
+:global([data-theme="light"] body.no-glass) .cardContainer:hover .creatorCapsule :global(span),
+:global([data-theme="light"] body.no-glass) .cardContainer.activeState .creatorCapsule :global(span),
+:global([data-theme="light"] body.no-glass) a.creatorCapsule:hover :global(span),
+:global([data-theme="light"] body.no-glass) div.creatorCapsule:hover :global(span) {
+     color: #ffffff !important;
+}
+
+:global([data-theme="light"] body.no-glass) .cardContainer:hover .capsuleIcon,
+:global([data-theme="light"] body.no-glass) .cardContainer.activeState .capsuleIcon,
+:global([data-theme="light"] body.no-glass) a.creatorCapsule:hover .capsuleIcon,
+:global([data-theme="light"] body.no-glass) div.creatorCapsule:hover .capsuleIcon {
+     background-color: #ffffff !important;
+     color: var(--accent) !important;
 }

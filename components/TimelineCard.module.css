@@ -731,3 +731,12 @@
     background-color: var(--accent) !important;
     color: #fff !important;
 }
+
+/* --- SPECIAL FIX: Light Mode + No-Glass for Flying Tags --- */
+:global([data-theme="light"] body.no-glass) .satelliteShardLink:hover,
+:global([data-theme="light"] body.no-glass) .genrePill:hover,
+:global([data-theme="light"] body.no-glass) .shardPill.interactive:hover {
+    background-color: #ffffff !important; /* Keep White BG */
+    color: var(--accent) !important;      /* Turn Text Cyan */
+    border-color: var(--accent) !important;
+}

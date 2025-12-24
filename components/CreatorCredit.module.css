@@ -41,7 +41,7 @@
     }
 }
 
-/* Hover Effects */
+/* Hover Effects (Default / Dark Mode) */
 @media (hover: hover) {
     .creditCapsule:hover {
         background-color: var(--accent);
@@ -57,7 +57,7 @@
         border-color: var(--accent) !important;
     }
 
-    /* Invert colors on hover */
+    /* Invert colors on hover (Dark Mode -> Icon becomes Black) */
     .creditCapsule:hover .capsuleIcon {
         background-color: #000;
         color: var(--accent);
@@ -110,64 +110,47 @@
     transition: color 0.4s ease;
     font-family: var(--font-main);
 }
+
 /* --- Light Mode Overrides --- */
 :global([data-theme="light"]) .creditCapsule {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff !important; /* Force White BG Default */
   border-color: rgba(0,0,0,0.1);
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 :global([data-theme="light"]) .creditCapsule :global(span),
-:global([data-theme="light"]) .creatorLink {
-  color: var(--text-primary);
+:global([data-theme="light"]) .creatorLink,
+:global([data-theme="light"]) .creatorName,
+:global([data-theme="light"]) .label,
+:global([data-theme="light"]) .separator {
+  color: var(--accent) !important; /* Force Cyan Text Default */
 }
 :global([data-theme="light"]) .capsuleIcon {
-  color: #fff;
-  background-color: var(--accent);
-}
-/* Hover states for Light Mode */
-:global([data-theme="light"]) .creditCapsule:hover {
-  background-color: var(--accent);
-  color: #fff;
-}
-:global([data-theme="light"]) .creditCapsule:hover .creatorLink,
-:global([data-theme="light"]) .creditCapsule:hover :global(span) {
-  color: #000;
-}
-:global([data-theme="light"]) .creditCapsule:hover .capsuleIcon {
-  background-color: #000;
-  color: var(--accent);
-}
-/* No-glass overrides */
-:global([data-theme="light"] body.no-glass) .creditCapsule {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #fff !important;
+  background-color: var(--accent) !important; /* Cyan Circle Default */
 }
 
-/* --- Light Mode Fixes (No Black) --- */
-:global([data-theme="light"]) .creditCapsule {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-color: rgba(0, 0, 0, 0.1);
-}
-:global([data-theme="light"]) .creatorName,
-:global([data-theme="light"]) .creatorLink,
-:global([data-theme="light"]) .separator {
-    color: var(--text-primary);
-}
-:global([data-theme="light"]) .capsuleIcon {
-    background-color: var(--accent);
-    color: #fff;
-}
-/* Hover: Capsule becomes Accent, Icon Circle becomes WHITE */
+/* Light Mode Hover States (THE FIX: NO BLACK) */
 :global([data-theme="light"]) .creditCapsule:hover {
-    background-color: var(--accent) !important;
-    border-color: var(--accent) !important;
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 5px 20px color-mix(in srgb, var(--accent) 40%, transparent);
 }
-:global([data-theme="light"]) .creditCapsule:hover .creatorName,
 :global([data-theme="light"]) .creditCapsule:hover .creatorLink,
+:global([data-theme="light"]) .creditCapsule:hover :global(span),
+:global([data-theme="light"]) .creditCapsule:hover .creatorName,
+:global([data-theme="light"]) .creditCapsule:hover .label,
 :global([data-theme="light"]) .creditCapsule:hover .separator {
-    color: #fff !important;
+  color: #fff !important; /* Force White Text */
 }
 :global([data-theme="light"]) .creditCapsule:hover .capsuleIcon {
-    background-color: #ffffff !important;
-    color: var(--accent) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background-color: #ffffff !important; /* Force White Icon Background */
+  color: var(--accent) !important; /* Cyan Icon */
+}
+
+/* No-glass overrides */
+:global([data-theme="light"] body.no-glass) .creditCapsule {
+  background-color: #ffffff !important;
+}
+:global([data-theme="light"] body.no-glass) .creditCapsule:hover {
+  background-color: var(--accent) !important;
 }

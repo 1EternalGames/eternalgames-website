@@ -598,3 +598,83 @@
 @media (max-width: 480px) {
     .vanguardContainer { --center-width: 70vw; --side-width: 50vw; }
 }
+
+/* --- LIGHT MODE + NO-GLASS OVERRIDES --- */
+
+/* 1. Shadows (Switch to White/Cyan Glow) */
+:global([data-theme="light"]) .vanguardScoreBadge {
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.4);
+}
+:global([data-theme="light"]) .cardSlot.activeState .vanguardScoreBadge,
+:global([data-theme="light"]) .cardSlot:hover .vanguardScoreBadge {
+  box-shadow: 0 0 25px var(--accent), 0 10px 40px rgba(255, 255, 255, 0.6);
+}
+:global([data-theme="light"]) .satelliteShardLink {
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.5);
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.3)); /* Cyan glow */
+}
+
+/* 2. Credits (Capsule: White BG, Cyan Text, Cyan Circle, White Icon) - IDLE STATE */
+:global([data-theme="light"]) .creditCapsule {
+  background-color: #ffffff !important; /* Force White */
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
+}
+:global([data-theme="light"]) .creditCapsule :global(span) {
+  color: var(--accent) !important; /* Force Cyan Text */
+}
+:global([data-theme="light"]) .capsuleIcon {
+  background-color: var(--accent) !important; /* Force Cyan Circle */
+  color: #ffffff !important; /* Force White Icon */
+}
+
+/* 2b. Credits - HOVER STATE (Swap: Cyan BG, White Text, White Circle, Cyan Icon) */
+:global([data-theme="light"]) .capsuleWrapper:hover .creditCapsule {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 20px var(--accent);
+}
+:global([data-theme="light"]) .capsuleWrapper:hover .creditCapsule :global(span) {
+    color: #ffffff !important;
+}
+:global([data-theme="light"]) .capsuleWrapper:hover .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+}
+
+/* 3. Tags (Cyan BG, White Text) - Remains the same per previous turn, adjust if needed */
+:global([data-theme="light"]) .satelliteShardLink {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #ffffff !important;
+}
+:global([data-theme="light"]) .satelliteShardLink:hover {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 25px var(--accent);
+}
+
+/* 4. Navigator (White/Cyan Glow) */
+:global([data-theme="light"]) .navTrack {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 229, 255, 0.3);
+}
+:global([data-theme="light"]) .navItem[data-active="true"] {
+    box-shadow: 0 0 15px var(--accent);
+}
+
+/* 5. Mobile & No-Glass Specifics (Ensuring overrides stick) */
+:global([data-theme="light"] body.no-glass) .creditCapsule {
+    background-color: #ffffff !important;
+}
+/* Ensure hover works in no-glass mode too */
+:global([data-theme="light"] body.no-glass) .capsuleWrapper:hover .creditCapsule {
+    background-color: var(--accent) !important;
+}
+
+:global([data-theme="light"] body.no-glass) .satelliteShardLink {
+    background-color: var(--accent) !important;
+}
+:global([data-theme="light"] body.no-glass) .navTrack {
+    background-color: #ffffff !important;
+}

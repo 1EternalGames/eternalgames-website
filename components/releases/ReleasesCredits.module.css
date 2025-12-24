@@ -66,7 +66,7 @@
         transform: translateY(-4px) scale(1.05);
         z-index: 100;
     }
-    /* Invert colors on hover */
+    /* Invert colors on hover (Dark Mode -> Icon becomes Black) */
     .creditsCapsule:hover .capsuleIcon {
         background-color: #000;
         color: var(--accent);
@@ -179,9 +179,9 @@
         margin-bottom: 2rem;
     }
 }
-/* --- Light Mode Overrides (No Black) --- */
+/* --- Light Mode Overrides (General) --- */
 :global([data-theme="light"]) .creditsCapsule {
-    background-color: rgba(255, 255, 255, 0.9) !important;
+    background-color: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.1);
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
@@ -196,7 +196,37 @@
     color: #fff;
 }
 
-/* Hover State */
+/* --- LIGHT MODE + NO GLASS SPECIAL (Requested Fix) --- */
+:global([data-theme="light"] body.no-glass) .creditsCapsule {
+    background-color: #ffffff !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+
+/* Idle State: Author Name Black */
+:global([data-theme="light"] body.no-glass) .creatorName,
+:global([data-theme="light"] body.no-glass) .label,
+:global([data-theme="light"] body.no-glass) .separator,
+:global([data-theme="light"] body.no-glass) .creatorLink {
+    color: #000000 !important;
+}
+
+/* Hover State: Pill Cyan, Name White, Circle White, Pen Cyan */
+:global([data-theme="light"] body.no-glass) .creditsCapsule:hover {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+:global([data-theme="light"] body.no-glass) .creditsCapsule:hover .creatorName,
+:global([data-theme="light"] body.no-glass) .creditsCapsule:hover .label,
+:global([data-theme="light"] body.no-glass) .creditsCapsule:hover .separator,
+:global([data-theme="light"] body.no-glass) .creditsCapsule:hover .creatorLink {
+    color: #ffffff !important;
+}
+:global([data-theme="light"] body.no-glass) .creditsCapsule:hover .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+}
+
+/* Default Hover (for Glass mode or Dark mode if not overridden above) */
 :global([data-theme="light"]) .creditsCapsule:hover {
     background-color: var(--accent) !important;
     border-color: var(--accent) !important;
