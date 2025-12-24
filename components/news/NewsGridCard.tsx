@@ -16,337 +16,124 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore'; 
+import { useOverlayStore } from '@/lib/overlayStore'; // <-- NEW
 
-type NewsGridCardProps = {
-    item: CardProps;
-    isPriority?: boolean;
-    layoutIdPrefix: string;
-    variant?: 'default' | 'compact' | 'mini';
-};
-
-const typeLabelMap: Record<string, string> = {
-    'official': 'رسمي',
-    'rumor': 'إشاعة',
-    'leak': 'تسريب'
-};
-
-const typeDisplayMap: Record<string, string> = {
-    'news': 'خبر',
-    'article': 'مقال',
-    'review': 'مراجعة'
-};
+type NewsGridCardProps = { item: CardProps; isPriority?: boolean; layoutIdPrefix: string; variant?: 'default' | 'compact' | 'mini'; };
+const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 'إشاعة', 'leak': 'تسريب' };
+const typeDisplayMap: Record<string, string> = { 'news': 'خبر', 'article': 'مقال', 'review': 'مراجعة' };
 
 const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default' }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const isMobile = useIsMobile();
-    
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
-
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
-    
+    const openOverlay = useOverlayStore(state => state.openOverlay); // <-- NEW
+
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
-    
-    // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchStartPos = useRef({ x: 0, y: 0 });
-
     const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
-
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
-    useClickOutside(livingCardRef, () => {
-        if (isMobile && activeCardId === item.id) {
-            setActiveCardId(null);
-        }
-    });
+    useClickOutside(livingCardRef, () => { if (isMobile && activeCardId === item.id) { setActiveCardId(null); } });
 
-    const getLinkPath = () => {
-        switch (item.type) {
-            case 'review': return `/reviews/${item.slug}`;
-            case 'article': return `/articles/${item.slug}`;
-            default: return `/news/${item.slug}`;
-        }
-    };
-    const linkPath = getLinkPath();
-    
-    const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
-        if (!isMobile && isHeroTransitionEnabled) {
-            setPrefix(layoutIdPrefix);
-        }
-    };
+    // HARDCODED CONFIGS FOR FULL FILE
+    const desktopConfig = [{ hoverX: -180, hoverY: 65, rotate: -6 }, { hoverX: 90, hoverY: 70, rotate: 5 }, { hoverX: -50, hoverY: -100, rotate: -3 }];
+    const mobileConfig = [{ hoverX: -90, hoverY: 20, rotate: -4 }, { hoverX: 70, hoverY: 40, rotate: 4 }, { hoverX: 0, hoverY: -85, rotate: -2 }];
+    const compactConfig = [{ hoverX: -110, hoverY: 30, rotate: -5 }, { hoverX: 70, hoverY: 35, rotate: 4 }, { hoverX: -20, hoverY: -65, rotate: -2 }];
 
     const imageSource = item.imageUrl;
     if (!imageSource) return null;
-    
     const isNews = item.type === 'news';
     const newsType = item.newsType || 'official';
-    
     const authorName = item.authors && item.authors.length > 0 ? item.authors[0].name : 'محرر';
     const authorUsername = item.authors && item.authors.length > 0 ? item.authors[0].username : null;
 
     const flyingItems = useMemo(() => {
         const satellites = [];
-        if (item.game && item.gameSlug) {
-            satellites.push({ label: item.game, link: `/games/${item.gameSlug}` });
-        } else { satellites.push(null); }
-
-        if (item.category) {
-            satellites.push({ label: translateTag(item.category), link: undefined });
-        } else if (item.tags && item.tags.length > 0) {
-             satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}` });
-        } else { satellites.push(null); }
-
+        if (item.game && item.gameSlug) { satellites.push({ label: item.game, link: `/games/${item.gameSlug}` }); } else { satellites.push(null); }
+        if (item.category) { satellites.push({ label: translateTag(item.category), link: undefined }); } else if (item.tags && item.tags.length > 0) { satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}` }); } else { satellites.push(null); }
         satellites.push({ label: typeDisplayMap[item.type] || 'محتوى', link: undefined });
-
         return satellites;
     }, [item.type, item.category, item.tags, item.game, item.gameSlug]);
-    
-    const desktopConfig = [
-        { hoverX: -180, hoverY: 65, rotate: -6 },   
-        { hoverX: 90, hoverY: 70, rotate: 5 },      
-        { hoverX: -50, hoverY: -100, rotate: -3 }   
-    ];
-
-    const mobileConfig = [
-        { hoverX: -90, hoverY: 20, rotate: -4 },
-        { hoverX: 70, hoverY: 40, rotate: 4 },
-        { hoverX: 0, hoverY: -85, rotate: -2 } 
-    ];
-
-    const compactConfig = [
-        { hoverX: -110, hoverY: 30, rotate: -5 },
-        { hoverX: 70, hoverY: 35, rotate: 4 },
-        { hoverX: -20, hoverY: -65, rotate: -2 }
-    ];
 
     let satelliteConfig;
-    if (isMobile) {
-        satelliteConfig = mobileConfig;
-    } else if (variant === 'compact' || variant === 'mini') {
-        satelliteConfig = compactConfig;
-    } else {
-        satelliteConfig = desktopConfig;
-    }
+    if (isMobile) { satelliteConfig = mobileConfig; } else if (variant === 'compact' || variant === 'mini') { satelliteConfig = compactConfig; } else { satelliteConfig = desktopConfig; }
 
-    const capsuleContent = (
-        <>
-            <div className={styles.capsuleIcon}>
-                <PenEdit02Icon style={{ width: 14, height: 14 }} />
-            </div>
-            <span>{authorName}</span>
-        </>
-    );
-    
+    const capsuleContent = ( <> <div className={styles.capsuleIcon}> <PenEdit02Icon style={{ width: 14, height: 14 }} /> </div> <span>{authorName}</span> </> );
+
     const handlers = !isMobile ? {
-        // DESKTOP HANDLERS
-        onMouseEnter: () => { 
-            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
-            
-            // Debounce Desktop Hover
-            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-
-            if (!isHoverDebounceEnabled) {
-                setIsHoveredLocal(true);
-            } else {
-                hoverTimeout.current = setTimeout(() => {
-                    setIsHoveredLocal(true);
-                }, 75); 
-            }
-        },
-        onMouseLeave: () => { 
-            if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-            if(!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); 
-            setIsHoveredLocal(false); 
-        },
+        onMouseEnter: () => { if(!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); if (hoverTimeout.current) clearTimeout(hoverTimeout.current); if (!isHoverDebounceEnabled) { setIsHoveredLocal(true); } else { hoverTimeout.current = setTimeout(() => { setIsHoveredLocal(true); }, 75); } },
+        onMouseLeave: () => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); if(!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave(); setIsHoveredLocal(false); },
         onMouseMove: !effectivelyDisabledLiving ? livingCardAnimation.onMouseMove : undefined,
     } : {
-        // MOBILE HANDLERS
-        onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
-            const touch = e.touches[0];
-            touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-
-            if (touchTimeout.current) clearTimeout(touchTimeout.current);
-            
-            if (!isHoverDebounceEnabled) {
-                if (activeCardId !== item.id) {
-                    setActiveCardId(item.id);
-                }
-            } else {
-                touchTimeout.current = setTimeout(() => {
-                     if (activeCardId !== item.id) {
-                        setActiveCardId(item.id);
-                    }
-                }, 75);
-            }
-
-            if(!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
-        },
-        onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-             // Calculate distance moved
-             const touch = e.touches[0];
-             const diffX = Math.abs(touch.clientX - touchStartPos.current.x);
-             const diffY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-             // If moved more than 10px, assume scrolling and CANCEL the hover activation
-             if (diffX > 10 || diffY > 10) {
-                 if (touchTimeout.current) clearTimeout(touchTimeout.current);
-             }
-
-             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
-        },
-        onTouchEnd: () => {
-             // We don't clear timeout here to allow "tap" to also trigger the state if it hasn't fired yet
-             // useClickOutside will handle closing it.
-             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
-        },
+        onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => { const touch = e.touches[0]; touchStartPos.current = { x: touch.clientX, y: touch.clientY }; if (touchTimeout.current) clearTimeout(touchTimeout.current); if (!isHoverDebounceEnabled) { if (activeCardId !== item.id) { setActiveCardId(item.id); } } else { touchTimeout.current = setTimeout(() => { if (activeCardId !== item.id) { setActiveCardId(item.id); } }, 75); } if(!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e); },
+        onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => { const touch = e.touches[0]; const diffX = Math.abs(touch.clientX - touchStartPos.current.x); const diffY = Math.abs(touch.clientY - touchStartPos.current.y); if (diffX > 10 || diffY > 10) { if (touchTimeout.current) clearTimeout(touchTimeout.current); } if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e); },
+        onTouchEnd: () => { if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd(); },
     };
     
-    // Apply layoutId logic
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
+    // --- OVERLAY CLICK HANDLER ---
+    const handleClick = (e: React.MouseEvent) => {
+        // Allow default behavior for modifier keys (new tab)
+        if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators"]')) { e.stopPropagation(); return; }
+        if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) { e.stopPropagation(); return; }
+        
+        e.preventDefault();
+        
+        if (!isMobile && isHeroTransitionEnabled) setPrefix(layoutIdPrefix);
+        
+        let section: 'reviews' | 'articles' | 'news' = 'news';
+        if (item.type === 'review') section = 'reviews';
+        if (item.type === 'article') section = 'articles';
+        
+        window.history.pushState(null, '', `/${section}/${item.slug}`);
+        openOverlay(item.slug, section);
+    };
+
     return (
-        <motion.div
-            ref={livingCardRef} 
-            {...handlers}
-            className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
-            style={animationStyles}
-        >
-            <motion.div
-                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined}
-                className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
-            >
-                <Link 
-                    href={linkPath} 
+        <motion.div ref={livingCardRef} {...handlers} className={`${styles.cardContainer} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`} style={animationStyles}>
+            <motion.div layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined} className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}>
+                <div 
                     className={`${styles.cardLink} no-underline`}
                     onClick={handleClick}
+                    style={{ cursor: 'pointer' }}
                 >
                     <div className={styles.imageContentWrapper}>
-                        <motion.div 
-                            className={styles.imageContainer} 
-                            layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined}
-                        >
-                            {isNews && (
-                                <span className={`${styles.imageBadge} ${styles[newsType]}`}>
-                                    {typeLabelMap[newsType]}
-                                </span>
-                            )}
-                            
-                            <Image 
-                                loader={sanityLoader}
-                                src={imageSource}
-                                alt={item.title}
-                                fill
-                                sizes="(max-width: 768px) 130px, 260px"
-                                className={styles.cardImage}
-                                style={{ objectFit: 'cover' }}
-                                placeholder="blur" 
-                                blurDataURL={item.blurDataURL}
-                                priority={isPriority}
-                            />
+                        <motion.div className={styles.imageContainer} layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined}>
+                            {isNews && ( <span className={`${styles.imageBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> )}
+                            <Image loader={sanityLoader} src={imageSource} alt={item.title} fill sizes="(max-width: 768px) 130px, 260px" className={styles.cardImage} style={{ objectFit: 'cover' }} placeholder="blur" blurDataURL={item.blurDataURL} priority={isPriority} />
                         </motion.div>
-                        
                         <div className={styles.cardInfoColumn}>
-                            <motion.h3 
-                                className={styles.cardTitle}
-                                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
-                            >
-                                {item.title}
-                            </motion.h3>
-
+                            <motion.h3 className={styles.cardTitle} layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}> {item.title} </motion.h3>
                             <div className={styles.cardMetadata}>
                                 <div style={{display:'flex', alignItems:'center', gap:'0.8rem'}}>
-                                    {authorUsername ? (
-                                        <Link 
-                                            href={`/creators/${authorUsername}`}
-                                            className={`${styles.creatorCapsule} no-underline`}
-                                            onClick={(e) => e.stopPropagation()} 
-                                        >
-                                            {capsuleContent}
-                                        </Link>
-                                    ) : (
-                                        <div className={styles.creatorCapsule}>
-                                            {capsuleContent}
-                                        </div>
-                                    )}
+                                    {authorUsername ? ( <a href={`/creators/${authorUsername}`} className={`${styles.creatorCapsule} no-underline`} onClick={(e) => e.stopPropagation()}> {capsuleContent} </a> ) : ( <div className={styles.creatorCapsule}> {capsuleContent} </div> )}
                                 </div>
-
-                                <div className={styles.techDecoration}>
-                                    <div className={styles.techDot} />
-                                    <div className={styles.techDot} />
-                                    <div className={styles.techDot} />
-                                </div>
-
-                                {item.date && (
-                                    <div className={styles.cardDate}>
-                                        <Calendar03Icon className={styles.metadataIcon} />
-                                        <span>{item.date.split(' - ')[0]}</span>
-                                    </div>
-                                )}
+                                <div className={styles.techDecoration}> <div className={styles.techDot} /> <div className={styles.techDot} /> <div className={styles.techDot} /> </div>
+                                {item.date && ( <div className={styles.cardDate}> <Calendar03Icon className={styles.metadataIcon} /> <span>{item.date.split(' - ')[0]}</span> </div> )}
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
 
                 {isFlyingTagsEnabled && (
                     <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
                         <AnimatePresence>
                              {isHovered && flyingItems.map((sat, i) => {
                                  if (!sat) return null;
-                                 
                                  const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
                                  const isLeft = config.hoverX < 0;
-                                 
-                                 const positionStyle = isLeft 
-                                    ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
-                                    : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
+                                 const positionStyle = isLeft ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' } : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
 
                                  return (
-                                     <motion.div
-                                        key={`${item.id}-sat-${i}`}
-                                        className={styles.satelliteShard}
-                                        initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                        animate={{
-                                            opacity: 1,
-                                            scale: 1.15,
-                                            x: config.hoverX,
-                                            y: config.hoverY,
-                                            rotate: config.rotate,
-                                            z: -30 
-                                        }}
-                                        exit={{
-                                            opacity: 0,
-                                            scale: 0.4,
-                                            x: 0,
-                                            y: 50,
-                                            rotate: 0,
-                                            z: 0
-                                        }}
-                                        transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                        style={{ 
-                                            position: 'absolute', 
-                                            ...positionStyle, 
-                                            transformStyle: 'preserve-3d' 
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                     >
-                                         {sat.link ? (
-                                             <Link 
-                                                href={sat.link} 
-                                                onClick={(e) => e.stopPropagation()}
-                                                className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                            >
-                                                 {sat.label}
-                                             </Link>
-                                         ) : (
-                                             <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
-                                                 {sat.label}
-                                             </span>
-                                         )}
+                                     <motion.div key={`${item.id}-sat-${i}`} className={styles.satelliteShard} initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }} animate={{ opacity: 1, scale: 1.15, x: config.hoverX, y: config.hoverY, rotate: config.rotate, z: -30 }} exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }} transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }} style={{ position: 'absolute', ...positionStyle, transformStyle: 'preserve-3d' }} onClick={(e) => e.stopPropagation()}>
+                                         {sat.link ? ( <a href={sat.link} onClick={(e) => e.stopPropagation()} className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}> {sat.label} </a> ) : ( <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}> {sat.label} </span> )}
                                      </motion.div>
                                  );
                              })}
@@ -357,6 +144,5 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         </motion.div>
     );
 };
-
 const NewsGridCard = memo(NewsGridCardComponent);
 export default NewsGridCard;

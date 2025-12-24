@@ -20,7 +20,7 @@ import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
-import { Suspense } from 'react'; // ADDED: Import Suspense
+import ContentOverlay from '@/components/overlay/ContentOverlay'; // <-- NEW
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -120,12 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
-          
-          {/* WRAPPED: GoogleAnalytics uses useSearchParams, so it must be suspended */}
-          <Suspense fallback={null}>
-             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
-          </Suspense>
-
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -137,6 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 <SpaceBackground />
                 <ToastProvider />
                 <CookieConsent />
+                <ContentOverlay /> {/* <-- THE OVERLAY MOUNT */}
                 <Lightbox />
                 <Navbar />
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>

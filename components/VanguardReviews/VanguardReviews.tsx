@@ -17,6 +17,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { usePerformanceStore } from '@/lib/performanceStore';
 import { translateTag } from '@/lib/translations';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
+import { useOverlayStore } from '@/lib/overlayStore'; // <-- NEW
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0, transition: { duration: 0.2, when: "afterChildren" } },
@@ -247,8 +248,10 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
     const profileSlug = creator.username || (creator.slug as any)?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
     const hasPublicProfile = !!profileSlug;
     
+    // Icon Selection based on role
     const IconComponent = label === 'تصميم' ? ColorPaletteIcon : PenEdit02Icon;
 
+    // The inner pill content (Visuals)
     const InnerContent = (
         <>
              <div className={styles.capsuleIcon}>
@@ -258,6 +261,7 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
         </>
     );
     
+    // The interactive container
     const InteractiveWrapper = ({ children }: { children: React.ReactNode }) => (
         <motion.div 
             className={styles.capsuleWrapper}
@@ -318,6 +322,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const layoutIdPrefix = "vanguard-reviews";
     const scoreRef = useRef<HTMLParagraphElement>(null);
+    const openOverlay = useOverlayStore(state => state.openOverlay); // <-- NEW
     
     const { isFlyingTagsEnabled, isLivingCardEnabled, isCornerAnimationEnabled } = usePerformanceStore();
     const effectivelyDisabledLiving = !isLivingCardEnabled;
@@ -338,19 +343,44 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     }, [isInView, review.score, isVisible]);
 
     const linkPath = `/reviews/${review.slug}`;
+
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        // Allow ctrl/cmd click to open in new tab (standard behavior)
         if (e.ctrlKey || e.metaKey) return; 
+
+        // If clicking a sub-element like creator/tag, let that link handle it (stopPropagation already on them)
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) {
             e.stopPropagation();
             return;
         }
-        if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
-        setPrefix(layoutIdPrefix);
+        if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) {
+            e.stopPropagation();
+            return;
+        }
+        
+        // Prevent full page navigation
+        e.preventDefault();
+        
+        if (!isMobile) setPrefix(layoutIdPrefix);
+        
+        // --- OVERLAY LOGIC ---
+        // 1. Update URL without reloading
+        window.history.pushState(null, '', linkPath);
+        
+        // 2. Open the overlay
+        openOverlay(review.slug, 'reviews');
     };
     
     const handleBridgeClick = (e: React.MouseEvent) => {
-        handleClick(e as any);
-        router.push(linkPath);
+        const fakeEvent = { 
+            ...e, 
+            target: e.currentTarget, 
+            preventDefault: () => {},
+            stopPropagation: () => {},
+            ctrlKey: e.ctrlKey,
+            metaKey: e.metaKey
+        } as unknown as React.MouseEvent<HTMLAnchorElement>;
+        handleClick(fakeEvent);
     };
     
     const imageRef = review.mainImageVerticalRef || review.mainImageRef;
@@ -402,7 +432,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                 onClick={handleClick}
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
-                // IMPORTANT: Removed prefetch={false} to enable instant nav
+                // REMOVED: prefetch={false}
             >
                 <motion.div
                     ref={livingCardRef}

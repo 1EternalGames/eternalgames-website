@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import { useOverlayStore } from '@/lib/overlayStore'; // <-- NEW
 
 type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
@@ -26,13 +27,11 @@ type ArticleCardProps = {
     smallTags?: boolean;
 };
 
-// Helper: Moved outside to prevent re-creation on render
 const getCreatorName = (creators: any[]): string | null => {
     if (!creators || creators.length === 0) return null;
     return creators[0]?.name || null;
 };
 
-// COMPONENT: Extracted CreatorCapsule to prevent re-mounting on parent re-render
 const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | null, authorUsername?: string | null }) => {
     const content = (
         <>
@@ -49,6 +48,7 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
                 href={`/creators/${authorUsername}`}
                 className={`${styles.creditCapsule} no-underline`}
                 onClick={(e) => e.stopPropagation()} 
+                prefetch={false}
             >
                 {content}
             </Link>
@@ -66,17 +66,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const isMobile = useIsMobile();
-    
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
-    
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
+    const openOverlay = useOverlayStore(state => state.openOverlay); // <-- NEW
 
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
     
-    // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchStartPos = useRef({ x: 0, y: 0 });
@@ -107,70 +104,33 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             }
         },
         onMouseEnter: () => {
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseEnter();
-            }
-            
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter();
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-
-            if (!isHoverDebounceEnabled) {
-                setIsHoveredLocal(true);
-                setIsTextExpanded(true);
-            } else {
-                hoverTimeout.current = setTimeout(() => {
-                    setIsHoveredLocal(true);
-                    setIsTextExpanded(true);
-                }, 75); 
-            }
+            if (!isHoverDebounceEnabled) { setIsHoveredLocal(true); setIsTextExpanded(true); } 
+            else { hoverTimeout.current = setTimeout(() => { setIsHoveredLocal(true); setIsTextExpanded(true); }, 75); }
         },
         onMouseLeave: () => {
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseLeave();
-            }
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave();
             setIsHoveredLocal(false);
         }
     } : {
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             const touch = e.touches[0];
             touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-
             if (touchTimeout.current) clearTimeout(touchTimeout.current);
-            
-            if (!isHoverDebounceEnabled) {
-                if (activeCardId !== article.id) {
-                    setActiveCardId(article.id);
-                    setIsTextExpanded(true);
-                }
-            } else {
-                touchTimeout.current = setTimeout(() => {
-                     if (activeCardId !== article.id) {
-                         setActiveCardId(article.id);
-                         setIsTextExpanded(true);
-                    }
-                }, 75);
-            }
-
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onTouchStart(e);
-            }
+            if (!isHoverDebounceEnabled) { if (activeCardId !== article.id) { setActiveCardId(article.id); setIsTextExpanded(true); } } 
+            else { touchTimeout.current = setTimeout(() => { if (activeCardId !== article.id) { setActiveCardId(article.id); setIsTextExpanded(true); } }, 75); }
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
         onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-             // Calculate distance moved
              const touch = e.touches[0];
              const diffX = Math.abs(touch.clientX - touchStartPos.current.x);
              const diffY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-             // If moved more than 10px, assume scrolling and CANCEL the hover activation
-             if (diffX > 10 || diffY > 10) {
-                 if (touchTimeout.current) clearTimeout(touchTimeout.current);
-             }
-
+             if (diffX > 10 || diffY > 10) { if (touchTimeout.current) clearTimeout(touchTimeout.current); }
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
         },
-        onTouchEnd: () => {
-             if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
-        },
+        onTouchEnd: () => { if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd(); },
     };
 
     const getLinkBasePath = () => {
@@ -197,6 +157,32 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
 
+    // --- OVERLAY CLICK HANDLER ---
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Allow default behavior for modifier keys (new tab)
+        if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+        
+        // Safety: Don't trigger if clicking nested links (tags/creators)
+        if ((e.target as HTMLElement).closest('a[href^="/tags/"]') || 
+            (e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
+        
+        e.preventDefault();
+
+        // 1. Set Layout ID for transition
+        if (!isMobile && isHeroTransitionEnabled) setPrefix(layoutIdPrefix);
+        if (!isMobile) setScrollPos(window.scrollY);
+
+        // 2. Open Overlay
+        let section: 'reviews' | 'articles' | 'news' = 'news';
+        if (article.type === 'review') section = 'reviews';
+        if (article.type === 'article') section = 'articles';
+        
+        // 3. Update URL history manually to enable back navigation
+        window.history.pushState(null, '', linkPath);
+        
+        openOverlay(article.slug, section);
+    };
+
     return (
         <div
             className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
@@ -205,9 +191,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
-                // OPTIMIZATION: We keep layoutId here for the "Hero Transition" (Shared Element),
-                // but we DO NOT add the generic 'layout' prop.
-                // This ensures the transition works, but random grid re-shuffles don't trigger expensive calculations.
                 layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
                 style={{ 
                     height: '100%',
@@ -227,19 +210,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     <div 
                         className="no-underline block w-full flex flex-col"
                         style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
+                        onClick={handleCardClick}
                     >
-                        <Link 
-                            href={linkPath} 
-                            className={`${styles.cardOverlayLink} no-underline`}
-                            onClick={() => {
-                                if (!isMobile) {
-                                    setScrollPos(window.scrollY);
-                                    if (isHeroTransitionEnabled) {
-                                        setPrefix(layoutIdPrefix);
-                                    }
-                                }
-                            }}
-                        />
+                        {/* Fake Link Overlay for click capture */}
+                        <div className={`${styles.cardOverlayLink}`} />
 
                         <div className={styles.monolithFrame}>
                             <div className={styles.innerClippingFrame}>
@@ -363,6 +337,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                                 href={`/tags/${tag.slug}`} 
                                                 onClick={(e) => e.stopPropagation()}
                                                 className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
+                                                prefetch={false}
                                             >
                                                  {translateTag(tag.title)}
                                              </Link>
