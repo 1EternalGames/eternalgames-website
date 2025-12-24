@@ -10,7 +10,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { urlFor } from '@/sanity/lib/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
 import { usePerformanceStore } from '@/lib/performanceStore'; 
-import { useContentStore } from '@/lib/contentStore'; // <-- NEW
+import { useContentStore } from '@/lib/contentStore'; 
 
 import type { SanityReview, SanityArticle, SanityNews } from '@/types/sanity';
 import PortableTextComponent from '@/components/PortableTextComponent';
@@ -56,12 +56,8 @@ export default function ContentPageClient({ item: initialItem, type, children, c
     const getBySlug = useContentStore((state) => state.getBySlug);
 
     // --- INSTANT CACHE CHECK ---
-    // If the data exists in the store (from homepage prefetch), use it immediately.
-    // The server prop `initialItem` is the fallback/SEO data.
     const slugKey = typeof initialItem.slug === 'string' ? initialItem.slug : initialItem.slug?.current || '';
     const cachedItem = getBySlug(slugKey);
-    
-    // Prioritize cachedItem if available, it avoids the hydration flicker if cache is hot
     const item = cachedItem || initialItem;
 
     const isReview = type === 'reviews';
@@ -143,15 +139,26 @@ export default function ContentPageClient({ item: initialItem, type, children, c
 
     if (!item) return null;
 
-    const rawRelatedReviews = (item as any).relatedReviews;
-    const rawRelatedArticles = (item as any).relatedArticles;
-    const rawRelatedNews = (item as any).relatedNews;
-    const relatedReviews = Array.isArray(rawRelatedReviews) ? rawRelatedReviews : [];
-    const relatedArticles = Array.isArray(rawRelatedArticles) ? rawRelatedArticles : [];
-    const relatedNews = Array.isArray(rawRelatedNews) ? rawRelatedNews : [];
-    const relatedContent = [...relatedReviews, ...relatedArticles, ...relatedNews];
-    const uniqueRelatedContent = relatedContent.length > 0 ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
-    const adaptedRelatedContent = uniqueRelatedContent.map((related: any) => adaptToCardProps(related, { width: 600 })).filter(Boolean) as CardProps[];
+    // --- CRASH FIX: SAFE ACCESS TO RELATED CONTENT ---
+    // Cached items from the homepage list query DO NOT have related content populated.
+    // We must default to empty arrays to prevent "undefined is not iterable" errors.
+    const rawRelatedReviews = (item as any).relatedReviews || [];
+    const rawRelatedArticles = (item as any).relatedArticles || [];
+    const rawRelatedNews = (item as any).relatedNews || [];
+
+    const relatedContent = [...rawRelatedReviews, ...rawRelatedArticles, ...rawRelatedNews];
+    
+    // Deduplicate logic
+    const uniqueRelatedContent = relatedContent.length > 0 
+        ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) 
+        : [];
+        
+    const adaptedRelatedContent = uniqueRelatedContent
+        .map((related: any) => adaptToCardProps(related, { width: 600 }))
+        .filter(Boolean) as CardProps[];
+        
+    // --- END CRASH FIX ---
+
     const safeTags = Array.isArray(item.tags) ? item.tags : [];
     const safeAuthors = Array.isArray((item as any).authors) ? (item as any).authors : [];
     const safeReporters = Array.isArray((item as any).reporters) ? (item as any).reporters : [];
@@ -165,8 +172,15 @@ export default function ContentPageClient({ item: initialItem, type, children, c
     const monthIndex = publishedDate.getMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
-    const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
-    const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
+    
+    const heroImageUrl = item.mainImage 
+        ? urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url()
+        : '/placeholder.png'; // Fallback
+        
+    const fullResImageUrl = item.mainImage 
+        ? urlFor(item.mainImage).auto('format').url()
+        : '';
+
     const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
     const newsType = (item as any).newsType || 'official';
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
@@ -234,11 +248,15 @@ export default function ContentPageClient({ item: initialItem, type, children, c
                                 
                                 <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
                                     <motion.div className={styles.relatedGrid} variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" exit="hidden">
-                                        {adaptedRelatedContent.map(related => (
-                                            <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-                                                <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
-                                            </motion.div>
-                                        ))}
+                                        {adaptedRelatedContent.length > 0 ? (
+                                            adaptedRelatedContent.map(related => (
+                                                <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                                    <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
+                                                </motion.div>
+                                            ))
+                                        ) : (
+                                            <p style={{color: 'var(--text-secondary)', textAlign: 'center'}}>لا توجد مقالات ذات صلة.</p>
+                                        )}
                                     </motion.div>
                                 </ContentBlock>
                             </aside>

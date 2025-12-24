@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
 import CollectionPageJsonLd from '@/components/seo/CollectionPageJsonLd';
+import GlobalContentHydrator from '@/components/utils/GlobalContentHydrator';
 
 export const dynamic = 'force-static';
 
@@ -48,7 +49,7 @@ const getCachedReviewsPageData = unstable_cache(
       grid: initialGridReviews
     };
   },
-  ['reviews-page-index'],
+  ['reviews-page-index-v2'],
   { 
     revalidate: false, 
     tags: ['review', 'content'] 
@@ -65,6 +66,10 @@ export default async function ReviewsPage() {
       games: allGames,
       tags: allTags
   } = data;
+  
+  // Hydration Data
+  const hydrationData = [...(initialGridReviews || [])];
+  if(heroReview) hydrationData.push(heroReview);
 
   const itemList = (initialGridReviews || []).map((item: any) => ({
       headline: item.title,
@@ -92,6 +97,7 @@ export default async function ReviewsPage() {
 
   return (
     <>
+      <GlobalContentHydrator items={hydrationData} />
       <CollectionPageJsonLd 
         name="مراجعات الألعاب" 
         description="أحدث مراجعات الألعاب من فريق EternalGames" 

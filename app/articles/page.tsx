@@ -6,6 +6,7 @@ import ArticlesPageClient from './ArticlesPageClient';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
+import GlobalContentHydrator from '@/components/utils/GlobalContentHydrator';
 
 export const dynamic = 'force-static';
 
@@ -50,7 +51,7 @@ const getCachedArticlesPageData = unstable_cache(
       grid: initialGridArticles
     };
   },
-  ['articles-page-index'],
+  ['articles-page-index-v2'],
   { 
     revalidate: false, 
     tags: ['article', 'content'] 
@@ -70,6 +71,9 @@ export default async function ArticlesPage() {
 
   const allGameTags = deduplicateTags(allGameTagsRaw);
   const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
+  
+  // Combine all items for hydration
+  const hydrationData = [...(featuredArticles || []), ...(initialGridArticles || [])];
 
   if (!featuredArticles || featuredArticles.length === 0) {
     return (
@@ -81,12 +85,15 @@ export default async function ArticlesPage() {
   }
 
   return (
-      <ArticlesPageClient
-        featuredArticles={featuredArticles as SanityArticle[]}
-        initialGridArticles={initialGridArticles as SanityArticle[]}
-        allGames={allGames}
-        allGameTags={allGameTags}
-        allArticleTypeTags={allArticleTypeTags}
-      />
+      <>
+        <GlobalContentHydrator items={hydrationData} />
+        <ArticlesPageClient
+            featuredArticles={featuredArticles as SanityArticle[]}
+            initialGridArticles={initialGridArticles as SanityArticle[]}
+            allGames={allGames}
+            allGameTags={allGameTags}
+            allArticleTypeTags={allArticleTypeTags}
+        />
+      </>
   );
 }

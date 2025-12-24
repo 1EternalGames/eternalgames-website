@@ -14,7 +14,7 @@ import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import HomeJsonLd from '@/components/seo/HomeJsonLd'; 
 import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
-import GlobalContentHydrator from '@/components/utils/GlobalContentHydrator'; // <-- NEW
+import GlobalContentHydrator from '@/components/utils/GlobalContentHydrator';
 
 export const dynamic = 'force-static';
 
@@ -60,7 +60,7 @@ const getCachedHomepageContent = unstable_cache(
     async () => {
         return await client.fetch(consolidatedHomepageQuery);
     },
-    ['homepage-content-consolidated-v3'], // Updated Cache Key for new fat payload
+    ['homepage-content-consolidated-v3'],
     {
         revalidate: false,
         tags: ['review', 'article', 'news', 'content', 'gameRelease', 'releases']
@@ -92,8 +92,8 @@ export default async function HomePage() {
         enrichCreators(creditsRaw)
     ]) as [SanityReview[], any[], any[], any[]];
 
-    // --- NEW: Combine all full data for hydration ---
-    const allHydrationData = [...reviews, ...homepageArticles, ...homepageNews];
+    // --- HYDRATION: Combined all content including RELEASES ---
+    const allHydrationData = [...reviews, ...homepageArticles, ...homepageNews, ...releasesRaw];
 
     if (reviews.length > 0) {
         const topRatedIndex = reviews.reduce((topIndex: number, currentReview: SanityReview, currentIndex: number) => {
@@ -149,7 +149,6 @@ export default async function HomePage() {
 
     const releasesSection = <ReleasesSection releases={releasesRaw} credits={credits || []} />;
 
-    // Generate Carousel Schema Data
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
     const carouselItems = reviews.slice(0, 5).map((review, index) => ({
         url: `${siteUrl}/reviews/${review.slug}`,
@@ -163,7 +162,7 @@ export default async function HomePage() {
             <HomeJsonLd />
             {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
             
-            {/* HYDRATE THE STORE WITH FULL CONTENT */}
+            {/* HYDRATE STORE */}
             <GlobalContentHydrator items={allHydrationData} />
             
             <DigitalAtriumHomePage 

@@ -6,6 +6,7 @@ import NewsPageClient from './NewsPageClient';
 import type { Metadata } from 'next';
 import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
+import GlobalContentHydrator from '@/components/utils/GlobalContentHydrator';
 
 export const dynamic = 'force-static';
 
@@ -50,7 +51,7 @@ const getCachedNewsPageData = unstable_cache(
       grid: initialGridArticles
     };
   },
-  ['news-page-index'],
+  ['news-page-index-v2'],
   { 
     revalidate: false, 
     tags: ['news', 'content'] 
@@ -68,6 +69,9 @@ export default async function NewsPage() {
   } = data;
 
   const allTags = deduplicateTags(allTagsRaw);
+  
+  // Combine for hydration
+  const hydrationData = [...(heroArticles || []), ...(initialGridArticles || [])];
 
   if (!heroArticles || heroArticles.length === 0) {
     return (
@@ -79,11 +83,14 @@ export default async function NewsPage() {
   }
 
   return (
-      <NewsPageClient
-        heroArticles={heroArticles as SanityNews[]}
-        initialGridArticles={initialGridArticles as SanityNews[]}
-        allGames={allGames || []}
-        allTags={allTags || []}
-      />
+      <>
+        <GlobalContentHydrator items={hydrationData} />
+        <NewsPageClient
+            heroArticles={heroArticles as SanityNews[]}
+            initialGridArticles={initialGridArticles as SanityNews[]}
+            allGames={allGames || []}
+            allTags={allTags || []}
+        />
+      </>
   );
 }
