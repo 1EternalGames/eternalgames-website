@@ -459,3 +459,36 @@ a.creditCapsule:active { transform: scale(0.95); }
   background-color: #000;
   color: var(--accent);
 }
+
+/* --- Light Mode Fixes (No Black) --- */
+:global([data-theme="light"]) .creditCapsule {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+}
+:global([data-theme="light"]) .creditCapsule :global(span),
+:global([data-theme="light"]) .creatorName {
+    color: var(--text-primary);
+}
+:global([data-theme="light"]) .capsuleIcon {
+    background-color: var(--accent);
+    color: #fff;
+}
+/* Hover: Capsule becomes Accent, Icon Circle becomes WHITE */
+:global([data-theme="light"]) .livingCardWrapper:hover .creditCapsule,
+:global([data-theme="light"]) .livingCardWrapper.activeState .creditCapsule {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+:global([data-theme="light"]) .livingCardWrapper:hover .creditCapsule :global(span),
+:global([data-theme="light"]) .livingCardWrapper.activeState .creditCapsule :global(span),
+:global([data-theme="light"]) .livingCardWrapper:hover .creatorName,
+:global([data-theme="light"]) .livingCardWrapper.activeState .creatorName {
+    color: #fff !important;
+}
+:global([data-theme="light"]) .livingCardWrapper:hover .capsuleIcon,
+:global([data-theme="light"]) .livingCardWrapper.activeState .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

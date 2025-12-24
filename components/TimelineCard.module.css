@@ -639,3 +639,55 @@
 :global([data-theme="light"]) .techDot {
   background-color: rgba(0,0,0,0.2);
 }
+
+/* --- Light Mode Fixes (No Black) --- */
+/* Credits in Timeline */
+:global([data-theme="light"]) .creditCapsule {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+:global([data-theme="light"]) .creditCapsule :global(span) {
+    color: var(--text-primary);
+}
+:global([data-theme="light"]) .capsuleIcon {
+    background-color: var(--accent);
+    color: #fff;
+}
+/* Hover Logic for Timeline Credits */
+:global([data-theme="light"]) .capsuleWrapper:hover .creditCapsule {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
+:global([data-theme="light"]) .capsuleWrapper:hover .creditCapsule :global(span) {
+    color: #fff !important;
+}
+:global([data-theme="light"]) .capsuleWrapper:hover .capsuleIcon {
+    background-color: #ffffff !important;
+    color: var(--accent) !important;
+}
+
+/* Flying Tags (Platforms, Genres, Status) */
+:global([data-theme="light"]) .platformTagBase.flying,
+:global([data-theme="light"]) .genrePill,
+:global([data-theme="light"]) .shardPill,
+:global([data-theme="light"]) .devPill {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid var(--accent);
+    color: var(--text-primary) !important;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+}
+
+/* Hover States for Flying Tags */
+:global([data-theme="light"]) .genrePill:hover,
+:global([data-theme="light"]) .shardPill.interactive:hover {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+    border-color: var(--accent) !important;
+}
+
+/* Ensure Price Pill text is visible */
+:global([data-theme="light"]) .pricePill {
+    color: #F59E0B !important; /* Gold text */
+    border-color: #F59E0B !important;
+    background-color: rgba(255,255,255,0.95) !important;
+}
