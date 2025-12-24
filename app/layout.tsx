@@ -20,6 +20,7 @@ import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
+import { Suspense } from 'react'; // ADDED: Import Suspense
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -51,7 +52,6 @@ export const metadata: Metadata = {
   other: {
       'application/opensearchdescription+xml': '/opensearch.xml',
   },
-  // ADDED: Authors link to humans.txt
   authors: [
       { name: 'EternalGames Team', url: siteUrl },
       { name: 'MoVisionX', url: '/humans.txt' }
@@ -120,7 +120,12 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          
+          {/* WRAPPED: GoogleAnalytics uses useSearchParams, so it must be suspended */}
+          <Suspense fallback={null}>
+             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          </Suspense>
+
           <OrganizationJsonLd />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
