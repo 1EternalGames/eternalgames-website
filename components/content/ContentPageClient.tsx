@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -27,11 +27,18 @@ import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
-import { formatArabicDuration } from '@/lib/text-utils';
+import { formatArabicDuration, generateId } from '@/lib/text-utils'; // IMPORT generateId
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
-type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { slug: Slug; relatedContent?: any[]; readingTime?: number; };
+
+type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
+    slug: Slug; 
+    relatedContent?: any[]; 
+    readingTime?: number; 
+    toc?: { id: string; text: string; level: number }[]; 
+};
+
 type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
@@ -46,16 +53,17 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const openLightbox = useLightboxStore((state) => state.openLightbox);
     const { isHeroTransitionEnabled } = usePerformanceStore();
 
+    const isReview = type === 'reviews';
+    const isNews = type === 'news';
+
+    const [tocItems, setTocItems] = useState<TocItem[]>(item.toc || []);
     const [headings, setHeadings] = useState<Heading[]>([]);
-    const [tocItems, setTocItems] = useState<TocItem[]>([]);
+    
     const [isMobile, setIsMobile] = useState(false);
     
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const scrollTrackerRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
-    
-    const isReview = type === 'reviews';
-    const isNews = type === 'news';
     
     const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
     
@@ -68,15 +76,20 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         const seenIds = new Set<string>();
         
         let newHeadings: Heading[] = [];
-        let newTocItems: TocItem[] = [];
 
         const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
         
         headingElements.forEach((h, index) => {
+            // FIX: Use the exact same ID generation logic as the server
+            // If the element has no ID (rare), generate one using the shared utility
             let id = h.id;
+            
             if (!id || seenIds.has(id)) { 
-                id = `${h.textContent?.trim().slice(0, 20).replace(/\s+/g, '-') || 'heading'}-${index}`;
+                const textContent = h.textContent || '';
+                // Use the shared Arabic-preserving generator
+                id = generateId(textContent) || `heading-${index}`;
             }
+            
             seenIds.add(id);
             h.id = id;
             
@@ -87,7 +100,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
             const title = h.textContent || '';
             
             newHeadings.push({ id, title, top: Math.max(0, scrollToPosition), level });
-            newTocItems.push({ id, text: title, level });
         });
 
         if (isReview) {
@@ -98,13 +110,11 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                  
                  const verdictHeading = { id: 'verdict-summary', title: 'الخلاصة', top: Math.max(0, scoreBoxScrollPosition), level: 2 };
                  newHeadings.push(verdictHeading);
-                 newTocItems.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
              }
         }
         
         if (newHeadings.length > 0) {
             setHeadings(newHeadings);
-            setTocItems(newTocItems);
         }
 
     }, [isReview]);
@@ -179,17 +189,20 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                         <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                     </div>
                                     <div className={styles.metaBlockRight}>
-                                        <CreatorCredit label="بقلم" creators={primaryCreators} />
-                                        {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
+                                        <div className={styles.creditsRow}>
+                                            <CreatorCredit label="بقلم" creators={primaryCreators} />
+                                            {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
+                                        </div>
+                                        
                                         <div className={styles.dateContainer}>
                                              {item.readingTime && ( 
                                                 <span className={styles.readTimeMinimal} title="وقت القراءة المقدر">
                                                     <span className={styles.timeIcon}><TimeIcon /></span>
-                                                    {formatArabicDuration(item.readingTime)}
+                                                    وقت القراءة: {formatArabicDuration(item.readingTime)}
                                                 </span>
                                              )}
-                                             {item.readingTime && <span style={{color: 'var(--border-color)', margin: '0 0.5rem'}}>|</span>}
-                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+
+                                             <div className={styles.metaRowItem}>
                                                  <Calendar03Icon className={styles.metadataIcon} />
                                                  <p className={styles.dateText}>{formattedDate}</p>
                                              </div>
@@ -197,7 +210,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                     </div>
                                 </div>
                                 
-                                {/* Updated: Table of Contents moved here, full width */}
                                 <TableOfContents headings={tocItems} />
 
                                 <div ref={articleBodyRef} className="article-body">

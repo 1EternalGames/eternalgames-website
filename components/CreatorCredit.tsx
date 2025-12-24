@@ -3,20 +3,10 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
 import { getCreatorUsernames } from '@/app/actions/creatorActions';
 import type { SanityAuthor } from '@/types/sanity';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
-import { urlFor } from '@/sanity/lib/image';
 import styles from './CreatorCredit.module.css';
-import { sanityLoader } from '@/lib/sanity.loader';
-
-const hoverCardVariants = {
-    hidden: { opacity: 0, y: 10, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' as const } },
-    exit: { opacity: 0, y: 10, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' as const } }
-};
 
 const usernameCache: Record<string, string | null> = {};
 let pendingRequest: Promise<Record<string, string>> | null = null;
@@ -64,97 +54,18 @@ const batchFetchUsernames = (ids: string[]): Promise<Record<string, string>> => 
     return pendingRequest;
 };
 
-const CreatorHoverCard = ({ creator }: { creator: SanityAuthor }) => {
-    let imageUrl = '/default-avatar.svg';
-    let isSanityImage = false;
-
-    if (creator.image) {
-        if (typeof creator.image === 'string') {
-            imageUrl = creator.image; 
-        } else if (typeof creator.image === 'object' && (creator.image as any).asset) {
-            imageUrl = urlFor(creator.image as any).width(96).height(96).fit('crop').url();
-            isSanityImage = true;
-        }
-    }
-
-    return (
-        <motion.div className={styles.hoverCard} variants={hoverCardVariants} initial="hidden" animate="visible" exit="exit">
-            <div className={styles.cardHeader}>
-                <Image 
-                    loader={isSanityImage ? sanityLoader : undefined} 
-                    src={imageUrl} 
-                    alt={creator.name}
-                    width={48}
-                    height={48}
-                    className={styles.cardAvatar}
-                />
-                <div>
-                    <p className={styles.cardName}>{creator.name}</p>
-                    {creator.username && <p className={styles.cardUsername}>@{creator.username}</p>}
-                </div>
-            </div>
-            {creator.bio && <p className={styles.cardBio}>{creator.bio}</p>}
-        </motion.div>
-    );
-};
-
-const CreatorLink = ({ creator, disableLink }: { creator: SanityAuthor, disableLink?: boolean }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    
-    // THE FIX: Explicit touch handling to prevent bubbling
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        e.stopPropagation();
-        // Allow default behavior (navigation) to proceed
-    };
-    
-    const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-    };
-
-    return (
-        <div 
-            className={styles.creatorLinkContainer}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            <AnimatePresence>
-                {isHovered && <CreatorHoverCard creator={creator} />}
-            </AnimatePresence>
-
-            {creator.username && !disableLink ? (
-                <Link 
-                    href={`/creators/${creator.username}`} 
-                    className="creator-credit-link no-underline"
-                    onClick={handleClick}
-                    onTouchEnd={handleTouchEnd} 
-                    prefetch={false} 
-                    style={{ position: 'relative', zIndex: 100 }} // Ensure it sits above overlays
-                >
-                    {creator.name}
-                </Link>
-            ) : (
-                <span className={creator.username ? "creator-credit-link" : ""}>{creator.name}</span>
-            )}
-        </div>
-    );
-};
-
-export default function CreatorCredit({ label, creators, small = false, disableLink = false }: { 
+export default function CreatorCredit({ label, creators, disableLink = false }: { 
     label: string; 
     creators: SanityAuthor[] | null | undefined;
-    small?: boolean;
+    small?: boolean; 
     disableLink?: boolean;
 }) {
-    // --- DEFENSIVE CODING ---
-    // Fallback to empty array if creators is null/undefined/not array
     const safeCreators = Array.isArray(creators) ? creators : [];
-    
     const [enrichedCreators, setEnrichedCreators] = useState<SanityAuthor[]>(safeCreators);
     const mounted = useRef(false);
 
     useEffect(() => {
         mounted.current = true;
-        // Re-sync state if props change
         setEnrichedCreators(safeCreators);
         
         const idsToFetch: string[] = [];
@@ -184,32 +95,45 @@ export default function CreatorCredit({ label, creators, small = false, disableL
         }
 
         return () => { mounted.current = false; };
-    }, [safeCreators]); // Depend on the Safe array
+    }, [safeCreators]); 
     
-    const hasCreators = enrichedCreators && enrichedCreators.length > 0;
-
-    if (!hasCreators) {
+    if (!enrichedCreators || enrichedCreators.length === 0) {
         return null;
     }
-
-    const formattedNames = enrichedCreators.map((creator, i) => (
-        <React.Fragment key={`${creator._id}-${i}`}>
-            {i > 0 && (i === enrichedCreators.length - 1 ? ' و ' : '، ')}
-            <CreatorLink creator={creator} disableLink={disableLink} />
-        </React.Fragment>
-    ));
 
     const IconComponent = label === 'تصميم' ? ColorPaletteIcon : PenEdit02Icon;
 
     return (
-        <div className={`${styles.creatorCredit} ${small ? styles.small : ''}`}>
-             <IconComponent className={styles.metadataIcon} />
-            <div>
-                <span className={styles.label}>{label}: </span>
-                <span>{formattedNames}</span>
-            </div>
+        <div className={styles.creatorsWrapper}>
+            {enrichedCreators.map((creator) => {
+                const content = (
+                    <>
+                        <div className={styles.capsuleIcon}>
+                            <IconComponent style={{ width: 14, height: 14 }} />
+                        </div>
+                        <span className={styles.creatorName}>{creator.name}</span>
+                    </>
+                );
+
+                if (creator.username && !disableLink) {
+                    return (
+                        <Link 
+                            key={creator._id}
+                            href={`/creators/${creator.username}`}
+                            className={`${styles.creditCapsule} no-underline`}
+                            prefetch={false}
+                        >
+                            {content}
+                        </Link>
+                    );
+                }
+
+                return (
+                    <div key={creator._id} className={styles.creditCapsule}>
+                        {content}
+                    </div>
+                );
+            })}
         </div>
     );
 }
-
-

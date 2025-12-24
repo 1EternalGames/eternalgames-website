@@ -11,6 +11,7 @@ import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import SpeakableJsonLd from '@/components/seo/SpeakableJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
 import { calculateReadingTime, toPlainText } from '@/lib/readingTime'; 
+import { extractHeadingsFromContent } from '@/lib/text-utils'; // Import the extractor
 
 export const dynamic = 'force-static';
 
@@ -63,7 +64,6 @@ function generateStructuredData(item: any, type: string, url: string) {
     };
 
     if (type === 'review') {
-        // ENHANCED REVIEW SCHEMA
         return {
             ...baseSchema,
             "itemReviewed": {
@@ -78,7 +78,6 @@ function generateStructuredData(item: any, type: string, url: string) {
                 "worstRating": "0"
             },
             "description": item.synopsis || item.verdict,
-            // ADDED: Explicitly map Pros/Cons to schema if available (Google understands this)
             "positiveNotes": item.pros ? {
                 "@type": "ItemList",
                 "itemListElement": item.pros.map((p: string, i: number) => ({
@@ -189,6 +188,19 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const readingTime = calculateReadingTime(plainText);
     enrichedItem.readingTime = readingTime;
     
+    // --- SERVER-SIDE TOC GENERATION ---
+    // Extract headings from Portable Text
+    const tocHeadings = extractHeadingsFromContent(enrichedItem.content);
+    
+    // For reviews, manually append the "Verdict" section if it exists
+    if (sanityType === 'review' && enrichedItem.verdict) {
+        tocHeadings.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
+    }
+    
+    // Attach ToC to the item passed to the client
+    enrichedItem.toc = tocHeadings;
+    // ----------------------------------
+
     const colorDictionary = dictionary?.autoColors || [];
     
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
@@ -204,7 +216,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
         <>
             <JsonLd data={jsonLdData} />
             <BreadcrumbJsonLd items={breadcrumbItems} />
-            {/* Speakable Schema for News */}
             {sanityType === 'news' && (
                 <SpeakableJsonLd cssSelectors={['.page-title', '.article-body p:first-of-type']} />
             )}

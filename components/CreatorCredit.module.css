@@ -1,105 +1,112 @@
 /* components/CreatorCredit.module.css */
 
-.creatorCreditContainer {
+.creatorsWrapper {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: flex-start; /* Align right in RTL */
+    margin-bottom: 0.2rem;
 }
 
-.creatorCredit {
+/* --- CAPSULE STYLES (MATCHING CARDS) --- */
+.creditCapsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgba(10, 11, 15, 0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0;
+    border-radius: 999px;
+    height: 32px;
+    backdrop-filter: blur(8px);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    padding-left: 1.2rem;
+    text-decoration: none;
+    cursor: pointer;
+    z-index: 10;
+}
+
+:global(body.no-glass) .creditCapsule {
+    backdrop-filter: none !important;
+    background-color: rgba(10, 11, 15, 0.95) !important;
+}
+
+/* Mobile Opt: Kill Blur */
+@media (max-width: 768px) {
+    .creditCapsule {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: rgba(10, 11, 15, 0.95);
+    }
+}
+
+/* Hover Effects */
+@media (hover: hover) {
+    .creditCapsule:hover {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
+        transform: translateY(-2px) scale(1.02);
+        z-index: 20;
+    }
+    
+    /* FIX: Force override for no-glass mode to ensure cyan background on hover */
+    :global(body.no-glass) .creditCapsule:hover {
+        background-color: var(--accent) !important;
+        border-color: var(--accent) !important;
+    }
+
+    /* Invert colors on hover */
+    .creditCapsule:hover .capsuleIcon {
+        background-color: #000;
+        color: var(--accent);
+        box-shadow: none;
+    }
+    
+    :global(body.no-glass) .creditCapsule:hover .capsuleIcon {
+        background-color: #000 !important;
+        color: var(--accent) !important;
+    }
+
+    .creditCapsule:hover .creatorName {
+        color: #000;
+    }
+    
+    :global(body.no-glass) .creditCapsule:hover .creatorName {
+        color: #000 !important;
+    }
+}
+
+.creditCapsule:active {
+    transform: scale(0.98);
+}
+
+.capsuleIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: #000;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    line-height: 1.6;
-    color: var(--text-primary);
-}
-
-.metadataIcon {
-    width: 16px;
-    height: 16px;
-    color: var(--accent);
+    justify-content: center;
     flex-shrink: 0;
-    order: -1; /* THE DEFINITIVE FIX: Forces icon to the left */
+    transition: color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease;
+    margin: -1px; /* Slight offset to overlap border cleanly */
 }
 
-.label {
-    font-weight: 500;
-    color: var(--text-primary);
-}
-
-.dateText {
-    font-size: 1.3rem;
-    color: var(--text-secondary);
-    margin: 0;
-}
-
-.creatorLinkContainer {
-    position: relative;
-    display: inline-block;
-}
-
-/* --- Small Variant Styles --- */
-.creatorCredit.small {
-    gap: 0.5rem;
-}
-.creatorCredit.small .metadataIcon {
+.capsuleIcon svg {
     width: 14px;
     height: 14px;
 }
-.creatorCredit.small .label,
-.creatorCredit.small span {
+
+.creatorName {
     font-size: 1.2rem;
-}
-
-.hoverCard {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    right: 50%; /* Center relative to the link */
-    transform: translateX(50%);
-    width: 280px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.2);
-    padding: 1.5rem;
-    z-index: 10;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    transform-origin: bottom center;
-}
-
-.cardHeader {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.cardAvatar {
-    border-radius: 50%;
-}
-
-.cardName {
-    font-size: 1.6rem;
     font-weight: 700;
-    color: var(--text-primary);
-}
-
-.cardUsername {
-    font-size: 1.4rem;
-    color: var(--text-secondary);
-}
-
-.cardBio {
-    font-size: 1.4rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin: 0;
-    /* Clamp to 3 lines */
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;  
-    overflow: hidden;
+    color: #fff;
+    white-space: nowrap;
+    padding-right: 0.2rem;
+    transition: color 0.4s ease;
+    font-family: var(--font-main);
 }

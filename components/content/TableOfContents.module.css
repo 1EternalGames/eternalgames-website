@@ -1,10 +1,10 @@
 /* components/content/TableOfContents.module.css */
 
 .tocContainer {
-    position: relative; /* Changed from sticky to relative to fix scrolling issue */
-    background-color: #080a0f; /* Darker background */
+    position: relative;
+    background-color: #080a0f;
     border-radius: 12px;
-    padding: 2.5rem;
+    padding: 2.5rem 1.5rem 2.5rem 2.5rem; 
     margin-bottom: 4rem;
     border: 1px solid var(--border-color);
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -25,20 +25,12 @@
     color: var(--accent);
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Pushes items to edges */
+    justify-content: flex-start; 
+    gap: 1rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--border-color);
-    flex-direction: row-reverse; /* Ensure Icon is Left, Text is Right in RTL context if needed, or rely on order */
+    padding-left: 1rem;
 }
-
-/* If the DOM order is Text then Icon, row-reverse puts Icon Left, Text Right in RTL? 
-   Actually in RTL: row direction starts right. 
-   Item 1 (Right), Item 2 (Left).
-   If we want Text Right and Icon Left:
-   DOM: Text, Icon.
-   Flex Row (RTL): Text (Right), Icon (Left).
-   Justify Between pushes them apart.
-*/
 
 .tocIcon {
     width: 24px;
@@ -46,6 +38,45 @@
     color: var(--accent);
     opacity: 0.8;
 }
+
+.listWrapper {
+    max-height: 350px; 
+    overflow-y: auto;  
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    
+    /* Visual Fade Mask (Shadow) */
+    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+    
+    /* Smooth transition for mask removal (supported in some browsers) */
+    transition: -webkit-mask-image 0.3s ease, mask-image 0.3s ease;
+    
+    padding-bottom: 2rem; 
+    padding-left: 1rem;   
+    
+    /* INTERACTION: Enable Grabbing */
+    cursor: grab;
+    /* Prevent text selection while dragging */
+    user-select: none; 
+    -webkit-user-select: none;
+}
+
+/* Remove shadow when at bottom */
+.listWrapper.atBottom {
+    mask-image: none;
+    -webkit-mask-image: none;
+}
+
+.listWrapper:active {
+    cursor: grabbing;
+}
+
+.listWrapper::-webkit-scrollbar { width: 4px; }
+.listWrapper::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+.listWrapper::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 4px; transition: background-color 0.3s; }
+.listWrapper:hover::-webkit-scrollbar-thumb { background-color: var(--accent); }
+.listWrapper { scrollbar-width: thin; scrollbar-color: var(--accent) rgba(255, 255, 255, 0.02); }
 
 .tocList {
     list-style: none;
@@ -55,71 +86,93 @@
     flex-direction: column;
     gap: 1.2rem;
     position: relative;
+    padding-right: 0.5rem;
 }
 
 .tocItem {
     font-family: var(--font-main);
-    font-size: 1.5rem;
     position: relative;
-    padding-right: 2rem; /* Space for bullet */
-    transition: transform 0.2s ease;
-}
-
-.tocItem:hover {
-    transform: translateX(-5px); /* Move slightly left on hover for RTL feel */
-}
-
-/* Custom Bullet on the Right */
-.tocItem::before {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 10px; /* Vertically center relative to line-height approx */
-    width: 6px;
-    height: 6px;
-    background-color: var(--text-secondary);
-    border-radius: 50%;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.tocItem:hover::before {
-    background-color: var(--accent);
-    transform: scale(1.2);
-}
-
-/* Indent H3s */
-.tocItem.level-2 {
-    font-weight: 500;
-}
-
-.tocItem.level-3 {
-    font-size: 1.4rem;
-    padding-right: 4rem; 
-    margin-top: 0.25rem;
+    padding-right: 3rem; 
+    transition: transform 0.2s ease, opacity 0.2s ease;
     opacity: 0.9;
 }
 
-.tocItem.level-3::before {
-    right: 2rem;
-    width: 4px;
-    height: 4px;
-    background-color: var(--border-color);
+.tocItem:hover {
+    transform: translateX(-5px);
+    opacity: 1;
 }
+
+/* --- HIERARCHY STYLES --- */
+
+/* Main Items (Level 1 & 2) */
+.tocItem.level-1, .tocItem.level-2 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 0.5rem;
+}
+
+/* Main Bullet: Bigger Square */
+.tocItem.level-1::before, .tocItem.level-2::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10px;
+    width: 8px; /* Bigger */
+    height: 8px;
+    background-color: var(--text-secondary);
+    border-radius: 2px; /* Square */
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tocItem.level-1:hover::before, .tocItem.level-2:hover::before {
+    background-color: var(--accent);
+    transform: scale(1.4) rotate(45deg);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+/* Sub Items (Level 3) */
+.tocItem.level-3 {
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    padding-right: 5rem; /* Deep Indent */
+    margin-top: -0.2rem; /* Closer grouping */
+}
+
+/* Sub Bullet: Small Circle */
+.tocItem.level-3::before {
+    content: '';
+    position: absolute;
+    right: 2.8rem; /* Indented bullet */
+    top: 10px;
+    width: 5px;
+    height: 5px;
+    background-color: var(--border-color);
+    border-radius: 50%; /* Round */
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.tocItem.level-3:hover {
+    color: var(--text-primary);
+}
+
+.tocItem.level-3:hover::before {
+    background-color: var(--accent);
+    transform: scale(1.5);
+}
+
 
 .tocLink {
     display: block;
-    color: var(--text-primary);
+    color: inherit;
     text-decoration: none;
     transition: color 0.2s ease;
-    line-height: 1.5;
+    line-height: 1.4;
+    /* Important for drag scrolling: prevent link dragging ghost */
+    -webkit-user-drag: none; 
 }
 
 .tocLink:hover {
     color: var(--accent);
-}
-
-/* Active State */
-.tocLink.active {
-    color: var(--accent);
-    font-weight: 700;
 }
