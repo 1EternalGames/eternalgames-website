@@ -23,6 +23,8 @@ const EyeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none
 const PlayPauseIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
 const BlurIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path d="M2 12s3 7 10 7 10-7 10-7 3-7 10-7 10 7 10 7Z" opacity="0.3"/></svg>;
 const BoltIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+// NEW: Mouse/Scroll Icon
+const ScrollIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="2" width="14" height="20" rx="7" ry="7"></rect><path d="M12 6v4"></path></svg>;
 
 interface OptionButtonProps { label: string; isActive: boolean; onClick: () => void; Icon: React.ComponentType<any>; disabled?: boolean; isAutoControlled?: boolean; }
 
@@ -73,6 +75,7 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
             
             <div className={styles.optionsGrid}>
                 <OptionButton label="الضبط التلقائي" isActive={store.isAutoTuningEnabled} onClick={store.toggleAutoTuning} Icon={AutoIcon} />
+                <OptionButton label="تمرير ناعم" isActive={store.isSmoothScrollingEnabled} onClick={store.toggleSmoothScrolling} Icon={ScrollIcon} isAutoControlled={false} />
                 <OptionButton label="استجابة فورية" isActive={!store.isHoverDebounceEnabled} onClick={store.toggleHoverDebounce} Icon={BoltIcon} isAutoControlled={auto} />
                 <OptionButton label="تأثير الزجاج" isActive={store.isGlassmorphismEnabled} onClick={store.toggleGlassmorphism} Icon={BlurIcon} isAutoControlled={auto} />
                 <OptionButton 

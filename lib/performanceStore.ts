@@ -16,7 +16,8 @@ interface PerformanceState {
   isFlyingTagsEnabled: boolean;
   isHeroTransitionEnabled: boolean;
   isCornerAnimationEnabled: boolean;
-  isHoverDebounceEnabled: boolean; // NEW: Controls hover/touch delay
+  isHoverDebounceEnabled: boolean;
+  isSmoothScrollingEnabled: boolean; // NEW
   
   // Background
   isBackgroundAnimated: boolean;
@@ -33,10 +34,12 @@ interface PerformanceState {
   toggleFlyingTags: () => void;
   toggleHeroTransition: () => void;
   toggleCornerAnimation: () => void;
-  toggleHoverDebounce: () => void; // NEW: Action
+  toggleHoverDebounce: () => void;
+  toggleSmoothScrolling: () => void; // NEW
   
   toggleBackgroundAnimation: () => void;
   toggleBackgroundVisibility: () => void;
+  setBackgroundVisibility: (visible: boolean) => void; // NEW: For AutoTuner mobile override
   toggleGlassmorphism: () => void;
   
   toggleAutoTuning: () => void;
@@ -54,10 +57,12 @@ export const usePerformanceStore = create<PerformanceState>()(
       isHeroTransitionEnabled: true,
       isCornerAnimationEnabled: true,
       isGlassmorphismEnabled: true,
-      isHoverDebounceEnabled: true, // NEW: Debounce is ON by default for performance
+      isHoverDebounceEnabled: true,
       
       isBackgroundVisible: true,
       isBackgroundAnimated: false,
+      isSmoothScrollingEnabled: false, // Default OFF as requested
+      
       isAutoTuningEnabled: true,
 
       // Manual toggles disable Auto-Tuning to respect user choice
@@ -65,46 +70,50 @@ export const usePerformanceStore = create<PerformanceState>()(
       toggleFlyingTags: () => set((state) => ({ isFlyingTagsEnabled: !state.isFlyingTagsEnabled, isAutoTuningEnabled: false })),
       toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: !state.isHeroTransitionEnabled, isAutoTuningEnabled: false })),
       toggleCornerAnimation: () => set((state) => ({ isCornerAnimationEnabled: !state.isCornerAnimationEnabled, isAutoTuningEnabled: false })),
-      toggleHoverDebounce: () => set((state) => ({ isHoverDebounceEnabled: !state.isHoverDebounceEnabled, isAutoTuningEnabled: false })), // NEW
+      toggleHoverDebounce: () => set((state) => ({ isHoverDebounceEnabled: !state.isHoverDebounceEnabled, isAutoTuningEnabled: false })),
+      toggleSmoothScrolling: () => set((state) => ({ isSmoothScrollingEnabled: !state.isSmoothScrollingEnabled, isAutoTuningEnabled: false })), // NEW
       
       toggleBackgroundAnimation: () => set((state) => ({ isBackgroundAnimated: !state.isBackgroundAnimated, isAutoTuningEnabled: false })),
       toggleBackgroundVisibility: () => set((state) => ({ isBackgroundVisible: !state.isBackgroundVisible, isAutoTuningEnabled: false })),
+      setBackgroundVisibility: (visible: boolean) => set({ isBackgroundVisible: visible }), // Does NOT disable auto-tuning (used by auto-tuner itself)
+
       toggleGlassmorphism: () => set((state) => ({ isGlassmorphismEnabled: !state.isGlassmorphismEnabled, isAutoTuningEnabled: false })),
       
       toggleAutoTuning: () => set((state) => ({ isAutoTuningEnabled: !state.isAutoTuningEnabled })),
 
       setPerformanceTier: (tier: PerformanceTier) => set((state) => {
-          // IMPORTANT: We do NOT touch isBackgroundAnimated. It is purely manual.
+          // IMPORTANT: We do NOT touch isBackgroundAnimated or isSmoothScrollingEnabled here.
+          // Smooth Scrolling remains OFF unless manually toggled (User request).
           switch (tier) {
               case 5: // ULTRA
                   return {
                       isGlassmorphismEnabled: true, isBackgroundVisible: true, isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false, // Instant
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false,
                   };
               case 4: // HIGH
                   return {
                       isGlassmorphismEnabled: false, isBackgroundVisible: true, isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false, // Instant
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: false,
                   };
               case 3: // MEDIUM
                   return {
                       isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true, // Debounced
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true,
                   };
               case 2: // LOW
                   return {
                       isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true, // Debounced
+                      isFlyingTagsEnabled: true, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true,
                   };
               case 1: // POTATO
                   return {
                       isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true, // Debounced
+                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: true, isHoverDebounceEnabled: true,
                   };
               case 0: // ABYSSAL
                   return {
                       isGlassmorphismEnabled: false, isBackgroundVisible: false, isLivingCardEnabled: false,
-                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: false, isHoverDebounceEnabled: true, // Debounced
+                      isFlyingTagsEnabled: false, isCornerAnimationEnabled: false, isHoverDebounceEnabled: true,
                   };
               default:
                   return state;

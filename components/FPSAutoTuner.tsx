@@ -6,23 +6,18 @@ import { usePerformanceStore, PerformanceTier } from '@/lib/performanceStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 // --- CONFIGURATION ---
-const CHECK_INTERVAL = 500; // Increased to average out spikes
-const WARMUP_PERIOD = 3000; // Significantly increased to let mobile browsers settle
-const COOLDOWN_AFTER_CHANGE = 5000; // Longer cooldown to prevent oscillation
+const CHECK_INTERVAL = 500; 
+const WARMUP_PERIOD = 3000; 
+const COOLDOWN_AFTER_CHANGE = 5000; 
 
-// --- DESKTOP THRESHOLDS ---
 const DESKTOP_FPS_CRITICAL = 25;
 const DESKTOP_FPS_BAD = 48;
 const DESKTOP_FPS_GOOD = 58;
 
-// --- MOBILE THRESHOLDS ---
-// Mobile browsers often throttle or have varying refresh rates (e.g. 120hz vs 60hz vs 30hz power save)
-// We allow a lower baseline before killing effects.
 const MOBILE_FPS_CRITICAL = 20;
 const MOBILE_FPS_BAD = 35; 
 const MOBILE_FPS_GOOD = 55;
 
-// --- STREAK CONFIG ---
 const REQUIRED_GOOD_STREAK = 15;
 
 export default function FPSAutoTuner() {
@@ -30,6 +25,7 @@ export default function FPSAutoTuner() {
     const { 
         isAutoTuningEnabled, 
         setPerformanceTier,
+        setBackgroundVisibility, // Import setter
         isGlassmorphismEnabled,
         isBackgroundVisible,
         isBackgroundAnimated,
@@ -68,7 +64,6 @@ export default function FPSAutoTuner() {
             lastActivityTime.current = performance.now();
         };
 
-        // Passive listeners for performance
         window.addEventListener('mousemove', updateActivity, { passive: true });
         window.addEventListener('touchmove', updateActivity, { passive: true });
         window.addEventListener('scroll', updateActivity, { passive: true });
@@ -102,8 +97,14 @@ export default function FPSAutoTuner() {
                 // Default to Ultra for capable devices
                 setPerformanceTier(5);
             }
+
+            // MOBILE OVERRIDE: Keep tier full (features enabled) but disable background
+            if (isMobile) {
+                console.log('[AutoTuner] Mobile detected. Disabling background visibility by default.');
+                setBackgroundVisibility(false);
+            }
         }
-    }, []);
+    }, [isMobile, isAutoTuningEnabled, setPerformanceTier, setBackgroundVisibility]);
 
     // 4. THE ENGINE
     useEffect(() => {
@@ -127,7 +128,6 @@ export default function FPSAutoTuner() {
             const elapsed = now - lastCheckTime.current;
 
             if (elapsed > 2000) {
-                // If elapsed is huge (tab inactive), reset
                 lastCheckTime.current = now;
                 framesSinceCheck.current = 0;
                 return;
@@ -142,19 +142,15 @@ export default function FPSAutoTuner() {
                 const timeSinceChange = now - lastChangeTime.current;
                 const timeSinceActivity = now - lastActivityTime.current;
 
-                // Thresholds based on device type
                 const fpsCritical = isMobile ? MOBILE_FPS_CRITICAL : DESKTOP_FPS_CRITICAL;
                 const fpsBad = isMobile ? MOBILE_FPS_BAD : DESKTOP_FPS_BAD;
                 const fpsGood = isMobile ? MOBILE_FPS_GOOD : DESKTOP_FPS_GOOD;
 
-                // Is the user actively doing something? (interacting within last 1 second)
                 const isUserActive = timeSinceActivity < 1000;
 
                 if (timeSinceStart > WARMUP_PERIOD && timeSinceChange > COOLDOWN_AFTER_CHANGE) {
                     
-                    // --- DOWNGRADE LOGIC ---
                     if (fps < fpsCritical) {
-                        // Critical drop: Dump 2 tiers immediately
                         if (currentTier.current > 1) {
                             const targetTier = Math.max(1, currentTier.current - 2) as PerformanceTier;
                             console.warn(`[AutoTuner] 🚨 CRITICAL DROP (${fps} FPS). Dumping to Tier ${targetTier}`);
@@ -164,7 +160,6 @@ export default function FPSAutoTuner() {
                         }
                     }
                     else if (fps < fpsBad) {
-                        // Bad performance: Drop 1 tier
                         if (currentTier.current > 0) {
                             const targetTier = (currentTier.current - 1) as PerformanceTier;
                             console.log(`[AutoTuner] Lag detected (${fps} FPS). Dropping to Tier ${targetTier}`);
@@ -173,12 +168,9 @@ export default function FPSAutoTuner() {
                             goodStreak.current = 0;
                         }
                     }
-                    
-                    // --- UPGRADE LOGIC (Interaction Dependent) ---
                     else if (fps >= fpsGood) {
                         if (isUserActive) {
                             goodStreak.current++;
-
                             if (goodStreak.current >= REQUIRED_GOOD_STREAK) { 
                                 if (currentTier.current < 5) {
                                     const targetTier = (currentTier.current + 1) as PerformanceTier;
@@ -190,7 +182,7 @@ export default function FPSAutoTuner() {
                             }
                         } else {
                             if (goodStreak.current > 0) {
-                                goodStreak.current = Math.max(0, goodStreak.current - 1); // Decay slowly instead of hard reset
+                                goodStreak.current = Math.max(0, goodStreak.current - 1);
                             }
                         }
                     } else {
