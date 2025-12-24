@@ -20,7 +20,8 @@ import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
-import ContentOverlay from '@/components/overlay/ContentOverlay'; // <-- NEW
+import ContentOverlay from '@/components/overlay/ContentOverlay';
+import { Suspense } from 'react'; // Added Suspense import
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -120,7 +121,12 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          
+          {/* WRAPPED IN SUSPENSE TO FIX BUILD ERROR */}
+          <Suspense fallback={null}>
+            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+          </Suspense>
+
           <OrganizationJsonLd />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -132,7 +138,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 <SpaceBackground />
                 <ToastProvider />
                 <CookieConsent />
-                <ContentOverlay /> {/* <-- THE OVERLAY MOUNT */}
+                <ContentOverlay />
                 <Lightbox />
                 <Navbar />
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
