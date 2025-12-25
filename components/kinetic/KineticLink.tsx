@@ -12,10 +12,11 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
     layoutId?: string;
     children: React.ReactNode;
     className?: string;
+    imageSrc?: string; // <--- ADDED: Define imageSrc prop
     onClick?: (e: React.MouseEvent) => void;
 }
 
-export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, ...props }: KineticLinkProps) {
+export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, ...props }: KineticLinkProps) {
     const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -23,19 +24,18 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
         if (onClick) onClick(e);
 
         // 2. Check Data Lake
-        // We check for the raw slug OR the slug within an object structure just in case
         const hasData = contentMap.has(slug);
 
         if (hasData) {
             // 3. INTERCEPT: Kill the browser navigation immediately
             e.preventDefault();
-            e.stopPropagation(); // Stop bubbling to be safe
+            e.stopPropagation(); 
             
             // 4. Trigger Instant Overlay
-            openOverlay(slug, type, layoutId);
+            // Pass the imageSrc to the store so the overlay can use it instantly for the morph target
+            openOverlay(slug, type, layoutId, imageSrc);
         } else {
-            // Debug: If you see this in console, the hydration failed or IDs mismatch
-            // console.warn(`[Kinetic] Miss for slug: ${slug}. Falling back to router.`);
+            // Fallback to router navigation if data is missing
         }
     };
 
@@ -46,7 +46,6 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
             onClick={handleClick} 
             scroll={false} 
             {...props} 
-            // Disable Next.js prefetching since we manage data ourselves
             prefetch={false}
         >
             {children}

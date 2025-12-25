@@ -15,7 +15,7 @@ import {useLightboxStore} from '@/lib/lightboxStore'
 import type {PortableTextBlock} from '@portabletext/types'
 import {useTheme} from 'next-themes'
 import {sanityLoader} from '@/lib/sanity.loader'
-import { generateId } from '@/lib/text-utils' // Import shared ID generator
+import { generateId } from '@/lib/text-utils' 
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => (
@@ -99,7 +99,16 @@ const SanityImageComponent = ({value}: {value: any}) => {
   const fullResSrc = urlFor(asset).auto('format').url()
   return (
     <figure style={{ margin: '4rem 0', display: 'block' }}>
-      <div onClick={() => openLightbox([fullResSrc], 0)} className="image-lightbox-trigger" role="button" aria-label="View full size image">
+      <div 
+        onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openLightbox([fullResSrc], 0);
+        }} 
+        className="image-lightbox-trigger" 
+        role="button" 
+        aria-label="View full size image"
+      >
         <NextImage loader={sanityLoader} src={optimizedSrc} alt={alt || 'Content Image'} width={width} height={height} sizes="(max-width: 960px) 90vw, 850px" placeholder={blurDataURL ? 'blur' : 'empty'} blurDataURL={blurDataURL} loading="lazy" draggable={false} style={{ width: '100%', height: 'auto' }} />
       </div>
       {alt && <figcaption style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '1.4rem', marginTop: '1rem', fontStyle: 'italic', maxWidth: '80%', marginLeft: 'auto', marginRight: 'auto' }}>{alt}</figcaption>}
@@ -112,7 +121,6 @@ const HeadingComponent = ({level, children, value}: {level: number; children?: R
     ? value.children.map((child: any) => child.text).join('') 
     : (Array.isArray(children) ? children.join('') : (children as string) || '');
   
-  // Use shared ID generator to match ToC
   const id = generateId(textContent);
 
   const styles: Record<number, React.CSSProperties> = {

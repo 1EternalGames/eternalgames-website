@@ -11,7 +11,8 @@ import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader'; 
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
+import { usePerformanceStore } from '@/lib/performanceStore';
+import { useContentStore } from '@/lib/contentStore'; // IMPORTED
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
@@ -147,13 +148,16 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     
+    const isOverlayOpen = useContentStore((s) => s.isOverlayOpen); // MODIFIED
+
     useEffect(() => {
-        if (isPaused || newsItems.length <= 1) return;
+        // MODIFIED: Check isOverlayOpen
+        if (isPaused || newsItems.length <= 1 || isOverlayOpen) return;
         const interval = setInterval(() => {
             setActiveIndex((prevIndex) => (prevIndex + 1) % newsItems.length);
         }, 4000);
         return () => clearInterval(interval);
-    }, [isPaused, newsItems.length]);
+    }, [isPaused, newsItems.length, isOverlayOpen]);
     
     if (newsItems.length === 0) return null;
 
@@ -200,5 +204,3 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
         </div>
     );
 }
-
-

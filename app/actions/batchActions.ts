@@ -4,11 +4,13 @@
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 import { enrichContentList } from '@/lib/enrichment';
+import { extractHeadingsFromContent } from '@/lib/text-utils';
 
 // We reuse the exact projections to ensure data consistency
 const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`;
 const creatorFields = groq`_id, name, prismaUserId, image, bio`;
 const tagFields = groq`_id, title, "slug": slug.current`;
+const publishedFilter = "defined(publishedAt) && publishedAt < now()";
 
 const relatedContentProjection = groq`{ 
     _id, _type, legacyId, title, "slug": slug.current, 
@@ -34,6 +36,7 @@ const fullDocProjection = groq`
   "category": category->{title, "slug": slug.current}, 
   newsType,
   synopsis,
+  // Full Content for the reader
   content[]{ 
     ..., 
     _type == "image" => { "asset": asset->{ _id, url, "lqip": metadata.lqip, "metadata": metadata } }, 
@@ -44,9 +47,26 @@ const fullDocProjection = groq`
     _type == "gameDetails" => { ... }, 
     _type == 'youtube' => { ... } 
   },
-  "relatedReviews": relatedReviews[]->${relatedContentProjection},
-  "relatedArticles": relatedArticles[]->${relatedContentProjection},
-  "relatedNews": relatedNews[]->${relatedContentProjection}
+  
+  // CONDITIONAL RELATED CONTENT (Fallback Logic)
+  _type == "review" => {
+    "relatedReviews": coalesce(
+      relatedReviews[]->${relatedContentProjection}, 
+      *[_type == "review" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}
+    )
+  },
+  _type == "article" => {
+    "relatedArticles": coalesce(
+      relatedArticles[]->${relatedContentProjection}, 
+      *[_type == "article" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}
+    )
+  },
+  _type == "news" => {
+    "relatedNews": coalesce(
+      relatedNews[]->${relatedContentProjection}, 
+      *[_type == "news" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] ${relatedContentProjection}
+    )
+  }
 `;
 
 export async function batchFetchFullContentAction(ids: string[]) {
@@ -56,10 +76,25 @@ export async function batchFetchFullContentAction(ids: string[]) {
     const query = groq`*[_id in $ids] { ${fullDocProjection} }`;
     const rawData = await client.fetch(query, { ids });
     
-    // CRITICAL FIX: Enrich the data so "You Might Like" and Authors appear
+    // ENRICHMENT: Add Prisma user data (avatars, usernames)
     const enrichedData = await enrichContentList(rawData);
+
+    // --- GENERATE TABLE OF CONTENTS ---
+    const dataWithToc = enrichedData.map((item: any) => {
+        const tocHeadings = extractHeadingsFromContent(item.content);
+        
+        // For reviews, manually append the "Verdict" section if it exists
+        if (item._type === 'review' && item.verdict) {
+            tocHeadings.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
+        }
+        
+        return {
+            ...item,
+            toc: tocHeadings
+        };
+    });
     
-    return enrichedData;
+    return dataWithToc;
   } catch (error) {
     console.error("Batch fetch failed", error);
     return [];

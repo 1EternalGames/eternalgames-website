@@ -18,15 +18,13 @@ import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore';
 import KineticLink from '@/components/kinetic/KineticLink'; 
-import { generateLayoutId } from '@/lib/layoutUtils'; // <--- NEW IMPORT
+import { generateLayoutId } from '@/lib/layoutUtils'; 
 
-// Helper: Moved outside to prevent re-creation on render
 const getCreatorName = (creators: any[]): string | null => {
     if (!creators || creators.length === 0) return null;
     return creators[0]?.name || null;
 };
 
-// COMPONENT: Extracted CreatorCapsule to prevent re-mounting on parent re-render
 const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | null, authorUsername?: string | null }) => {
     const content = (
         <>
@@ -49,7 +47,6 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
             </Link>
         );
     }
-
     return (
         <div className={styles.creditCapsule}>
             {content}
@@ -70,16 +67,13 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const isMobile = useIsMobile();
     
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
-    
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
 
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
     
-    // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchStartPos = useRef({ x: 0, y: 0 });
@@ -110,12 +104,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             }
         },
         onMouseEnter: () => {
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseEnter();
-            }
-            
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter();
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-
             if (!isHoverDebounceEnabled) {
                 setIsHoveredLocal(true);
                 setIsTextExpanded(true);
@@ -128,18 +118,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         },
         onMouseLeave: () => {
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseLeave();
-            }
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave();
             setIsHoveredLocal(false);
         }
     } : {
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             const touch = e.touches[0];
             touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-
             if (touchTimeout.current) clearTimeout(touchTimeout.current);
-            
             if (!isHoverDebounceEnabled) {
                 if (activeCardId !== article.id) {
                     setActiveCardId(article.id);
@@ -153,22 +139,15 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     }
                 }, 75);
             }
-
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onTouchStart(e);
-            }
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
         onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-             // Calculate distance moved
              const touch = e.touches[0];
              const diffX = Math.abs(touch.clientX - touchStartPos.current.x);
              const diffY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-             // If moved more than 10px, assume scrolling and CANCEL the hover activation
              if (diffX > 10 || diffY > 10) {
                  if (touchTimeout.current) clearTimeout(touchTimeout.current);
              }
-
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
         },
         onTouchEnd: () => {
@@ -201,6 +180,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
     // Standardized ID Generation
+    // RESTORED: Container Layout ID to enable Card -> Header morph
     const containerLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'container', article.legacyId) : undefined;
     const imageLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'image', article.legacyId) : undefined;
     const titleLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'title', article.legacyId) : undefined;
@@ -213,35 +193,26 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
+                // RESTORED CONTAINER LAYOUT ID HERE
                 layoutId={containerLayoutId}
                 style={{ height: '100%', position: 'relative', zIndex: 1 }}
             >
                 <motion.div
                     className="tilt-container flex flex-col"
-                    style={{ 
-                        ...animationStyles,
-                        borderRadius: '16px',
-                        height: '100%',
-                        transformStyle: 'preserve-3d',
-                    }}
+                    style={{ ...animationStyles, borderRadius: '16px', height: '100%', transformStyle: 'preserve-3d' }}
                 >
-                    <div 
-                        className="no-underline block w-full flex flex-col"
-                        style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
-                    >
-                         {/* --- KINETIC LINK (The Trigger) --- */}
+                    <div className="no-underline block w-full flex flex-col" style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}>
+                        
                         <KineticLink 
                             href={linkPath} 
                             slug={article.slug}
                             type={kineticType}
-                            layoutId={layoutIdPrefix} // Pass raw prefix to store
+                            layoutId={layoutIdPrefix} 
+                            imageSrc={article.imageUrl} // <--- PASS URL
                             className={`${styles.cardOverlayLink} no-underline`}
                             onClick={() => {
                                 if (!isMobile) {
                                     setScrollPos(window.scrollY);
-                                    if (isHeroTransitionEnabled) {
-                                        setPrefix(layoutIdPrefix);
-                                    }
                                 }
                             }}
                         >
@@ -261,7 +232,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                                 <motion.div 
                                     className={styles.imageWrapper}
-                                    layoutId={imageLayoutId} // Standardized
+                                    layoutId={imageLayoutId} 
                                 >
                                     <Image 
                                         loader={sanityLoader}
@@ -273,7 +244,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                         placeholder="blur"
                                         blurDataURL={article.blurDataURL}
                                         priority={isPriority}
-                                        decoding="async" 
                                     />
                                 </motion.div>
 
@@ -281,11 +251,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                     <motion.div 
                                         className={styles.scoreBadge}
                                         initial={{ scale: 1, rotate: 0 }}
-                                        animate={{ 
-                                            scale: isHovered ? 1.2 : 1, 
-                                            rotate: isHovered ? -12 : 0,
-                                            z: 50
-                                        }}
+                                        animate={{ scale: isHovered ? 1.2 : 1, rotate: isHovered ? -12 : 0, z: 50 }}
                                         transition={{ type: "spring", stiffness: 300, damping: 15 }}
                                     >
                                         {article.score!.toFixed(1)}
@@ -306,7 +272,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                     >
                                         <motion.h3 
                                             className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}
-                                            layoutId={titleLayoutId} // Standardized
+                                            layoutId={titleLayoutId}
                                         >
                                             {article.title}
                                         </motion.h3>
@@ -343,28 +309,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                             key={`${article.id}-${tag.slug}`}
                                             className={styles.satelliteShard}
                                             initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                            animate={{
-                                                opacity: 1,
-                                                scale: 1.15,
-                                                x: satelliteConfig[i]?.hoverX || 0,
-                                                y: satelliteConfig[i]?.hoverY || 0,
-                                                rotate: satelliteConfig[i]?.rotate || 0,
-                                                z: -30 
-                                            }}
-                                            exit={{ 
-                                                opacity: 0, 
-                                                scale: 0.4, 
-                                                x: 0, 
-                                                y: 50, 
-                                                rotate: 0,
-                                                z: 0 
-                                            }}
-                                            transition={{
-                                                type: "spring",
-                                                stiffness: 180,
-                                                damping: 20,
-                                                delay: i * 0.05
-                                            }}
+                                            animate={{ opacity: 1, scale: 1.15, x: satelliteConfig[i]?.hoverX || 0, y: satelliteConfig[i]?.hoverY || 0, rotate: satelliteConfig[i]?.rotate || 0, z: -30 }}
+                                            exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
+                                            transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
                                             style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
                                          >

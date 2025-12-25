@@ -28,47 +28,33 @@
   box-shadow: 0 10px 40px -10px rgba(0,0,0,0.9);
 }
 
-/* GLOBAL OVERRIDE FOR OVERLAY MODE - Ensures Navbar matches overlay */
-:global(body.force-scrolled-nav) .navbar {
-  height: var(--nav-height-scrolled) !important;
-  background-color: rgba(5, 5, 5, 0.6) !important;
-  backdrop-filter: blur(20px) saturate(140%) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.9) !important;
-}
-
 /* Light Mode Override for Scrolled State */
-:global([data-theme="light"]) .navbar.scrolled,
-:global([data-theme="light"] body.force-scrolled-nav) .navbar {
+:global([data-theme="light"]) .navbar.scrolled {
   background-color: rgba(255, 255, 255, 0.8) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
   box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05) !important;
 }
 
-:global(body.no-glass) .navbar.scrolled,
-:global(body.no-glass.force-scrolled-nav) .navbar {
+:global(body.no-glass) .navbar.scrolled {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   background-color: rgba(5, 5, 5, 0.95) !important;
 }
 
-:global([data-theme="light"] body.no-glass) .navbar.scrolled,
-:global([data-theme="light"] body.no-glass.force-scrolled-nav) .navbar {
+:global([data-theme="light"] body.no-glass) .navbar.scrolled {
   background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
 @media (max-width: 768px) {
   /* MOBILE OPTIMIZATION: Kill Blur */
-  .navbar.scrolled,
-  :global(body.force-scrolled-nav) .navbar {
+  .navbar.scrolled {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background-color: rgba(5, 5, 5, 0.95) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 
-  :global([data-theme="light"]) .navbar.scrolled,
-  :global([data-theme="light"] body.force-scrolled-nav) .navbar {
+  :global([data-theme="light"]) .navbar.scrolled {
     background-color: rgba(255, 255, 255, 0.95) !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
   }

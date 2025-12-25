@@ -8,125 +8,179 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import { usePathname } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
+import { useLenis } from 'lenis/react';
+import SpaceBackground from '@/components/ui/SpaceBackground';
+import { pageview } from '@/lib/gtm'; // Import Google Analytics helper
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
-    const { isOverlayOpen, activeSlug, activeType, contentMap, closeOverlay, savedScrollPosition, sourceLayoutId } = useContentStore();
+    const { 
+        isOverlayOpen, 
+        activeSlug, 
+        activeType, 
+        contentMap, 
+        closeOverlay, 
+        navigateInternal,
+        savedScrollPosition, 
+        sourceLayoutId, 
+        activeImageSrc 
+    } = useContentStore();
+    
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
     const scrollRestoredRef = useRef(false);
+    
+    const lenis = useLenis();
 
-    // Sync layout ID store for the shared element transition
     useEffect(() => {
         if (isOverlayOpen && sourceLayoutId) {
             setPrefix(sourceLayoutId);
         }
     }, [isOverlayOpen, sourceLayoutId, setPrefix]);
 
-    // Handle Browser Back Button
     useEffect(() => {
-        const handlePopState = () => {
-            if (isOverlayOpen) {
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state && event.state.overlay === true && event.state.slug) {
+                navigateInternal(event.state.slug, event.state.type);
+            } else if (isOverlayOpen) {
                 closeOverlay();
             }
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [isOverlayOpen, closeOverlay]);
+    }, [isOverlayOpen, closeOverlay, navigateInternal]);
 
-    // SCROLL & DOM MANAGEMENT
+    // --- ANALYTICS TRACKER ---
+    // Since we bypass the Next.js router, we must manually trigger pageviews here.
+    useEffect(() => {
+        if (isOverlayOpen && activeSlug && activeType) {
+            // Construct the virtual URL
+            const virtualUrl = `/${activeType}/${activeSlug}`;
+            // Manually trigger the GA event
+            pageview(virtualUrl);
+            // console.log(`[Analytics] Manual Hit: ${virtualUrl}`);
+        }
+    }, [isOverlayOpen, activeSlug, activeType]);
+
     useLayoutEffect(() => {
         const mainContent = document.getElementById('main-content');
+        const footer = document.querySelector('footer');
         
         if (isOverlayOpen) {
             scrollRestoredRef.current = false;
             
-            // 1. Disable browser's automatic scroll restoration to prevent jumping
+            if (mainContent) {
+                mainContent.style.position = 'fixed';
+                mainContent.style.top = `-${savedScrollPosition}px`;
+                mainContent.style.width = '100%';
+                mainContent.style.left = '0';
+            }
+
+            if (footer) {
+                footer.style.display = 'none';
+            }
+
             if ('scrollRestoration' in history) {
                 history.scrollRestoration = 'manual';
             }
 
-            // 2. Force Navbar to Scrolled State immediately for visibility over content
             document.body.classList.add('force-scrolled-nav');
             
-            // 3. Scroll to absolute top immediately so the hero is visible at y=0
-            window.scrollTo(0, 0);
-
-            // 4. Delay hiding the main content.
-            // INCREASED to 100ms. This ensures Framer Motion calculates the "FLIP" 
-            // (First Last Invert Play) animation from the Card (Start) to Header (End)
-            // before we remove the Card from the flow.
-            const timer = setTimeout(() => {
-                if (mainContent) mainContent.style.display = 'none';
-            }, 100); 
-
-            return () => clearTimeout(timer);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            
+            if (lenis) {
+                lenis.scrollTo(0, { immediate: true, force: true, lock: false });
+            }
 
         } else {
-            // Closing...
             document.body.classList.remove('force-scrolled-nav');
-            
             if ('scrollRestoration' in history) {
                 history.scrollRestoration = 'auto';
             }
             
             if (mainContent) {
-                mainContent.style.display = 'block';
+                mainContent.style.position = '';
+                mainContent.style.top = '';
+                mainContent.style.width = '';
+                mainContent.style.left = '';
+            }
+
+            if (footer) {
+                footer.style.display = '';
             }
             
-            // Restore scroll position instantly
-            if (!scrollRestoredRef.current && savedScrollPosition > 0) {
-                window.scrollTo(0, savedScrollPosition);
+            if (!scrollRestoredRef.current) {
+                window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
+                
+                if (lenis) {
+                    lenis.scrollTo(savedScrollPosition, { immediate: true, force: true });
+                }
+                
                 scrollRestoredRef.current = true;
             }
         }
-    }, [isOverlayOpen, savedScrollPosition]);
+    }, [isOverlayOpen, savedScrollPosition, lenis, activeSlug]);
 
     const activeItem = activeSlug ? contentMap.get(activeSlug) : null;
 
-    // Auto-close if data missing (safety)
     useEffect(() => {
-        if (isOverlayOpen && !activeItem) {
+        if (isOverlayOpen && !activeItem && activeSlug) {
             closeOverlay();
         }
-    }, [isOverlayOpen, activeItem, closeOverlay]);
+    }, [isOverlayOpen, activeItem, activeSlug, closeOverlay]);
 
     if (!activeItem) return null;
 
     return (
-        <AnimatePresence>
-            {isOverlayOpen && (
-                <motion.div
-                    key="kinetic-overlay"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    // TWEAKED: Duration matches the card expansion feel
-                    transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        minHeight: '100vh',
-                        zIndex: 1065, // Below Navbar (1070)
-                        backgroundColor: 'var(--bg-primary)',
-                        paddingTop: 0, // FIX: Starts at absolute 0 to show Hero behind Nav
-                        marginBottom: '-300px', // Prevent footer flash
-                        willChange: 'opacity'
-                    }}
-                >
-                    <ContentPageClient 
-                        item={activeItem} 
-                        type={activeType as any} 
-                        colorDictionary={colorDictionary}
+        <AnimatePresence mode="wait">
+            {isOverlayOpen && activeItem && (
+                <>
+                    <motion.div
+                        key="overlay-bg"
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0 }} 
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 1064, 
+                            backgroundColor: 'var(--bg-primary)',
+                            transform: 'translateZ(0)', 
+                        }}
                     >
-                        <div style={{ marginTop: '4rem' }}>
-                            <CommentSection 
-                                slug={activeSlug || ''} 
-                                contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
-                            />
-                        </div>
-                    </ContentPageClient>
-                </motion.div>
+                        <SpaceBackground />
+                    </motion.div>
+
+                    <div
+                        key="kinetic-content-wrapper"
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            minHeight: '100vh',
+                            zIndex: 1065, 
+                            paddingTop: 0, 
+                            marginBottom: '-300px',
+                            isolation: 'isolate'
+                        }}
+                    >
+                        <ContentPageClient 
+                            key={activeSlug} 
+                            item={activeItem} 
+                            type={activeType as any} 
+                            colorDictionary={colorDictionary}
+                            forcedLayoutIdPrefix={sourceLayoutId || undefined}
+                            initialImageSrc={activeImageSrc || undefined}
+                        >
+                            <div style={{ marginTop: '4rem' }}>
+                                <CommentSection 
+                                    slug={activeSlug || ''} 
+                                    contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
+                                />
+                            </div>
+                        </ContentPageClient>
+                    </div>
+                </>
             )}
         </AnimatePresence>
     );

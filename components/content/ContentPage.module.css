@@ -23,10 +23,11 @@
     overflow: hidden;
 }
 
+/* MODIFIED: Removed sticky positioning to let sidebar stay at the top */
 .sidebar {
     margin-top: 0;
-    position: sticky;
-    top: calc(var(--nav-height-scrolled) + 2rem);
+    /* position: sticky;  <-- REMOVED */
+    /* top: calc(var(--nav-height-scrolled) + 2rem); <-- REMOVED */
 }
 
 .relatedGrid {
@@ -83,7 +84,6 @@
 .metaBlockRight {
     display: flex;
     flex-direction: column;
-    /* CHANGED: Align items to Start (Right in RTL) */
     align-items: flex-start; 
     gap: 1rem;
     font-size: 1.5rem;
@@ -96,14 +96,12 @@
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
-    /* CHANGED: Justify to Start (Right in RTL) */
     justify-content: flex-start; 
 }
 
 .dateContainer {
     display: flex;
     flex-direction: column; 
-    /* CHANGED: Align items to Start (Right in RTL) */
     align-items: flex-start; 
     gap: 0.5rem; 
     justify-content: center;
@@ -163,7 +161,6 @@
     .titleWrapper { margin-bottom: 2rem; }
     .metaContainer { flex-direction: row-reverse; align-items: flex-start; gap: 1rem; }
     .metaBlockLeft { align-items: center; }
-    /* Ensure mobile aligns right (Start) as well */
     .metaBlockRight { align-items: flex-start; padding-top: 0; }
     .dateContainer { align-items: flex-start; }
 }

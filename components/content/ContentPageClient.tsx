@@ -28,11 +28,11 @@ import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
 import { formatArabicDuration, generateId } from '@/lib/text-utils';
-import { generateLayoutId } from '@/lib/layoutUtils'; // <--- NEW IMPORT
+import { generateLayoutId } from '@/lib/layoutUtils'; 
 
-// ... (Existing types and constants) ...
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
+
 type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
     slug: Slug; 
     relatedContent?: any[]; 
@@ -43,21 +43,48 @@ type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & {
 type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.8 } } };
+
+// MODIFIED: Added instant exit variant
+const bodyFadeVariants = { 
+    hidden: { opacity: 1, y: 0 }, 
+    visible: { opacity: 1, y: 0, transition: { duration: 0 } },
+    exit: { opacity: 0, transition: { duration: 0 } } 
+};
+
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 'إشاعة', 'leak': 'تسريب' };
-
 const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
-export default function ContentPageClient({ item, type, children, colorDictionary }: { item: ContentItem; type: ContentType; children: React.ReactNode; colorDictionary: ColorMapping[]; }) {
-    const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
+export default function ContentPageClient({ 
+    item, 
+    type, 
+    children, 
+    colorDictionary,
+    forcedLayoutIdPrefix,
+    initialImageSrc
+}: { 
+    item: ContentItem; 
+    type: ContentType; 
+    children: React.ReactNode; 
+    colorDictionary: ColorMapping[]; 
+    forcedLayoutIdPrefix?: string;
+    initialImageSrc?: string;
+}) {
+    const { prefix: storePrefix, setPrefix } = useLayoutIdStore();
     const openLightbox = useLightboxStore((state) => state.openLightbox);
     const { isHeroTransitionEnabled } = usePerformanceStore();
+
+    const layoutIdPrefix = forcedLayoutIdPrefix || storePrefix;
 
     const isReview = type === 'reviews';
     const isNews = type === 'news';
 
     const [tocItems, setTocItems] = useState<TocItem[]>(item.toc || []);
+    
+    useEffect(() => {
+        setTocItems(item.toc || []);
+    }, [item.toc]);
+
     const [headings, setHeadings] = useState<Heading[]>([]);
     
     const [isMobile, setIsMobile] = useState(false);
@@ -77,26 +104,20 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         const seenIds = new Set<string>();
         
         let newHeadings: Heading[] = [];
-
         const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
         
         headingElements.forEach((h, index) => {
             let id = h.id;
-            
             if (!id || seenIds.has(id)) { 
                 const textContent = h.textContent || '';
                 id = generateId(textContent) || `heading-${index}`;
             }
-            
             seenIds.add(id);
             h.id = id;
-            
             const topPosition = h.getBoundingClientRect().top + documentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
-            
             const level = parseInt(h.tagName.substring(1));
             const title = h.textContent || '';
-            
             newHeadings.push({ id, title, top: Math.max(0, scrollToPosition), level });
         });
 
@@ -105,16 +126,11 @@ export default function ContentPageClient({ item, type, children, colorDictionar
              if (scoreBoxElement) {
                  const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
                  const scoreBoxScrollPosition = topPosition - navbarOffset;
-                 
                  const verdictHeading = { id: 'verdict-summary', title: 'الخلاصة', top: Math.max(0, scoreBoxScrollPosition), level: 2 };
                  newHeadings.push(verdictHeading);
              }
         }
-        
-        if (newHeadings.length > 0) {
-            setHeadings(newHeadings);
-        }
-
+        if (newHeadings.length > 0) setHeadings(newHeadings);
     }, [isReview]);
 
     useEffect(() => { return () => { setPrefix('default'); }; }, [setPrefix]);
@@ -127,13 +143,12 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    // FORCED TOP SCROLL ON MOUNT (Critical for Overlay)
-    useIsomorphicLayoutEffect(() => { 
-        window.scrollTo(0, 0); 
-    }, []);
+    useIsomorphicLayoutEffect(() => { window.scrollTo(0, 0); }, []);
+    useEffect(() => { const timeout = setTimeout(() => setIsLayoutStable(true), 1500); return () => clearTimeout(timeout); }, [item]);
+    useEffect(() => { if (isLayoutStable) { requestAnimationFrame(() => { measureHeadings(); }); } }, [isLayoutStable, measureHeadings]); 
 
-    // ... (Data prep) ...
     if (!item) return null;
+
     const rawRelatedReviews = (item as any).relatedReviews;
     const rawRelatedArticles = (item as any).relatedArticles;
     const rawRelatedNews = (item as any).relatedNews;
@@ -156,21 +171,18 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
-    // High Quality Hero
-    const heroImageUrl = urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url();
-    // Full Res for Lightbox
+    // High Quality Hero (Target)
+    const highResUrl = urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url();
+    // Use initialImageSrc (Thumbnail) if available for seamless transition
+    const displayImageUrl = initialImageSrc || highResUrl;
+    
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
-    const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
+    const springTransition = { type: 'spring' as const, stiffness: 60, damping: 20, mass: 1 };
     const newsType = (item as any).newsType || 'official';
 
-    // --- ID GENERATION (Standardized) ---
-    // If layoutIdPrefix is 'default' (direct page load), we DON'T want shared transitions
-    // unless we clicked a hero card or similar internally.
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
     
-    // Generate IDs using utility to match card
-    const containerLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'container', item.legacyId) : undefined;
     const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
     const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
@@ -178,20 +190,27 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         <>
             <ReadingHud contentContainerRef={scrollTrackerRef} headings={headings} isMobile={isMobile} />
 
+            {/* HERO SECTION WRAPPER */}
             <motion.div 
-                layoutId={containerLayoutId} 
-                transition={springTransition} 
-                style={{ backgroundColor: 'var(--bg-primary)', zIndex: 50, position: 'relative' }}
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                style={{ backgroundColor: 'transparent', zIndex: 50, position: 'relative' }}
             >
                 <motion.div 
                     layoutId={imageLayoutId} 
                     className={`${styles.heroImage} image-lightbox-trigger`} 
                     transition={springTransition} 
-                    onClick={() => openLightbox([fullResImageUrl], 0)}
+                    onClick={(e) => {
+                        e.stopPropagation(); // Stop bubbling
+                        openLightbox([fullResImageUrl], 0);
+                    }}
+                    initial={isSharedTransitionActive ? undefined : { opacity: 0 }}
+                    animate={isSharedTransitionActive ? undefined : { opacity: 1 }}
                 >
                     <Image 
                         loader={sanityLoader} 
-                        src={heroImageUrl} 
+                        src={displayImageUrl} 
                         alt={item.title} 
                         fill 
                         sizes="100vw" 
@@ -199,27 +218,45 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                         priority 
                         placeholder="blur" 
                         blurDataURL={(item.mainImage as any).blurDataURL} 
+                        unoptimized={!!initialImageSrc}
                     />
                 </motion.div>
 
                 <div className="container page-container" style={{ paddingTop: '0' }}>
-                    <motion.div initial="hidden" animate="visible" variants={contentVariants} >
-                        
-                        <div className={styles.contentLayout}>
-
-                            <main ref={scrollTrackerRef}>
-                                <div className={styles.titleWrapper}>
-                                    {isNews && ( <div className={styles.headerBadges}> <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> </div> )}
-                                    <motion.h1 
-                                        layoutId={titleLayoutId}
-                                        className="page-title" 
-                                        style={{ textAlign: 'right', margin: 0 }} 
-                                        transition={springTransition}
+                    
+                    <div className={styles.contentLayout}>
+                        <main ref={scrollTrackerRef}>
+                            <div className={styles.titleWrapper}>
+                                {isNews && ( 
+                                    <motion.div 
+                                        className={styles.headerBadges}
+                                        initial={{ opacity: 1 }} 
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0, transition: { duration: 0 } }}
                                     > 
-                                        {item.title} 
-                                    </motion.h1>
-                                </div>
+                                        <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> 
+                                        <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> 
+                                    </motion.div> 
+                                )}
                                 
+                                <motion.h1 
+                                    layoutId={titleLayoutId}
+                                    className="page-title" 
+                                    style={{ textAlign: 'right', margin: 0 }} 
+                                    transition={springTransition}
+                                    initial={isSharedTransitionActive ? undefined : { opacity: 0, y: 20 }}
+                                    animate={isSharedTransitionActive ? undefined : { opacity: 1, y: 0 }}
+                                > 
+                                    {item.title} 
+                                </motion.h1>
+                            </div>
+                            
+                            <motion.div
+                                variants={bodyFadeVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                            >
                                 <div className={styles.metaContainer}>
                                     <div className={styles.metaBlockLeft}>
                                         {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
@@ -256,9 +293,16 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                 <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
                                     <TagLinks tags={safeTags.map((t: any) => t.title)} />
                                 </div>
-                            </main>
+                            </motion.div>
+                        </main>
 
-                            <aside className={styles.sidebar}>
+                        <aside className={styles.sidebar}>
+                            <motion.div
+                                variants={bodyFadeVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                            >
                                 <JoinVanguardCard /> 
                                 
                                 <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
@@ -270,15 +314,15 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                         ))}
                                     </motion.div>
                                 </ContentBlock>
-                            </aside>
+                            </motion.div>
+                        </aside>
 
-                        </div>
+                    </div>
 
-                    </motion.div>
                 </div>
             </motion.div>
             
-            <motion.div initial="hidden" animate="visible" variants={contentVariants} className="container" style={{ paddingBottom: '6rem' }}>
+            <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
                 <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
             </motion.div>
         </>

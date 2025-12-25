@@ -4,7 +4,6 @@
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { useLightboxStore } from '@/lib/lightboxStore';
-import { useBodyClass } from '@/hooks/useBodyClass'; // <-- IMPORT HOOK
 import { useEffect, useState, useRef, useCallback } from 'react';
 import styles from './Lightbox.module.css';
 
@@ -25,7 +24,35 @@ export default function Lightbox() {
     const imageRef = useRef<HTMLImageElement>(null);
     const imageUrl = imageUrls[currentIndex];
 
-    useBodyClass('lightbox-active', isOpen); // <-- REFACTORED
+    // --- SCROLL FREEZE STRATEGY: EVENT INTERCEPTION ---
+    // Instead of modifying body overflow (which causes layout jumps), we simply
+    // swallow 'wheel' and 'touchmove' events on the document level while open.
+    useEffect(() => {
+        if (isOpen) {
+            const preventScroll = (e: Event) => {
+                // Prevent default behavior (scrolling)
+                e.preventDefault();
+            };
+
+            // Option { passive: false } is required to allow calling preventDefault
+            document.addEventListener('wheel', preventScroll, { passive: false });
+            document.addEventListener('touchmove', preventScroll, { passive: false });
+
+            // Also prevent spacebar/arrow scrolling
+            const preventKeys = (e: KeyboardEvent) => {
+                if ([' ', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            };
+            document.addEventListener('keydown', preventKeys);
+
+            return () => {
+                document.removeEventListener('wheel', preventScroll);
+                document.removeEventListener('touchmove', preventScroll);
+                document.removeEventListener('keydown', preventKeys);
+            };
+        }
+    }, [isOpen]);
 
     const scale = useMotionValue(1);
     const x = useMotionValue(0);
@@ -120,6 +147,7 @@ export default function Lightbox() {
     }, [scale, x, y]);
 
     const handleWheel = useCallback((e: React.WheelEvent) => {
+        // Prevent default zoom/scroll behavior
         e.preventDefault();
         e.stopPropagation();
         handleZoom(e.deltaY * -0.01, e.clientX, e.clientY);
@@ -132,7 +160,18 @@ export default function Lightbox() {
     const lightboxContent = (
         <AnimatePresence>
             {isOpen && imageUrl && (
-                <motion.div className={styles.lightboxOverlay} onWheel={handleWheel} onClick={closeLightbox} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div 
+                    className={styles.lightboxOverlay} 
+                    onWheel={handleWheel} 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        closeLightbox();
+                    }}
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                >
                     <motion.div ref={containerRef} className={styles.imageContainer} onClick={(e) => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} transition={{type: 'spring', damping: 25, stiffness: 250}}>
                         <AnimatePresence mode="wait">
                             <motion.img
@@ -177,8 +216,3 @@ export default function Lightbox() {
     if (!isMounted) return null;
     return createPortal(lightboxContent, document.body);
 }
-
-
-
-
-
