@@ -6,7 +6,6 @@ import { useContentStore } from '@/lib/contentStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
-import { usePathname } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
@@ -49,14 +48,10 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     }, [isOverlayOpen, closeOverlay, navigateInternal]);
 
     // --- ANALYTICS TRACKER ---
-    // Since we bypass the Next.js router, we must manually trigger pageviews here.
     useEffect(() => {
         if (isOverlayOpen && activeSlug && activeType) {
-            // Construct the virtual URL
             const virtualUrl = `/${activeType}/${activeSlug}`;
-            // Manually trigger the GA event
             pageview(virtualUrl);
-            // console.log(`[Analytics] Manual Hit: ${virtualUrl}`);
         }
     }, [isOverlayOpen, activeSlug, activeType]);
 
@@ -84,6 +79,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
             document.body.classList.add('force-scrolled-nav');
             
+            // Scroll overlay to top instantly
             window.scrollTo({ top: 0, behavior: 'instant' });
             
             if (lenis) {

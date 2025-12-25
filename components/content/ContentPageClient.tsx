@@ -44,7 +44,6 @@ type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
 
-// MODIFIED: Added instant exit variant
 const bodyFadeVariants = { 
     hidden: { opacity: 1, y: 0 }, 
     visible: { opacity: 1, y: 0, transition: { duration: 0 } },
@@ -86,13 +85,38 @@ export default function ContentPageClient({
     }, [item.toc]);
 
     const [headings, setHeadings] = useState<Heading[]>([]);
-    
     const [isMobile, setIsMobile] = useState(false);
     
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const scrollTrackerRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
+    // --- SCROLL TRACKING FOR TRANSITION DETACHMENT ---
+    // If the user scrolls even slightly (50px), we detach the layoutId.
+    // This prevents the "fly-in from top" effect when closing after reading.
+    const [hasScrolled, setHasScrolled] = useState(false);
+
+    useEffect(() => {
+        if (!isHeroTransitionEnabled) return;
+
+        const handleScroll = () => {
+            const currentScroll = window.scrollY;
+            // 50px threshold: enough to show intent to read, small enough to prevent large jumps
+            const isPastThreshold = currentScroll > 50; 
+            
+            setHasScrolled(prev => {
+                if (prev !== isPastThreshold) return isPastThreshold;
+                return prev;
+            });
+        };
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        // Check initial state
+        handleScroll();
+        
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [isHeroTransitionEnabled]);
+
     const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
     
     const measureHeadings = useCallback(() => {
@@ -171,11 +195,8 @@ export default function ContentPageClient({
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
-    // High Quality Hero (Target)
     const highResUrl = urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url();
-    // Use initialImageSrc (Thumbnail) if available for seamless transition
     const displayImageUrl = initialImageSrc || highResUrl;
-    
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
     
     const springTransition = { type: 'spring' as const, stiffness: 60, damping: 20, mass: 1 };
@@ -183,8 +204,10 @@ export default function ContentPageClient({
 
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
     
-    const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
-    const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
+    // CONDITIONALLY DISABLE LAYOUT ID IF SCROLLED
+    // This effectively breaks the link to the card, causing a simple fade-out instead of a morph
+    const imageLayoutId = (isSharedTransitionActive && !hasScrolled) ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
+    const titleLayoutId = (isSharedTransitionActive && !hasScrolled) ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
     return (
         <>
@@ -202,11 +225,12 @@ export default function ContentPageClient({
                     className={`${styles.heroImage} image-lightbox-trigger`} 
                     transition={springTransition} 
                     onClick={(e) => {
-                        e.stopPropagation(); // Stop bubbling
+                        e.stopPropagation(); 
                         openLightbox([fullResImageUrl], 0);
                     }}
-                    initial={isSharedTransitionActive ? undefined : { opacity: 0 }}
-                    animate={isSharedTransitionActive ? undefined : { opacity: 1 }}
+                    // If no layoutId (scrolled), fade in/out normally
+                    initial={imageLayoutId ? undefined : { opacity: 0 }}
+                    animate={imageLayoutId ? undefined : { opacity: 1 }}
                 >
                     <Image 
                         loader={sanityLoader} 
@@ -244,8 +268,8 @@ export default function ContentPageClient({
                                     className="page-title" 
                                     style={{ textAlign: 'right', margin: 0 }} 
                                     transition={springTransition}
-                                    initial={isSharedTransitionActive ? undefined : { opacity: 0, y: 20 }}
-                                    animate={isSharedTransitionActive ? undefined : { opacity: 1, y: 0 }}
+                                    initial={titleLayoutId ? undefined : { opacity: 0, y: 20 }}
+                                    animate={titleLayoutId ? undefined : { opacity: 1, y: 0 }}
                                 > 
                                     {item.title} 
                                 </motion.h1>
