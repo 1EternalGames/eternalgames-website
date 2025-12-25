@@ -20,7 +20,8 @@ import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
-import { Suspense } from 'react'; // ADDED: Import Suspense
+import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; // <--- NEW
+import { getCachedColorDictionary } from '@/lib/sanity.fetch'; // <--- NEW
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -101,7 +102,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode; }) {
+export default async function RootLayout({ children }: { children: React.ReactNode; }) {
+  // Fetch color dictionary once on the server layout to pass to the overlay
+  const dictionary = await getCachedColorDictionary();
+  const colors = dictionary?.autoColors || [];
+
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
@@ -120,12 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
-          
-          {/* WRAPPED: GoogleAnalytics uses useSearchParams, so it must be suspended */}
-          <Suspense fallback={null}>
-             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
-          </Suspense>
-
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -138,6 +138,10 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 <ToastProvider />
                 <CookieConsent />
                 <Lightbox />
+                
+                {/* The Kinetic Overlay Manager */}
+                <KineticOverlayManager colorDictionary={colors} />
+
                 <Navbar />
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                   <PageTransitionWrapper>

@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import KineticLink from '@/components/kinetic/KineticLink'; 
 
 type ArticleCardProps = {
     article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
@@ -184,6 +185,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     };
     const linkPath = `${getLinkBasePath()}${article.slug}`;
 
+    // Determine type for Kinetic Link
+    const kineticType = article.type === 'review' ? 'reviews' : article.type === 'article' ? 'articles' : 'news';
+
     const hasScore = article.type === 'review' && typeof article.score === 'number';
     const authorName = getCreatorName(article.authors);
     const authorUsername = article.authors[0]?.username;
@@ -196,7 +200,9 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     ];
     
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
-    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+    
+    // Ensure the ID exactly matches the one generated in ContentPageClient
+    const safeLayoutIdPrefix = isHeroTransitionEnabled && layoutIdPrefix ? layoutIdPrefix : undefined;
 
     return (
         <div
@@ -206,9 +212,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
-                // OPTIMIZATION: We keep layoutId here for the "Hero Transition" (Shared Element),
-                // but we DO NOT add the generic 'layout' prop.
-                // This ensures the transition works, but random grid re-shuffles don't trigger expensive calculations.
+                // SHARED ELEMENT CONTAINER
                 layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
                 style={{ 
                     height: '100%',
@@ -229,19 +233,27 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         className="no-underline block w-full flex flex-col"
                         style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
                     >
-                        <Link 
+                        {/* 
+                            KINETIC LINK OVERLAY
+                            This intercepts the click and triggers the overlay via Zustand 
+                        */}
+                        <KineticLink 
                             href={linkPath} 
+                            slug={article.slug}
+                            type={kineticType}
+                            // Pass the raw prefix (e.g. 'homepage-latest-articles') to the store
+                            // so the Overlay can reconstruct the matching IDs
+                            layoutId={safeLayoutIdPrefix}
                             className={`${styles.cardOverlayLink} no-underline`}
-                            prefetch={false}
                             onClick={() => {
                                 if (!isMobile) {
                                     setScrollPos(window.scrollY);
-                                    if (isHeroTransitionEnabled) {
-                                        setPrefix(layoutIdPrefix);
-                                    }
                                 }
                             }}
-                        />
+                        >
+                            {/* Empty span required for valid anchor content if no children */}
+                            <span />
+                        </KineticLink>
 
                         <div className={styles.monolithFrame}>
                             <div className={styles.innerClippingFrame}>
@@ -256,6 +268,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                                 <motion.div 
                                     className={styles.imageWrapper}
+                                    // SHARED ELEMENT IMAGE
                                     layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined}
                                 >
                                     <Image 

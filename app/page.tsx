@@ -12,8 +12,9 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment'; 
 import HomeJsonLd from '@/components/seo/HomeJsonLd'; 
-import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; // ADDED
+import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
+import BatchHydrator from '@/components/kinetic/BatchHydrator'; // <--- NEW IMPORT
 
 export const dynamic = 'force-static';
 
@@ -145,7 +146,6 @@ export default async function HomePage() {
 
     const releasesSection = <ReleasesSection releases={releasesRaw} credits={credits || []} />;
 
-    // Generate Carousel Schema Data
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
     const carouselItems = reviews.slice(0, 5).map((review, index) => ({
         url: `${siteUrl}/reviews/${review.slug}`,
@@ -154,11 +154,23 @@ export default async function HomePage() {
         image: review.mainImage ? urlFor(review.mainImage).width(1200).url() : undefined
     }));
 
+    // --- KINETIC HYDRATION LIST ---
+    // Combine everything that is visible on the homepage to be prefetched
+    const hydrationItems = [
+        ...reviews, 
+        ...homepageArticlesRaw, 
+        ...homepageNewsRaw,
+        // ...releasesRaw // Optional: Releases are heavy and less clicked, skip for now to save bandwidth
+    ];
+
     return (
         <>
             <HomeJsonLd />
             {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
             
+            {/* The Magic Component */}
+            <BatchHydrator items={hydrationItems} />
+
             <DigitalAtriumHomePage 
                 reviews={reviews}
                 feedsContent={feedsContent}

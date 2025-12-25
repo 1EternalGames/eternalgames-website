@@ -27,7 +27,7 @@ import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
-import { formatArabicDuration, generateId } from '@/lib/text-utils'; // IMPORT generateId
+import { formatArabicDuration, generateId } from '@/lib/text-utils';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
@@ -80,13 +80,10 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
         
         headingElements.forEach((h, index) => {
-            // FIX: Use the exact same ID generation logic as the server
-            // If the element has no ID (rare), generate one using the shared utility
             let id = h.id;
             
             if (!id || seenIds.has(id)) { 
                 const textContent = h.textContent || '';
-                // Use the shared Arabic-preserving generator
                 id = generateId(textContent) || `heading-${index}`;
             }
             
@@ -157,19 +154,50 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const monthIndex = publishedDate.getMonth();
     const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
-    const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
+    
+    // High Quality Hero
+    const heroImageUrl = urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url();
+    // Full Res for Lightbox
     const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
+    
     const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
     const newsType = (item as any).newsType || 'official';
-    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+
+    // --- ID GENERATION (Must match ArticleCard) ---
+    // Note: layoutIdPrefix is passed from the Store (e.g. "homepage-latest-articles")
+    // item.legacyId is the unique numeric ID.
+    // Resulting ID: "homepage-latest-articles-card-image-123"
+    const safeLayoutIdPrefix = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default' 
+        ? layoutIdPrefix 
+        : undefined;
 
     return (
         <>
             <ReadingHud contentContainerRef={scrollTrackerRef} headings={headings} isMobile={isMobile} />
 
-            <motion.div layout layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined} transition={springTransition} style={{ backgroundColor: 'var(--bg-primary)', zIndex: 50, position: 'relative' }}>
-                <motion.div layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined} className={`${styles.heroImage} image-lightbox-trigger`} transition={springTransition} onClick={() => openLightbox([fullResImageUrl], 0)}>
-                    <Image loader={sanityLoader} src={heroImageUrl} alt={item.title} fill sizes="100vw" style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={(item.mainImage as any).blurDataURL} />
+            <motion.div 
+                layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined}
+                transition={springTransition} 
+                style={{ backgroundColor: 'var(--bg-primary)', zIndex: 50, position: 'relative' }}
+            >
+                <motion.div 
+                    // This is the CRITICAL matching ID for the image
+                    layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined}
+                    className={`${styles.heroImage} image-lightbox-trigger`} 
+                    transition={springTransition} 
+                    onClick={() => openLightbox([fullResImageUrl], 0)}
+                >
+                    <Image 
+                        loader={sanityLoader} 
+                        src={heroImageUrl} 
+                        alt={item.title} 
+                        fill 
+                        sizes="100vw" 
+                        style={{ objectFit: 'cover' }} 
+                        priority 
+                        placeholder="blur" 
+                        blurDataURL={(item.mainImage as any).blurDataURL} 
+                    />
                 </motion.div>
 
                 <div className="container page-container" style={{ paddingTop: '0' }}>
@@ -180,7 +208,14 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                             <main ref={scrollTrackerRef}>
                                 <div className={styles.titleWrapper}>
                                     {isNews && ( <div className={styles.headerBadges}> <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> </div> )}
-                                    <motion.h1 layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined} className="page-title" style={{ textAlign: 'right', margin: 0 }} transition={springTransition}> {item.title} </motion.h1>
+                                    <motion.h1 
+                                        layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
+                                        className="page-title" 
+                                        style={{ textAlign: 'right', margin: 0 }} 
+                                        transition={springTransition}
+                                    > 
+                                        {item.title} 
+                                    </motion.h1>
                                 </div>
                                 
                                 <div className={styles.metaContainer}>
