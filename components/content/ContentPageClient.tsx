@@ -28,10 +28,11 @@ import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
 import { formatArabicDuration, generateId } from '@/lib/text-utils';
+import { generateLayoutId } from '@/lib/layoutUtils'; // <--- NEW IMPORT
 
+// ... (Existing types and constants) ...
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
-
 type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & { 
     slug: Slug; 
     relatedContent?: any[]; 
@@ -126,12 +127,13 @@ export default function ContentPageClient({ item, type, children, colorDictionar
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    useIsomorphicLayoutEffect(() => { window.scrollTo(0, 0); }, []);
-    useEffect(() => { const timeout = setTimeout(() => setIsLayoutStable(true), 1500); return () => clearTimeout(timeout); }, [item]);
-    useEffect(() => { if (isLayoutStable) { requestAnimationFrame(() => { measureHeadings(); }); } }, [isLayoutStable, measureHeadings]); 
+    // FORCED TOP SCROLL ON MOUNT (Critical for Overlay)
+    useIsomorphicLayoutEffect(() => { 
+        window.scrollTo(0, 0); 
+    }, []);
 
+    // ... (Data prep) ...
     if (!item) return null;
-
     const rawRelatedReviews = (item as any).relatedReviews;
     const rawRelatedArticles = (item as any).relatedArticles;
     const rawRelatedNews = (item as any).relatedNews;
@@ -145,7 +147,6 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const safeAuthors = Array.isArray((item as any).authors) ? (item as any).authors : [];
     const safeReporters = Array.isArray((item as any).reporters) ? (item as any).reporters : [];
     const primaryCreators = [...safeAuthors, ...safeReporters];
-
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const publishedDate = new Date(item.publishedAt as string);
@@ -163,26 +164,27 @@ export default function ContentPageClient({ item, type, children, colorDictionar
     const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
     const newsType = (item as any).newsType || 'official';
 
-    // --- ID GENERATION (Must match ArticleCard) ---
-    // Note: layoutIdPrefix is passed from the Store (e.g. "homepage-latest-articles")
-    // item.legacyId is the unique numeric ID.
-    // Resulting ID: "homepage-latest-articles-card-image-123"
-    const safeLayoutIdPrefix = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default' 
-        ? layoutIdPrefix 
-        : undefined;
+    // --- ID GENERATION (Standardized) ---
+    // If layoutIdPrefix is 'default' (direct page load), we DON'T want shared transitions
+    // unless we clicked a hero card or similar internally.
+    const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
+    
+    // Generate IDs using utility to match card
+    const containerLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'container', item.legacyId) : undefined;
+    const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
+    const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
     return (
         <>
             <ReadingHud contentContainerRef={scrollTrackerRef} headings={headings} isMobile={isMobile} />
 
             <motion.div 
-                layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined}
+                layoutId={containerLayoutId} 
                 transition={springTransition} 
                 style={{ backgroundColor: 'var(--bg-primary)', zIndex: 50, position: 'relative' }}
             >
                 <motion.div 
-                    // This is the CRITICAL matching ID for the image
-                    layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined}
+                    layoutId={imageLayoutId} 
                     className={`${styles.heroImage} image-lightbox-trigger`} 
                     transition={springTransition} 
                     onClick={() => openLightbox([fullResImageUrl], 0)}
@@ -209,7 +211,7 @@ export default function ContentPageClient({ item, type, children, colorDictionar
                                 <div className={styles.titleWrapper}>
                                     {isNews && ( <div className={styles.headerBadges}> <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> </div> )}
                                     <motion.h1 
-                                        layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
+                                        layoutId={titleLayoutId}
                                         className="page-title" 
                                         style={{ textAlign: 'right', margin: 0 }} 
                                         transition={springTransition}

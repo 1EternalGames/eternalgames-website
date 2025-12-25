@@ -4,13 +4,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { useContentStore } from '@/lib/contentStore';
-import { useRouter } from 'next/navigation';
 
 interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
     slug: string;
     type: 'reviews' | 'articles' | 'news' | 'releases';
-    layoutId?: string; // The ID of the card being clicked
+    layoutId?: string;
     children: React.ReactNode;
     className?: string;
     onClick?: (e: React.MouseEvent) => void;
@@ -20,16 +19,24 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
     const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        // 1. Run any custom onClick logic passed from parent (e.g., setting scroll pos)
         if (onClick) onClick(e);
 
-        // 1. Check if we have the data
-        if (contentMap.has(slug)) {
-            // 2. STOP actual navigation
+        // 2. Check Data Lake
+        // We check for the raw slug OR the slug within an object structure just in case
+        const hasData = contentMap.has(slug);
+
+        if (hasData) {
+            // 3. INTERCEPT: Kill the browser navigation immediately
             e.preventDefault();
-            // 3. Trigger Overlay with the layout ID for smooth transition
+            e.stopPropagation(); // Stop bubbling to be safe
+            
+            // 4. Trigger Instant Overlay
             openOverlay(slug, type, layoutId);
+        } else {
+            // Debug: If you see this in console, the hydration failed or IDs mismatch
+            // console.warn(`[Kinetic] Miss for slug: ${slug}. Falling back to router.`);
         }
-        // Else: Fallback to normal Next.js Link behavior
     };
 
     return (
@@ -39,6 +46,7 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
             onClick={handleClick} 
             scroll={false} 
             {...props} 
+            // Disable Next.js prefetching since we manage data ourselves
             prefetch={false}
         >
             {children}

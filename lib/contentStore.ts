@@ -25,11 +25,13 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   hydrateContent: (items) => {
     const newMap = new Map(get().contentMap);
     items.forEach(item => {
-      if (item && item.slug) {
-        const slugStr = typeof item.slug === 'string' ? item.slug : item.slug.current;
-        if (slugStr) {
-             newMap.set(slugStr, item);
-        }
+      // Normalize slug to string for the key
+      let slugStr = '';
+      if (typeof item.slug === 'string') slugStr = item.slug;
+      else if (item.slug?.current) slugStr = item.slug.current;
+      
+      if (slugStr) {
+           newMap.set(slugStr, item);
       }
     });
     set({ contentMap: newMap });

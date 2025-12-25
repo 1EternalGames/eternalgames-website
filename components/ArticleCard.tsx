@@ -18,14 +18,7 @@ import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore';
 import KineticLink from '@/components/kinetic/KineticLink'; 
-
-type ArticleCardProps = {
-    article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
-    layoutIdPrefix: string;
-    isPriority?: boolean;
-    disableLivingEffect?: boolean; 
-    smallTags?: boolean;
-};
+import { generateLayoutId } from '@/lib/layoutUtils'; // <--- NEW IMPORT
 
 // Helper: Moved outside to prevent re-creation on render
 const getCreatorName = (creators: any[]): string | null => {
@@ -62,6 +55,14 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
             {content}
         </div>
     );
+};
+
+type ArticleCardProps = {
+    article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
+    layoutIdPrefix: string;
+    isPriority?: boolean;
+    disableLivingEffect?: boolean; 
+    smallTags?: boolean;
 };
 
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false, smallTags = false }: ArticleCardProps) => {
@@ -184,8 +185,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         }
     };
     const linkPath = `${getLinkBasePath()}${article.slug}`;
-
-    // Determine type for Kinetic Link
     const kineticType = article.type === 'review' ? 'reviews' : article.type === 'article' ? 'articles' : 'news';
 
     const hasScore = article.type === 'review' && typeof article.score === 'number';
@@ -200,9 +199,11 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     ];
     
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
-    
-    // Ensure the ID exactly matches the one generated in ContentPageClient
-    const safeLayoutIdPrefix = isHeroTransitionEnabled && layoutIdPrefix ? layoutIdPrefix : undefined;
+
+    // Standardized ID Generation
+    const containerLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'container', article.legacyId) : undefined;
+    const imageLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'image', article.legacyId) : undefined;
+    const titleLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'title', article.legacyId) : undefined;
 
     return (
         <div
@@ -212,13 +213,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
-                // SHARED ELEMENT CONTAINER
-                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
-                style={{ 
-                    height: '100%',
-                    position: 'relative',
-                    zIndex: 1,
-                }}
+                layoutId={containerLayoutId}
+                style={{ height: '100%', position: 'relative', zIndex: 1 }}
             >
                 <motion.div
                     className="tilt-container flex flex-col"
@@ -233,25 +229,22 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                         className="no-underline block w-full flex flex-col"
                         style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
                     >
-                        {/* 
-                            KINETIC LINK OVERLAY
-                            This intercepts the click and triggers the overlay via Zustand 
-                        */}
+                         {/* --- KINETIC LINK (The Trigger) --- */}
                         <KineticLink 
                             href={linkPath} 
                             slug={article.slug}
                             type={kineticType}
-                            // Pass the raw prefix (e.g. 'homepage-latest-articles') to the store
-                            // so the Overlay can reconstruct the matching IDs
-                            layoutId={safeLayoutIdPrefix}
+                            layoutId={layoutIdPrefix} // Pass raw prefix to store
                             className={`${styles.cardOverlayLink} no-underline`}
                             onClick={() => {
                                 if (!isMobile) {
                                     setScrollPos(window.scrollY);
+                                    if (isHeroTransitionEnabled) {
+                                        setPrefix(layoutIdPrefix);
+                                    }
                                 }
                             }}
                         >
-                            {/* Empty span required for valid anchor content if no children */}
                             <span />
                         </KineticLink>
 
@@ -268,8 +261,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                                 <motion.div 
                                     className={styles.imageWrapper}
-                                    // SHARED ELEMENT IMAGE
-                                    layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined}
+                                    layoutId={imageLayoutId} // Standardized
                                 >
                                     <Image 
                                         loader={sanityLoader}
@@ -312,12 +304,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                             }
                                         }}
                                     >
-                                        <h3 className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}>
+                                        <motion.h3 
+                                            className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}
+                                            layoutId={titleLayoutId} // Standardized
+                                        >
                                             {article.title}
-                                        </h3>
+                                        </motion.h3>
                                     </motion.div>
                                 </div>
-                            
                             </div> 
                             
                             <div className={styles.cyberCorner} />

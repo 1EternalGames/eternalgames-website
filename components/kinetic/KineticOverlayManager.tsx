@@ -39,24 +39,34 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         if (isOverlayOpen) {
             scrollRestoredRef.current = false;
             
-            // 1. Force Navbar to Scrolled State immediately
+            // 1. Disable browser's automatic scroll restoration to prevent jumping
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+
+            // 2. Force Navbar to Scrolled State immediately for visibility over content
             document.body.classList.add('force-scrolled-nav');
             
-            // 2. Scroll to top immediately so the hero is visible at y=0
+            // 3. Scroll to absolute top immediately so the hero is visible at y=0
             window.scrollTo(0, 0);
 
-            // 3. Delay hiding the main content.
-            // This 50ms window is where Framer Motion sees BOTH the Card (in mainContent) 
-            // and the Hero (in Overlay) and calculates the interpolation.
+            // 4. Delay hiding the main content.
+            // INCREASED to 100ms. This ensures Framer Motion calculates the "FLIP" 
+            // (First Last Invert Play) animation from the Card (Start) to Header (End)
+            // before we remove the Card from the flow.
             const timer = setTimeout(() => {
                 if (mainContent) mainContent.style.display = 'none';
-            }, 50); 
+            }, 100); 
 
             return () => clearTimeout(timer);
 
         } else {
             // Closing...
             document.body.classList.remove('force-scrolled-nav');
+            
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'auto';
+            }
             
             if (mainContent) {
                 mainContent.style.display = 'block';
@@ -89,7 +99,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    // TWEAKED: Duration matches the card expansion feel
+                    transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
                     style={{
                         position: 'absolute',
                         top: 0,
@@ -98,7 +109,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         minHeight: '100vh',
                         zIndex: 1065, // Below Navbar (1070)
                         backgroundColor: 'var(--bg-primary)',
-                        paddingTop: '0', // FIX: Starts at absolute 0 to show Hero behind Nav
+                        paddingTop: 0, // FIX: Starts at absolute 0 to show Hero behind Nav
                         marginBottom: '-300px', // Prevent footer flash
                         willChange: 'opacity'
                     }}
