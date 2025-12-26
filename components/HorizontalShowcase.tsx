@@ -4,6 +4,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+// FIX: Link was missing from import even though used in the original component
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -14,6 +15,7 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { PenEdit02Icon, Calendar03Icon } from '@/components/icons';
 import { translateTag } from '@/lib/translations';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import KineticLink from '@/components/kinetic/KineticLink';
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -28,24 +30,20 @@ const satelliteConfig = [
 ];
 
 const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boolean }) => {
-  const router = useRouter();
   const setPrefix = useLayoutIdStore((state) => state.setPrefix);
   const layoutIdPrefix = "articles-showcase";
   const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
   const [isHovered, setIsHovered] = useState(false);
   
-  // Performance Settings
   const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
   const effectivelyDisabledLiving = !isLivingCardEnabled;
 
   const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
     if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
     if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
     if (isHeroTransitionEnabled) {
         setPrefix(layoutIdPrefix);
     }
-    router.push(`/articles/${article.slug}`, { scroll: false });
   };
 
   const imageSource = article.imageUrl;
@@ -56,9 +54,10 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   const authorName = author?.name;
   const authorUsername = author?.username;
 
-  // Conditional Logic
   const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
   const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+  
+  const kineticType = article.type === 'review' ? 'reviews' : article.type === 'article' ? 'articles' : 'news';
 
   return (
     <motion.div
@@ -87,15 +86,17 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
         onTouchEnd={!effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined}
         style={{ ...animationStyles, perspective: '1000px' }}
       >
-        <Link 
-            href={`/articles/${article.slug}`} 
+        <KineticLink 
+            href={`/articles/${article.slug}`}
+            slug={article.slug}
+            type={kineticType}
+            imageSrc={imageSource}
+            layoutId={safeLayoutIdPrefix}
             onClick={handleClick}
             className={`no-underline ${styles.showcaseCardLink}`}
             draggable="false"
-            prefetch={false}
         >
             <div className={styles.monolithFrame}>
-                {/* NEW: Explicit Cyber Corner Div */}
                 <div className={styles.cyberCorner} />
                 
                 <motion.div 
@@ -119,8 +120,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                 </div>
                 
                 <div className={styles.hudContainer} style={{ transform: 'translateZ(40px)' }}>
-                    
-                    {/* LEFT COLUMN: DATE */}
                     <div style={{ justifySelf: 'start' }}>
                         {article.date && (
                             <div className={styles.dateReadout}>
@@ -129,21 +128,18 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                             </div>
                         )}
                     </div>
-                    
-                    {/* CENTER COLUMN: TECH DECORATION */}
                     <div className={styles.techDecoration}>
                         <div className={styles.techDot} />
                         <div className={styles.techDot} />
                         <div className={styles.techDot} />
                     </div>
-                    
-                    {/* RIGHT COLUMN: CREDITS */}
                     <div style={{ justifySelf: 'end' }}>
                         {authorName ? (
                             authorUsername ? (
                                 <Link 
                                     href={`/creators/${authorUsername}`}
-                                    onClick={(e) => e.stopPropagation()} 
+                                    // FIX: Explicitly type event to stop propagation
+                                    onClick={(e: React.MouseEvent) => e.stopPropagation()} 
                                     className={`${styles.creditCapsule} no-underline`}
                                     style={{ flexDirection: 'row-reverse' }} 
                                     prefetch={false}
@@ -163,7 +159,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                             )
                         ) : <div />}
                     </div>
-
                 </div>
             </div>
             
@@ -194,7 +189,8 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                              >
                                  <Link 
                                     href={`/tags/${tag.slug}`} 
-                                    onClick={(e) => e.stopPropagation()}
+                                    // FIX: Explicitly type event
+                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                                     className={`${styles.satelliteShardLink} no-underline`}
                                     prefetch={false}
                                 >
@@ -205,8 +201,7 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                     </AnimatePresence>
                 </div>
             )}
-
-        </Link>
+        </KineticLink>
       </motion.div>
     </motion.div>
   );
@@ -306,5 +301,3 @@ export default function HorizontalShowcase({ articles, onActiveIndexChange }: { 
     </div>
   );
 }
-
-

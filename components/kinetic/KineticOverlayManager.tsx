@@ -69,7 +69,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             } else if (activeSlug && activeType) {
                 const virtualUrl = `/${activeType}/${activeSlug}`;
                 pageview(virtualUrl);
-                if (activeType === 'releases') {
+                // FIX: Cast activeType to string for comparison or extend types
+                if (activeType === 'releases' || (activeType as string) === 'games') {
                     fetchLinkedContent(activeSlug);
                 }
             }
@@ -151,7 +152,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 break;
         }
     } else if (activeItem) {
-         if (activeType === 'releases') {
+         // FIX: Cast activeType to string for comparison or extend types
+         if (activeType === 'releases' || (activeType as string) === 'games') {
             contentToRender = <GameHubClient
                 gameTitle={activeItem.title}
                 items={activeItem.linkedContent || []} 

@@ -1,7 +1,8 @@
 // components/GameLink.tsx
-import Link from 'next/link';
 import React from 'react';
 import styles from './GameLink.module.css';
+// IMPORT KineticLink
+import KineticLink from '@/components/kinetic/KineticLink';
 
 type GameLinkProps = {
     gameName?: string | null;
@@ -16,14 +17,18 @@ const GameLink = ({ gameName, gameSlug, className = '' }: GameLinkProps) => {
     
     const finalClassName = `${styles.kineticGameTag} ${className} no-underline`;
 
+    // Use KineticLink with type="games"
     return (
-        <Link href={`/games/${gameSlug}`} className={finalClassName} prefetch={false}>
+        <KineticLink 
+            href={`/games/${gameSlug}`} 
+            slug={gameSlug}
+            type="games" // <--- SUPPORTED
+            className={finalClassName} 
+        >
             <span>{gameName}</span>
             <span className={styles.gameTagArrow}>→</span>
-        </Link>
+        </KineticLink>
     );
 };
 
 export default GameLink;
-
-

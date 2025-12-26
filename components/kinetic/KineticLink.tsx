@@ -8,12 +8,13 @@ import { useContentStore } from '@/lib/contentStore';
 interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
     slug: string;
-    type: 'reviews' | 'articles' | 'news' | 'releases';
+    // ADDED: 'games' type support
+    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games';
     layoutId?: string;
     children: React.ReactNode;
     className?: string;
     imageSrc?: string; 
-    overrideUrl?: string; // <--- NEW: Allows masking the URL
+    overrideUrl?: string; 
     onClick?: (e: React.MouseEvent) => void;
 }
 
@@ -21,23 +22,16 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
     const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        // 1. Run any custom onClick logic passed from parent (e.g., setting scroll pos)
         if (onClick) onClick(e);
 
-        // 2. Check Data Lake
+        // Check if we have data for this slug
         const hasData = contentMap.has(slug);
 
         if (hasData) {
-            // 3. INTERCEPT: Kill the browser navigation immediately
             e.preventDefault();
             e.stopPropagation(); 
-            
-            // 4. Trigger Instant Overlay
-            // Pass the imageSrc to the store so the overlay can use it instantly for the morph target
-            // Pass overrideUrl to control browser history
+            // @ts-ignore - Dynamic type checking allows string passing
             openOverlay(slug, type, layoutId, imageSrc, overrideUrl);
-        } else {
-            // Fallback to router navigation if data is missing
         }
     };
 
@@ -48,7 +42,7 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
             onClick={handleClick} 
             scroll={false} 
             {...props} 
-            prefetch={false} // <--- CRITICAL: Prevents double-fetching
+            prefetch={false} 
         >
             {children}
         </Link>

@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ReviewIcon } from '@/components/icons';
 import { sanityLoader } from '@/lib/sanity.loader';
+import { useContentStore } from '@/lib/contentStore'; 
 
 const fetchReviews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/reviews?${params.toString()}`);
@@ -27,23 +28,20 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const isInView = useInView(intersectionRef, { margin: '400px' });
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
+    
+    const { openOverlay } = useContentStore();
 
     const initialCards = useMemo(() => initialGridReviews.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridReviews]);
     const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
-    
-    // --- OPTIMIZATION: Deferred Rendering State ---
-    // Only render the heavy grid AFTER the initial paint to prevent UI freeze
     const [isGridReady, setIsGridReady] = useState(false);
     
     useEffect(() => {
-        // Defer grid rendering by one frame
         const t = requestAnimationFrame(() => {
             startTransition(() => setIsGridReady(true));
         });
         return () => cancelAnimationFrame(t);
     }, []);
-    // ----------------------------------------------
     
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
     
@@ -116,7 +114,15 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         e.preventDefault();
         e.stopPropagation();
         setPrefix('reviews-hero');
-        router.push(`/reviews/${heroReview.slug}`, { scroll: false });
+        // FIX: The slug in SanityReview is typed as string, not object with current
+        if (heroReview.slug) {
+            openOverlay(
+                heroReview.slug, 
+                'reviews', 
+                'reviews-hero', 
+                heroReview.mainImage.url
+            );
+        }
     };
 
     return (
