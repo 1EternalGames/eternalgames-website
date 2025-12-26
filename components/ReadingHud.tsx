@@ -1,45 +1,61 @@
 // components/ReadingHud.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useSpring, AnimatePresence, MotionValue, useTransform } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, useScroll, useSpring, AnimatePresence, useTransform } from 'framer-motion';
 import styles from './ReadingHud.module.css';
 
 type Heading = {
     id: string;
     title: string;
     top: number;
-    level: number; // MODIFIED: Added level
+    level: number;
 };
 
-// We don't need a custom hook; useScroll with a null target handles window scroll.
 export default function ReadingHud({ 
-    contentContainerRef, 
     headings,
-    isMobile 
+    isMobile,
+    scrollContainerRef 
 }: { 
-    contentContainerRef: React.RefObject<HTMLDivElement | null>, 
+    contentContainerRef?: React.RefObject<HTMLDivElement | null>, 
     headings: Heading[],
-    isMobile: boolean
+    isMobile: boolean,
+    scrollContainerRef?: React.RefObject<HTMLElement | null>
 }) {
     const [activeHeadings, setActiveHeadings] = useState<Set<string>>(new Set());
     const [showHud, setShowHud] = useState(false);
     
-    const { scrollYProgress } = useScroll({ offset: ['start start', 'end end'] });
+    // Target specific scroll container if provided (for Overlay), otherwise default (Window)
+    const { scrollYProgress } = useScroll({ 
+        container: scrollContainerRef,
+        offset: ['start start', 'end end'] 
+    });
     
     const springyProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 40, restDelta: 0.001 });
-    const progressValue = useTransform(scrollYProgress, (p) => p); // Raw progress MotionValue
-
-    // THE FIX: Create a new MotionValue for translateY animation.
+    const progressValue = useTransform(scrollYProgress, (p) => p);
     const translateY = useTransform(springyProgress, [0, 1], ['-100%', '0%']);
 
     useEffect(() => {
         const unsubscribe = progressValue.on('change', (latestProgress) => {
             
-            const documentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-            const documentScrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrollTop = 0;
+            let scrollHeight = 0;
+            let clientHeight = 0;
+
+            if (scrollContainerRef?.current) {
+                const el = scrollContainerRef.current;
+                scrollTop = el.scrollTop;
+                scrollHeight = el.scrollHeight;
+                clientHeight = el.clientHeight;
+            } else {
+                scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+                scrollHeight = document.documentElement.scrollHeight;
+                clientHeight = document.documentElement.clientHeight;
+            }
             
-            setShowHud(documentScrollTop > 100 && latestProgress < 0.99);
+            const documentScrollHeight = scrollHeight - clientHeight;
+            
+            setShowHud(scrollTop > 100 && latestProgress < 0.99);
 
             if (headings.length === 0 || documentScrollHeight <= 0) return;
             
@@ -57,13 +73,17 @@ export default function ReadingHud({
         });
 
         return () => unsubscribe();
-    }, [headings, progressValue, contentContainerRef]); 
+    }, [headings, progressValue, scrollContainerRef]); 
 
     const handleMarkerClick = (headingId: string) => {
         const targetScrollPosition = headings.find(h => h.id === headingId)?.top;
 
         if (targetScrollPosition !== undefined) {
-             window.scrollTo({ top: targetScrollPosition, behavior: 'smooth' });
+             if (scrollContainerRef?.current) {
+                 scrollContainerRef.current.scrollTo({ top: targetScrollPosition, behavior: 'smooth' });
+             } else {
+                 window.scrollTo({ top: targetScrollPosition, behavior: 'smooth' });
+             }
         }
     };
 
@@ -97,19 +117,26 @@ export default function ReadingHud({
                     transition={{ duration: 0.5, ease: 'easeOut' }}
                 >
                     <div className={styles.track}>
-                        {/* THE FIX: Apply the new translateY style instead of scaleY */}
                         <motion.div className={styles.progress} style={{ translateY }} />
                     </div>
                     <div className={styles.markers}>
                         {headings.map((h) => {
                             const isActive = activeHeadings.has(h.id);
                             
-                            const documentScrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                            let scrollHeight = 0;
+                            let clientHeight = 0;
+                            if (scrollContainerRef?.current) {
+                                scrollHeight = scrollContainerRef.current.scrollHeight;
+                                clientHeight = scrollContainerRef.current.clientHeight;
+                            } else {
+                                scrollHeight = document.documentElement.scrollHeight;
+                                clientHeight = document.documentElement.clientHeight;
+                            }
+                            
+                            const documentScrollHeight = scrollHeight - clientHeight;
                             if (documentScrollHeight <= 0) return null;
                             
                             const topPercentage = (h.top / documentScrollHeight) * 100;
-                            
-                            // MODIFIED: Conditionally add a class for h2 markers
                             const markerClass = h.level === 2 ? styles.markerH2 : '';
 
                             return (
@@ -133,5 +160,3 @@ export default function ReadingHud({
         </AnimatePresence>
     );
 };
-
-

@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect, RefObject } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -60,7 +60,8 @@ export default function ContentPageClient({
     children, 
     colorDictionary,
     forcedLayoutIdPrefix,
-    initialImageSrc
+    initialImageSrc,
+    scrollContainerRef // New Prop
 }: { 
     item: ContentItem; 
     type: ContentType; 
@@ -68,65 +69,64 @@ export default function ContentPageClient({
     colorDictionary: ColorMapping[]; 
     forcedLayoutIdPrefix?: string;
     initialImageSrc?: string;
+    scrollContainerRef?: RefObject<HTMLElement | null>;
 }) {
     const { prefix: storePrefix, setPrefix } = useLayoutIdStore();
     const openLightbox = useLightboxStore((state) => state.openLightbox);
     const { isHeroTransitionEnabled } = usePerformanceStore();
 
-    const layoutIdPrefix = forcedLayoutIdPrefix || storePrefix;
-
     const isReview = type === 'reviews';
     const isNews = type === 'news';
 
     const [tocItems, setTocItems] = useState<TocItem[]>(item.toc || []);
-    
-    useEffect(() => {
-        setTocItems(item.toc || []);
-    }, [item.toc]);
-
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     
+    // NEW: Track if hero is visible to enable/disable layout transition
+    const [isHeroVisible, setIsHeroVisible] = useState(true);
+
     const articleBodyRef = useRef<HTMLDivElement>(null); 
-    const scrollTrackerRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
-    // --- SCROLL TRACKING FOR TRANSITION DETACHMENT ---
-    // If the user scrolls even slightly (50px), we detach the layoutId.
-    // This prevents the "fly-in from top" effect when closing after reading.
-    const [hasScrolled, setHasScrolled] = useState(false);
-
-    useEffect(() => {
-        if (!isHeroTransitionEnabled) return;
-
-        const handleScroll = () => {
-            const currentScroll = window.scrollY;
-            // 50px threshold: enough to show intent to read, small enough to prevent large jumps
-            const isPastThreshold = currentScroll > 50; 
-            
-            setHasScrolled(prev => {
-                if (prev !== isPastThreshold) return isPastThreshold;
-                return prev;
-            });
-        };
-        
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        // Check initial state
-        handleScroll();
-        
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [isHeroTransitionEnabled]);
-
     const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
     
+    // --- SCROLL LISTENER FOR TRANSITION CONTROL ---
+    useEffect(() => {
+        const container = scrollContainerRef?.current || window;
+        
+        const handleScroll = () => {
+             const scrollTop = scrollContainerRef?.current 
+                ? scrollContainerRef.current.scrollTop 
+                : (typeof window !== 'undefined' ? window.scrollY : 0);
+             
+             // If scrolled more than 300px, disable the layout ID connection.
+             // This prevents the image from "flying" back from a hidden position.
+             if (scrollTop > 300) {
+                 setIsHeroVisible(false);
+             } else {
+                 setIsHeroVisible(true);
+             }
+        };
+        
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        // Initial check
+        handleScroll();
+        
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [scrollContainerRef]);
+
     const measureHeadings = useCallback(() => {
         const contentElement = articleBodyRef.current;
         if (!contentElement) return;
 
         const navbarOffset = 90;
-        const documentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-        const seenIds = new Set<string>();
         
+        // Calculate scroll offset based on container
+        const currentScrollTop = scrollContainerRef?.current 
+            ? scrollContainerRef.current.scrollTop 
+            : (document.documentElement.scrollTop || document.body.scrollTop);
+
+        const seenIds = new Set<string>();
         let newHeadings: Heading[] = [];
         const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
         
@@ -138,7 +138,10 @@ export default function ContentPageClient({
             }
             seenIds.add(id);
             h.id = id;
-            const topPosition = h.getBoundingClientRect().top + documentScrollTop;
+            
+            const rect = h.getBoundingClientRect();
+            // Calculate 'top' relative to the scrolling context
+            const topPosition = rect.top + currentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
             const level = parseInt(h.tagName.substring(1));
             const title = h.textContent || '';
@@ -148,14 +151,15 @@ export default function ContentPageClient({
         if (isReview) {
              const scoreBoxElement = contentElement.querySelector('.score-box-container');
              if (scoreBoxElement) {
-                 const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
+                 const rect = scoreBoxElement.getBoundingClientRect();
+                 const topPosition = rect.top + currentScrollTop;
                  const scoreBoxScrollPosition = topPosition - navbarOffset;
                  const verdictHeading = { id: 'verdict-summary', title: 'الخلاصة', top: Math.max(0, scoreBoxScrollPosition), level: 2 };
                  newHeadings.push(verdictHeading);
              }
         }
         if (newHeadings.length > 0) setHeadings(newHeadings);
-    }, [isReview]);
+    }, [isReview, scrollContainerRef]);
 
     useEffect(() => { return () => { setPrefix('default'); }; }, [setPrefix]);
 
@@ -167,7 +171,14 @@ export default function ContentPageClient({
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    useIsomorphicLayoutEffect(() => { window.scrollTo(0, 0); }, []);
+    useIsomorphicLayoutEffect(() => { 
+        if (scrollContainerRef?.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        } else {
+            window.scrollTo(0, 0); 
+        }
+    }, [scrollContainerRef]);
+
     useEffect(() => { const timeout = setTimeout(() => setIsLayoutStable(true), 1500); return () => clearTimeout(timeout); }, [item]);
     useEffect(() => { if (isLayoutStable) { requestAnimationFrame(() => { measureHeadings(); }); } }, [isLayoutStable, measureHeadings]); 
 
@@ -202,18 +213,24 @@ export default function ContentPageClient({
     const springTransition = { type: 'spring' as const, stiffness: 60, damping: 20, mass: 1 };
     const newsType = (item as any).newsType || 'official';
 
+    // DETERMINE ACTIVE LAYOUT PREFIX
+    // Only use the shared transition prefix if the hero is visible.
+    // If user scrolled down, set it to undefined to break the link and avoid "jumping".
+    const layoutIdPrefix = (isHeroVisible ? (forcedLayoutIdPrefix || storePrefix) : 'default');
+    
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
     
-    // CONDITIONALLY DISABLE LAYOUT ID IF SCROLLED
-    // This effectively breaks the link to the card, causing a simple fade-out instead of a morph
-    const imageLayoutId = (isSharedTransitionActive && !hasScrolled) ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
-    const titleLayoutId = (isSharedTransitionActive && !hasScrolled) ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
+    const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
+    const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
     return (
         <>
-            <ReadingHud contentContainerRef={scrollTrackerRef} headings={headings} isMobile={isMobile} />
+            <ReadingHud 
+                headings={headings} 
+                isMobile={isMobile} 
+                scrollContainerRef={scrollContainerRef} 
+            />
 
-            {/* HERO SECTION WRAPPER */}
             <motion.div 
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
@@ -228,9 +245,8 @@ export default function ContentPageClient({
                         e.stopPropagation(); 
                         openLightbox([fullResImageUrl], 0);
                     }}
-                    // If no layoutId (scrolled), fade in/out normally
-                    initial={imageLayoutId ? undefined : { opacity: 0 }}
-                    animate={imageLayoutId ? undefined : { opacity: 1 }}
+                    initial={isSharedTransitionActive ? undefined : { opacity: 0 }}
+                    animate={isSharedTransitionActive ? undefined : { opacity: 1 }}
                 >
                     <Image 
                         loader={sanityLoader} 
@@ -247,9 +263,8 @@ export default function ContentPageClient({
                 </motion.div>
 
                 <div className="container page-container" style={{ paddingTop: '0' }}>
-                    
                     <div className={styles.contentLayout}>
-                        <main ref={scrollTrackerRef}>
+                        <main>
                             <div className={styles.titleWrapper}>
                                 {isNews && ( 
                                     <motion.div 
@@ -268,8 +283,8 @@ export default function ContentPageClient({
                                     className="page-title" 
                                     style={{ textAlign: 'right', margin: 0 }} 
                                     transition={springTransition}
-                                    initial={titleLayoutId ? undefined : { opacity: 0, y: 20 }}
-                                    animate={titleLayoutId ? undefined : { opacity: 1, y: 0 }}
+                                    initial={isSharedTransitionActive ? undefined : { opacity: 0, y: 20 }}
+                                    animate={isSharedTransitionActive ? undefined : { opacity: 1, y: 0 }}
                                 > 
                                     {item.title} 
                                 </motion.h1>
@@ -308,7 +323,10 @@ export default function ContentPageClient({
                                     </div>
                                 </div>
                                 
-                                <TableOfContents headings={tocItems} />
+                                <TableOfContents 
+                                    headings={tocItems} 
+                                    scrollContainerRef={scrollContainerRef} 
+                                />
 
                                 <div ref={articleBodyRef} className="article-body">
                                     <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
@@ -328,7 +346,6 @@ export default function ContentPageClient({
                                 exit="exit"
                             >
                                 <JoinVanguardCard /> 
-                                
                                 <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
                                     <motion.div className={styles.relatedGrid} variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" exit="hidden">
                                         {adaptedRelatedContent.map(related => (
@@ -340,9 +357,7 @@ export default function ContentPageClient({
                                 </ContentBlock>
                             </motion.div>
                         </aside>
-
                     </div>
-
                 </div>
             </motion.div>
             

@@ -21,7 +21,7 @@ const ListIcon = () => (
     </svg>
 );
 
-export default function TableOfContents({ headings }: { headings: TocItem[] }) {
+export default function TableOfContents({ headings, scrollContainerRef }: { headings: TocItem[], scrollContainerRef?: React.RefObject<HTMLElement | null> }) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isAtBottom, setIsAtBottom] = useState(false);
     const isDragging = useRef(false);
@@ -31,17 +31,12 @@ export default function TableOfContents({ headings }: { headings: TocItem[] }) {
     const handleScroll = () => {
         if (scrollRef.current) {
             const { scrollTop: sTop, scrollHeight, clientHeight } = scrollRef.current;
-            // Check if user is near the bottom (within 2px tolerance)
             setIsAtBottom(sTop + clientHeight >= scrollHeight - 2);
         }
     };
 
-    // Check initial scroll state (e.g. if content is short)
-    useEffect(() => {
-        handleScroll();
-    }, [headings]);
+    useEffect(() => { handleScroll(); }, [headings]);
 
-    // --- MOUSE DRAG SCROLLING LOGIC ---
     const handleMouseDown = (e: React.MouseEvent) => {
         if (!scrollRef.current) return;
         isDragging.current = true;
@@ -64,7 +59,7 @@ export default function TableOfContents({ headings }: { headings: TocItem[] }) {
         if (!isDragging.current || !scrollRef.current) return;
         e.preventDefault();
         const y = e.pageY - scrollRef.current.offsetTop;
-        const walk = (y - startY.current) * 1.5; // Scroll speed multiplier
+        const walk = (y - startY.current) * 1.5; 
         scrollRef.current.scrollTop = scrollTop.current - walk;
     };
 
@@ -72,19 +67,40 @@ export default function TableOfContents({ headings }: { headings: TocItem[] }) {
 
     const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
         e.preventDefault();
-        // If we were dragging, don't trigger the click
         if (Math.abs(e.movementY) > 2) return; 
 
         const element = document.getElementById(id);
         if (element) {
-            const offset = 100;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            // Need to account for relative position if inside overlay
+            // Or use scrollIntoView which usually works generally, but smooth options might fight with container
             
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
-            });
+            if (scrollContainerRef?.current) {
+                // Calculate offset relative to the scroll container
+                // This assumes the element is inside the container
+                // element.offsetTop is relative to offsetParent. 
+                // A reliable way for nested content is using bounding rects.
+                
+                const containerRect = scrollContainerRef.current.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+                const offset = 100;
+                
+                // Current scroll + distance from container top - offset
+                const targetScroll = scrollContainerRef.current.scrollTop + (elementRect.top - containerRect.top) - offset;
+                
+                scrollContainerRef.current.scrollTo({
+                    top: targetScroll,
+                    behavior: 'smooth'
+                });
+            } else {
+                const offset = 100;
+                const elementPosition = element.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
         }
     };
 

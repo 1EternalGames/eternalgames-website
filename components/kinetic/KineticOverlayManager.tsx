@@ -9,7 +9,9 @@ import CommentSection from '@/components/comments/CommentSection';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
-import { pageview } from '@/lib/gtm'; // Import Google Analytics helper
+import { pageview } from '@/lib/gtm'; 
+import { useUIStore } from '@/lib/uiStore';
+import styles from './KineticOverlayManager.module.css';
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -19,13 +21,14 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         contentMap, 
         closeOverlay, 
         navigateInternal,
-        savedScrollPosition, 
         sourceLayoutId, 
-        activeImageSrc 
+        activeImageSrc,
+        savedScrollPosition 
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
-    const scrollRestoredRef = useRef(false);
+    const setOverlayScrollRef = useUIStore((s) => s.setOverlayScrollRef);
+    const overlayRef = useRef<HTMLDivElement>(null);
     
     const lenis = useLenis();
 
@@ -47,7 +50,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         return () => window.removeEventListener('popstate', handlePopState);
     }, [isOverlayOpen, closeOverlay, navigateInternal]);
 
-    // --- ANALYTICS TRACKER ---
     useEffect(() => {
         if (isOverlayOpen && activeSlug && activeType) {
             const virtualUrl = `/${activeType}/${activeSlug}`;
@@ -55,65 +57,64 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         }
     }, [isOverlayOpen, activeSlug, activeType]);
 
+    // --- SCROLL FREEZE & SWAP LOGIC ---
     useLayoutEffect(() => {
-        const mainContent = document.getElementById('main-content');
+        const html = document.documentElement;
+        const body = document.body;
         const footer = document.querySelector('footer');
-        
+
         if (isOverlayOpen) {
-            scrollRestoredRef.current = false;
-            
-            if (mainContent) {
-                mainContent.style.position = 'fixed';
-                mainContent.style.top = `-${savedScrollPosition}px`;
-                mainContent.style.width = '100%';
-                mainContent.style.left = '0';
-            }
+            // 1. Calculate Scrollbar Width
+            const scrollbarWidth = window.innerWidth - html.clientWidth;
 
-            if (footer) {
-                footer.style.display = 'none';
-            }
-
-            if ('scrollRestoration' in history) {
-                history.scrollRestoration = 'manual';
-            }
-
-            document.body.classList.add('force-scrolled-nav');
+            // 2. STOP Scrolling Engine
+            if (lenis) lenis.stop();
             
-            // Scroll overlay to top instantly
-            window.scrollTo({ top: 0, behavior: 'instant' });
+            // 3. LOCK Body & HTML
+            // Compensate for scrollbar removal to prevent horizontal shift
+            body.style.paddingRight = `${scrollbarWidth}px`; 
             
-            if (lenis) {
-                lenis.scrollTo(0, { immediate: true, force: true, lock: false });
+            // Freeze native scroll
+            html.style.overflow = 'hidden';
+            body.style.overflow = 'hidden';
+            
+            // Hide footer to prevent it from peeking or being scrolled to
+            if (footer) footer.style.display = 'none';
+
+            // 4. ACTIVATE OVERLAY SCROLL
+            if (overlayRef.current) {
+                setOverlayScrollRef(overlayRef.current);
+                overlayRef.current.scrollTop = 0;
             }
 
         } else {
-            document.body.classList.remove('force-scrolled-nav');
-            if ('scrollRestoration' in history) {
-                history.scrollRestoration = 'auto';
-            }
+            // UNFREEZE
+            body.style.paddingRight = '';
+            html.style.overflow = '';
+            body.style.overflow = '';
             
-            if (mainContent) {
-                mainContent.style.position = '';
-                mainContent.style.top = '';
-                mainContent.style.width = '';
-                mainContent.style.left = '';
-            }
+            if (footer) footer.style.display = '';
 
-            if (footer) {
-                footer.style.display = '';
+            // RESUME LENIS
+            if (lenis) lenis.start();
+
+            // Safety restoration of scroll if browser reset it
+            const currentScroll = window.scrollY;
+            if (currentScroll === 0 && savedScrollPosition > 0) {
+                 window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
             }
             
-            if (!scrollRestoredRef.current) {
-                window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
-                
-                if (lenis) {
-                    lenis.scrollTo(savedScrollPosition, { immediate: true, force: true });
-                }
-                
-                scrollRestoredRef.current = true;
-            }
+            setOverlayScrollRef(null);
         }
-    }, [isOverlayOpen, savedScrollPosition, lenis, activeSlug]);
+
+        return () => {
+            // Cleanup
+            body.style.paddingRight = '';
+            html.style.overflow = '';
+            body.style.overflow = '';
+            if (lenis) lenis.start();
+        }
+    }, [isOverlayOpen, savedScrollPosition, lenis, setOverlayScrollRef]);
 
     const activeItem = activeSlug ? contentMap.get(activeSlug) : null;
 
@@ -129,52 +130,63 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         <AnimatePresence mode="wait">
             {isOverlayOpen && activeItem && (
                 <>
+                    {/* Background Layer covering everything */}
                     <motion.div
                         key="overlay-bg"
-                        initial={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0 }} 
+                        transition={{ duration: 0.3 }} 
                         style={{
                             position: 'fixed',
                             inset: 0,
                             zIndex: 1064, 
                             backgroundColor: 'var(--bg-primary)',
-                            transform: 'translateZ(0)', 
+                            transform: 'translateZ(0)',
+                            pointerEvents: 'auto' 
                         }}
                     >
                         <SpaceBackground />
                     </motion.div>
 
+                    {/* Scrollable Overlay Container */}
                     <div
                         key="kinetic-content-wrapper"
+                        ref={overlayRef}
+                        className={styles.overlayScrollContainer}
                         style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            minHeight: '100vh',
+                            position: 'fixed', 
+                            inset: 0,
                             zIndex: 1065, 
                             paddingTop: 0, 
-                            marginBottom: '-300px',
-                            isolation: 'isolate'
+                            overflowY: 'auto', 
+                            overflowX: 'hidden',
+                            isolation: 'isolate',
+                            WebkitOverflowScrolling: 'touch',
+                            overscrollBehavior: 'contain',
+                            direction: 'ltr', 
+                            pointerEvents: 'auto'
                         }}
                     >
-                        <ContentPageClient 
-                            key={activeSlug} 
-                            item={activeItem} 
-                            type={activeType as any} 
-                            colorDictionary={colorDictionary}
-                            forcedLayoutIdPrefix={sourceLayoutId || undefined}
-                            initialImageSrc={activeImageSrc || undefined}
-                        >
-                            <div style={{ marginTop: '4rem' }}>
-                                <CommentSection 
-                                    slug={activeSlug || ''} 
-                                    contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
-                                />
-                            </div>
-                        </ContentPageClient>
+                        {/* RESTORE RTL ALIGNMENT FOR CONTENT */}
+                        <div style={{ direction: 'rtl', minHeight: '100%', width: '100%' }}>
+                            <ContentPageClient 
+                                key={activeSlug} 
+                                item={activeItem} 
+                                type={activeType as any} 
+                                colorDictionary={colorDictionary}
+                                forcedLayoutIdPrefix={sourceLayoutId || undefined}
+                                initialImageSrc={activeImageSrc || undefined}
+                                scrollContainerRef={overlayRef}
+                            >
+                                <div style={{ marginTop: '4rem' }}>
+                                    <CommentSection 
+                                        slug={activeSlug || ''} 
+                                        contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
+                                    />
+                                </div>
+                            </ContentPageClient>
+                        </div>
                     </div>
                 </>
             )}
