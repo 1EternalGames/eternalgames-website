@@ -2,10 +2,7 @@
 import { create } from 'zustand';
 import { client } from '@/lib/sanity.client';
 import { allContentByGameListQuery, allContentByCreatorListQuery } from '@/lib/sanity.queries'; 
-import { enrichContentList } from '@/lib/enrichment'; // We need this, but can't import server actions here easily.
-
-// Mock enrichment or direct usage for client store
-// Real enrichment happens on server. For client nav, we use what we get or accept raw.
+import { enrichContentList } from '@/lib/enrichment'; 
 
 export interface KineticContentState {
   contentMap: Map<string, any>;
@@ -74,9 +71,23 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   hydrateCreators: (creators) => {
       const newMap = new Map(get().creatorMap);
       creators.forEach(c => {
-          if (c.username) newMap.set(c.username, c);
-          if (c._id) newMap.set(c._id, c);
-          if (c.prismaUserId) newMap.set(c.prismaUserId, c);
+          // Smart Merge: Don't overwrite if we already have detailed/loaded content
+          const primaryKey = c.username || c._id;
+          const existing = newMap.get(primaryKey);
+          
+          let merged = c;
+          if (existing) {
+              merged = { ...c, ...existing }; // Keep existing fields (like linkedContent) priority if they exist
+              // Specifically ensure content status is preserved
+              if (existing.contentLoaded) {
+                  merged.contentLoaded = true;
+                  merged.linkedContent = existing.linkedContent;
+              }
+          }
+
+          if (merged.username) newMap.set(merged.username, merged);
+          if (merged._id) newMap.set(merged._id, merged);
+          if (merged.prismaUserId) newMap.set(merged.prismaUserId, merged);
       });
       set({ creatorMap: newMap });
   },
@@ -156,12 +167,14 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   fetchLinkedContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      if (item && item.linkedContent && item.linkedContent.length > 0) return;
+      
+      // OPTIMIZATION: Check contentLoaded flag instead of array length
+      if (item && item.contentLoaded) return;
 
       try {
           const rawLinked = await client.fetch(allContentByGameListQuery, { slug });
           // Note: Missing enrichment here, but sufficient for functionality
-          const updatedItem = { ...item, linkedContent: rawLinked };
+          const updatedItem = { ...item, linkedContent: rawLinked, contentLoaded: true };
           const newMap = new Map(contentMap);
           newMap.set(slug, updatedItem);
           set({ contentMap: newMap });
@@ -174,16 +187,22 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { creatorMap } = get();
       const creator = creatorMap.get(slug);
       
-      if (creator && creator.linkedContent && creator.linkedContent.length > 0) return;
+      // OPTIMIZATION: Check contentLoaded flag instead of array length
+      // This prevents infinite loops for creators with 0 items.
+      if (creator && creator.contentLoaded) return;
 
       try {
            // Fetch content via Sanity Client
-           // Note: We use the creatorId (Sanity ID) for the query
            const rawContent = await client.fetch(allContentByCreatorListQuery, { creatorIds: [creatorId] });
            
-           const updatedCreator = { ...creator, linkedContent: rawContent };
+           const updatedCreator = { ...creator, linkedContent: rawContent, contentLoaded: true };
            const newMap = new Map(creatorMap);
-           newMap.set(slug, updatedCreator);
+           
+           // Update all keys for this creator to maintain consistency
+           if (updatedCreator.username) newMap.set(updatedCreator.username, updatedCreator);
+           if (updatedCreator._id) newMap.set(updatedCreator._id, updatedCreator);
+           if (updatedCreator.prismaUserId) newMap.set(updatedCreator.prismaUserId, updatedCreator);
+           
            set({ creatorMap: newMap });
       } catch (e) {
           console.error("Failed to fetch creator content", e);
