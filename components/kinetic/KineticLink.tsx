@@ -8,7 +8,7 @@ import { useContentStore } from '@/lib/contentStore';
 interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
     slug: string;
-    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags'; // UPDATED
+    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags';
     layoutId?: string;
     children: React.ReactNode;
     className?: string;
@@ -18,18 +18,18 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
 }
 
 export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, overrideUrl, ...props }: KineticLinkProps) {
-    const { contentMap, creatorMap, tagMap, openOverlay } = useContentStore(); // UPDATED
+    const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (onClick) onClick(e);
 
         let hasData = false;
 
-        if (type === 'creators') {
+        // Force overlay attempt for types that support lazy fetching or are always "available" via ID/Slug
+        if (type === 'creators' || type === 'tags') {
             hasData = true; 
-        } else if (type === 'tags') {
-            hasData = true; // Always attempt overlay for tags, fetch happens in overlay if missing
         } else {
+            // For standard content (reviews/articles), only open overlay if data is already in store
             hasData = contentMap.has(slug);
         }
 
@@ -46,7 +46,9 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
             href={href} 
             className={className} 
             onClick={handleClick} 
-            scroll={false} 
+            // FIXED: Removed scroll={false}. 
+            // If we fall back to standard navigation (hasData = false), we WANT standard scroll-to-top behavior.
+            // If we use overlay (hasData = true), preventDefault() cancels this anyway.
             {...props} 
             prefetch={false} 
         >

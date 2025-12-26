@@ -8,6 +8,7 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import GameHubClient from '@/components/GameHubClient';
 import CreatorHubClient from '@/components/CreatorHubClient';
+import HubPageClient from '@/components/HubPageClient'; // IMPORTED
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
@@ -19,7 +20,6 @@ import ReviewsPageClient from '@/app/reviews/ReviewsPageClient';
 import ArticlesPageClient from '@/app/articles/ArticlesPageClient';
 import NewsPageClient from '@/app/news/NewsPageClient';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
-import HubPageClient from '@/components/HubPageClient'; // IMPORTED for Tag Page
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -28,7 +28,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         activeType, 
         contentMap, 
         creatorMap, 
-        tagMap, // IMPORT
+        tagMap, 
         pageMap,
         indexSection,
         closeOverlay, 
@@ -38,7 +38,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         savedScrollPosition,
         fetchLinkedContent,
         fetchCreatorContent,
-        fetchTagContent // IMPORT
+        fetchTagContent
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
@@ -76,7 +76,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     }
                     pageview(`/creators/${activeSlug}`);
                 } else if (activeType === 'tags') {
-                    // NEW: Tag Fetch
                     fetchTagContent(activeSlug);
                     pageview(`/tags/${activeSlug}`);
                 } else {
@@ -138,8 +137,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             } else if (activeType === 'creators') {
                 if (!activeCreator) closeOverlay();
             } else if (activeType === 'tags') {
-                // Allow opening if tag data is missing (it fetches), but ideally hydration catches it.
-                // If it fails to load after a timeout, we might close. For now, rely on fetch.
+                // Allow opening if tag data is missing (it fetches)
             } else {
                 if (!activeItem && activeSlug) closeOverlay();
             }
@@ -160,18 +158,23 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         }
     } else if (activeCreator && activeType === 'creators') {
         contentToRender = <CreatorHubClient creatorName={activeCreator.name} username={activeCreator.username} image={activeCreator.image} bio={activeCreator.bio} items={activeCreator.linkedContent || []} scrollContainerRef={overlayRef} />;
-    } else if (activeTag && activeType === 'tags') {
-        // RENDER TAG PAGE
-        contentToRender = <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />;
+    } else if (activeType === 'tags') {
+        // FIXED: Handle Loading State
+        if (activeTag && activeTag.contentLoaded) {
+            contentToRender = <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />;
+        } else {
+            contentToRender = (
+                <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="spinner" />
+                </div>
+            );
+        }
     } else if (activeItem) {
          if (activeType === 'releases' || (activeType as string) === 'games') {
             contentToRender = <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />;
          } else {
              contentToRender = <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> </ContentPageClient>;
          }
-    } else if (activeType === 'tags') {
-         // Fallback loading for tags
-         contentToRender = <div className="container" style={{height:'100vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>;
     }
 
     if (!contentToRender) return null;
