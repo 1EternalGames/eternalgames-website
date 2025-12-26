@@ -18,6 +18,8 @@ import AdminPinButton from '@/components/releases/AdminPinButton';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import KineticLink from '@/components/kinetic/KineticLink'; 
+import { generateLayoutId } from '@/lib/layoutUtils'; 
 
 import { Calendar03Icon } from '@/components/icons';
 import PCIcon from '@/components/icons/platforms/PCIcon';
@@ -281,8 +283,13 @@ const TimelineCardComponent = ({
         }
     }
 
-    const gameLink = release.game?.slug ? `/games/${release.game.slug}` : null;
-    const mainHref = gameLink || '/releases'; 
+    // --- KEY CHANGE: Use KineticLink with Override ---
+    // This allows us to use the Overlay for the release data (type='releases')
+    // but the URL bar will show the Game Hub path (/games/slug).
+    const kineticSlug = release.slug || '';
+    const kineticLinkType = 'releases';
+    const overrideUrl = release.game?.slug ? `/games/${release.game.slug}` : undefined;
+    
     const layoutIdPrefix = `timeline-${release._id}`;
     
     const platforms = useMemo(() => {
@@ -299,7 +306,7 @@ const TimelineCardComponent = ({
             e.preventDefault();
             return;
         }
-        if (!gameLink || isVideoActive) return; 
+        if (isVideoActive) return; 
         if (!isMobile && isHeroTransitionEnabled) {
              setPrefix(layoutIdPrefix);
         }
@@ -321,6 +328,7 @@ const TimelineCardComponent = ({
             PRICE_CFG = VIDEO_PRICE_FLY_CONFIG;
         }
 
+        // Click Hint matches the overrideUrl or main path
         satellites.push({ 
             type: 'clickHint', 
             label: 'اضغط للمزيد', 
@@ -328,7 +336,7 @@ const TimelineCardComponent = ({
             colorClass: 'cyan',
             x: CLICK_CFG.X, y: CLICK_CFG.Y, rotate: CLICK_CFG.SCALE, 
             scale: CLICK_CFG.SCALE, 
-            anchor: 'center', link: mainHref 
+            anchor: 'center', link: overrideUrl || `/releases/${kineticSlug}` 
         });
 
         if (!isReleased && !isTBA) {
@@ -350,17 +358,19 @@ const TimelineCardComponent = ({
             if (release.publisher?.title) {
                 const pubSlug = release.publisher.slug;
                 const pubLink = pubSlug ? `/publishers/${pubSlug}` : null;
-                satellites.push({ type: 'publisher', label: release.publisher.title, x: PUB_FLY_CONFIG.X, y: PUB_FLY_CONFIG.Y, rotate: PUB_FLY_CONFIG.ROT, scale: PUB_FLY_CONFIG.SCALE, anchor: 'left', link: pubLink, colorClass: 'devPill' });
+                // Standard Link for Publisher
+                satellites.push({ type: 'publisher', label: release.publisher.title, x: PUB_FLY_CONFIG.X, y: PUB_FLY_CONFIG.Y, rotate: PUB_FLY_CONFIG.ROT, scale: PUB_FLY_CONFIG.SCALE, anchor: 'left', link: pubLink, colorClass: 'devPill', isKinetic: false });
             }
             if (release.developer?.title && release.developer.title !== release.publisher?.title) {
                 const devSlug = release.developer.slug;
                 const devLink = devSlug ? `/developers/${devSlug}` : null;
-                satellites.push({ type: 'developer', label: release.developer.title, x: DEV_FLY_CONFIG.X, y: DEV_FLY_CONFIG.Y, rotate: DEV_FLY_CONFIG.ROT, scale: DEV_FLY_CONFIG.SCALE, anchor: 'right', link: devLink, colorClass: 'devPill' });
+                // Standard Link for Developer
+                satellites.push({ type: 'developer', label: release.developer.title, x: DEV_FLY_CONFIG.X, y: DEV_FLY_CONFIG.Y, rotate: DEV_FLY_CONFIG.ROT, scale: DEV_FLY_CONFIG.SCALE, anchor: 'right', link: devLink, colorClass: 'devPill', isKinetic: false });
             }
         }
         
         return satellites;
-    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, mainHref, isVideoActive]);
+    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, overrideUrl, kineticSlug, isVideoActive]);
 
     const platformConfig = useMemo(() => {
         const validPlatforms = platforms.filter(p => PlatformIcons[p]);
@@ -508,7 +518,18 @@ const TimelineCardComponent = ({
                         )}
                     </div>
 
-                    <Link href={mainHref} className="no-underline block h-full" onClick={handleClick} prefetch={false} style={{ position: 'relative', zIndex: 1 }}>
+                    {/* USE KINETIC LINK WITH OVERRIDE URL */}
+                    <KineticLink 
+                        href={overrideUrl || `/releases/${kineticSlug}`}
+                        slug={kineticSlug}
+                        type={kineticLinkType}
+                        layoutId={safeLayoutIdPrefix}
+                        imageSrc={imageUrl}
+                        overrideUrl={overrideUrl} // <--- MASKED URL
+                        className="no-underline block h-full"
+                        onClick={handleClick} 
+                        style={{ position: 'relative', zIndex: 1 }}
+                    >
                         <motion.div className={styles.glare} style={{ '--mouse-x': glareX, '--mouse-y': glareY } as any} />
                         
                         <div className={styles.monolithFrame}>
@@ -517,7 +538,7 @@ const TimelineCardComponent = ({
                             <div className={styles.imageFrame}>
                                 {isReleased ? ( <div className={`${styles.statusBadge} ${styles.released}`} title="صدرت"> <CheckmarkCircleIcon /> </div> ) : ( <div className={`${styles.statusBadge} ${styles.upcoming}`} title="قادمة"> <WatchIcon /> </div> )}
 
-                                <motion.div layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-image` : undefined} className="relative w-full h-full">
+                                <motion.div layoutId={!isMobile && safeLayoutIdPrefix ? generateLayoutId(safeLayoutIdPrefix, 'image', release.legacyId) : undefined} className="relative w-full h-full">
                                     <Image loader={sanityLoader} src={imageUrl} alt={release.title} fill sizes="(max-width: 768px) 100vw, 400px" className={styles.cardImage} placeholder={blurDataURL ? 'blur' : 'empty'} blurDataURL={blurDataURL} style={{ opacity: isVideoActive ? 0 : 1 }} />
                                 </motion.div>
                             </div>
@@ -525,15 +546,15 @@ const TimelineCardComponent = ({
 
                         <div className={styles.cardBody}>
                             <div className={styles.titleRow}>
-                                <motion.h3 layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-title` : undefined} className={styles.cardTitle} style={{ direction: 'ltr', textAlign: 'left', width: '100%' }}> {release.title} </motion.h3>
+                                <motion.h3 layoutId={!isMobile && safeLayoutIdPrefix ? generateLayoutId(safeLayoutIdPrefix, 'title', release.legacyId) : undefined} className={styles.cardTitle} style={{ direction: 'ltr', textAlign: 'left', width: '100%' }}> {release.title} </motion.h3>
                             </div>
                             <div className={styles.metaGrid}>
                                 <div className={styles.dateBlock}> 
-    {!isTBA && (
-        <div className={styles.dateIconWrapper}><Calendar03Icon width="100%" height="100%" /></div> 
-    )}
-    <span>{formattedDate}</span> 
-</div>
+                                    {!isTBA && (
+                                        <div className={styles.dateIconWrapper}><Calendar03Icon width="100%" height="100%" /></div> 
+                                    )}
+                                    <span>{formattedDate}</span> 
+                                </div>
                                 <div className={styles.platformRow}>
                                     {platformConfig.map(p => {
                                         if (!p || (isHovered && isFlyingTagsEnabled && !isMobile)) return null; 
@@ -553,7 +574,7 @@ const TimelineCardComponent = ({
                                 </div>
                             </div>
                         </div>
-                    </Link>
+                    </KineticLink>
 
                     {renderHoverBridge()}
 
@@ -591,7 +612,6 @@ const TimelineCardComponent = ({
                             <AnimatePresence>
                                 {isHovered && subConfig.map((sub, i) => {
                                      const isLeftAnchored = sub.left !== 'auto' && sub.left !== undefined;
-                                     // Center-origin strategy: Start from 50%, animate to final
                                      return ( 
                                         <motion.div 
                                             key={sub.key} 
@@ -641,25 +661,50 @@ const TimelineCardComponent = ({
                                             onClick={(e) => e.stopPropagation()}
                                         > 
                                             {item.link ? (
-                                                <Link 
-                                                    href={item.link} 
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className={`${pillStyleClass} no-underline`}
-                                                    style={{ gap: '0.4rem', cursor: 'pointer' }}
-                                                    prefetch={false}
-                                                >
-                                                    {item.type === 'clickHint' ? (
-                                                        <>
-                                                            {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
-                                                            {item.label}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
-                                                            {item.label}
-                                                        </>
-                                                    )}
-                                                </Link>
+                                                // Check if it should be Kinetic (it defaults to Kinetic unless specified false in map)
+                                                // Actually flyingItems map uses standard Links for pub/dev to avoid loop
+                                                item.isKinetic === false ? (
+                                                    <a 
+                                                        href={item.link}
+                                                        onClick={(e) => { e.stopPropagation(); }}
+                                                        className={`${pillStyleClass} no-underline`}
+                                                        style={{ gap: '0.4rem', cursor: 'pointer' }}
+                                                    >
+                                                        {item.type === 'clickHint' ? (
+                                                            <>
+                                                                {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
+                                                                {item.label}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
+                                                                {item.label}
+                                                            </>
+                                                        )}
+                                                    </a>
+                                                ) : (
+                                                    <KineticLink 
+                                                        href={item.link} 
+                                                        slug={kineticSlug} // Re-use slug for simplicity or derive if needed
+                                                        type="releases"
+                                                        overrideUrl={overrideUrl}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className={`${pillStyleClass} no-underline`}
+                                                        style={{ gap: '0.4rem', cursor: 'pointer' }}
+                                                    >
+                                                        {item.type === 'clickHint' ? (
+                                                            <>
+                                                                {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
+                                                                {item.label}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}
+                                                                {item.label}
+                                                            </>
+                                                        )}
+                                                    </KineticLink>
+                                                )
                                             ) : (
                                                 <div className={pillStyleClass} style={{ gap: '0.4rem' }}>
                                                     {item.icon && <span style={{display: 'flex'}}>{item.icon}</span>}

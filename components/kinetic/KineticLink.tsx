@@ -12,11 +12,12 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
     layoutId?: string;
     children: React.ReactNode;
     className?: string;
-    imageSrc?: string; // <--- ADDED: Define imageSrc prop
+    imageSrc?: string; 
+    overrideUrl?: string; // <--- NEW: Allows masking the URL
     onClick?: (e: React.MouseEvent) => void;
 }
 
-export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, ...props }: KineticLinkProps) {
+export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, overrideUrl, ...props }: KineticLinkProps) {
     const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -33,7 +34,8 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
             
             // 4. Trigger Instant Overlay
             // Pass the imageSrc to the store so the overlay can use it instantly for the morph target
-            openOverlay(slug, type, layoutId, imageSrc);
+            // Pass overrideUrl to control browser history
+            openOverlay(slug, type, layoutId, imageSrc, overrideUrl);
         } else {
             // Fallback to router navigation if data is missing
         }
@@ -46,7 +48,7 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
             onClick={handleClick} 
             scroll={false} 
             {...props} 
-            prefetch={false}
+            prefetch={false} // <--- CRITICAL: Prevents double-fetching
         >
             {children}
         </Link>

@@ -1,0 +1,21 @@
+/* components/kinetic/KineticOverlayManager.module.css */
+
+.overlayScrollContainer {
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+}
+
+/* Chrome, Edge, Safari */
+.overlayScrollContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+.overlayScrollContainer::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.overlayScrollContainer::-webkit-scrollbar-thumb {
+    background-color: var(--accent);
+    border-radius: 4px;
+}

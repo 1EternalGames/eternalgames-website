@@ -15,6 +15,7 @@ const publishedFilter = "defined(publishedAt) && publishedAt < now()";
 const relatedContentProjection = groq`{ 
     _id, _type, legacyId, title, "slug": slug.current, 
     "mainImage": mainImage{${mainImageFields}}, 
+    "mainImageVertical": mainImageVertical{${mainImageFields}}, 
     score, 
     "authors": authors[]->{${creatorFields}}, 
     "reporters": reporters[]->{${creatorFields}}, 
@@ -36,6 +37,16 @@ const fullDocProjection = groq`
   "category": category->{title, "slug": slug.current}, 
   newsType,
   synopsis,
+  
+  // SPECIFIC FOR RELEASES / GAMES
+  releaseDate, isTBA, platforms, price, 
+  "developer": developer->{title, "slug": slug.current}, 
+  "publisher": publisher->{title, "slug": slug.current}, 
+  "onGamePass": coalesce(onGamePass, false), 
+  "onPSPlus": coalesce(onPSPlus, false),
+  "isPinned": coalesce(isPinned, false),
+  "trailer": trailer,
+
   // Full Content for the reader
   content[]{ 
     ..., 

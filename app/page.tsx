@@ -14,7 +14,8 @@ import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import HomeJsonLd from '@/components/seo/HomeJsonLd'; 
 import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
-import BatchHydrator from '@/components/kinetic/BatchHydrator'; // <--- NEW IMPORT
+import BatchHydrator from '@/components/kinetic/BatchHydrator'; 
+import DirectHydrator from '@/components/kinetic/DirectHydrator'; // <--- NEW IMPORT
 
 export const dynamic = 'force-static';
 
@@ -160,7 +161,6 @@ export default async function HomePage() {
         ...reviews, 
         ...homepageArticlesRaw, 
         ...homepageNewsRaw,
-        // ...releasesRaw // Optional: Releases are heavy and less clicked, skip for now to save bandwidth
     ];
 
     return (
@@ -168,8 +168,11 @@ export default async function HomePage() {
             <HomeJsonLd />
             {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
             
-            {/* The Magic Component */}
+            {/* 1. Heavy Hydration: Fetches full docs (blocks, etc) for reviews/news */}
             <BatchHydrator items={hydrationItems} />
+            
+            {/* 2. Direct Hydration: Injects releases instantly since they don't need extra data */}
+            <DirectHydrator items={releasesRaw} />
 
             <DigitalAtriumHomePage 
                 reviews={reviews}

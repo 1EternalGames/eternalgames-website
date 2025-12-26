@@ -1,17 +1,19 @@
 // components/kinetic/KineticOverlayManager.tsx
 'use client';
 
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useContentStore } from '@/lib/contentStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
+import GameHubClient from '@/components/GameHubClient';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
 import { pageview } from '@/lib/gtm'; 
 import { useUIStore } from '@/lib/uiStore';
 import styles from './KineticOverlayManager.module.css';
+import Footer from '@/components/Footer'; // <--- IMPORT FOOTER
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -23,13 +25,13 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         navigateInternal,
         sourceLayoutId, 
         activeImageSrc,
-        savedScrollPosition 
+        savedScrollPosition,
+        fetchLinkedContent // <--- NEW ACTION
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
     const setOverlayScrollRef = useUIStore((s) => s.setOverlayScrollRef);
     const overlayRef = useRef<HTMLDivElement>(null);
-    
     const lenis = useLenis();
 
     useEffect(() => {
@@ -54,44 +56,45 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         if (isOverlayOpen && activeSlug && activeType) {
             const virtualUrl = `/${activeType}/${activeSlug}`;
             pageview(virtualUrl);
+            
+            // FETCH LINKED CONTENT FOR GAMES
+            if (activeType === 'releases') {
+                fetchLinkedContent(activeSlug);
+            }
         }
-    }, [isOverlayOpen, activeSlug, activeType]);
+    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent]);
 
     // --- SCROLL FREEZE & SWAP LOGIC ---
     useLayoutEffect(() => {
         const html = document.documentElement;
         const body = document.body;
-        const footer = document.querySelector('footer');
+        // NOTE: We do NOT hide the footer anymore globally, we just overlay it.
+        // But we DO need to hide the main page footer to prevent double footers if the overlay isn't fully opaque (it is opaque/blurred).
+        const mainFooter = document.querySelector('body > footer') as HTMLElement; 
 
         if (isOverlayOpen) {
-            // 1. Calculate Scrollbar Width
             const scrollbarWidth = window.innerWidth - html.clientWidth;
 
-            // 2. STOP Scrolling Engine
             if (lenis) lenis.stop();
             
-            // 3. LOCK Body & HTML
             body.style.paddingRight = `${scrollbarWidth}px`; 
             html.style.overflow = 'hidden';
             body.style.overflow = 'hidden';
             
-            if (footer) footer.style.display = 'none';
+            if (mainFooter) mainFooter.style.display = 'none';
 
-            // 4. ACTIVATE OVERLAY SCROLL
             if (overlayRef.current) {
                 setOverlayScrollRef(overlayRef.current);
                 overlayRef.current.scrollTop = 0;
             }
 
         } else {
-            // UNFREEZE
             body.style.paddingRight = '';
             html.style.overflow = '';
             body.style.overflow = '';
             
-            if (footer) footer.style.display = '';
+            if (mainFooter) mainFooter.style.display = '';
 
-            // RESUME LENIS
             if (lenis) lenis.start();
 
             const currentScroll = window.scrollY;
@@ -114,11 +117,15 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
     useEffect(() => {
         if (isOverlayOpen && !activeItem && activeSlug) {
+            // Fallback: If data missing, close overlay (forces router nav if clicked again)
+             // Or trigger a fetch here if we want to support deep linking into overlay (Phase 2)
             closeOverlay();
         }
     }, [isOverlayOpen, activeItem, activeSlug, closeOverlay]);
 
     if (!activeItem) return null;
+
+    const isRelease = activeType === 'releases';
 
     return (
         <AnimatePresence mode="wait">
@@ -134,8 +141,12 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         style={{
                             position: 'fixed',
                             inset: 0,
-                            // Raise above Navbar (1070)
-                            zIndex: 1999, 
+                            // Raise above global Navbar (1070) to hide it, 
+                            // OR keep it below if we want the global navbar. 
+                            // User requested "Navbar... here". Let's assume Global Navbar stays visible.
+                            // Global Navbar is z-index: 1070.
+                            // We put BG at 1060.
+                            zIndex: 1060, 
                             backgroundColor: 'var(--bg-primary)',
                             transform: 'translateZ(0)',
                             pointerEvents: 'auto' 
@@ -152,8 +163,9 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         style={{
                             position: 'fixed', 
                             inset: 0,
-                            // Raise above Background and Navbar
-                            zIndex: 2000, 
+                            // Content must be above BG (1060) but BELOW Global Navbar (1070) 
+                            // so the Global Navbar remains interactive.
+                            zIndex: 1065, 
                             paddingTop: 0, 
                             overflowY: 'auto', 
                             overflowX: 'hidden',
@@ -164,24 +176,45 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                             pointerEvents: 'auto'
                         }}
                     >
-                        {/* RESTORE RTL ALIGNMENT FOR CONTENT */}
-                        <div style={{ direction: 'rtl', minHeight: '100%', width: '100%' }}>
-                            <ContentPageClient 
-                                key={activeSlug} 
-                                item={activeItem} 
-                                type={activeType as any} 
-                                colorDictionary={colorDictionary}
-                                forcedLayoutIdPrefix={sourceLayoutId || undefined}
-                                initialImageSrc={activeImageSrc || undefined}
-                                scrollContainerRef={overlayRef}
-                            >
-                                <div style={{ marginTop: '4rem' }}>
-                                    <CommentSection 
-                                        slug={activeSlug || ''} 
-                                        contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
+                        <div style={{ direction: 'rtl', minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ flexGrow: 1 }}>
+                                {isRelease ? (
+                                    <GameHubClient
+                                        gameTitle={activeItem.title}
+                                        items={activeItem.linkedContent || []} 
+                                        synopsis={activeItem.synopsis}
+                                        releaseTags={activeItem.tags || []}
+                                        mainImage={activeItem.mainImage}
+                                        price={activeItem.price}
+                                        developer={activeItem.developer?.title}
+                                        publisher={activeItem.publisher?.title}
+                                        platforms={activeItem.platforms}
+                                        onGamePass={activeItem.onGamePass}
+                                        onPSPlus={activeItem.onPSPlus}
+                                        forcedLayoutIdPrefix={sourceLayoutId || undefined}
                                     />
-                                </div>
-                            </ContentPageClient>
+                                ) : (
+                                    <ContentPageClient 
+                                        key={activeSlug} 
+                                        item={activeItem} 
+                                        type={activeType as any} 
+                                        colorDictionary={colorDictionary}
+                                        forcedLayoutIdPrefix={sourceLayoutId || undefined}
+                                        initialImageSrc={activeImageSrc || undefined}
+                                        scrollContainerRef={overlayRef}
+                                    >
+                                        <div style={{ marginTop: '4rem' }}>
+                                            <CommentSection 
+                                                slug={activeSlug || ''} 
+                                                contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
+                                            />
+                                        </div>
+                                    </ContentPageClient>
+                                )}
+                            </div>
+                            
+                            {/* Injected Footer for Overlay */}
+                            <Footer />
                         </div>
                     </div>
                 </>
