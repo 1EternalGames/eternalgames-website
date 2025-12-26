@@ -71,6 +71,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
         if (!isMobile && isHeroTransitionEnabled) {
             setPrefix(layoutIdPrefix);
         }
@@ -191,7 +192,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                 layoutId={!isMobile && safeLayoutIdPrefix ? generateLayoutId(safeLayoutIdPrefix, 'container', item.legacyId) : undefined}
                 className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
             >
-                {/* Changed to KineticLink */}
                 <KineticLink 
                     href={linkPath}
                     slug={item.slug}
@@ -236,17 +236,16 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
                             <div className={styles.cardMetadata}>
                                 <div style={{display:'flex', alignItems:'center', gap:'0.8rem'}}>
+                                    {/* FIX: Use Link component for semantic navigation */}
                                     {authorUsername ? (
-                                        <div 
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                window.location.href = `/creators/${authorUsername}`;
-                                            }}
+                                        <Link 
+                                            href={`/creators/${authorUsername}`}
                                             className={`${styles.creatorCapsule} no-underline`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            prefetch={false}
                                         >
                                             {capsuleContent}
-                                        </div>
+                                        </Link>
                                     ) : (
                                         <div className={styles.creatorCapsule}>
                                             {capsuleContent}
@@ -295,13 +294,14 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         onClick={(e) => e.stopPropagation()}
                                      >
                                          {sat.link ? (
-                                             <a 
+                                             <Link 
                                                 href={sat.link} 
                                                 onClick={(e) => { e.stopPropagation(); }}
                                                 className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
+                                                prefetch={false}
                                              >
                                                  {sat.label}
-                                             </a>
+                                             </Link>
                                          ) : (
                                              <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
                                                  {sat.label}
