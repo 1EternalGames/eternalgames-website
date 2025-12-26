@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import GameHubClient from '@/components/GameHubClient';
+import CreatorHubClient from '@/components/CreatorHubClient'; // IMPORT
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
@@ -20,7 +21,6 @@ import ReviewsPageClient from '@/app/reviews/ReviewsPageClient';
 import ArticlesPageClient from '@/app/articles/ArticlesPageClient';
 import NewsPageClient from '@/app/news/NewsPageClient';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
-import { SanityArticle, SanityNews, SanityReview } from '@/types/sanity';
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -28,6 +28,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         activeSlug, 
         activeType, 
         contentMap, 
+        creatorMap, // IMPORT
         pageMap,
         indexSection,
         closeOverlay, 
@@ -35,7 +36,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         sourceLayoutId, 
         activeImageSrc,
         savedScrollPosition,
-        fetchLinkedContent 
+        fetchLinkedContent,
+        fetchCreatorContent // IMPORT
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
@@ -52,7 +54,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
             if (event.state && event.state.overlay === true) {
-                // If it's an index state or content state
                 navigateInternal(event.state.slug || event.state.section, event.state.type);
             } else if (isOverlayOpen) {
                 closeOverlay();
@@ -67,15 +68,22 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             if (activeType === 'index' && indexSection) {
                  pageview(`/${indexSection}`);
             } else if (activeSlug && activeType) {
-                const virtualUrl = `/${activeType}/${activeSlug}`;
-                pageview(virtualUrl);
-                // FIX: Cast activeType to string for comparison or extend types
-                if (activeType === 'releases' || (activeType as string) === 'games') {
-                    fetchLinkedContent(activeSlug);
+                if (activeType === 'creators') {
+                    const creator = creatorMap.get(activeSlug);
+                    if (creator && creator._id) {
+                        fetchCreatorContent(activeSlug, creator._id);
+                    }
+                    pageview(`/creators/${activeSlug}`);
+                } else {
+                    const virtualUrl = `/${activeType}/${activeSlug}`;
+                    pageview(virtualUrl);
+                    if (activeType === 'releases' || (activeType as string) === 'games') {
+                        fetchLinkedContent(activeSlug);
+                    }
                 }
             }
         }
-    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, indexSection]);
+    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, indexSection, creatorMap]);
 
     useLayoutEffect(() => {
         const html = document.documentElement;
@@ -115,23 +123,24 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
     const activeItem = activeSlug ? contentMap.get(activeSlug) : null;
     const activeIndexData = indexSection ? pageMap.get(indexSection) : null;
+    const activeCreator = (activeSlug && activeType === 'creators') ? creatorMap.get(activeSlug) : null;
     
-    // Close if trying to view content/index that doesn't exist in store (fallback to router)
     useEffect(() => {
         if (isOverlayOpen) {
             if (activeType === 'index') {
                 if (!activeIndexData) closeOverlay();
+            } else if (activeType === 'creators') {
+                // If we don't have basic creator data, we can't show overlay
+                if (!activeCreator) closeOverlay();
             } else {
                 if (!activeItem && activeSlug) closeOverlay();
             }
         }
-    }, [isOverlayOpen, activeItem, activeSlug, activeIndexData, activeType, closeOverlay]);
+    }, [isOverlayOpen, activeItem, activeCreator, activeSlug, activeIndexData, activeType, closeOverlay]);
 
     if (!isOverlayOpen) return null;
     
-    // Determine content to render
     let contentToRender = null;
-    // Helper to add padding only for pages that lack a hero header (like releases)
     let extraPaddingTop = '0';
 
     if (activeType === 'index' && activeIndexData) {
@@ -146,13 +155,20 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 contentToRender = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />;
                 break;
             case 'releases':
-                // FIX: Add padding top for Releases page in overlay mode to clear navbar
                 extraPaddingTop = 'calc(var(--nav-height-scrolled) + 4rem)';
                 contentToRender = <ReleasePageClient releases={activeIndexData.releases} />;
                 break;
         }
+    } else if (activeCreator && activeType === 'creators') {
+        contentToRender = <CreatorHubClient
+            creatorName={activeCreator.name}
+            username={activeCreator.username}
+            image={activeCreator.image}
+            bio={activeCreator.bio}
+            items={activeCreator.linkedContent || []}
+            scrollContainerRef={overlayRef}
+        />;
     } else if (activeItem) {
-         // FIX: Cast activeType to string for comparison or extend types
          if (activeType === 'releases' || (activeType as string) === 'games') {
             contentToRender = <GameHubClient
                 gameTitle={activeItem.title}

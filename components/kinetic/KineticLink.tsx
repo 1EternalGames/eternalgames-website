@@ -8,8 +8,7 @@ import { useContentStore } from '@/lib/contentStore';
 interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
     slug: string;
-    // ADDED: 'games' type support
-    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games';
+    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators';
     layoutId?: string;
     children: React.ReactNode;
     className?: string;
@@ -19,18 +18,24 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
 }
 
 export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, overrideUrl, ...props }: KineticLinkProps) {
-    const { contentMap, openOverlay } = useContentStore();
+    const { contentMap, creatorMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (onClick) onClick(e);
 
-        // Check if we have data for this slug
-        const hasData = contentMap.has(slug);
+        let hasData = false;
+
+        // Force overlay open for creators to utilize pre-fetched data
+        if (type === 'creators') {
+            hasData = true; // Always attempt overlay for creators
+        } else {
+            hasData = contentMap.has(slug);
+        }
 
         if (hasData) {
             e.preventDefault();
             e.stopPropagation(); 
-            // @ts-ignore - Dynamic type checking allows string passing
+            // @ts-ignore
             openOverlay(slug, type, layoutId, imageSrc, overrideUrl);
         }
     };

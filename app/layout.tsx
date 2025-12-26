@@ -20,8 +20,9 @@ import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
-import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; // <--- NEW
-import { getCachedColorDictionary } from '@/lib/sanity.fetch'; // <--- NEW
+import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
+import { getCachedColorDictionary } from '@/lib/sanity.fetch';
+import { getAllStaffAction } from '@/app/actions/homepageActions'; // IMPORT
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -103,8 +104,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  // Fetch color dictionary once on the server layout to pass to the overlay
-  const dictionary = await getCachedColorDictionary();
+  // Fetch color dictionary and creators on the server layout
+  const [dictionary, creators] = await Promise.all([
+      getCachedColorDictionary(),
+      getAllStaffAction()
+  ]);
+  
   const colors = dictionary?.autoColors || [];
 
   return (
@@ -124,7 +129,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextAuthProvider>
-          <UserStoreHydration />
+          {/* Pass fetched creators to hydration */}
+          <UserStoreHydration initialCreators={creators} />
+          
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />
           
@@ -139,7 +146,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <CookieConsent />
                 <Lightbox />
                 
-                {/* The Kinetic Overlay Manager */}
                 <KineticOverlayManager colorDictionary={colors} />
 
                 <Navbar />
