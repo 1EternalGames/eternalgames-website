@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import GameHubClient from '@/components/GameHubClient';
-import CreatorHubClient from '@/components/CreatorHubClient'; // IMPORT
+import CreatorHubClient from '@/components/CreatorHubClient';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
@@ -15,12 +15,11 @@ import { pageview } from '@/lib/gtm';
 import { useUIStore } from '@/lib/uiStore';
 import styles from './KineticOverlayManager.module.css';
 import Footer from '@/components/Footer'; 
-
-// Import Page Clients
 import ReviewsPageClient from '@/app/reviews/ReviewsPageClient';
 import ArticlesPageClient from '@/app/articles/ArticlesPageClient';
 import NewsPageClient from '@/app/news/NewsPageClient';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
+import HubPageClient from '@/components/HubPageClient'; // IMPORTED for Tag Page
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -28,7 +27,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         activeSlug, 
         activeType, 
         contentMap, 
-        creatorMap, // IMPORT
+        creatorMap, 
+        tagMap, // IMPORT
         pageMap,
         indexSection,
         closeOverlay, 
@@ -37,7 +37,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         activeImageSrc,
         savedScrollPosition,
         fetchLinkedContent,
-        fetchCreatorContent // IMPORT
+        fetchCreatorContent,
+        fetchTagContent // IMPORT
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
@@ -74,6 +75,10 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         fetchCreatorContent(activeSlug, creator._id);
                     }
                     pageview(`/creators/${activeSlug}`);
+                } else if (activeType === 'tags') {
+                    // NEW: Tag Fetch
+                    fetchTagContent(activeSlug);
+                    pageview(`/tags/${activeSlug}`);
                 } else {
                     const virtualUrl = `/${activeType}/${activeSlug}`;
                     pageview(virtualUrl);
@@ -83,7 +88,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 }
             }
         }
-    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, indexSection, creatorMap]);
+    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, indexSection, creatorMap, tagMap]);
 
     useLayoutEffect(() => {
         const html = document.documentElement;
@@ -124,19 +129,22 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     const activeItem = activeSlug ? contentMap.get(activeSlug) : null;
     const activeIndexData = indexSection ? pageMap.get(indexSection) : null;
     const activeCreator = (activeSlug && activeType === 'creators') ? creatorMap.get(activeSlug) : null;
+    const activeTag = (activeSlug && activeType === 'tags') ? tagMap.get(activeSlug) : null;
     
     useEffect(() => {
         if (isOverlayOpen) {
             if (activeType === 'index') {
                 if (!activeIndexData) closeOverlay();
             } else if (activeType === 'creators') {
-                // If we don't have basic creator data, we can't show overlay
                 if (!activeCreator) closeOverlay();
+            } else if (activeType === 'tags') {
+                // Allow opening if tag data is missing (it fetches), but ideally hydration catches it.
+                // If it fails to load after a timeout, we might close. For now, rely on fetch.
             } else {
                 if (!activeItem && activeSlug) closeOverlay();
             }
         }
-    }, [isOverlayOpen, activeItem, activeCreator, activeSlug, activeIndexData, activeType, closeOverlay]);
+    }, [isOverlayOpen, activeItem, activeCreator, activeTag, activeSlug, activeIndexData, activeType, closeOverlay]);
 
     if (!isOverlayOpen) return null;
     
@@ -145,106 +153,35 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
     if (activeType === 'index' && activeIndexData) {
         switch(indexSection) {
-            case 'reviews':
-                contentToRender = <ReviewsPageClient heroReview={activeIndexData.hero} initialGridReviews={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />;
-                break;
-            case 'articles':
-                contentToRender = <ArticlesPageClient featuredArticles={activeIndexData.featured} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allGameTags={activeIndexData.allGameTags} allArticleTypeTags={activeIndexData.allArticleTypeTags} />;
-                break;
-            case 'news':
-                contentToRender = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />;
-                break;
-            case 'releases':
-                extraPaddingTop = 'calc(var(--nav-height-scrolled) + 4rem)';
-                contentToRender = <ReleasePageClient releases={activeIndexData.releases} />;
-                break;
+            case 'reviews': contentToRender = <ReviewsPageClient heroReview={activeIndexData.hero} initialGridReviews={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
+            case 'articles': contentToRender = <ArticlesPageClient featuredArticles={activeIndexData.featured} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allGameTags={activeIndexData.allGameTags} allArticleTypeTags={activeIndexData.allArticleTypeTags} />; break;
+            case 'news': contentToRender = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
+            case 'releases': extraPaddingTop = 'calc(var(--nav-height-scrolled) + 4rem)'; contentToRender = <ReleasePageClient releases={activeIndexData.releases} />; break;
         }
     } else if (activeCreator && activeType === 'creators') {
-        contentToRender = <CreatorHubClient
-            creatorName={activeCreator.name}
-            username={activeCreator.username}
-            image={activeCreator.image}
-            bio={activeCreator.bio}
-            items={activeCreator.linkedContent || []}
-            scrollContainerRef={overlayRef}
-        />;
+        contentToRender = <CreatorHubClient creatorName={activeCreator.name} username={activeCreator.username} image={activeCreator.image} bio={activeCreator.bio} items={activeCreator.linkedContent || []} scrollContainerRef={overlayRef} />;
+    } else if (activeTag && activeType === 'tags') {
+        // RENDER TAG PAGE
+        contentToRender = <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />;
     } else if (activeItem) {
          if (activeType === 'releases' || (activeType as string) === 'games') {
-            contentToRender = <GameHubClient
-                gameTitle={activeItem.title}
-                items={activeItem.linkedContent || []} 
-                synopsis={activeItem.synopsis}
-                releaseTags={activeItem.tags || []}
-                mainImage={activeItem.mainImage}
-                price={activeItem.price}
-                developer={activeItem.developer?.title}
-                publisher={activeItem.publisher?.title}
-                platforms={activeItem.platforms}
-                onGamePass={activeItem.onGamePass}
-                onPSPlus={activeItem.onPSPlus}
-                forcedLayoutIdPrefix={sourceLayoutId || undefined}
-                scrollContainerRef={overlayRef}
-            />;
+            contentToRender = <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />;
          } else {
-             contentToRender = <ContentPageClient 
-                key={activeSlug} 
-                item={activeItem} 
-                type={activeType as any} 
-                colorDictionary={colorDictionary}
-                forcedLayoutIdPrefix={sourceLayoutId || undefined}
-                initialImageSrc={activeImageSrc || undefined}
-                scrollContainerRef={overlayRef}
-            >
-                <div style={{ marginTop: '4rem' }}>
-                    <CommentSection 
-                        slug={activeSlug || ''} 
-                        contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} 
-                    />
-                </div>
-            </ContentPageClient>;
+             contentToRender = <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> </ContentPageClient>;
          }
+    } else if (activeType === 'tags') {
+         // Fallback loading for tags
+         contentToRender = <div className="container" style={{height:'100vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>;
     }
 
     if (!contentToRender) return null;
 
     return (
         <AnimatePresence mode="wait">
-            <motion.div
-                key="overlay-bg"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }} 
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 1060, 
-                    backgroundColor: 'var(--bg-primary)',
-                    transform: 'translateZ(0)',
-                    pointerEvents: 'auto' 
-                }}
-            >
+            <motion.div key="overlay-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} style={{ position: 'fixed', inset: 0, zIndex: 1060, backgroundColor: 'var(--bg-primary)', transform: 'translateZ(0)', pointerEvents: 'auto' }}>
                 <SpaceBackground />
             </motion.div>
-
-            <div
-                key="kinetic-content-wrapper"
-                ref={overlayRef}
-                className={styles.overlayScrollContainer}
-                style={{
-                    position: 'fixed', 
-                    inset: 0,
-                    zIndex: 1065, 
-                    paddingTop: 0, 
-                    overflowY: 'auto', 
-                    overflowX: 'hidden',
-                    isolation: 'isolate',
-                    WebkitOverflowScrolling: 'touch',
-                    overscrollBehavior: 'contain',
-                    direction: 'ltr', 
-                    pointerEvents: 'auto'
-                }}
-            >
+            <div key="kinetic-content-wrapper" ref={overlayRef} className={styles.overlayScrollContainer} style={{ position: 'fixed', inset: 0, zIndex: 1065, paddingTop: 0, overflowY: 'auto', overflowX: 'hidden', isolation: 'isolate', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', direction: 'ltr', pointerEvents: 'auto' }}>
                 <div style={{ direction: 'rtl', minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', paddingTop: extraPaddingTop }}>
                     <div style={{ flexGrow: 1 }}>
                         {contentToRender}

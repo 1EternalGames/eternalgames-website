@@ -1,17 +1,18 @@
 // lib/contentStore.ts
 import { create } from 'zustand';
 import { client } from '@/lib/sanity.client';
-import { allContentByGameListQuery, allContentByCreatorListQuery } from '@/lib/sanity.queries'; 
+import { allContentByGameListQuery, allContentByCreatorListQuery, allContentByTagListQuery } from '@/lib/sanity.queries'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 
 export interface KineticContentState {
   contentMap: Map<string, any>;
   pageMap: Map<string, any>;
   creatorMap: Map<string, any>;
+  tagMap: Map<string, any>; // ADDED
   
   isOverlayOpen: boolean;
   activeSlug: string | null;
-  activeType: 'reviews' | 'articles' | 'news' | 'releases' | 'index' | 'games' | 'creators' | null;
+  activeType: 'reviews' | 'articles' | 'news' | 'releases' | 'index' | 'games' | 'creators' | 'tags' | null; // ADDED 'tags'
   indexSection: 'reviews' | 'articles' | 'news' | 'releases' | null;
   
   sourceLayoutId: string | null;
@@ -23,20 +24,23 @@ export interface KineticContentState {
   hydrateContent: (items: any[]) => void;
   hydrateIndex: (section: string, data: any) => void;
   hydrateCreators: (creators: any[]) => void;
+  hydrateTags: (tags: any[]) => void; // ADDED
   
-  openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators', layoutId?: string, imageSrc?: string, overrideUrl?: string) => void;
+  openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags', layoutId?: string, imageSrc?: string, overrideUrl?: string) => void; // UPDATED
   openIndexOverlay: (section: 'reviews' | 'articles' | 'news' | 'releases') => void;
   
   navigateInternal: (slug: string, type: string) => void;
   closeOverlay: () => void;
   fetchLinkedContent: (slug: string) => Promise<void>;
   fetchCreatorContent: (slug: string, creatorId: string) => Promise<void>;
+  fetchTagContent: (slug: string) => Promise<void>; // ADDED
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
   contentMap: new Map(),
   pageMap: new Map(),
   creatorMap: new Map(),
+  tagMap: new Map(), // ADDED
   
   isOverlayOpen: false,
   activeSlug: null,
@@ -71,14 +75,12 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   hydrateCreators: (creators) => {
       const newMap = new Map(get().creatorMap);
       creators.forEach(c => {
-          // Smart Merge: Don't overwrite if we already have detailed/loaded content
           const primaryKey = c.username || c._id;
           const existing = newMap.get(primaryKey);
           
           let merged = c;
           if (existing) {
-              merged = { ...c, ...existing }; // Keep existing fields (like linkedContent) priority if they exist
-              // Specifically ensure content status is preserved
+              merged = { ...c, ...existing };
               if (existing.contentLoaded) {
                   merged.contentLoaded = true;
                   merged.linkedContent = existing.linkedContent;
@@ -92,12 +94,31 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       set({ creatorMap: newMap });
   },
 
+  hydrateTags: (tags) => { // ADDED
+      const newMap = new Map(get().tagMap);
+      tags.forEach(t => {
+          if (t.slug) {
+              const existing = newMap.get(t.slug);
+              // Merge if exists to preserve contentLoaded status if relevant
+              const merged = existing ? { ...t, ...existing } : { ...t, contentLoaded: true }; 
+              newMap.set(t.slug, merged);
+          }
+      });
+      set({ tagMap: newMap });
+  },
+
   openOverlay: (slug, type, layoutId, imageSrc, overrideUrl) => {
     const currentState = get();
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
-    const targetUrl = overrideUrl || (type === 'creators' ? `/creators/${slug}` : `/${type}/${slug}`);
+    // Determine target URL based on type
+    let targetUrl = overrideUrl;
+    if (!targetUrl) {
+        if (type === 'creators') targetUrl = `/creators/${slug}`;
+        else if (type === 'tags') targetUrl = `/tags/${slug}`;
+        else targetUrl = `/${type}/${slug}`;
+    }
     
     if (typeof window !== 'undefined') {
         window.history.pushState({ overlay: true, slug, type }, '', targetUrl);
@@ -168,13 +189,12 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { contentMap } = get();
       const item = contentMap.get(slug);
       
-      // OPTIMIZATION: Check contentLoaded flag instead of array length
       if (item && item.contentLoaded) return;
 
       try {
           const rawLinked = await client.fetch(allContentByGameListQuery, { slug });
-          // Note: Missing enrichment here, but sufficient for functionality
-          const updatedItem = { ...item, linkedContent: rawLinked, contentLoaded: true };
+          const enrichedLinked = await enrichContentList(rawLinked);
+          const updatedItem = { ...item, linkedContent: enrichedLinked, contentLoaded: true };
           const newMap = new Map(contentMap);
           newMap.set(slug, updatedItem);
           set({ contentMap: newMap });
@@ -187,18 +207,15 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { creatorMap } = get();
       const creator = creatorMap.get(slug);
       
-      // OPTIMIZATION: Check contentLoaded flag instead of array length
-      // This prevents infinite loops for creators with 0 items.
       if (creator && creator.contentLoaded) return;
 
       try {
-           // Fetch content via Sanity Client
            const rawContent = await client.fetch(allContentByCreatorListQuery, { creatorIds: [creatorId] });
+           const enrichedContent = await enrichContentList(rawContent);
            
-           const updatedCreator = { ...creator, linkedContent: rawContent, contentLoaded: true };
+           const updatedCreator = { ...creator, linkedContent: enrichedContent, contentLoaded: true };
            const newMap = new Map(creatorMap);
            
-           // Update all keys for this creator to maintain consistency
            if (updatedCreator.username) newMap.set(updatedCreator.username, updatedCreator);
            if (updatedCreator._id) newMap.set(updatedCreator._id, updatedCreator);
            if (updatedCreator.prismaUserId) newMap.set(updatedCreator.prismaUserId, updatedCreator);
@@ -206,6 +223,26 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
            set({ creatorMap: newMap });
       } catch (e) {
           console.error("Failed to fetch creator content", e);
+      }
+  },
+
+  fetchTagContent: async (slug: string) => { // ADDED
+      const { tagMap } = get();
+      const tag = tagMap.get(slug);
+
+      if (tag && tag.contentLoaded) return;
+
+      try {
+          // This query fetches items where tags[]->slug.current contains $slug OR category->slug.current == $slug
+          const rawContent = await client.fetch(allContentByTagListQuery, { slug });
+          const enrichedContent = await enrichContentList(rawContent);
+
+          const updatedTag = { ...tag, items: enrichedContent, contentLoaded: true };
+          const newMap = new Map(tagMap);
+          newMap.set(slug, updatedTag);
+          set({ tagMap: newMap });
+      } catch (e) {
+          console.error("Failed to fetch tag content", e);
       }
   }
 }));

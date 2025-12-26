@@ -11,6 +11,16 @@ const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->met
 const creatorFields = groq`_id, name, prismaUserId, image, bio`;
 const tagFields = groq`_id, title, "slug": slug.current`;
 const publishedFilter = "defined(publishedAt) && publishedAt < now()";
+const cardListProjection = groq`
+_id, _type, legacyId, title, "slug": slug.current, 
+"mainImageRef": mainImage.asset, 
+"mainImageVerticalRef": mainImageVertical.asset,
+score,
+"authors": authors[]->{${creatorFields}},
+"reporters": reporters[]->{${creatorFields}},
+"designers": designers[]->{${creatorFields}},
+"publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}, newsType
+`;
 
 const relatedContentProjection = groq`{ 
     _id, _type, legacyId, title, "slug": slug.current, 
@@ -110,4 +120,29 @@ export async function batchFetchFullContentAction(ids: string[]) {
     console.error("Batch fetch failed", error);
     return [];
   }
+}
+
+// NEW: Batch fetch for Tags (Hub Data)
+export async function batchFetchTagsAction(slugs: string[]) {
+    if (!slugs || slugs.length === 0) return [];
+
+    try {
+        const query = groq`*[_type == "tag" && slug.current in $slugs] {
+            _id, title, "slug": slug.current,
+            "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && (references(^._id) || category._ref == ^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
+        }`;
+        
+        const rawTags = await client.fetch(query, { slugs });
+        
+        // Enrich items inside each tag
+        const enrichedTags = await Promise.all(rawTags.map(async (tag: any) => {
+            const items = await enrichContentList(tag.items || []);
+            return { ...tag, items };
+        }));
+
+        return enrichedTags;
+    } catch (error) {
+        console.error("Batch tag fetch failed", error);
+        return [];
+    }
 }

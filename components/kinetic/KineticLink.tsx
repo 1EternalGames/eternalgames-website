@@ -8,7 +8,7 @@ import { useContentStore } from '@/lib/contentStore';
 interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
     slug: string;
-    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators';
+    type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags'; // UPDATED
     layoutId?: string;
     children: React.ReactNode;
     className?: string;
@@ -18,16 +18,17 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
 }
 
 export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, overrideUrl, ...props }: KineticLinkProps) {
-    const { contentMap, creatorMap, openOverlay } = useContentStore();
+    const { contentMap, creatorMap, tagMap, openOverlay } = useContentStore(); // UPDATED
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (onClick) onClick(e);
 
         let hasData = false;
 
-        // Force overlay open for creators to utilize pre-fetched data
         if (type === 'creators') {
-            hasData = true; // Always attempt overlay for creators
+            hasData = true; 
+        } else if (type === 'tags') {
+            hasData = true; // Always attempt overlay for tags, fetch happens in overlay if missing
         } else {
             hasData = contentMap.has(slug);
         }
