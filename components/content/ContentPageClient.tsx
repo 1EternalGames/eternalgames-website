@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useLayoutEffect, RefObject } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect, RefObject, startTransition } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -44,10 +44,11 @@ type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
 
+// FIX: Explicitly cast 'easeOut' as const to satisfy Framer Motion types
 const bodyFadeVariants = { 
-    hidden: { opacity: 1, y: 0 }, 
-    visible: { opacity: 1, y: 0, transition: { duration: 0 } },
-    exit: { opacity: 0, transition: { duration: 0 } } 
+    hidden: { opacity: 0, y: 20 }, 
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+    exit: { opacity: 0, transition: { duration: 0.2 } } 
 };
 
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
@@ -85,11 +86,27 @@ export default function ContentPageClient({
     // NEW: Track if hero is visible to enable/disable layout transition
     const [isHeroVisible, setIsHeroVisible] = useState(true);
 
+    // NEW: Deferred Rendering State
+    const [isContentReady, setIsContentReady] = useState(false);
+
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
     const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
     
+    // --- DEFERRED RENDERING EFFECT ---
+    // This allows the initial frame (with Hero + Title) to mount instantly,
+    // triggering the layout transition immediately without blocking the main thread 
+    // with the heavy body content rendering.
+    useEffect(() => {
+        const t = requestAnimationFrame(() => {
+            startTransition(() => {
+                setIsContentReady(true);
+            });
+        });
+        return () => cancelAnimationFrame(t);
+    }, []);
+
     // --- SCROLL LISTENER FOR TRANSITION CONTROL ---
     useEffect(() => {
         const container = scrollContainerRef?.current || window;
@@ -179,7 +196,13 @@ export default function ContentPageClient({
         }
     }, [scrollContainerRef]);
 
-    useEffect(() => { const timeout = setTimeout(() => setIsLayoutStable(true), 1500); return () => clearTimeout(timeout); }, [item]);
+    // Only stabilize layout and measure AFTER content is ready
+    useEffect(() => { 
+        if (!isContentReady) return;
+        const timeout = setTimeout(() => setIsLayoutStable(true), 1500); 
+        return () => clearTimeout(timeout); 
+    }, [item, isContentReady]);
+
     useEffect(() => { if (isLayoutStable) { requestAnimationFrame(() => { measureHeadings(); }); } }, [isLayoutStable, measureHeadings]); 
 
     if (!item) return null;
@@ -290,80 +313,87 @@ export default function ContentPageClient({
                                 </motion.h1>
                             </div>
                             
-                            <motion.div
-                                variants={bodyFadeVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                            >
-                                <div className={styles.metaContainer}>
-                                    <div className={styles.metaBlockLeft}>
-                                        {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
-                                        <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
-                                    </div>
-                                    <div className={styles.metaBlockRight}>
-                                        <div className={styles.creditsRow}>
-                                            <CreatorCredit label="بقلم" creators={primaryCreators} />
-                                            {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
+                            {/* DEFERRED CONTENT RENDER */}
+                            {isContentReady && (
+                                <motion.div
+                                    variants={bodyFadeVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                >
+                                    <div className={styles.metaContainer}>
+                                        <div className={styles.metaBlockLeft}>
+                                            {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
+                                            <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                         </div>
-                                        
-                                        <div className={styles.dateContainer}>
-                                             {item.readingTime && ( 
-                                                <span className={styles.readTimeMinimal} title="وقت القراءة المقدر">
-                                                    <span className={styles.timeIcon}><TimeIcon /></span>
-                                                    وقت القراءة: {formatArabicDuration(item.readingTime)}
-                                                </span>
-                                             )}
+                                        <div className={styles.metaBlockRight}>
+                                            <div className={styles.creditsRow}>
+                                                <CreatorCredit label="بقلم" creators={primaryCreators} />
+                                                {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
+                                            </div>
+                                            
+                                            <div className={styles.dateContainer}>
+                                                {item.readingTime && ( 
+                                                    <span className={styles.readTimeMinimal} title="وقت القراءة المقدر">
+                                                        <span className={styles.timeIcon}><TimeIcon /></span>
+                                                        وقت القراءة: {formatArabicDuration(item.readingTime)}
+                                                    </span>
+                                                )}
 
-                                             <div className={styles.metaRowItem}>
-                                                 <Calendar03Icon className={styles.metadataIcon} />
-                                                 <p className={styles.dateText}>{formattedDate}</p>
-                                             </div>
+                                                <div className={styles.metaRowItem}>
+                                                    <Calendar03Icon className={styles.metadataIcon} />
+                                                    <p className={styles.dateText}>{formattedDate}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <TableOfContents 
-                                    headings={tocItems} 
-                                    scrollContainerRef={scrollContainerRef} 
-                                />
+                                    
+                                    <TableOfContents 
+                                        headings={tocItems} 
+                                        scrollContainerRef={scrollContainerRef} 
+                                    />
 
-                                <div ref={articleBodyRef} className="article-body">
-                                    <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
-                                    {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
-                                </div>
-                                <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                                    <TagLinks tags={safeTags.map((t: any) => t.title)} />
-                                </div>
-                            </motion.div>
+                                    <div ref={articleBodyRef} className="article-body">
+                                        <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
+                                        {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
+                                    </div>
+                                    <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                                        <TagLinks tags={safeTags.map((t: any) => t.title)} />
+                                    </div>
+                                </motion.div>
+                            )}
                         </main>
 
                         <aside className={styles.sidebar}>
-                            <motion.div
-                                variants={bodyFadeVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                            >
-                                <JoinVanguardCard /> 
-                                <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
-                                    <motion.div className={styles.relatedGrid} variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" exit="hidden">
-                                        {adaptedRelatedContent.map(related => (
-                                            <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-                                                <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
-                                            </motion.div>
-                                        ))}
-                                    </motion.div>
-                                </ContentBlock>
-                            </motion.div>
+                            {isContentReady && (
+                                <motion.div
+                                    variants={bodyFadeVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                >
+                                    <JoinVanguardCard /> 
+                                    <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
+                                        <motion.div className={styles.relatedGrid} variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" exit="hidden">
+                                            {adaptedRelatedContent.map(related => (
+                                                <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                                    <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
+                                                </motion.div>
+                                            ))}
+                                        </motion.div>
+                                    </ContentBlock>
+                                </motion.div>
+                            )}
                         </aside>
                     </div>
                 </div>
             </motion.div>
             
-            <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
-                <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
-            </motion.div>
+            {isContentReady && (
+                <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
+                    <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
+                </motion.div>
+            )}
         </>
     );
 }

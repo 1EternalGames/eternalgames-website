@@ -1,7 +1,7 @@
 // app/articles/ArticlesPageClient.tsx
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import HorizontalShowcase from '@/components/HorizontalShowcase';
@@ -11,7 +11,6 @@ import Image from 'next/image';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from '@/components/HorizontalShowcase.module.css';
-import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ArticleIcon } from '@/components/icons';
@@ -31,7 +30,6 @@ const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) =>
   
 const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps[], onActiveIndexChange: (index: number) => void }) => {
     const [[page, direction], setPage] = useState([0, 0]);
-    // Removed unused router/store hooks since ArticleCard handles navigation internally
     
     const paginate = (newDirection: number) => {
         const newIndex = (page + newDirection + articles.length) % articles.length;
@@ -42,7 +40,6 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
     const activeArticle = articles[page];
     const layoutIdPrefix = "articles-showcase";
 
-    // Standard slide variants
     const variants = {
         enter: (direction: number) => ({ opacity: 0, x: direction > 0 ? 50 : -50, scale: 0.9 }),
         center: { opacity: 1, x: 0, scale: 1 },
@@ -63,17 +60,14 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
                     transition={{ duration: 0.4, ease: 'easeOut' }}
                     style={{ height: '100%', width: '100%' }}
                 >
-                    {/* THE FIX: Use ArticleCard directly to get all visual features (3D, Tags, Credits, Scanlines) */}
                     <ArticleCard 
                         article={activeArticle}
                         layoutIdPrefix={layoutIdPrefix}
                         isPriority={true}
-                        disableLivingEffect={false} // Ensure it's "alive" on mobile
+                        disableLivingEffect={false} 
                     />
                 </motion.div>
             </AnimatePresence>
-            
-            {/* Navigation Arrows */}
             <button className={`${styles.showcaseArrow} ${styles.left}`} onClick={() => paginate(-1)}><ArrowIcon direction="left" /></button>
             <button className={`${styles.showcaseArrow} ${styles.right}`} onClick={() => paginate(1)}><ArrowIcon direction="right" /></button>
         </div>
@@ -91,6 +85,16 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // --- OPTIMIZATION: Deferred Rendering ---
+    const [isGridReady, setIsGridReady] = useState(false);
+    useEffect(() => {
+        const t = requestAnimationFrame(() => {
+            startTransition(() => setIsGridReady(true));
+        });
+        return () => cancelAnimationFrame(t);
+    }, []);
+    // ----------------------------------------
     
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
     
@@ -120,7 +124,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     }, [nextOffset, hasActiveFilters]);
 
     useEffect(() => {
-        if (isInView && canLoadMore && !isLoading) {
+        if (isInView && canLoadMore && !isLoading && isGridReady) {
             const loadMore = async () => {
                 setIsLoading(true);
                 const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: sortOrder });
@@ -133,7 +137,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
             };
             loadMore();
         }
-    }, [isInView, canLoadMore, isLoading, nextOffset, sortOrder]);
+    }, [isInView, canLoadMore, isLoading, nextOffset, sortOrder, isGridReady]);
 
     const handleGameTagToggle = (tag: SanityTag) => { setSelectedGameTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAllFilters = () => { setSelectedGame(null); setSelectedGameTags([]); setSelectedArticleType(null); setSearchTerm(''); setSortOrder('latest'); };
@@ -143,7 +147,6 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
 
     return (
         <React.Fragment>
-            {/* AnimatedGridBackground removed */}
             <div className={styles.articlesPageContainer}>
                 <AnimatePresence>
                     {activeBackgroundUrl && (
@@ -162,36 +165,43 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                 <div className="container" style={{ paddingTop: '4rem', paddingBottom: '6rem', minHeight: '80vh' }}>
                     <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>أحدث المقالات</h1>
                     <div className={styles.showcaseSection}>{isMobile ? (<MobileShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />) : (<HorizontalShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />)}</div>
-                    <div className={styles.gridSection}>
-                        <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
-                        
-                        <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
-                            <motion.div 
-                                layout 
-                                className="content-grid gpu-cull" // Restored
-                            >
-                                <AnimatePresence>
-                                    {gridArticles.map((article, index) => ( <ArticleCard key={article.id} article={article} layoutIdPrefix="articles-grid" isPriority={index < 3} /> ))}
-                                </AnimatePresence>
-                            </motion.div>
-
-                            <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
-
-                            <AnimatePresence>
-                                {isLoading && ( <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <div className="spinner" /> </motion.div> )}
-                            </AnimatePresence>
+                    
+                    {isGridReady ? (
+                        <div className={styles.gridSection}>
+                            <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
                             
-                            <AnimatePresence>
-                                {(!isLoading && gridArticles.length > 0 && (nextOffset === null || hasActiveFilters)) && (
-                                    <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                        {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
-                                    </motion.p>
-                                )}
-                            </AnimatePresence>
+                            <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
+                                <motion.div 
+                                    layout 
+                                    className="content-grid gpu-cull" 
+                                >
+                                    <AnimatePresence>
+                                        {gridArticles.map((article, index) => ( <ArticleCard key={article.id} article={article} layoutIdPrefix="articles-grid" isPriority={index < 3} /> ))}
+                                    </AnimatePresence>
+                                </motion.div>
 
-                            {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالاتٍ توافقُ مُرادك. </motion.p> )}
-                        </ContentBlock>
-                    </div>
+                                <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
+
+                                <AnimatePresence>
+                                    {isLoading && ( <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <div className="spinner" /> </motion.div> )}
+                                </AnimatePresence>
+                                
+                                <AnimatePresence>
+                                    {(!isLoading && gridArticles.length > 0 && (nextOffset === null || hasActiveFilters)) && (
+                                        <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                            {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
+                                        </motion.p>
+                                    )}
+                                </AnimatePresence>
+
+                                {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالاتٍ توافقُ مُرادك. </motion.p> )}
+                            </ContentBlock>
+                        </div>
+                    ) : (
+                         <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div className="spinner" />
+                        </div>
+                    )}
                 </div>
             </div>
         </React.Fragment>

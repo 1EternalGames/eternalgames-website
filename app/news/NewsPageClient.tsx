@@ -1,7 +1,7 @@
 // components/news/NewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, startTransition } from 'react';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import NewsHero from '@/components/news/NewsHero';
@@ -36,6 +36,16 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
+    // --- OPTIMIZATION: Deferred Rendering ---
+    const [isGridReady, setIsGridReady] = useState(false);
+    useEffect(() => {
+        const t = requestAnimationFrame(() => {
+            startTransition(() => setIsGridReady(true));
+        });
+        return () => cancelAnimationFrame(t);
+    }, []);
+    // ----------------------------------------
+    
     const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +79,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     }, [nextOffset, hasActiveFilters]);
 
     useEffect(() => {
-        if (isInView && canLoadMore && !isLoading) {
+        if (isInView && canLoadMore && !isLoading && isGridReady) {
             const loadMore = async () => {
                 setIsLoading(true);
                 const params = new URLSearchParams({ offset: String(nextOffset), limit: '50', sort: activeSort });
@@ -85,7 +95,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             };
             loadMore();
         }
-    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort]);
+    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort, isGridReady]);
 
     const handleTagToggle = (tag: SanityTag) => {
         setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]);
@@ -100,50 +110,55 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     return (
         <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
-            <div className="container">
-                <NewsFilters 
-                    activeSort={activeSort}
-                    onSortChange={setActiveSort}
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    allGames={allGames}
-                    selectedGame={selectedGame}
-                    onGameSelect={setSelectedGame}
-                    allTags={allTags}
-                    selectedTags={selectedTags}
-                    onTagToggle={handleTagToggle}
-                    onClearAll={handleClearAll}
-                />
-                <ContentBlock title="كل الأخبار" Icon={NewsIcon}>
-                    <NewsGrid news={newsItems} />
+            
+            {isGridReady ? (
+                <div className="container">
+                    <NewsFilters 
+                        activeSort={activeSort}
+                        onSortChange={setActiveSort}
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        allGames={allGames}
+                        selectedGame={selectedGame}
+                        onGameSelect={setSelectedGame}
+                        allTags={allTags}
+                        selectedTags={selectedTags}
+                        onTagToggle={handleTagToggle}
+                        onClearAll={handleClearAll}
+                    />
+                    <ContentBlock title="كل الأخبار" Icon={NewsIcon}>
+                        <NewsGrid news={newsItems} />
 
-                    <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
+                        <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
 
-                    <AnimatePresence>
-                        {isLoading && (
-                            <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                <div className="spinner" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    
-                    <AnimatePresence>
-                        {(!isLoading && newsItems.length > 0 && (nextOffset === null || hasActiveFilters)) && (
-                            <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
+                        <AnimatePresence>
+                            {isLoading && (
+                                <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    <div className="spinner" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        
+                        <AnimatePresence>
+                            {(!isLoading && newsItems.length > 0 && (nextOffset === null || hasActiveFilters)) && (
+                                <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
+                                </motion.p>
+                            )}
+                        </AnimatePresence>
+
+                        {newsItems.length === 0 && !isLoading && (
+                            <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                لا أنباءَ توافقُ ما اخترت.
                             </motion.p>
                         )}
-                    </AnimatePresence>
-
-                    {newsItems.length === 0 && !isLoading && (
-                        <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            لا أنباءَ توافقُ ما اخترت.
-                        </motion.p>
-                    )}
-                </ContentBlock>
-            </div>
+                    </ContentBlock>
+                </div>
+            ) : (
+                 <div className="container" style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="spinner" />
+                </div>
+            )}
         </div>
     );
 }
-
-
