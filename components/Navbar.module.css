@@ -11,11 +11,13 @@
   align-items: center;
   
   /* OPTIMIZATION: Hint browser about expensive layout changes */
-  will-change: height, background-color, backdrop-filter;
+  will-change: height, background-color, backdrop-filter, width;
   
+  /* Added width to transition for smooth overlay adaptation */
   transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
               background-color 0.4s ease, 
-              backdrop-filter 0.4s ease;
+              backdrop-filter 0.4s ease,
+              width 0.3s ease; 
   border-bottom: 1px solid transparent;
 }
 

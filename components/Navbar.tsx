@@ -19,6 +19,7 @@ import { QualityToggle } from '@/app/studio/[contentType]/[id]/editor-components
 import Search from './Search';
 import styles from './Navbar.module.css';
 import editorStyles from '@/app/studio/[contentType]/[id]/Editor.module.css';
+import { useContentStore } from '@/lib/contentStore'; // IMPORTED
 
 const SearchIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -32,8 +33,6 @@ export const HamburgerIcon = ({ isOpen }: { isOpen: boolean }) => (
     </div>
 );
 
-// ... (Orbital Icons: ConstellationIcon, CelestialAlmanacIcon - KEEP EXISTING) 
-// [OMITTED FOR BREVITY - Assume existing icon components here]
 const ConstellationIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24" fill="none" role="img" color="currentColor" {...props} style={{ transform: 'translate(1px, 2px)' }}>
         <path d="M12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
@@ -95,7 +94,6 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
     );
 };
 
-// ... (BlackHoleNavLink, AnimatedPreviewIcon, EditorPreviewButton - KEEP EXISTING)
 const AnimatedPreviewIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -165,6 +163,7 @@ const Navbar = () => {
     const { isMobileMenuOpen, toggleMobileMenu, setMobileMenuOpen } = useUIStore();
     const { isEditorActive, blockUploadQuality, setBlockUploadQuality } = useEditorStore();
     const pathname = usePathname();
+    const { isOverlayOpen } = useContentStore();
 
     useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
@@ -185,7 +184,11 @@ const Navbar = () => {
     
     return (
         <>
-            <header className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
+            <header 
+                className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}
+                // Adjust width to expose the custom scrollbar (8px) on the right
+                style={isOverlayOpen ? { width: 'calc(100% - 8px)', right: 'auto', left: 0 } : undefined}
+            >
                 <div className={`container ${styles.navContainer}`}>
                     <div className={styles.desktopView}>
                         <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll} prefetch={false}>

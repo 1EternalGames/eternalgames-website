@@ -71,14 +71,10 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             if (lenis) lenis.stop();
             
             // 3. LOCK Body & HTML
-            // Compensate for scrollbar removal to prevent horizontal shift
             body.style.paddingRight = `${scrollbarWidth}px`; 
-            
-            // Freeze native scroll
             html.style.overflow = 'hidden';
             body.style.overflow = 'hidden';
             
-            // Hide footer to prevent it from peeking or being scrolled to
             if (footer) footer.style.display = 'none';
 
             // 4. ACTIVATE OVERLAY SCROLL
@@ -98,7 +94,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             // RESUME LENIS
             if (lenis) lenis.start();
 
-            // Safety restoration of scroll if browser reset it
             const currentScroll = window.scrollY;
             if (currentScroll === 0 && savedScrollPosition > 0) {
                  window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
@@ -108,7 +103,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         }
 
         return () => {
-            // Cleanup
             body.style.paddingRight = '';
             html.style.overflow = '';
             body.style.overflow = '';
@@ -140,7 +134,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         style={{
                             position: 'fixed',
                             inset: 0,
-                            zIndex: 1064, 
+                            // Raise above Navbar (1070)
+                            zIndex: 1999, 
                             backgroundColor: 'var(--bg-primary)',
                             transform: 'translateZ(0)',
                             pointerEvents: 'auto' 
@@ -157,7 +152,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         style={{
                             position: 'fixed', 
                             inset: 0,
-                            zIndex: 1065, 
+                            // Raise above Background and Navbar
+                            zIndex: 2000, 
                             paddingTop: 0, 
                             overflowY: 'auto', 
                             overflowX: 'hidden',
