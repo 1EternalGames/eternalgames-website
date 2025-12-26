@@ -88,7 +88,10 @@ export default async function ReviewsPage() {
     );
   }
   
-  const gridReviews = (initialGridReviews || []).filter((review: SanityReview) => review._id !== heroReview._id);
+  // FIX: Don't slice here. Pass everything to the client.
+  // The client handles visual filtering.
+  // This ensures the client knows the REAL count of items it has.
+  const gridReviews = initialGridReviews; 
 
   return (
     <>

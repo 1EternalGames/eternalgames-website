@@ -1,7 +1,7 @@
 // app/reviews/ReviewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect, startTransition } from 'react';
+import { useState, useMemo, useRef, useEffect, startTransition, useCallback } from 'react';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Image from 'next/image';
@@ -15,7 +15,9 @@ import { useRouter } from 'next/navigation';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ReviewIcon } from '@/components/icons';
 import { sanityLoader } from '@/lib/sanity.loader';
-import { useContentStore } from '@/lib/contentStore'; 
+import { useContentStore } from '@/lib/contentStore';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
+import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton';
 
 const fetchReviews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/reviews?${params.toString()}`);
@@ -25,10 +27,8 @@ const fetchReviews = async (params: URLSearchParams) => {
 
 export default function ReviewsPageClient({ heroReview, initialGridReviews, allGames, allTags }: { heroReview: SanityReview, initialGridReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
     const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { margin: '400px' });
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const router = useRouter();
-    
     const { openOverlay } = useContentStore();
 
     const initialCards = useMemo(() => initialGridReviews.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridReviews]);
@@ -43,7 +43,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         return () => cancelAnimationFrame(t);
     }, []);
     
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
+    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length);
     
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'score'>('latest');
@@ -54,9 +54,12 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const gridReviews = useMemo(() => {
         let items = [...allFetchedReviews];
         
-        if (searchTerm) {
-            items = items.filter(review => review.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        if (heroReview) {
+            items = items.filter(item => item.id !== heroReview._id);
         }
+        
+        if (searchTerm) items = items.filter(review => review.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        
         if (selectedScoreRange !== 'All') {
             const rangeMap = { '9-10': [9, 10], '8-8.9': [8, 8.9], '7-7.9': [7, 7.9], '<7': [0, 6.9] };
             if (rangeMap[selectedScoreRange]) {
@@ -64,48 +67,47 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 items = items.filter(review => review.score! >= min && review.score! <= max);
             }
         }
-        if (selectedGame) {
-            items = items.filter(review => review.game === selectedGame.title);
-        }
+        if (selectedGame) items = items.filter(review => review.game === selectedGame.title);
         if (selectedTags.length > 0) {
             const selectedTagTitles = new Set(selectedTags.map(t => t.title));
             items = items.filter(review => review.tags.some(t => selectedTagTitles.has(t.title)));
         }
 
-        if (activeSort === 'score') {
-            items.sort((a, b) => (b.score || 0) - (a.score || 0));
-        }
+        if (activeSort === 'score') items.sort((a, b) => (b.score || 0) - (a.score || 0));
 
         return items;
-    }, [allFetchedReviews, searchTerm, activeSort, selectedScoreRange, selectedGame, selectedTags]);
+    }, [allFetchedReviews, searchTerm, activeSort, selectedScoreRange, selectedGame, selectedTags, heroReview]);
     
     const hasActiveFilters = useMemo(() => {
         return !!searchTerm || selectedScoreRange !== 'All' || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
     }, [searchTerm, selectedScoreRange, selectedGame, selectedTags, activeSort]);
 
-    const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !hasActiveFilters;
-    }, [nextOffset, hasActiveFilters]);
+    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading && isGridReady;
 
-    useEffect(() => {
-        if (isInView && canLoadMore && !isLoading && isGridReady) {
-            const loadMore = async () => {
-                setIsLoading(true);
-                const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: activeSort });
-                if(selectedScoreRange !== 'All') params.set('score', selectedScoreRange);
-                try {
-                    const result = await fetchReviews(params);
-                    setAllFetchedReviews(prev => [...prev, ...result.data]);
-                    setNextOffset(result.nextOffset);
-                } catch (error) { 
-                    console.error("Failed to load more reviews:", error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-            loadMore();
+    const handleLoadMore = useCallback(async () => {
+        if (!canLoadMore) return;
+        setIsLoading(true);
+        const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: activeSort });
+        if(selectedScoreRange !== 'All') params.set('score', selectedScoreRange);
+        
+        try {
+            const result = await fetchReviews(params);
+            if (result.data.length === 0) {
+                setNextOffset(null);
+            } else {
+                setAllFetchedReviews(prev => {
+                     const newItems = result.data.filter((newItem: CardProps) => !prev.some(p => p.id === newItem.id));
+                     return [...prev, ...newItems];
+                });
+                setNextOffset(result.nextOffset ?? null);
+            }
+        } catch (error) { 
+            console.error("Failed to load more reviews:", error);
+            setNextOffset(null); 
+        } finally {
+            setIsLoading(false);
         }
-    }, [isInView, canLoadMore, isLoading, nextOffset, activeSort, selectedScoreRange, isGridReady]);
+    }, [canLoadMore, nextOffset, activeSort, selectedScoreRange]);
 
     const handleTagToggle = (tag: SanityTag) => { setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAll = () => { setSearchTerm(''); setSelectedScoreRange('All'); setSelectedGame(null); setSelectedTags([]); setActiveSort('latest'); };
@@ -114,34 +116,17 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         e.preventDefault();
         e.stopPropagation();
         setPrefix('reviews-hero');
-        // FIX: The slug in SanityReview is typed as string, not object with current
-        if (heroReview.slug) {
-            openOverlay(
-                heroReview.slug, 
-                'reviews', 
-                'reviews-hero', 
-                heroReview.mainImage.url
-            );
+        const slugStr = typeof heroReview.slug === 'string' ? heroReview.slug : (heroReview.slug as any).current;
+        if (slugStr) {
+            openOverlay(slugStr, 'reviews', 'reviews-hero', heroReview.mainImage.url);
         }
     };
 
     return (
         <>
-            <motion.div
-                layoutId={`reviews-hero-card-container-${heroReview.legacyId}`}
-                className={styles.reviewHero}
-            >
+            <motion.div layoutId={`reviews-hero-card-container-${heroReview.legacyId}`} className={styles.reviewHero}>
                 <motion.div layoutId={`reviews-hero-card-image-${heroReview.legacyId}`} className={styles.heroBg}>
-                    <Image 
-                        loader={sanityLoader}
-                        src={heroReview.mainImage.url} 
-                        alt={`Background for ${heroReview.title}`} 
-                        fill 
-                        style={{ objectFit: 'cover' }} 
-                        priority 
-                        placeholder='blur' 
-                        blurDataURL={heroReview.mainImage.blurDataURL} 
-                    />
+                    <Image loader={sanityLoader} src={heroReview.mainImage.url} alt={`Background for ${heroReview.title}`} fill style={{ objectFit: 'cover' }} priority placeholder='blur' blurDataURL={heroReview.mainImage.blurDataURL} />
                 </motion.div>
                 <div className={styles.heroOverlay} />
                 <motion.div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', zIndex: 5, color: '#fff', textAlign: 'center' }} initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}>
@@ -151,9 +136,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                         <span className={styles.heroScore}>{heroReview.score?.toFixed(1)}</span>
                     </div>
                     {heroReview.game?.title && (<span className={styles.heroGame}>{heroReview.game.title}</span>)}
-                    <button onClick={handleHeroClick} className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>
-                        اقرأ المراجعة
-                    </button>
+                    <button onClick={handleHeroClick} className="primary-button no-underline" style={{padding: '1rem 2.4rem', fontSize: '1.6rem'}}>اقرأ المراجعة</button>
                 </motion.div>
             </motion.div>
             
@@ -162,29 +145,41 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 
                 {isGridReady ? (
                     <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
-                        <motion.div 
-                            layout 
-                            className="content-grid gpu-cull" 
-                        >
+                        {/* FIX: Removed 'layout' prop and separated Skeletons */}
+                        <div className="content-grid gpu-cull">
                             {gridReviews.map((review, index) => (
-                                <ArticleCard
+                                <motion.div
                                     key={review.id}
-                                    article={review}
-                                    layoutIdPrefix="reviews"
-                                    isPriority={index < 3}
-                                />
-                            ))}
-                        </motion.div>
-                        
-                        <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
-
-                        <AnimatePresence>
-                            {isLoading && (
-                                <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    <div className="spinner" />
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.3, delay: index % 10 * 0.05 }} // Stagger new items
+                                >
+                                    <ArticleCard
+                                        key={review.id}
+                                        article={review}
+                                        layoutIdPrefix="reviews"
+                                        isPriority={index < 3}
+                                    />
                                 </motion.div>
+                            ))}
+                            
+                            {/* Loading Skeletons rendered directly in grid */}
+                            {isLoading && (
+                                <>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+                                        <ArticleCardSkeleton />
+                                    </motion.div>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.1 }}>
+                                        <ArticleCardSkeleton />
+                                    </motion.div>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.2 }}>
+                                        <ArticleCardSkeleton />
+                                    </motion.div>
+                                </>
                             )}
-                        </AnimatePresence>
+                        </div>
+                        
+                        <InfiniteScrollSentinel onIntersect={handleLoadMore} />
 
                         <AnimatePresence>
                             {(!isLoading && gridReviews.length > 0 && (nextOffset === null || hasActiveFilters)) && (
@@ -201,9 +196,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                         )}
                     </ContentBlock>
                 ) : (
-                    <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                         <div className="spinner" />
-                    </div>
+                    <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
                 )}
             </div>
         </>

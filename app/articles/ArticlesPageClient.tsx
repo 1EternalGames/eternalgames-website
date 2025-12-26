@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import HorizontalShowcase from '@/components/HorizontalShowcase';
 import ArticleFilters from '@/components/filters/ArticleFilters';
@@ -11,10 +11,10 @@ import Image from 'next/image';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from '@/components/HorizontalShowcase.module.css';
-import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ArticleIcon } from '@/components/icons';
 import { sanityLoader } from '@/lib/sanity.loader';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel'; // IMPORT
 
 const fetchArticles = async (params: URLSearchParams) => {
     const res = await fetch(`/api/articles?${params.toString()}`);
@@ -30,16 +30,13 @@ const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) =>
   
 const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps[], onActiveIndexChange: (index: number) => void }) => {
     const [[page, direction], setPage] = useState([0, 0]);
-    
     const paginate = (newDirection: number) => {
         const newIndex = (page + newDirection + articles.length) % articles.length;
         setPage([newIndex, newDirection]);
         onActiveIndexChange(newIndex);
     };
-
     const activeArticle = articles[page];
     const layoutIdPrefix = "articles-showcase";
-
     const variants = {
         enter: (direction: number) => ({ opacity: 0, x: direction > 0 ? 50 : -50, scale: 0.9 }),
         center: { opacity: 1, x: 0, scale: 1 },
@@ -49,23 +46,8 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
     return (
         <div className={styles.mobileShowcaseContainer}>
              <AnimatePresence initial={false} custom={direction} mode="wait">
-                <motion.div 
-                    key={page} 
-                    custom={direction} 
-                    variants={variants} 
-                    initial="enter" 
-                    animate="center" 
-                    exit="exit" 
-                    className={styles.mobileShowcaseCardWrapper} 
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
-                    style={{ height: '100%', width: '100%' }}
-                >
-                    <ArticleCard 
-                        article={activeArticle}
-                        layoutIdPrefix={layoutIdPrefix}
-                        isPriority={true}
-                        disableLivingEffect={false} 
-                    />
+                <motion.div key={page} custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className={styles.mobileShowcaseCardWrapper} transition={{ duration: 0.4, ease: 'easeOut' }} style={{ height: '100%', width: '100%' }}>
+                    <ArticleCard article={activeArticle} layoutIdPrefix={layoutIdPrefix} isPriority={true} disableLivingEffect={false} />
                 </motion.div>
             </AnimatePresence>
             <button className={`${styles.showcaseArrow} ${styles.left}`} onClick={() => paginate(-1)}><ArrowIcon direction="left" /></button>
@@ -74,19 +56,14 @@ const MobileShowcase = ({ articles, onActiveIndexChange }: { articles: CardProps
     );
 };
 
-export default function ArticlesPageClient({ featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags }: {
-  featuredArticles: SanityArticle[]; initialGridArticles: SanityArticle[]; allGames: SanityGame[]; allGameTags: SanityTag[]; allArticleTypeTags: SanityTag[];
-}) {
+export default function ArticlesPageClient({ featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags }: { featuredArticles: SanityArticle[]; initialGridArticles: SanityArticle[]; allGames: SanityGame[]; allGameTags: SanityTag[]; allArticleTypeTags: SanityTag[]; }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
-    const intersectionRef = useRef(null);
-    const isInView = useInView(intersectionRef, { margin: '400px' });
 
     const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // --- OPTIMIZATION: Deferred Rendering ---
     const [isGridReady, setIsGridReady] = useState(false);
     useEffect(() => {
         const t = requestAnimationFrame(() => {
@@ -94,9 +71,8 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         });
         return () => cancelAnimationFrame(t);
     }, []);
-    // ----------------------------------------
     
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length >= 20 ? 20 : null);
+    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length);
     
     useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener('resize', checkMobile); return () => window.removeEventListener('resize', checkMobile); }, []);
 
@@ -119,25 +95,25 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         return !!searchTerm || !!selectedGame || selectedGameTags.length > 0 || !!selectedArticleType || sortOrder !== 'latest';
     }, [searchTerm, selectedGame, selectedGameTags, selectedArticleType, sortOrder]);
     
-    const canLoadMore = useMemo(() => {
-        return nextOffset !== null && !hasActiveFilters;
-    }, [nextOffset, hasActiveFilters]);
+    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading && isGridReady;
 
-    useEffect(() => {
-        if (isInView && canLoadMore && !isLoading && isGridReady) {
-            const loadMore = async () => {
-                setIsLoading(true);
-                const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: sortOrder });
-                try {
-                    const result = await fetchArticles(params);
-                    setAllFetchedArticles(prev => [...prev, ...result.data]);
-                    setNextOffset(result.nextOffset);
-                } catch (error) { console.error("Failed to load more articles:", error); } 
-                finally { setIsLoading(false); }
-            };
-            loadMore();
+    const handleLoadMore = useCallback(async () => {
+        if (!canLoadMore) return;
+        setIsLoading(true);
+        const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: sortOrder });
+        try {
+            const result = await fetchArticles(params);
+            setAllFetchedArticles(prev => {
+                const newItems = result.data.filter((newItem: CardProps) => !prev.some(p => p.id === newItem.id));
+                return [...prev, ...newItems];
+            });
+            setNextOffset(result.nextOffset);
+        } catch (error) { 
+            console.error("Failed to load more articles:", error); 
+        } finally { 
+            setIsLoading(false); 
         }
-    }, [isInView, canLoadMore, isLoading, nextOffset, sortOrder, isGridReady]);
+    }, [canLoadMore, nextOffset, sortOrder]);
 
     const handleGameTagToggle = (tag: SanityTag) => { setSelectedGameTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAllFilters = () => { setSelectedGame(null); setSelectedGameTags([]); setSelectedArticleType(null); setSearchTerm(''); setSortOrder('latest'); };
@@ -151,13 +127,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                 <AnimatePresence>
                     {activeBackgroundUrl && (
                         <motion.div key={activeBackgroundUrl} className={styles.articlesPageBg} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            <Image 
-                                loader={sanityLoader}
-                                src={activeBackgroundUrl} 
-                                alt="Dynamic background" 
-                                fill 
-                                style={{ objectFit: 'cover' }} 
-                            />
+                            <Image loader={sanityLoader} src={activeBackgroundUrl} alt="Dynamic background" fill style={{ objectFit: 'cover' }} />
                             <div className={styles.articlesPageBgOverlay} />
                         </motion.div>
                     )}
@@ -171,16 +141,13 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                             <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
                             
                             <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
-                                <motion.div 
-                                    layout 
-                                    className="content-grid gpu-cull" 
-                                >
+                                <motion.div layout className="content-grid gpu-cull">
                                     <AnimatePresence>
                                         {gridArticles.map((article, index) => ( <ArticleCard key={article.id} article={article} layoutIdPrefix="articles-grid" isPriority={index < 3} /> ))}
                                     </AnimatePresence>
                                 </motion.div>
 
-                                <div ref={intersectionRef} style={{ height: '1px', margin: '1rem 0' }} />
+                                <InfiniteScrollSentinel onIntersect={handleLoadMore} />
 
                                 <AnimatePresence>
                                     {isLoading && ( <motion.div key="loading" style={{display: 'flex', justifyContent: 'center', padding: '4rem'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <div className="spinner" /> </motion.div> )}

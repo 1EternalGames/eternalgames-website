@@ -30,9 +30,12 @@ export default function IndexHydrator({
         hasHydrated.current = true;
 
         // 1. REVIEWS INDEX DATA
+        // FIX: Pass FULL reviews array. Do not slice. 
+        // The ReviewsPageClient will filter the hero out of the grid view visually,
+        // but needs the full list for accurate pagination offsets.
         hydrateIndex('reviews', {
-            hero: reviews[0], // Use top review as hero
-            grid: reviews, // Use all available reviews
+            hero: reviews[0], 
+            grid: reviews, 
             allGames: metadata?.games || [],
             allTags: metadata?.gameTags || []
         });
@@ -40,7 +43,7 @@ export default function IndexHydrator({
         // 2. ARTICLES INDEX DATA
         hydrateIndex('articles', {
             featured: articles.slice(0, 5),
-            grid: articles,
+            grid: articles, 
             allGames: metadata?.games || [],
             allGameTags: metadata?.gameTags || [],
             allArticleTypeTags: metadata?.articleTags || []
@@ -49,7 +52,7 @@ export default function IndexHydrator({
         // 3. NEWS INDEX DATA
         hydrateIndex('news', {
             hero: news.slice(0, 4),
-            grid: news,
+            grid: news, 
             allGames: metadata?.games || [],
             allTags: metadata?.newsTags || []
         });
