@@ -3,10 +3,11 @@
 
 import React, { useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { motion, useScroll, useInView, useTransform, MotionValue, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+// Link is replaced by button for kinetic action
 import TimelineCard from './TimelineCard';
 import styles from './KineticReleaseTimeline.module.css';
 import ReleasesCredits from './releases/ReleasesCredits';
+import { useContentStore } from '@/lib/contentStore';
 
 const ViewAllIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" {...props}>
@@ -67,19 +68,11 @@ const TimelineItem = ({ release, index }: { release: any, index: number }) => {
 };
 
 const TimelineDot = ({ position, scrollYProgress }: { position: number, scrollYProgress: MotionValue<number> }) => {
-    // Instant switch effect: 0 to 1 immediately when position is reached
     const activeOpacity = useTransform( scrollYProgress, [position - 0.001, position], [0, 1] );
-    
     return ( 
-        <div 
-            className={styles.dotWrapper}
-            style={{ top: `${position * 100}%` }} 
-        >
+        <div className={styles.dotWrapper} style={{ top: `${position * 100}%` }}>
             <div className={styles.dotBase} />
-            <motion.div 
-                className={styles.dotActive} 
-                style={{ opacity: activeOpacity }}
-            /> 
+            <motion.div className={styles.dotActive} style={{ opacity: activeOpacity }} /> 
         </div> 
     );
 };
@@ -91,8 +84,9 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
     const [dotPositions, setDotPositions] = useState<number[]>([]);
     
     const { scrollYProgress } = useScroll({ target: timelineRef, offset: ["start 60%", "end 50%"], });
-    
     const scaleY = useTransform(scrollYProgress, [0, 1], [0, 1]);
+    
+    const { openIndexOverlay } = useContentStore();
     
     const releasesForThisMonth = useMemo(() => {
         if (!allReleases) return [];
@@ -102,7 +96,6 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
         
         return allReleases
             .filter(release => {
-                // FIXED: Explicitly exclude TBA from homepage timeline
                 if (release.isTBA || !release.releaseDate) return false;
                 const releaseDate = new Date(release.releaseDate);
                 return releaseDate.getUTCMonth() === currentMonth && releaseDate.getUTCFullYear() === currentYear; 
@@ -135,10 +128,7 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
             <div className={styles.timelineContent}>
                 <div className={styles.timelineSpine}>
                     <div className={styles.timelineSpineTrack} />
-                    <motion.div 
-                        className={styles.timelineSpineProgress} 
-                        style={{ scaleY, transformOrigin: 'top' }}
-                    />
+                    <motion.div className={styles.timelineSpineProgress} style={{ scaleY, transformOrigin: 'top' }} />
                     <div className={styles.dotsContainer}>
                         {dotPositions.map((pos, index) => ( 
                             <TimelineDot key={index} position={pos} scrollYProgress={scrollYProgress} /> 
@@ -170,20 +160,15 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
                         animate={isTerminusInView ? { opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
                     >
-                        <motion.div 
+                        <motion.button 
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            style={{ display: 'inline-block' }}
+                            onClick={() => openIndexOverlay('releases')}
+                            className={styles.timelineTerminusButton}
                         >
-                            <Link 
-                                href="/releases" 
-                                className={`${styles.timelineTerminusButton} no-underline`}
-                                prefetch={false}
-                            >
-                                <ViewAllIcon className={styles.terminusIcon} />
-                                <span>عرض كل الإصدارات</span>
-                            </Link>
-                        </motion.div>
+                            <ViewAllIcon className={styles.terminusIcon} />
+                            <span>عرض كل الإصدارات</span>
+                        </motion.button>
                     </motion.div>
                 )}
             </div>

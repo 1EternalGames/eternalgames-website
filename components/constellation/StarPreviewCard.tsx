@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { urlFor } from '@/sanity/lib/image';
 import { SanityContentObject, StarData, ScreenPosition } from './config';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
+import { useContentStore } from '@/lib/contentStore'; // <--- IMPORT
 
 interface StarPreviewCardProps {
     starData: StarData;
@@ -21,9 +22,17 @@ const typeMap: Record<'review' | 'article' | 'news', string> = {
     news: 'خبر'
 }
 
+// Map content type to index section
+const indexSectionMap: Record<string, 'reviews' | 'articles' | 'news'> = {
+    review: 'reviews',
+    article: 'articles',
+    news: 'news'
+};
+
 export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const { openIndexOverlay } = useContentStore(); // <--- USE STORE
     const layoutIdPrefix = "constellation-preview";
     const [isMobile, setIsMobile] = useState(false);
 
@@ -56,6 +65,15 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
         e.stopPropagation();
         setPrefix(layoutIdPrefix);
         router.push(linkPath, { scroll: false });
+        onClose();
+    };
+    
+    const handleViewAll = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const section = indexSectionMap[content._type];
+        if (section) {
+            openIndexOverlay(section);
+        }
         onClose();
     };
 
@@ -92,7 +110,7 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${content.legacyId}`} style={{ position: 'relative', width: '100%', height: isMobile ? '130px' : '150px' }}>
                 {imageUrl ? ( 
                     <Image 
-                        loader={sanityLoader} // <-- LOADER ADDED
+                        loader={sanityLoader}
                         src={imageUrl} alt={content.title} fill sizes="300px"
                         style={{ objectFit: 'cover' }} 
                         placeholder={blurDataURL ? 'blur' : 'empty'}
@@ -107,12 +125,21 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
                     {formattedDate && <p style={{color: 'var(--text-secondary)', fontSize: isMobile ? '1.1rem' : '1.2rem', margin: 0}}>{formattedDate}</p>}
                 </div>
                 <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${content.legacyId}`} style={{ margin: '0 0 1.2rem 0', fontSize: isMobile ? '1.5rem' : '1.7rem' }}>{content.title}</motion.h3>
-                <div className="primary-button no-underline" style={{ display: 'block', textAlign: 'center', pointerEvents: 'none', fontSize: isMobile ? '1.3rem' : 'inherit', padding: isMobile ? '0.6rem 1rem' : '1rem 2.4rem' }}>
+                
+                {/* MODIFIED: Functional Button */}
+                <button 
+                    onClick={handleViewAll}
+                    className="primary-button no-underline" 
+                    style={{ 
+                        display: 'block', width: '100%', textAlign: 'center', 
+                        fontSize: isMobile ? '1.3rem' : 'inherit', 
+                        padding: isMobile ? '0.6rem 1rem' : '1rem 2.4rem',
+                        cursor: 'pointer' 
+                    }}
+                >
                     عرض كامل الـ{contentType}
-                </div>
+                </button>
             </div>
         </motion.div>
     );
 };
-
-

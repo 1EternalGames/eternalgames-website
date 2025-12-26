@@ -19,7 +19,7 @@ import { QualityToggle } from '@/app/studio/[contentType]/[id]/editor-components
 import Search from './Search';
 import styles from './Navbar.module.css';
 import editorStyles from '@/app/studio/[contentType]/[id]/Editor.module.css';
-import { useContentStore } from '@/lib/contentStore'; // IMPORTED
+import { useContentStore } from '@/lib/contentStore'; // <--- IMPORT
 
 const SearchIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -53,10 +53,10 @@ const CelestialAlmanacIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const navItems = [
-    { href: '/reviews', label: 'المراجعات', Icon: ReviewIcon },
-    { href: '/news', label: 'الأخبار', Icon: NewsIcon },
-    { href: '/articles', label: 'المقالات', Icon: ArticleIcon },
-    { href: '/releases', label: 'الإصدارات', Icon: ReleaseIcon },
+    { href: '/reviews', label: 'المراجعات', Icon: ReviewIcon, section: 'reviews' },
+    { href: '/news', label: 'الأخبار', Icon: NewsIcon, section: 'news' },
+    { href: '/articles', label: 'المقالات', Icon: ArticleIcon, section: 'articles' },
+    { href: '/releases', label: 'الإصدارات', Icon: ReleaseIcon, section: 'releases' },
     { href: '/celestial-almanac', label: 'التقويم', Icon: CelestialAlmanacIcon },
     { href: '/constellation', label: 'الكوكبة', Icon: ConstellationIcon }
 ];
@@ -69,6 +69,18 @@ const orbitalContainerVariants = {
 const itemTransition: Transition = { type: 'spring', stiffness: 400, damping: 20 };
 
 const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: typeof navItems[0], angle: number, radius: string, isActive: boolean, onClick: () => void }) => {
+    const { openIndexOverlay } = useContentStore();
+    
+    const handleNavClick = (e: React.MouseEvent) => {
+        if (item.section) {
+            e.preventDefault();
+            openIndexOverlay(item.section as any);
+            onClick();
+        } else {
+            onClick();
+        }
+    };
+
     const cosAngle = Math.round(Math.cos(angle) * 1e10) / 1e10;
     const sinAngle = Math.round(Math.sin(angle) * 1e10) / 1e10;
     const x = `calc(${radius} * ${cosAngle})`;
@@ -82,7 +94,7 @@ const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: { item: type
     
     return (
         <motion.div variants={itemVariants} transition={itemTransition} className={styles.orbitalItemWrapper}>
-            <Link href={item.href} onClick={onClick} className="no-underline" prefetch={false}>
+            <Link href={item.href} onClick={handleNavClick} className="no-underline" prefetch={false}>
                 <motion.div className={`${styles.orbitalOrb} ${isActive ? styles.active : ''}`} whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
                     <item.Icon />
                 </motion.div>
@@ -118,12 +130,21 @@ const EditorPreviewButton = () => {
 };
 
 const BlackHoleNavLink = ({ item, isActive, onClick }: { item: typeof navItems[0]; isActive: boolean; onClick?: () => void; }) => {
+    const { openIndexOverlay } = useContentStore();
     const [isHovered, setIsHovered] = useState(false);
+    
+    const handleClick = (e: React.MouseEvent) => {
+        if (item.section) {
+            e.preventDefault();
+            openIndexOverlay(item.section as any);
+        }
+        if (onClick) onClick();
+    };
     
     return (
         <Link 
             href={item.href} 
-            onClick={onClick} 
+            onClick={handleClick} 
             prefetch={false} 
             className={styles.blackHoleLink}
             onMouseEnter={() => setIsHovered(true)}
@@ -163,14 +184,22 @@ const Navbar = () => {
     const { isMobileMenuOpen, toggleMobileMenu, setMobileMenuOpen } = useUIStore();
     const { isEditorActive, blockUploadQuality, setBlockUploadQuality } = useEditorStore();
     const pathname = usePathname();
-    const { isOverlayOpen } = useContentStore();
+    const { isOverlayOpen, closeOverlay } = useContentStore(); // <--- IMPORT CLOSE OVERLAY
 
     useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
     const openSearch = () => { setIsSearchOpen(true); setMobileMenuOpen(false); };
     const closeAll = () => { setMobileMenuOpen(false); setIsSearchOpen(false); }
     
-    // KEYBOARD SHORTCUT: CMD+K / CTRL+K
+    // NEW: Handle Logo Click
+    const handleLogoClick = (e: React.MouseEvent) => {
+        closeAll();
+        if (isOverlayOpen) {
+            e.preventDefault();
+            closeOverlay();
+        }
+    };
+    
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -186,12 +215,11 @@ const Navbar = () => {
         <>
             <header 
                 className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}
-                // Adjust width to expose the custom scrollbar (8px) on the right
                 style={isOverlayOpen ? { width: 'calc(100% - 8px)', right: 'auto', left: 0 } : undefined}
             >
                 <div className={`container ${styles.navContainer}`}>
                     <div className={styles.desktopView}>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll} prefetch={false}>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={handleLogoClick} prefetch={false}>
                             <EternalGamesIcon style={{ width: '30px', height: '30px' }} />
                         </Link>
                         <nav>
@@ -222,7 +250,6 @@ const Navbar = () => {
                     </div>
 
                     <div className={styles.mobileView}>
-                        {/* Mobile view implementation remains consistent with previous design */}
                         <div className={styles.mobileNavGroupLeft}>
                             <button className={styles.hamburgerButton} onClick={toggleMobileMenu} aria-label="تبديل القائمة">
                                 <HamburgerIcon isOpen={isMobileMenuOpen} />
@@ -235,7 +262,7 @@ const Navbar = () => {
                             </button>
                             <PerformanceSettings isMobile={true} />
                         </div>
-                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={closeAll} prefetch={false}>
+                        <Link href="/" className={`${styles.navLogo} no-underline`} onClick={handleLogoClick} prefetch={false}>
                             <EternalGamesIcon style={{ width: '28px', height: '28px' }} />
                         </Link>
                         <div className={styles.mobileNavGroupRight}>
@@ -252,7 +279,7 @@ const Navbar = () => {
                 {isMobileMenuOpen && (
                     <motion.div className={styles.mobileNavOverlay} onClick={closeAll} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <motion.div className={styles.mobileNavContent} variants={orbitalContainerVariants} initial="hidden" animate="visible" exit="exit">
-                            <Link href="/" onClick={closeAll} className={`${styles.orbitalCenter} no-underline ${pathname === '/' ? styles.active : ''}`} prefetch={false}>
+                            <Link href="/" onClick={handleLogoClick} className={`${styles.orbitalCenter} no-underline ${pathname === '/' ? styles.active : ''}`} prefetch={false}>
                                 <EternalGamesIcon style={{ width: '48px', height: '48px' }} />
                             </Link>
                             {navItems.map((item, i) => {

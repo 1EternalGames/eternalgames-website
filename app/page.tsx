@@ -15,7 +15,8 @@ import HomeJsonLd from '@/components/seo/HomeJsonLd';
 import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
 import BatchHydrator from '@/components/kinetic/BatchHydrator'; 
-import DirectHydrator from '@/components/kinetic/DirectHydrator'; // <--- NEW IMPORT
+import DirectHydrator from '@/components/kinetic/DirectHydrator';
+import IndexHydrator from '@/components/kinetic/IndexHydrator'; // <--- NEW
 
 export const dynamic = 'force-static';
 
@@ -84,7 +85,7 @@ export default async function HomePage() {
         getCachedEngagementScoresMap()
     ]);
 
-    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw, releases: releasesRaw, credits: creditsRaw } = consolidatedData;
+    const { reviews: reviewsRaw, articles: homepageArticlesRaw, news: homepageNewsRaw, releases: releasesRaw, credits: creditsRaw, metadata } = consolidatedData;
 
     const [reviews, homepageArticles, homepageNews, credits] = await Promise.all([
         enrichContentList(reviewsRaw),
@@ -156,7 +157,6 @@ export default async function HomePage() {
     }));
 
     // --- KINETIC HYDRATION LIST ---
-    // Combine everything that is visible on the homepage to be prefetched
     const hydrationItems = [
         ...reviews, 
         ...homepageArticlesRaw, 
@@ -168,11 +168,17 @@ export default async function HomePage() {
             <HomeJsonLd />
             {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
             
-            {/* 1. Heavy Hydration: Fetches full docs (blocks, etc) for reviews/news */}
             <BatchHydrator items={hydrationItems} />
-            
-            {/* 2. Direct Hydration: Injects releases instantly since they don't need extra data */}
             <DirectHydrator items={releasesRaw} />
+            
+            {/* NEW: Hydrate Index Data for instant navigation */}
+            <IndexHydrator 
+                reviews={reviews}
+                articles={homepageArticles}
+                news={homepageNews}
+                releases={releasesRaw}
+                metadata={metadata}
+            />
 
             <DigitalAtriumHomePage 
                 reviews={reviews}

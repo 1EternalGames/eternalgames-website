@@ -13,6 +13,7 @@ import NewsfeedStream from "./kinetic-news/NewsfeedStream";
 import ArticleCard from "@/components/ArticleCard";
 import gridStyles from './HomepageFeeds.module.css';
 import feedStyles from './feed/Feed.module.css';
+import { useContentStore } from "@/lib/contentStore"; // <--- IMPORT
 
 interface HomepageFeedsProps {
     topArticles: CardProps[];
@@ -29,6 +30,9 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
 
     // State to handle news feed expansion
     const [isNewsExpanded, setIsNewsExpanded] = useState(false);
+    
+    // Kinetic Action
+    const { openIndexOverlay } = useContentStore();
 
     return (
         <div className={gridStyles.feedsGrid} ref={containerRef}>
@@ -38,9 +42,11 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
                         topItems={topArticles}
-                        viewAllLink="/articles"
                         viewAllText="عرض كل المقالات"
-                        topItemsContainerClassName={`${feedStyles.topArticlesGrid} gpu-cull`} // Added gpu-cull here
+                        // INTERCEPTED: Use kinetic action
+                        onViewAll={() => openIndexOverlay('articles')}
+                        
+                        topItemsContainerClassName={`${feedStyles.topArticlesGrid} gpu-cull`}
                         renderTopItem={(item) => (
                             <ArticleCard 
                                 key={item.id} 
@@ -65,10 +71,16 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
                         topItems={pinnedNews}
-                        // Conditional Props based on expansion state
-                        viewAllLink={isNewsExpanded ? "/news" : undefined}
+                        
+                        // Conditional Logic: Expand inline first, THEN go to overlay if clicked again
                         viewAllText={isNewsExpanded ? "عرض كل الأخبار" : "المزيد من الأخبار"}
-                        onViewAll={!isNewsExpanded ? () => setIsNewsExpanded(true) : undefined}
+                        onViewAll={() => {
+                            if (!isNewsExpanded) {
+                                setIsNewsExpanded(true);
+                            } else {
+                                openIndexOverlay('news');
+                            }
+                        }}
                         
                         topItemsContainerClassName={feedStyles.pinnedNewsList}
                         renderTopItem={() => null}
