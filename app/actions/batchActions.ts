@@ -11,6 +11,7 @@ const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->met
 const creatorFields = groq`_id, name, prismaUserId, image, bio`;
 const tagFields = groq`_id, title, "slug": slug.current`;
 const publishedFilter = "defined(publishedAt) && publishedAt < now()";
+
 const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
 "mainImageRef": mainImage.asset, 
@@ -90,6 +91,10 @@ const fullDocProjection = groq`
   }
 `;
 
+// Queries for single fetchers
+const allContentByGameListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`;
+const allContentByCreatorListQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`;
+
 export async function batchFetchFullContentAction(ids: string[]) {
   if (!ids || ids.length === 0) return [];
 
@@ -127,6 +132,7 @@ export async function batchFetchTagsAction(slugs: string[]) {
     if (!slugs || slugs.length === 0) return [];
 
     try {
+        // Fetches tags AND their items in one go
         const query = groq`*[_type == "tag" && slug.current in $slugs] {
             _id, title, "slug": slug.current,
             "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && (references(^._id) || category._ref == ^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
@@ -144,5 +150,40 @@ export async function batchFetchTagsAction(slugs: string[]) {
     } catch (error) {
         console.error("Batch tag fetch failed", error);
         return [];
+    }
+}
+
+// NEW: Single Fetch Actions for Store
+export async function fetchGameContentAction(slug: string) {
+    if (!slug) return [];
+    try {
+        const raw = await client.fetch(allContentByGameListQuery, { slug });
+        return await enrichContentList(raw);
+    } catch (e) {
+        console.error("fetchGameContentAction error", e);
+        return [];
+    }
+}
+
+export async function fetchCreatorContentAction(creatorId: string) {
+    if (!creatorId) return [];
+    try {
+        const raw = await client.fetch(allContentByCreatorListQuery, { creatorIds: [creatorId] });
+        return await enrichContentList(raw);
+    } catch (e) {
+        console.error("fetchCreatorContentAction error", e);
+        return [];
+    }
+}
+
+export async function fetchTagContentAction(slug: string) {
+    if (!slug) return null;
+    try {
+        // Reuse batch logic for consistency, but for single slug
+        const tags = await batchFetchTagsAction([slug]);
+        return tags.length > 0 ? tags[0] : null;
+    } catch (e) {
+        console.error("fetchTagContentAction error", e);
+        return null;
     }
 }

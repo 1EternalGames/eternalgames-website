@@ -1,18 +1,21 @@
 // lib/contentStore.ts
 import { create } from 'zustand';
-import { client } from '@/lib/sanity.client';
-import { allContentByGameListQuery, allContentByCreatorListQuery, allContentByTagListQuery } from '@/lib/sanity.queries'; 
-import { enrichContentList } from '@/lib/enrichment'; 
+// MODIFIED: Removed direct server-side imports to prevent bundling 'pg' on client
+import { 
+    fetchGameContentAction, 
+    fetchCreatorContentAction, 
+    fetchTagContentAction 
+} from '@/app/actions/batchActions';
 
 export interface KineticContentState {
   contentMap: Map<string, any>;
   pageMap: Map<string, any>;
   creatorMap: Map<string, any>;
-  tagMap: Map<string, any>; // ADDED
+  tagMap: Map<string, any>;
   
   isOverlayOpen: boolean;
   activeSlug: string | null;
-  activeType: 'reviews' | 'articles' | 'news' | 'releases' | 'index' | 'games' | 'creators' | 'tags' | null; // ADDED 'tags'
+  activeType: 'reviews' | 'articles' | 'news' | 'releases' | 'index' | 'games' | 'creators' | 'tags' | null;
   indexSection: 'reviews' | 'articles' | 'news' | 'releases' | null;
   
   sourceLayoutId: string | null;
@@ -24,23 +27,23 @@ export interface KineticContentState {
   hydrateContent: (items: any[]) => void;
   hydrateIndex: (section: string, data: any) => void;
   hydrateCreators: (creators: any[]) => void;
-  hydrateTags: (tags: any[]) => void; // ADDED
+  hydrateTags: (tags: any[]) => void;
   
-  openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags', layoutId?: string, imageSrc?: string, overrideUrl?: string) => void; // UPDATED
+  openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags', layoutId?: string, imageSrc?: string, overrideUrl?: string) => void;
   openIndexOverlay: (section: 'reviews' | 'articles' | 'news' | 'releases') => void;
   
   navigateInternal: (slug: string, type: string) => void;
   closeOverlay: () => void;
   fetchLinkedContent: (slug: string) => Promise<void>;
   fetchCreatorContent: (slug: string, creatorId: string) => Promise<void>;
-  fetchTagContent: (slug: string) => Promise<void>; // ADDED
+  fetchTagContent: (slug: string) => Promise<void>;
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
   contentMap: new Map(),
   pageMap: new Map(),
   creatorMap: new Map(),
-  tagMap: new Map(), // ADDED
+  tagMap: new Map(),
   
   isOverlayOpen: false,
   activeSlug: null,
@@ -94,13 +97,13 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       set({ creatorMap: newMap });
   },
 
-  hydrateTags: (tags) => { // ADDED
+  hydrateTags: (tags) => {
       const newMap = new Map(get().tagMap);
       tags.forEach(t => {
           if (t.slug) {
               const existing = newMap.get(t.slug);
-              // Merge if exists to preserve contentLoaded status if relevant
-              const merged = existing ? { ...t, ...existing } : { ...t, contentLoaded: true }; 
+              // Merge if exists
+              const merged = existing ? { ...t, ...existing } : { ...t, contentLoaded: true };
               newMap.set(t.slug, merged);
           }
       });
@@ -112,7 +115,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
-    // Determine target URL based on type
     let targetUrl = overrideUrl;
     if (!targetUrl) {
         if (type === 'creators') targetUrl = `/creators/${slug}`;
@@ -188,13 +190,13 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   fetchLinkedContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      
       if (item && item.contentLoaded) return;
 
       try {
-          const rawLinked = await client.fetch(allContentByGameListQuery, { slug });
-          const enrichedLinked = await enrichContentList(rawLinked);
-          const updatedItem = { ...item, linkedContent: enrichedLinked, contentLoaded: true };
+          // Use Server Action
+          const linkedContent = await fetchGameContentAction(slug);
+          
+          const updatedItem = { ...item, linkedContent, contentLoaded: true };
           const newMap = new Map(contentMap);
           newMap.set(slug, updatedItem);
           set({ contentMap: newMap });
@@ -206,12 +208,11 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   fetchCreatorContent: async (slug: string, creatorId: string) => {
       const { creatorMap } = get();
       const creator = creatorMap.get(slug);
-      
       if (creator && creator.contentLoaded) return;
 
       try {
-           const rawContent = await client.fetch(allContentByCreatorListQuery, { creatorIds: [creatorId] });
-           const enrichedContent = await enrichContentList(rawContent);
+           // Use Server Action
+           const enrichedContent = await fetchCreatorContentAction(creatorId);
            
            const updatedCreator = { ...creator, linkedContent: enrichedContent, contentLoaded: true };
            const newMap = new Map(creatorMap);
@@ -226,21 +227,20 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       }
   },
 
-  fetchTagContent: async (slug: string) => { // ADDED
+  fetchTagContent: async (slug: string) => {
       const { tagMap } = get();
       const tag = tagMap.get(slug);
-
       if (tag && tag.contentLoaded) return;
 
       try {
-          // This query fetches items where tags[]->slug.current contains $slug OR category->slug.current == $slug
-          const rawContent = await client.fetch(allContentByTagListQuery, { slug });
-          const enrichedContent = await enrichContentList(rawContent);
-
-          const updatedTag = { ...tag, items: enrichedContent, contentLoaded: true };
-          const newMap = new Map(tagMap);
-          newMap.set(slug, updatedTag);
-          set({ tagMap: newMap });
+          // Use Server Action
+          const updatedTagData = await fetchTagContentAction(slug);
+          if (updatedTagData) {
+              const newMap = new Map(tagMap);
+              const merged = tag ? { ...tag, ...updatedTagData, contentLoaded: true } : { ...updatedTagData, contentLoaded: true };
+              newMap.set(slug, merged);
+              set({ tagMap: newMap });
+          }
       } catch (e) {
           console.error("Failed to fetch tag content", e);
       }
