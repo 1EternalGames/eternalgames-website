@@ -1,7 +1,7 @@
 // components/TimelineCard.tsx
 'use client';
 
-import React, { memo, useState, useMemo, useRef } from 'react';
+import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
@@ -70,13 +70,28 @@ const MOBILE_HOMEPAGE_STATUS_FLY_CONFIG = { X: 0, Y: 80, ROT: 0, SCALE: 0.7 };
 const MOBILE_HOMEPAGE_CLICK_MORE_CONFIG = { X: -40, Y: -110, ROT: 0, SCALE: 0.6 };
 const MOBILE_HOMEPAGE_GP_CONFIG = { LEFT: 0, TOP: 165, ROT: -2, SCALE: 0.5 };
 const MOBILE_HOMEPAGE_PS_CONFIG = { RIGHT: 0, TOP: 165, ROT: 2, SCALE: 0.5 };
-const MOBILE_HOMEPAGE_PLAY_BUTTON_CONFIG = { OFFSET_X: 0, OFFSET_Y: 0, ROTATE: 0, INITIAL_SCALE: 0.8 };
+const MOBILE_HOMEPAGE_PLAY_BUTTON_CONFIG = { OFFSET_X: 0, OFFSET_Y: 25, ROTATE: 0, INITIAL_SCALE: 0.8 };
 
 export const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = { 'PC': PCIcon, 'PlayStation': PS5Icon, 'Xbox': XboxIcon, 'Switch': SwitchIcon };
 export const PlatformNames: Record<string, string> = { 'PC': 'PC', 'PlayStation': 'PS5', 'Xbox': 'Xbox', 'Switch': 'Switch' };
 const PLATFORM_SORT_WEIGHTS: Record<string, number> = { 'Switch': 4, 'Xbox': 3, 'PlayStation': 2, 'PC': 1 };
 
 const morphTransition: Transition = { type: "spring", stiffness: 220, damping: 25, mass: 1.0 };
+
+// NEW INTERFACE FOR SATELLITE ITEMS
+interface SatelliteItem {
+    type: string;
+    label: string;
+    icon?: React.ReactNode;
+    colorClass?: string;
+    x: number;
+    y: number;
+    rotate: number;
+    scale: number;
+    anchor: 'center' | 'left' | 'right';
+    link?: string | null;
+    isKinetic?: boolean;
+}
 
 type ExtendedRelease = SanityGameRelease & { 
     game?: { slug?: string, title?: string }, 
@@ -112,6 +127,10 @@ const TimelineCardComponent = ({
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isVideoActive, setIsVideoActive] = useState(false);
     const [showVideoModal, setShowVideoModal] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // Ensure portal is only rendered after client hydration
+    useEffect(() => { setMounted(true); }, []);
     
     // Timers & Position Refs
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -248,7 +267,7 @@ const TimelineCardComponent = ({
 
     const handleWatchClick = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault(); e.stopPropagation();
-        if (variant === 'homepage') {
+        if (isMobile && variant === 'homepage') {
             setShowVideoModal(true);
         } else {
             setIsVideoActive(true);
@@ -283,9 +302,6 @@ const TimelineCardComponent = ({
         }
     }
 
-    // --- KEY CHANGE: Use KineticLink with Override ---
-    // This allows us to use the Overlay for the release data (type='releases')
-    // but the URL bar will show the Game Hub path (/games/slug).
     const kineticSlug = release.slug || '';
     const kineticLinkType = 'releases';
     const overrideUrl = release.game?.slug ? `/games/${release.game.slug}` : undefined;
@@ -319,7 +335,7 @@ const TimelineCardComponent = ({
     const blurDataURL = release.mainImage?.blurDataURL;
 
     const flyingItems = useMemo(() => {
-        const satellites = [];
+        const satellites: SatelliteItem[] = [];
         const STATUS_CFG = isMobile ? mobileConfig.status : STATUS_FLY_CONFIG;
         const CLICK_CFG = isMobile ? mobileConfig.clickMore : CLICK_MORE_CONFIG;
 
@@ -438,9 +454,10 @@ const TimelineCardComponent = ({
 
     return (
         <>
-            <AnimatePresence>
-                {showVideoModal && trailerId && (
-                    createPortal(
+            {/* THE FIX: Correctly wrap Portal in mounted check and ensure AnimatePresence is child */}
+            {mounted && createPortal(
+                <AnimatePresence>
+                    {showVideoModal && trailerId && (
                         <motion.div 
                             className={styles.videoOverlay}
                             initial={{ opacity: 0 }}
@@ -467,11 +484,11 @@ const TimelineCardComponent = ({
                                     allowFullScreen 
                                 />
                             </motion.div>
-                        </motion.div>,
-                        document.body
-                    )
-                )}
-            </AnimatePresence>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             <motion.div
                 ref={livingCardRef}
@@ -494,7 +511,8 @@ const TimelineCardComponent = ({
                             {showAdminControls && ( <div onTouchStart={(e) => e.stopPropagation()}> <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} /> </div> )}
                         </div>
 
-                        {!isVideoActive && trailerId && !(isMobile && variant === 'homepage') && (
+                        {/* --- THE FIX: ALWAYS RENDER PLAY BUTTON (Even on mobile homepage), just change click behavior --- */}
+                        {!isVideoActive && trailerId && (
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
                                 <AnimatePresence>
                                     {isHovered && (
@@ -592,7 +610,7 @@ const TimelineCardComponent = ({
                                             transition={morphTransition} 
                                             initial={false} 
                                             animate={{ rotate: p.rotate, scale: 1.2 * p.scale, backgroundColor: "rgba(0, 0, 0, 0.85)", borderColor: "var(--accent)", color: "var(--accent)", x: 15, z: 60 }} 
-                                            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                                            exit={{ opacity: 0, scale: 0, transition: { duration: 0.2 } }} 
                                             whileHover={{ zIndex: 500, scale: 1.3 * p.scale }} 
                                             style={{ position: 'absolute', left: p.left, top: p.top, padding: "0.4rem 1rem", zIndex: 100, boxShadow: "0 0 15px color-mix(in srgb, var(--accent) 30%, transparent)", transformOrigin: 'center', flexDirection: 'row-reverse', overflow: 'hidden' }} 
                                             onClick={(e) => e.stopPropagation()}
@@ -611,14 +629,13 @@ const TimelineCardComponent = ({
                         <div className={styles.flyingTagsContainer} style={{ left: 0, right: 0, width: '100%' }}>
                             <AnimatePresence>
                                 {isHovered && subConfig.map((sub, i) => {
-                                     const isLeftAnchored = sub.left !== 'auto' && sub.left !== undefined;
                                      return ( 
                                         <motion.div 
                                             key={sub.key} 
                                             initial={{ opacity: 0, left: '50%', top: '50%', x: '-50%', y: '-50%', scale: 0, z: 0 }} 
                                             animate={{ opacity: 1, left: sub.left, top: sub.top, rotate: sub.rotate, scale: 1.2 * sub.scale, x: !isMobile ? 15 : (sub.key === 'gp' ? -15 : 15), y: 0, z: 60 }} 
                                             whileHover={{ zIndex: 500, scale: 1.3 * sub.scale }} 
-                                            exit={{ opacity: 0, scale: 0, left: '50%', top: '50%', x: '-50%', y: '-50%' }} 
+                                            exit={{ opacity: 0, scale: 0, transition: { duration: 0.2 } }} 
                                             transition={{ ...morphTransition, delay: i * 0.03 }} 
                                             style={{ position: 'absolute', right: sub.right, transformOrigin: 'center', cursor: 'default' }}
                                         > 
@@ -661,8 +678,6 @@ const TimelineCardComponent = ({
                                             onClick={(e) => e.stopPropagation()}
                                         > 
                                             {item.link ? (
-                                                // Check if it should be Kinetic (it defaults to Kinetic unless specified false in map)
-                                                // Actually flyingItems map uses standard Links for pub/dev to avoid loop
                                                 item.isKinetic === false ? (
                                                     <a 
                                                         href={item.link}
@@ -685,7 +700,7 @@ const TimelineCardComponent = ({
                                                 ) : (
                                                     <KineticLink 
                                                         href={item.link} 
-                                                        slug={kineticSlug} // Re-use slug for simplicity or derive if needed
+                                                        slug={kineticSlug} 
                                                         type="releases"
                                                         overrideUrl={overrideUrl}
                                                         onClick={(e) => e.stopPropagation()}

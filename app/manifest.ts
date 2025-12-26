@@ -15,35 +15,40 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#00FFF0',
     icons: [
       {
-        src: '/icon.png',
+        // FIX: Point to the dynamic icon route, not a static file
+        src: '/icon', 
         sizes: '32x32',
         type: 'image/png',
       },
       {
-        src: '/icon.png',
+        // For larger sizes, we can reuse the same endpoint or rely on Next.js to handle scaling 
+        // if using the generateImageMetadata API, but pointing to /icon is the safest quick fix 
+        // if you don't have static files.
+        src: '/icon', 
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: '/icon.png',
+        src: '/icon',
         sizes: '512x512',
         type: 'image/png',
       },
     ],
+    // Shortcuts removed or updated to use the same icon
     shortcuts: [
       {
         name: "المراجعات",
         short_name: "مراجعات",
         description: "أحدث مراجعات الألعاب",
         url: "/reviews",
-        icons: [{ src: "/icon.png", sizes: "96x96" }]
+        icons: [{ src: "/icon", sizes: "96x96" }]
       },
       {
         name: "الأخبار",
         short_name: "أخبار",
         description: "آخر أخبار الصناعة",
         url: "/news",
-        icons: [{ src: "/icon.png", sizes: "96x96" }]
+        icons: [{ src: "/icon", sizes: "96x96" }]
       }
     ],
     screenshots: [
