@@ -5,6 +5,7 @@ import { allReleasesQuery } from '@/lib/sanity.queries';
 import type { SanityGameRelease } from '@/types/sanity';
 import ReleasePageClient from './ReleasePageClient';
 import { unstable_cache } from 'next/cache';
+import DirectHydrator from '@/components/kinetic/DirectHydrator'; // <--- ADDED
 
 // THE FIX: Enforce static generation for the releases index but allow revalidation.
 export const dynamic = 'force-static';
@@ -28,10 +29,13 @@ export default async function ReleasesPage() {
   );
 
   return (
-    <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
-      <ReleasePageClient releases={sanitizedReleases} />
-    </div>
+    <>
+      {/* THE FIX: Hydrate store so items open in Overlay (Top) instead of navigating */}
+      <DirectHydrator items={sanitizedReleases} />
+      
+      <div className="container page-container" style={{ paddingTop: 'calc(var(--nav-height-scrolled) + 2rem)' }}>
+        <ReleasePageClient releases={sanitizedReleases} />
+      </div>
+    </>
   );
 }
-
-

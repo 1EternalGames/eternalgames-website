@@ -130,6 +130,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     
     // Determine content to render
     let contentToRender = null;
+    // Helper to add padding only for pages that lack a hero header (like releases)
+    let extraPaddingTop = '0';
 
     if (activeType === 'index' && activeIndexData) {
         switch(indexSection) {
@@ -143,6 +145,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 contentToRender = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />;
                 break;
             case 'releases':
+                // FIX: Add padding top for Releases page in overlay mode to clear navbar
+                extraPaddingTop = 'calc(var(--nav-height-scrolled) + 4rem)';
                 contentToRender = <ReleasePageClient releases={activeIndexData.releases} />;
                 break;
         }
@@ -161,6 +165,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 onGamePass={activeItem.onGamePass}
                 onPSPlus={activeItem.onPSPlus}
                 forcedLayoutIdPrefix={sourceLayoutId || undefined}
+                scrollContainerRef={overlayRef}
             />;
          } else {
              contentToRender = <ContentPageClient 
@@ -222,7 +227,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     pointerEvents: 'auto'
                 }}
             >
-                <div style={{ direction: 'rtl', minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ direction: 'rtl', minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', paddingTop: extraPaddingTop }}>
                     <div style={{ flexGrow: 1 }}>
                         {contentToRender}
                     </div>

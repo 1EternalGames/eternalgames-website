@@ -1,7 +1,7 @@
 // components/GameHubClient.tsx
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, RefObject } from 'react'; // Added RefObject
 import { motion } from 'framer-motion';
 import HubPageClient from '@/components/HubPageClient';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -20,6 +20,7 @@ interface GameHubClientProps {
     onGamePass?: boolean;
     onPSPlus?: boolean;
     forcedLayoutIdPrefix?: string;
+    scrollContainerRef?: RefObject<HTMLElement | null>; // Added Prop
 }
 
 export default function GameHubClient({
@@ -34,7 +35,8 @@ export default function GameHubClient({
     platforms,
     onGamePass,
     onPSPlus,
-    forcedLayoutIdPrefix
+    forcedLayoutIdPrefix,
+    scrollContainerRef // Destructure
 }: GameHubClientProps) {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
 
@@ -59,6 +61,7 @@ export default function GameHubClient({
             platforms={platforms}
             onGamePass={onGamePass}
             onPSPlus={onPSPlus}
+            scrollContainerRef={scrollContainerRef} // Pass down
         />
     );
 }

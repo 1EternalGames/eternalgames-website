@@ -4,7 +4,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com;
+    img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com https://img.youtube.com;
     font-src 'self' https://fonts.gstatic.com;
     frame-src 'self' https://www.youtube.com https://youtube.com;
     connect-src 'self' https://*.sanity.io https://api.sanity.io https://*.vercel-storage.com;
@@ -68,6 +68,8 @@ const nextConfig = {
             { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
             { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
             { protocol: 'https', hostname: 'images.unsplash.com' },
+            // ADDED: YouTube Thumbnails
+            { protocol: 'https', hostname: 'img.youtube.com' },
         ],
     },
 

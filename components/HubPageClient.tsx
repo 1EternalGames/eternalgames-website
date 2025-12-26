@@ -1,7 +1,7 @@
 // components/HubPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useLayoutEffect, RefObject } from 'react'; // Added useLayoutEffect, RefObject
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import HubFilters, { HubTypeFilter, HubSortOrder } from './HubFilters';
 import ArticleCard from './ArticleCard';
@@ -21,6 +21,9 @@ import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
+// Safe layout effect for Next.js SSR
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 interface HubPageClientProps {
     initialItems: any[];
     hubTitle: string;
@@ -36,6 +39,7 @@ interface HubPageClientProps {
     // NEW PROPS
     onGamePass?: boolean;
     onPSPlus?: boolean;
+    scrollContainerRef?: RefObject<HTMLElement | null>; // Added Prop
 }
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -61,10 +65,20 @@ const MetadataDivider = () => (
 
 export default function HubPageClient({ 
     initialItems, hubTitle, hubType, headerAction, synopsis, tags, fallbackImage,
-    price, developer, publisher, platforms, onGamePass, onPSPlus
+    price, developer, publisher, platforms, onGamePass, onPSPlus,
+    scrollContainerRef // Destructure
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
+    // SCROLL RESET LOGIC
+    useIsomorphicLayoutEffect(() => { 
+        if (scrollContainerRef?.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        } else {
+            window.scrollTo(0, 0); 
+        }
+    }, [scrollContainerRef]);
+
     useEffect(() => {
         return () => setPrefix('default');
     }, [setPrefix]);
