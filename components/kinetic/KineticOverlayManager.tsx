@@ -8,7 +8,7 @@ import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
 import GameHubClient from '@/components/GameHubClient';
 import CreatorHubClient from '@/components/CreatorHubClient';
-import HubPageClient from '@/components/HubPageClient'; // IMPORTED
+import HubPageClient from '@/components/HubPageClient';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
@@ -38,7 +38,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         savedScrollPosition,
         fetchLinkedContent,
         fetchCreatorContent,
-        fetchTagContent
+        fetchTagContent,
+        fetchFullContent // IMPORT
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
@@ -83,11 +84,14 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     pageview(virtualUrl);
                     if (activeType === 'releases' || (activeType as string) === 'games') {
                         fetchLinkedContent(activeSlug);
+                    } else if (activeType === 'reviews' || activeType === 'articles' || activeType === 'news') {
+                        // NEW: Fetch full content if missing
+                        fetchFullContent(activeSlug);
                     }
                 }
             }
         }
-    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, indexSection, creatorMap, tagMap]);
+    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap]);
 
     useLayoutEffect(() => {
         const html = document.documentElement;
@@ -159,20 +163,17 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     } else if (activeCreator && activeType === 'creators') {
         contentToRender = <CreatorHubClient creatorName={activeCreator.name} username={activeCreator.username} image={activeCreator.image} bio={activeCreator.bio} items={activeCreator.linkedContent || []} scrollContainerRef={overlayRef} />;
     } else if (activeType === 'tags') {
-        // FIXED: Handle Loading State
         if (activeTag && activeTag.contentLoaded) {
             contentToRender = <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />;
         } else {
-            contentToRender = (
-                <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="spinner" />
-                </div>
-            );
+            contentToRender = <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>;
         }
     } else if (activeItem) {
          if (activeType === 'releases' || (activeType as string) === 'games') {
             contentToRender = <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />;
          } else {
+             // For standard content, we check if content body exists.
+             // Even if not, ContentPageClient now handles partial data gracefully and waits for fetch
              contentToRender = <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> </ContentPageClient>;
          }
     }

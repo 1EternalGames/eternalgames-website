@@ -44,7 +44,6 @@ type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
 
-// FIX: Explicitly cast 'easeOut' as const to satisfy Framer Motion types
 const bodyFadeVariants = { 
     hidden: { opacity: 0, y: 20 }, 
     visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
@@ -62,7 +61,7 @@ export default function ContentPageClient({
     colorDictionary,
     forcedLayoutIdPrefix,
     initialImageSrc,
-    scrollContainerRef // New Prop
+    scrollContainerRef
 }: { 
     item: ContentItem; 
     type: ContentType; 
@@ -79,45 +78,44 @@ export default function ContentPageClient({
     const isReview = type === 'reviews';
     const isNews = type === 'news';
 
-    const [tocItems, setTocItems] = useState<TocItem[]>(item.toc || []);
+    const [tocItems, setTocItems] = useState<TocItem[]>(item?.toc || []);
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     
-    // NEW: Track if hero is visible to enable/disable layout transition
     const [isHeroVisible, setIsHeroVisible] = useState(true);
-
-    // NEW: Deferred Rendering State
     const [isContentReady, setIsContentReady] = useState(false);
 
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
-    const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
+    // SAFE SLUG ACCESS
+    const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
     
-    // --- DEFERRED RENDERING EFFECT ---
-    // This allows the initial frame (with Hero + Title) to mount instantly,
-    // triggering the layout transition immediately without blocking the main thread 
-    // with the heavy body content rendering.
     useEffect(() => {
+        // Fallback timer to ensure content always renders even if RAF stalls
+        const timer = setTimeout(() => {
+            if (!isContentReady) startTransition(() => setIsContentReady(true));
+        }, 100);
+
         const t = requestAnimationFrame(() => {
             startTransition(() => {
                 setIsContentReady(true);
             });
         });
-        return () => cancelAnimationFrame(t);
-    }, []);
+        
+        return () => {
+            cancelAnimationFrame(t);
+            clearTimeout(timer);
+        };
+    }, [isContentReady]);
 
-    // --- SCROLL LISTENER FOR TRANSITION CONTROL ---
     useEffect(() => {
         const container = scrollContainerRef?.current || window;
-        
         const handleScroll = () => {
              const scrollTop = scrollContainerRef?.current 
                 ? scrollContainerRef.current.scrollTop 
                 : (typeof window !== 'undefined' ? window.scrollY : 0);
              
-             // If scrolled more than 300px, disable the layout ID connection.
-             // This prevents the image from "flying" back from a hidden position.
              if (scrollTop > 300) {
                  setIsHeroVisible(false);
              } else {
@@ -126,9 +124,7 @@ export default function ContentPageClient({
         };
         
         container.addEventListener('scroll', handleScroll, { passive: true });
-        // Initial check
         handleScroll();
-        
         return () => container.removeEventListener('scroll', handleScroll);
     }, [scrollContainerRef]);
 
@@ -137,8 +133,6 @@ export default function ContentPageClient({
         if (!contentElement) return;
 
         const navbarOffset = 90;
-        
-        // Calculate scroll offset based on container
         const currentScrollTop = scrollContainerRef?.current 
             ? scrollContainerRef.current.scrollTop 
             : (document.documentElement.scrollTop || document.body.scrollTop);
@@ -157,7 +151,6 @@ export default function ContentPageClient({
             h.id = id;
             
             const rect = h.getBoundingClientRect();
-            // Calculate 'top' relative to the scrolling context
             const topPosition = rect.top + currentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
             const level = parseInt(h.tagName.substring(1));
@@ -196,7 +189,6 @@ export default function ContentPageClient({
         }
     }, [scrollContainerRef]);
 
-    // Only stabilize layout and measure AFTER content is ready
     useEffect(() => { 
         if (!isContentReady) return;
         const timeout = setTimeout(() => setIsLayoutStable(true), 1500); 
@@ -207,42 +199,46 @@ export default function ContentPageClient({
 
     if (!item) return null;
 
-    const rawRelatedReviews = (item as any).relatedReviews;
-    const rawRelatedArticles = (item as any).relatedArticles;
-    const rawRelatedNews = (item as any).relatedNews;
-    const relatedReviews = Array.isArray(rawRelatedReviews) ? rawRelatedReviews : [];
-    const relatedArticles = Array.isArray(rawRelatedArticles) ? rawRelatedArticles : [];
-    const relatedNews = Array.isArray(rawRelatedNews) ? rawRelatedNews : [];
+    // SAFE ARRAY HANDLING
+    const relatedReviews = Array.isArray((item as any).relatedReviews) ? (item as any).relatedReviews : [];
+    const relatedArticles = Array.isArray((item as any).relatedArticles) ? (item as any).relatedArticles : [];
+    const relatedNews = Array.isArray((item as any).relatedNews) ? (item as any).relatedNews : [];
+    
     const relatedContent = [...relatedReviews, ...relatedArticles, ...relatedNews];
     const uniqueRelatedContent = relatedContent.length > 0 ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
+    
     const adaptedRelatedContent = uniqueRelatedContent.map((related: any) => adaptToCardProps(related, { width: 600 })).filter(Boolean) as CardProps[];
+    
     const safeTags = Array.isArray(item.tags) ? item.tags : [];
     const safeAuthors = Array.isArray((item as any).authors) ? (item as any).authors : [];
     const safeReporters = Array.isArray((item as any).reporters) ? (item as any).reporters : [];
     const primaryCreators = [...safeAuthors, ...safeReporters];
+    
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const publishedDate = new Date(item.publishedAt as string);
-    const day = publishedDate.getDate();
-    const year = publishedDate.getFullYear();
-    const monthIndex = publishedDate.getMonth();
-    const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
+    
+    let formattedDate = '';
+    if (item.publishedAt) {
+        const publishedDate = new Date(item.publishedAt as string);
+        const day = publishedDate.getDate();
+        const year = publishedDate.getFullYear();
+        const monthIndex = publishedDate.getMonth();
+        formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
+    }
+
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
-    const highResUrl = urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url();
+    // SAFE IMAGE HANDLING
+    const highResUrl = item.mainImage ? urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url() : '/placeholder.jpg';
     const displayImageUrl = initialImageSrc || highResUrl;
-    const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
+    const fullResImageUrl = item.mainImage ? urlFor(item.mainImage).auto('format').url() : displayImageUrl;
+    const blurDataURL = (item.mainImage as any)?.blurDataURL;
     
     const springTransition = { type: 'spring' as const, stiffness: 60, damping: 20, mass: 1 };
     const newsType = (item as any).newsType || 'official';
 
-    // DETERMINE ACTIVE LAYOUT PREFIX
-    // Only use the shared transition prefix if the hero is visible.
-    // If user scrolled down, set it to undefined to break the link and avoid "jumping".
     const layoutIdPrefix = (isHeroVisible ? (forcedLayoutIdPrefix || storePrefix) : 'default');
-    
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
-    
     const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
     const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
@@ -274,13 +270,13 @@ export default function ContentPageClient({
                     <Image 
                         loader={sanityLoader} 
                         src={displayImageUrl} 
-                        alt={item.title} 
+                        alt={item.title || 'Hero Image'} 
                         fill 
                         sizes="100vw" 
                         style={{ objectFit: 'cover' }} 
                         priority 
-                        placeholder="blur" 
-                        blurDataURL={(item.mainImage as any).blurDataURL} 
+                        placeholder={blurDataURL ? 'blur' : 'empty'} 
+                        blurDataURL={blurDataURL} 
                         unoptimized={!!initialImageSrc}
                     />
                 </motion.div>
@@ -313,7 +309,6 @@ export default function ContentPageClient({
                                 </motion.h1>
                             </div>
                             
-                            {/* DEFERRED CONTENT RENDER */}
                             {isContentReady && (
                                 <motion.div
                                     variants={bodyFadeVariants}
@@ -323,7 +318,7 @@ export default function ContentPageClient({
                                 >
                                     <div className={styles.metaContainer}>
                                         <div className={styles.metaBlockLeft}>
-                                            {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
+                                            {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug?.current} />}
                                             <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                         </div>
                                         <div className={styles.metaBlockRight}>

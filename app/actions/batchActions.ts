@@ -132,7 +132,6 @@ export async function batchFetchTagsAction(slugs: string[]) {
     if (!slugs || slugs.length === 0) return [];
 
     try {
-        // Fetches tags AND their items in one go
         const query = groq`*[_type == "tag" && slug.current in $slugs] {
             _id, title, "slug": slug.current,
             "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && (references(^._id) || category._ref == ^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
@@ -153,7 +152,7 @@ export async function batchFetchTagsAction(slugs: string[]) {
     }
 }
 
-// NEW: Single Fetch Actions for Store
+// Single Fetch Actions for Store
 export async function fetchGameContentAction(slug: string) {
     if (!slug) return [];
     try {
@@ -179,11 +178,35 @@ export async function fetchCreatorContentAction(creatorId: string) {
 export async function fetchTagContentAction(slug: string) {
     if (!slug) return null;
     try {
-        // Reuse batch logic for consistency, but for single slug
         const tags = await batchFetchTagsAction([slug]);
         return tags.length > 0 ? tags[0] : null;
     } catch (e) {
         console.error("fetchTagContentAction error", e);
+        return null;
+    }
+}
+
+// NEW: Fetch Single Full Content (For Overlay)
+export async function fetchSingleContentAction(slug: string) {
+    if (!slug) return null;
+    try {
+        const query = groq`*[_type in ["review", "article", "news"] && slug.current == $slug][0] { ${fullDocProjection} }`;
+        const rawData = await client.fetch(query, { slug });
+        if (!rawData) return null;
+
+        const enrichedList = await enrichContentList([rawData]);
+        const item = enrichedList[0];
+        
+        if (item) {
+             const tocHeadings = extractHeadingsFromContent(item.content);
+             if (item._type === 'review' && item.verdict) {
+                tocHeadings.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
+             }
+             item.toc = tocHeadings;
+        }
+        return item;
+    } catch (error) {
+        console.error("Single content fetch failed", error);
         return null;
     }
 }

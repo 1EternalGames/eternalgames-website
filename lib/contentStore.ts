@@ -1,10 +1,10 @@
 // lib/contentStore.ts
 import { create } from 'zustand';
-// MODIFIED: Removed direct server-side imports to prevent bundling 'pg' on client
 import { 
     fetchGameContentAction, 
     fetchCreatorContentAction, 
-    fetchTagContentAction 
+    fetchTagContentAction,
+    fetchSingleContentAction // IMPORT NEW ACTION
 } from '@/app/actions/batchActions';
 
 export interface KineticContentState {
@@ -37,6 +37,7 @@ export interface KineticContentState {
   fetchLinkedContent: (slug: string) => Promise<void>;
   fetchCreatorContent: (slug: string, creatorId: string) => Promise<void>;
   fetchTagContent: (slug: string) => Promise<void>;
+  fetchFullContent: (slug: string) => Promise<void>; // NEW
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
@@ -80,7 +81,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       creators.forEach(c => {
           const primaryKey = c.username || c._id;
           const existing = newMap.get(primaryKey);
-          
           let merged = c;
           if (existing) {
               merged = { ...c, ...existing };
@@ -89,7 +89,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
                   merged.linkedContent = existing.linkedContent;
               }
           }
-
           if (merged.username) newMap.set(merged.username, merged);
           if (merged._id) newMap.set(merged._id, merged);
           if (merged.prismaUserId) newMap.set(merged.prismaUserId, merged);
@@ -102,7 +101,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       tags.forEach(t => {
           if (t.slug) {
               const existing = newMap.get(t.slug);
-              // Merge if exists
               const merged = existing ? { ...t, ...existing } : { ...t, contentLoaded: true };
               newMap.set(t.slug, merged);
           }
@@ -142,11 +140,9 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const currentState = get();
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
       const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
-      
       if (typeof window !== 'undefined') {
           window.history.pushState({ overlay: true, type: 'index', section }, '', `/${section}`);
       }
-
       set({
           isOverlayOpen: true,
           activeSlug: null,
@@ -175,7 +171,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     if (typeof window !== 'undefined' && previousPath) {
         window.history.replaceState(null, '', previousPath);
     }
-
     set({ 
         isOverlayOpen: false, 
         activeSlug: null, 
@@ -191,11 +186,8 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { contentMap } = get();
       const item = contentMap.get(slug);
       if (item && item.contentLoaded) return;
-
       try {
-          // Use Server Action
           const linkedContent = await fetchGameContentAction(slug);
-          
           const updatedItem = { ...item, linkedContent, contentLoaded: true };
           const newMap = new Map(contentMap);
           newMap.set(slug, updatedItem);
@@ -209,18 +201,13 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { creatorMap } = get();
       const creator = creatorMap.get(slug);
       if (creator && creator.contentLoaded) return;
-
       try {
-           // Use Server Action
            const enrichedContent = await fetchCreatorContentAction(creatorId);
-           
            const updatedCreator = { ...creator, linkedContent: enrichedContent, contentLoaded: true };
            const newMap = new Map(creatorMap);
-           
            if (updatedCreator.username) newMap.set(updatedCreator.username, updatedCreator);
            if (updatedCreator._id) newMap.set(updatedCreator._id, updatedCreator);
            if (updatedCreator.prismaUserId) newMap.set(updatedCreator.prismaUserId, updatedCreator);
-           
            set({ creatorMap: newMap });
       } catch (e) {
           console.error("Failed to fetch creator content", e);
@@ -231,9 +218,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { tagMap } = get();
       const tag = tagMap.get(slug);
       if (tag && tag.contentLoaded) return;
-
       try {
-          // Use Server Action
           const updatedTagData = await fetchTagContentAction(slug);
           if (updatedTagData) {
               const newMap = new Map(tagMap);
@@ -243,6 +228,26 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           }
       } catch (e) {
           console.error("Failed to fetch tag content", e);
+      }
+  },
+
+  // NEW: Fetch Full Content for Overlay
+  fetchFullContent: async (slug: string) => {
+      const { contentMap } = get();
+      const item = contentMap.get(slug);
+      // Check if we have full content (Portable Text array or HTML)
+      if (item && item.content && Array.isArray(item.content)) return;
+
+      try {
+          const fullItem = await fetchSingleContentAction(slug);
+          if (fullItem) {
+               const newMap = new Map(contentMap);
+               // Merge properly to keep any client state if needed
+               newMap.set(slug, { ...item, ...fullItem });
+               set({ contentMap: newMap });
+          }
+      } catch (e) {
+          console.error("Failed to fetch full content", e);
       }
   }
 }));
