@@ -21,6 +21,8 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
     const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (onClick) onClick(e);
+
         let hasData = false;
 
         // Force overlay attempt for types that support lazy fetching or are always "available" via ID/Slug
@@ -32,17 +34,15 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
         }
 
         if (hasData) {
-            // ONLY execute custom click logic (animations/prefix setting) if we are staying in the Kinetic system
-            if (onClick) onClick(e);
-            
             e.preventDefault();
             e.stopPropagation(); 
             // @ts-ignore
             openOverlay(slug, type, layoutId, imageSrc, overrideUrl);
-        }
-        // If !hasData, we do NOT call onClick. 
-        // This prevents 'setPrefix' from running, avoiding layout transition conflicts during standard navigation.
-        // Next.js Link handles the rest automatically.
+        } 
+        
+        // FIX: Removed the else block that called forceCloseOverlay().
+        // We now let the standard Link navigation proceed without immediately closing the overlay.
+        // The overlay will persist (masking the loading state) until the route actually changes.
     };
 
     return (

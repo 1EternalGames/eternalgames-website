@@ -20,6 +20,7 @@ import ReviewsPageClient from '@/app/reviews/ReviewsPageClient';
 import ArticlesPageClient from '@/app/articles/ArticlesPageClient';
 import NewsPageClient from '@/app/news/NewsPageClient';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
+import { usePathname, useSearchParams } from 'next/navigation'; // IMPORT ADDED
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -32,6 +33,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         pageMap,
         indexSection,
         closeOverlay, 
+        forceCloseOverlay, // IMPORT ADDED
         navigateInternal,
         sourceLayoutId, 
         activeImageSrc,
@@ -39,13 +41,31 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         fetchLinkedContent,
         fetchCreatorContent,
         fetchTagContent,
-        fetchFullContent // IMPORT
+        fetchFullContent
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
     const setOverlayScrollRef = useUIStore((s) => s.setOverlayScrollRef);
     const overlayRef = useRef<HTMLDivElement>(null);
     const lenis = useLenis();
+    
+    // NEW: Track navigation changes
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    // NEW EFFECT: Handle Route Changes while Overlay is Open
+    useEffect(() => {
+        if (isOverlayOpen) {
+            // Check if this navigation is an overlay state push or a real route change
+            const state = typeof window !== 'undefined' ? window.history.state : null;
+            
+            // If the history state lacks our 'overlay' flag, it means a standard navigation occurred (Link clicked)
+            // We must close the overlay now to reveal the new page.
+            if (!state?.overlay) {
+                forceCloseOverlay();
+            }
+        }
+    }, [pathname, searchParams, isOverlayOpen, forceCloseOverlay]);
 
     useEffect(() => {
         if (isOverlayOpen && sourceLayoutId) {
@@ -85,7 +105,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     if (activeType === 'releases' || (activeType as string) === 'games') {
                         fetchLinkedContent(activeSlug);
                     } else if (activeType === 'reviews' || activeType === 'articles' || activeType === 'news') {
-                        // NEW: Fetch full content if missing
                         fetchFullContent(activeSlug);
                     }
                 }
@@ -172,8 +191,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
          if (activeType === 'releases' || (activeType as string) === 'games') {
             contentToRender = <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />;
          } else {
-             // For standard content, we check if content body exists.
-             // Even if not, ContentPageClient now handles partial data gracefully and waits for fetch
              contentToRender = <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> </ContentPageClient>;
          }
     }

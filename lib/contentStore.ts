@@ -34,10 +34,11 @@ export interface KineticContentState {
   
   navigateInternal: (slug: string, type: string) => void;
   closeOverlay: () => void;
+  forceCloseOverlay: () => void; // <--- NEW ACTION
   fetchLinkedContent: (slug: string) => Promise<void>;
   fetchCreatorContent: (slug: string, creatorId: string) => Promise<void>;
   fetchTagContent: (slug: string) => Promise<void>;
-  fetchFullContent: (slug: string) => Promise<void>; // NEW
+  fetchFullContent: (slug: string) => Promise<void>;
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
@@ -182,6 +183,19 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     });
   },
 
+  // NEW: Force close overlay without reverting URL (for forward navigation fallback)
+  forceCloseOverlay: () => {
+      set({
+          isOverlayOpen: false,
+          activeSlug: null,
+          activeType: null,
+          indexSection: null,
+          sourceLayoutId: null,
+          activeImageSrc: null,
+          previousPath: null
+      });
+  },
+
   fetchLinkedContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
@@ -231,18 +245,15 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       }
   },
 
-  // NEW: Fetch Full Content for Overlay
   fetchFullContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      // Check if we have full content (Portable Text array or HTML)
       if (item && item.content && Array.isArray(item.content)) return;
 
       try {
           const fullItem = await fetchSingleContentAction(slug);
           if (fullItem) {
                const newMap = new Map(contentMap);
-               // Merge properly to keep any client state if needed
                newMap.set(slug, { ...item, ...fullItem });
                set({ contentMap: newMap });
           }
