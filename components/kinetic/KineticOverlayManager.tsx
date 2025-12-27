@@ -4,11 +4,6 @@
 import { useEffect, useLayoutEffect, useRef, useMemo, Suspense } from 'react';
 import { useContentStore } from '@/lib/contentStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import ContentPageClient from '@/components/content/ContentPageClient';
-import CommentSection from '@/components/comments/CommentSection';
-import GameHubClient from '@/components/GameHubClient';
-import CreatorHubClient from '@/components/CreatorHubClient';
-import HubPageClient from '@/components/HubPageClient';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
 import SpaceBackground from '@/components/ui/SpaceBackground';
@@ -16,11 +11,20 @@ import { pageview } from '@/lib/gtm';
 import { useUIStore } from '@/lib/uiStore';
 import styles from './KineticOverlayManager.module.css';
 import Footer from '@/components/Footer'; 
-import ReviewsPageClient from '@/app/reviews/ReviewsPageClient';
-import ArticlesPageClient from '@/app/articles/ArticlesPageClient';
-import NewsPageClient from '@/app/news/NewsPageClient';
-import ReleasePageClient from '@/app/releases/ReleasePageClient';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+// OPTIMIZATION: Dynamically import heavy page clients to code-split the overlay bundle.
+// This prevents the JS for every page type from being loaded on every route.
+const ReviewsPageClient = dynamic(() => import('@/app/reviews/ReviewsPageClient'), { ssr: false });
+const ArticlesPageClient = dynamic(() => import('@/app/articles/ArticlesPageClient'), { ssr: false });
+const NewsPageClient = dynamic(() => import('@/app/news/NewsPageClient'), { ssr: false });
+const ReleasePageClient = dynamic(() => import('@/app/releases/ReleasePageClient'), { ssr: false });
+const ContentPageClient = dynamic(() => import('@/components/content/ContentPageClient'), { ssr: false });
+const CommentSection = dynamic(() => import('@/components/comments/CommentSection'), { ssr: false });
+const GameHubClient = dynamic(() => import('@/components/GameHubClient'), { ssr: false });
+const CreatorHubClient = dynamic(() => import('@/components/CreatorHubClient'), { ssr: false });
+const HubPageClient = dynamic(() => import('@/components/HubPageClient'), { ssr: false });
 
 function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -51,7 +55,6 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
     const lenis = useLenis();
     
     const pathname = usePathname();
-    const searchParams = useSearchParams();
 
     // HISTORY SANITIZATION
     useEffect(() => {
@@ -84,7 +87,6 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
 
     useEffect(() => {
         if (isOverlayOpen && activeSlug && activeType) {
-            // Analytics & Fetching Logic
             if (activeType === 'index' && indexSection) {
                  pageview(`/${indexSection}`);
             } else if (activeType === 'creators') {
@@ -110,31 +112,25 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         }
     }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap, fetchCreatorByUsername]);
 
-    // RESET SCROLL
     useLayoutEffect(() => {
         if (isOverlayOpen && overlayRef.current) {
             overlayRef.current.scrollTop = 0;
         }
     }, [activeSlug, activeType, indexSection, isOverlayOpen]);
 
-    // CRITICAL FIX: Moved Body Lock to useEffect + RAF to prevent synchronous layout thrashing
     useEffect(() => {
         const html = document.documentElement;
         const body = document.body;
         const mainFooter = document.querySelector('body > footer') as HTMLElement; 
 
         if (isOverlayOpen) {
-            // Defer the heavy DOM writes to the next animation frame
             const rafId = requestAnimationFrame(() => {
                 const scrollbarWidth = window.innerWidth - html.clientWidth;
                 if (lenis) lenis.stop();
-                
                 body.style.paddingRight = `${scrollbarWidth}px`; 
                 html.style.overflow = 'hidden';
                 body.style.overflow = 'hidden';
-                
                 if (mainFooter) mainFooter.style.display = 'none';
-                
                 if (overlayRef.current) {
                     setOverlayScrollRef(overlayRef.current);
                     overlayRef.current.scrollTop = 0;
@@ -142,12 +138,10 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             });
             return () => cancelAnimationFrame(rafId);
         } else {
-            // Unlock immediately but restoring scroll position needs care
             body.style.paddingRight = '';
             html.style.overflow = '';
             body.style.overflow = '';
             if (mainFooter) mainFooter.style.display = '';
-
             requestAnimationFrame(() => {
                 if (lenis) {
                     lenis.start();
@@ -175,15 +169,11 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         if (activeType === 'index' && activeIndexData) {
             let content = null;
             let paddingTop = '0';
-            
             switch(indexSection) {
                 case 'reviews': content = <ReviewsPageClient heroReview={activeIndexData.hero} initialGridReviews={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
                 case 'articles': content = <ArticlesPageClient featuredArticles={activeIndexData.featured} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allGameTags={activeIndexData.allGameTags} allArticleTypeTags={activeIndexData.allArticleTypeTags} />; break;
                 case 'news': content = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
-                case 'releases': 
-                    paddingTop = 'calc(var(--nav-height-scrolled) + 4rem)';
-                    content = <ReleasePageClient releases={activeIndexData.releases} />; 
-                    break;
+                case 'releases': paddingTop = 'calc(var(--nav-height-scrolled) + 4rem)'; content = <ReleasePageClient releases={activeIndexData.releases} />; break;
             }
             return { content, paddingTop };
         } 
@@ -192,16 +182,7 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             if (activeCreator) {
                 const isLoading = !activeCreator.contentLoaded;
                 return {
-                    content: <CreatorHubClient 
-                        creatorName={activeCreator.name} 
-                        username={activeCreator.username} 
-                        image={activeCreator.image} 
-                        bio={activeCreator.bio} 
-                        items={activeCreator.linkedContent || []} 
-                        scrollContainerRef={overlayRef} 
-                        // @ts-ignore
-                        isLoading={isLoading}
-                    />,
+                    content: <CreatorHubClient creatorName={activeCreator.name} username={activeCreator.username} image={activeCreator.image} bio={activeCreator.bio} items={activeCreator.linkedContent || []} scrollContainerRef={overlayRef} isLoading={isLoading} />,
                     paddingTop: '0'
                 };
             }
@@ -257,11 +238,6 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                         zIndex: 1060, 
                         transform: 'translateZ(0)',
                         pointerEvents: 'auto'
-                    }}
-                    onAnimationComplete={(definition) => {
-                        if (definition === 'exit' && overlayRef.current) {
-                           overlayRef.current.style.pointerEvents = 'none';
-                        }
                     }}
                 >
                     <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: 'var(--bg-primary)', pointerEvents: 'auto' }}>
