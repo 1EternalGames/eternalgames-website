@@ -62,6 +62,8 @@ const nextConfig = {
 
     images: {
         formats: ['image/avif', 'image/webp'],
+        // OPTIMIZATION: Explicit device sizes to ensure 2K and 4K screens get exact resolutions
+        deviceSizes: [640, 750, 828, 1080, 1200, 1440, 1920, 2048, 2560, 3840],
         remotePatterns: [
             { protocol: 'https', hostname: 'cdn.sanity.io' },
             { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
