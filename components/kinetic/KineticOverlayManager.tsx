@@ -87,13 +87,14 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             } else if (activeType === 'creators') {
                 const creator = creatorMap.get(activeSlug);
                 
-                // If creator is not found OR hasn't fully loaded content, fetch.
+                // CRITICAL FIX: Only fetch if we DON'T have the content loaded flag set.
+                // The store update in hydration ensures this flag is true if data was pre-fetched.
                 if (!creator || !creator.contentLoaded) {
                     const id = creator && (creator.prismaUserId || creator._id);
                     if (id) {
                          fetchCreatorContent(activeSlug, id);
                     } else {
-                         // Fallback: If we only have the username (from URL), search by username
+                         // Fallback for direct URL or missing ID
                          fetchCreatorByUsername(activeSlug);
                     }
                 }
@@ -174,8 +175,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         } 
         
         if (activeType === 'creators') {
-            // FIX: Render client even if partial data (optimistic UI). 
-            // The client handles loading state for the grid internally or we pass an explicit isLoading prop.
+            // FIX: Render client if we have the creator object, even if content loading is pending.
+            // The loading state is now correctly managed in the useEffect, which avoids the double fetch.
             if (activeCreator) {
                 const isLoading = !activeCreator.contentLoaded;
                 return {
@@ -192,7 +193,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     paddingTop: '0'
                 };
             }
-            // Only if we know NOTHING about the creator (e.g. direct URL open where hydration failed), show spinner
+            // Only show full spinner if we have ZERO data about the creator (e.g. direct URL loading)
             return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
         } 
         
@@ -224,7 +225,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
              }
         }
         
-        // Fallback for completely unknown content
         return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
 
     }, [isOverlayOpen, activeSlug, activeType, indexSection, contentMap, creatorMap, tagMap, pageMap, colorDictionary, sourceLayoutId, activeImageSrc]);

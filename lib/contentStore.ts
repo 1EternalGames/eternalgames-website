@@ -115,17 +115,18 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
 
           let merged = { ...c };
           
+          // THE FIX: If 'linkedContent' property exists (even if empty),
+          // it means this data came from a source that fetched content (like getAllStaffAction).
+          // Therefore, we mark it as loaded to prevent re-fetching.
+          if (c.linkedContent !== undefined) {
+              merged.contentLoaded = true;
+          }
+
           if (existing) {
               merged = { ...existing, ...c };
-              if (c.linkedContent && c.linkedContent.length > 0) {
+              // Preserve contentLoaded status if merging
+              if (c.linkedContent !== undefined) {
                   merged.linkedContent = c.linkedContent;
-                  merged.contentLoaded = true;
-              } else if (existing.contentLoaded) {
-                  merged.linkedContent = existing.linkedContent;
-                  merged.contentLoaded = true;
-              }
-          } else {
-               if (c.linkedContent && c.linkedContent.length > 0) {
                   merged.contentLoaded = true;
               }
           }
@@ -143,7 +144,8 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           if (t.slug) {
               const existing = newMap.get(t.slug);
               const merged = existing ? { ...t, ...existing } : { ...t };
-              if (t.items && t.items.length >= 0) {
+              // Same fix for tags
+              if (t.items !== undefined) {
                    merged.items = t.items;
                    merged.contentLoaded = true;
               }
@@ -158,18 +160,21 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
-    // OPTIMISTIC SEEDING: If we have preloaded data for creators, inject it immediately
+    // OPTIMISTIC SEEDING
     if (type === 'creators' && preloadedData) {
         const { creatorMap } = currentState;
         const existing = creatorMap.get(slug);
+        
+        // Only seed if we strictly don't have it. 
+        // If we have it (even if contentLoaded is false), we let the manager handle fetching.
         if (!existing) {
             const newMap = new Map(creatorMap);
-            // Construct a partial creator object
             const partialCreator = {
                 username: slug,
                 name: preloadedData.name,
-                image: preloadedData.image, // Can be string URL or object
-                ...preloadedData // Spread any other props
+                image: preloadedData.image,
+                // Do NOT set contentLoaded=true here, as this is just a stub.
+                contentLoaded: false 
             };
             newMap.set(slug, partialCreator);
             set({ creatorMap: newMap });
