@@ -1,7 +1,7 @@
 // components/HubPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useLayoutEffect, RefObject } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import HubFilters, { HubTypeFilter, HubSortOrder } from './HubFilters';
 import ArticleCard from './ArticleCard';
@@ -15,11 +15,15 @@ import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader'; 
 import { translateTag } from '@/lib/translations';
 
-// Icons
 import PCIcon from '@/components/icons/platforms/PCIcon';
 import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
+import KineticLink from '@/components/kinetic/KineticLink'; 
+
+// ... imports remain the same
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface HubPageClientProps {
     initialItems: any[];
@@ -33,9 +37,10 @@ interface HubPageClientProps {
     developer?: string;
     publisher?: string;
     platforms?: string[];
-    // NEW PROPS
     onGamePass?: boolean;
     onPSPlus?: boolean;
+    scrollContainerRef?: RefObject<HTMLElement | null>;
+    isLoading?: boolean; 
 }
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -46,6 +51,7 @@ const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
 };
 
 const formatSynopsis = (text: string) => {
+    // ... logic unchanged
     const parts = text.split(/(\s+)/);
     return parts.map((part, i) => {
         if (/^[A-Za-z0-9]+$/.test(part.replace(/[^\w\s]/gi, ''))) {
@@ -61,14 +67,34 @@ const MetadataDivider = () => (
 
 export default function HubPageClient({ 
     initialItems, hubTitle, hubType, headerAction, synopsis, tags, fallbackImage,
-    price, developer, publisher, platforms, onGamePass, onPSPlus
+    price, developer, publisher, platforms, onGamePass, onPSPlus,
+    scrollContainerRef,
+    isLoading = false 
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
-    
+    const [isGridReady, setIsGridReady] = useState(false);
+
+    useEffect(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setIsGridReady(true);
+            });
+        });
+    }, []);
+
+    useIsomorphicLayoutEffect(() => { 
+        if (scrollContainerRef?.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        } else {
+            window.scrollTo(0, 0); 
+        }
+    }, [scrollContainerRef]);
+
     useEffect(() => {
         return () => setPrefix('default');
     }, [setPrefix]);
     
+    // ... filters state logic unchanged ...
     const [activeTypeFilter, setActiveTypeFilter] = useState<HubTypeFilter>('all');
     const [activeSort, setActiveSort] = useState<HubSortOrder>('latest');
     const [engagementScores, setEngagementScores] = useState<Map<number, number>>(new Map());
@@ -118,18 +144,32 @@ export default function HubPageClient({
 
     const latestItem = (initialItems && initialItems.length > 0) ? initialItems[0] : null;
     
+    // IMAGE HANDLING LOGIC
     let heroImageRef = latestItem?.mainImageRef || fallbackImage;
     if (hubType === 'اللعبة' && fallbackImage) {
         heroImageRef = fallbackImage;
     }
 
-    const heroImageUrl = heroImageRef 
-        ? urlFor(heroImageRef).width(1920).auto('format').url() 
-        : null;
-        
-    const heroBlurDataURL = heroImageRef 
-        ? urlFor(heroImageRef).width(20).blur(10).auto('format').url()
-        : null;
+    // FIX: Point to SVG fallback
+    let heroImageUrl = '/placeholder.svg';
+    let heroBlurDataURL = null;
+    let isExternalImage = false;
+
+    try {
+        if (typeof heroImageRef === 'string') {
+            if (heroImageRef.startsWith('http') || heroImageRef.startsWith('/')) {
+                heroImageUrl = heroImageRef;
+                isExternalImage = true;
+            }
+        } else if (heroImageRef && (heroImageRef.asset || heroImageRef._ref || heroImageRef._id)) {
+             heroImageUrl = urlFor(heroImageRef).width(1920).auto('format').url();
+             heroBlurDataURL = urlFor(heroImageRef).width(20).blur(10).auto('format').url();
+        }
+    } catch (e) {
+        console.warn("HubPageClient: Failed to resolve hero image", e);
+        // FIX: Point to SVG
+        heroImageUrl = '/placeholder-game.svg';
+    }
     
     const heroLayoutId = layoutIdPrefix === 'default' 
         ? `hub-hero-${hubTitle.replace(/\s+/g, '-')}` 
@@ -153,27 +193,24 @@ export default function HubPageClient({
             className={styles.hubHero} 
             layoutId={`${layoutIdPrefix}-container`}
         >
-            {heroImageUrl && (
-                <>
-                    <motion.div 
-                        className={styles.heroBg}
-                        layoutId={heroLayoutId}
-                        style={{ position: 'absolute', inset: 0, zIndex: -2 }}
-                    >
-                        <Image 
-                            loader={sanityLoader}
-                            src={heroImageUrl} 
-                            alt={`Background for ${hubTitle}`} 
-                            fill 
-                            style={{ objectFit: 'cover' }} 
-                            priority 
-                            placeholder={heroBlurDataURL ? 'blur' : 'empty'}
-                            blurDataURL={heroBlurDataURL || ''}
-                        />
-                    </motion.div>
-                    <div className={styles.heroOverlay} />
-                </>
-            )}
+            <motion.div 
+                className={styles.heroBg}
+                layoutId={heroLayoutId}
+                style={{ position: 'absolute', inset: 0, zIndex: -2 }}
+            >
+                <Image 
+                    loader={sanityLoader}
+                    src={heroImageUrl} 
+                    alt={`Background for ${hubTitle}`} 
+                    fill 
+                    style={{ objectFit: 'cover' }} 
+                    priority 
+                    placeholder={heroBlurDataURL ? 'blur' : 'empty'}
+                    blurDataURL={heroBlurDataURL || ''}
+                    unoptimized={isExternalImage} 
+                />
+            </motion.div>
+            <div className={styles.heroOverlay} />
             
             <motion.div 
                 className={`container ${styles.heroContentContainer}`}
@@ -194,17 +231,14 @@ export default function HubPageClient({
                     </motion.div>
                 )}
                 
-                {/* --- METADATA ROW --- */}
                 <motion.div 
                     className={styles.metadataRow}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                 >
-                    {/* Price */}
                     {price && <div className={`${styles.hubPill} ${styles.price}`}>{price}</div>}
                     
-                    {/* Game Pass Badge */}
                     {onGamePass && (
                         <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#10B981', color: '#10B981' }}>
                             <XboxIcon style={{ width: 14, height: 14 }} />
@@ -212,7 +246,6 @@ export default function HubPageClient({
                         </div>
                     )}
                     
-                    {/* PS Plus Badge */}
                     {onPSPlus && (
                         <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#3B82F6', color: '#3B82F6' }}>
                             <PS5Icon style={{ width: 16, height: 16 }} />
@@ -222,7 +255,6 @@ export default function HubPageClient({
                     
                     {price && (developer || publisher) && <MetadataDivider />}
 
-                    {/* Developer */}
                     {developer && (
                         <Link 
                             href={`/developers/${developer.toLowerCase().replace(/\s+/g, '-')}`} 
@@ -233,7 +265,6 @@ export default function HubPageClient({
                         </Link>
                     )}
                     
-                    {/* Publisher */}
                     {publisher && publisher !== developer && (
                         <Link 
                             href={`/publishers/${publisher.toLowerCase().replace(/\s+/g, '-')}`} 
@@ -246,7 +277,6 @@ export default function HubPageClient({
 
                     {(developer || publisher) && platforms && platforms.length > 0 && <MetadataDivider />}
 
-                    {/* Platforms */}
                     {platforms && platforms.map(p => {
                         const Icon = PlatformIcons[p];
                         if (!Icon) return null;
@@ -260,19 +290,19 @@ export default function HubPageClient({
 
                     {platforms && platforms.length > 0 && tags && tags.length > 0 && <MetadataDivider />}
 
-                     {/* UPDATE: Tag Rendering */}
                      {tags && tags.map(t => (
-                        <Link 
+                        <KineticLink 
                             key={t.title} 
                             href={t.slug ? `/tags/${t.slug}` : '#'}
+                            slug={t.slug || ''}
+                            type="tags"
                             className={`${styles.hubPill} ${styles.genre} ${styles.interactive}`}
-                            prefetch={false}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             {translateTag(t.title)}
-                        </Link>
+                        </KineticLink>
                     ))}
                 </motion.div>
-
             </motion.div>
         </motion.div>
     );
@@ -283,64 +313,75 @@ export default function HubPageClient({
         <div className={styles.hubPageContainer}>
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
-                 {initialItems && initialItems.length > 0 ? (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={isInView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ duration: 0.7, ease: "easeOut" as const }}
-                        >
-                            <HubFilters
-                                activeTypeFilter={activeTypeFilter}
-                                onTypeFilterChange={setActiveTypeFilter}
-                                activeSort={activeSort}
-                                onSortChange={setActiveSort}
-                            />
-                        </motion.div>
-                        
-                        <motion.div 
-                            layout 
-                            className="content-grid gpu-cull" // Added gpu-cull here
-                            style={{ paddingBottom: '6rem' }}
-                        >
-                            <AnimatePresence>
-                                {filteredAndSortedItems.length > 0 ? (
-                                    filteredAndSortedItems.map(item => (
-                                        <motion.div
-                                            key={item.id}
-                                            layout
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
-                                            style={{ height: '100%' }}
+                 
+                 {isGridReady ? (
+                     initialItems && initialItems.length > 0 ? (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ duration: 0.7, ease: "easeOut" as const }}
+                            >
+                                <HubFilters
+                                    activeTypeFilter={activeTypeFilter}
+                                    onTypeFilterChange={setActiveTypeFilter}
+                                    activeSort={activeSort}
+                                    onSortChange={setActiveSort}
+                                />
+                            </motion.div>
+                            
+                            <motion.div 
+                                layout 
+                                className="content-grid gpu-cull"
+                                style={{ paddingBottom: '6rem' }}
+                            >
+                                <AnimatePresence>
+                                    {filteredAndSortedItems.length > 0 ? (
+                                        filteredAndSortedItems.map(item => (
+                                            <motion.div
+                                                key={item.id}
+                                                layout
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
+                                                style={{ height: '100%' }}
+                                            >
+                                                <ArticleCard
+                                                    article={item}
+                                                    layoutIdPrefix={listLayoutIdPrefix}
+                                                />
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                            <motion.div 
+                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                            style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
                                         >
-                                            <ArticleCard
-                                                article={item}
-                                                layoutIdPrefix={listLayoutIdPrefix}
-                                            />
+                                            لا يوجد محتوى يطابق بحثك.
                                         </motion.div>
-                                    ))
-                                ) : (
-                                        <motion.div 
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                        style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
-                                    >
-                                        لا يوجد محتوى يطابق بحثك.
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        </>
+                     ) : (
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            transition={{ delay: 0.5 }}
+                            style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }}
+                        >
+                            {isLoading ? (
+                                <div className="spinner" style={{margin: '0 auto'}}></div>
+                            ) : (
+                                <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p>
+                            )}
                         </motion.div>
-                    </>
+                     )
                  ) : (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        transition={{ delay: 0.5 }}
-                        style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }}
-                    >
-                        <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) لهذه اللعبة بعد.</p>
-                    </motion.div>
+                     <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <div className="spinner" />
+                     </div>
                  )}
             </div>
         </div>

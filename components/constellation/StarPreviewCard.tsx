@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { urlFor } from '@/sanity/lib/image';
 import { SanityContentObject, StarData, ScreenPosition } from './config';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader';
+import { useContentStore } from '@/lib/contentStore'; 
 
 interface StarPreviewCardProps {
     starData: StarData;
@@ -21,9 +22,26 @@ const typeMap: Record<'review' | 'article' | 'news', string> = {
     news: 'خبر'
 }
 
+// Map content type to index section
+const indexSectionMap: Record<string, 'reviews' | 'articles' | 'news'> = {
+    review: 'reviews',
+    article: 'articles',
+    news: 'news'
+};
+
+const mapContentTypeToRouteType = (type: string): 'reviews' | 'articles' | 'news' => {
+    switch (type) {
+        case 'review': return 'reviews';
+        case 'article': return 'articles';
+        case 'news': return 'news';
+        default: return 'news';
+    }
+};
+
 export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCardProps) => {
     const router = useRouter();
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
+    const { openIndexOverlay, openOverlay } = useContentStore(); // <--- USE STORE
     const layoutIdPrefix = "constellation-preview";
     const [isMobile, setIsMobile] = useState(false);
 
@@ -35,27 +53,32 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
     }, []);
     
     const { content } = starData;
-    const getLinkPath = (item: SanityContentObject) => {
-        switch (item._type) {
-            case 'review': return `/reviews/${item.slug}`;
-            case 'article': return `/articles/${item.slug}`;
-            case 'news': return `/news/${item.slug}`;
-            default: return '/';
-        }
-    };
-    
+
     const imageUrl = content.mainImage?.asset ? urlFor(content.mainImage).width(600).height(338).fit('crop').auto('format').url() : null;
     const blurDataURL = content.mainImage?.blurDataURL;
     const contentType = typeMap[content._type] || 'محتوى';
-    const linkPath = getLinkPath(content);
     const formattedDate = content.publishedAt 
         ? new Date(content.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
         : '';
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setPrefix(layoutIdPrefix);
-        router.push(linkPath, { scroll: false });
+        // TRIGGER OVERLAY
+        openOverlay(
+            content.slug,
+            mapContentTypeToRouteType(content._type),
+            layoutIdPrefix,
+            imageUrl || undefined
+        );
+        onClose();
+    };
+    
+    const handleViewAll = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const section = indexSectionMap[content._type];
+        if (section) {
+            openIndexOverlay(section);
+        }
         onClose();
     };
 
@@ -92,7 +115,7 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
             <motion.div layoutId={`${layoutIdPrefix}-card-image-${content.legacyId}`} style={{ position: 'relative', width: '100%', height: isMobile ? '130px' : '150px' }}>
                 {imageUrl ? ( 
                     <Image 
-                        loader={sanityLoader} // <-- LOADER ADDED
+                        loader={sanityLoader}
                         src={imageUrl} alt={content.title} fill sizes="300px"
                         style={{ objectFit: 'cover' }} 
                         placeholder={blurDataURL ? 'blur' : 'empty'}
@@ -107,9 +130,19 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
                     {formattedDate && <p style={{color: 'var(--text-secondary)', fontSize: isMobile ? '1.1rem' : '1.2rem', margin: 0}}>{formattedDate}</p>}
                 </div>
                 <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${content.legacyId}`} style={{ margin: '0 0 1.2rem 0', fontSize: isMobile ? '1.5rem' : '1.7rem' }}>{content.title}</motion.h3>
-                <div className="primary-button no-underline" style={{ display: 'block', textAlign: 'center', pointerEvents: 'none', fontSize: isMobile ? '1.3rem' : 'inherit', padding: isMobile ? '0.6rem 1rem' : '1rem 2.4rem' }}>
+                
+                <button 
+                    onClick={handleViewAll}
+                    className="primary-button no-underline" 
+                    style={{ 
+                        display: 'block', width: '100%', textAlign: 'center', 
+                        fontSize: isMobile ? '1.3rem' : 'inherit', 
+                        padding: isMobile ? '0.6rem 1rem' : '1rem 2.4rem',
+                        cursor: 'pointer' 
+                    }}
+                >
                     عرض كامل الـ{contentType}
-                </div>
+                </button>
             </div>
         </motion.div>
     );

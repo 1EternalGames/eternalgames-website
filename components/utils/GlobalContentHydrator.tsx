@@ -6,13 +6,13 @@ import { useContentStore } from '@/lib/contentStore';
 
 // Invisible component that runs ONCE on the homepage to dump data into the store
 export default function GlobalContentHydrator({ items }: { items: any[] }) {
-    const hydrate = useContentStore((state) => state.hydrate);
+    const hydrateContent = useContentStore((state) => state.hydrateContent); // FIX: Use correct selector
 
     useEffect(() => {
         if (items && items.length > 0) {
-            hydrate(items);
+            hydrateContent(items);
         }
-    }, [items, hydrate]);
+    }, [items, hydrateContent]);
 
     return null;
 }

@@ -13,6 +13,7 @@ import NewsfeedStream from "./kinetic-news/NewsfeedStream";
 import ArticleCard from "@/components/ArticleCard";
 import gridStyles from './HomepageFeeds.module.css';
 import feedStyles from './feed/Feed.module.css';
+import { useContentStore } from "@/lib/contentStore"; 
 
 interface HomepageFeedsProps {
     topArticles: CardProps[];
@@ -27,8 +28,8 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
     const articlesY = useTransform(scrollYProgress, [0, 1], [0, -80]);
     const newsY = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-    // State to handle news feed expansion
     const [isNewsExpanded, setIsNewsExpanded] = useState(false);
+    const { openIndexOverlay } = useContentStore();
 
     return (
         <div className={gridStyles.feedsGrid} ref={containerRef}>
@@ -38,13 +39,15 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
                         topItems={topArticles}
-                        viewAllLink="/articles"
                         viewAllText="عرض كل المقالات"
-                        topItemsContainerClassName={`${feedStyles.topArticlesGrid} gpu-cull`} // Added gpu-cull here
+                        onViewAll={() => openIndexOverlay('articles')}
+                        
+                        topItemsContainerClassName={`${feedStyles.topArticlesGrid} gpu-cull`}
                         renderTopItem={(item) => (
                             <ArticleCard 
                                 key={item.id} 
                                 article={item} 
+                                // PREFIX 1: Top Articles (Most Popular)
                                 layoutIdPrefix="homepage-top-articles"
                                 isPriority={true}
                                 smallTags={false} 
@@ -53,7 +56,11 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         enableTopSectionHoverEffect={false}
                         latestSectionContent={
                             <div style={{ marginTop: '1.5rem' }}>
-                                <PaginatedCarousel items={latestArticles} />
+                                {/* PREFIX 2: Latest Articles (Paginated Carousel) */}
+                                <PaginatedCarousel 
+                                    items={latestArticles} 
+                                    layoutIdPrefix="homepage-latest-articles"
+                                />
                             </div>
                         }
                     />
@@ -65,19 +72,32 @@ export default function HomepageFeeds({ topArticles, latestArticles, pinnedNews,
                         topSectionLabel="الأكثر رواجًا"
                         latestSectionLabel="الأحدث"
                         topItems={pinnedNews}
-                        // Conditional Props based on expansion state
-                        viewAllLink={isNewsExpanded ? "/news" : undefined}
+                        
                         viewAllText={isNewsExpanded ? "عرض كل الأخبار" : "المزيد من الأخبار"}
-                        onViewAll={!isNewsExpanded ? () => setIsNewsExpanded(true) : undefined}
+                        onViewAll={() => {
+                            if (!isNewsExpanded) {
+                                setIsNewsExpanded(true);
+                            } else {
+                                openIndexOverlay('news');
+                            }
+                        }}
                         
                         topItemsContainerClassName={feedStyles.pinnedNewsList}
                         renderTopItem={() => null}
-                        topSectionContent={<KineticSpotlightNews items={pinnedNews} />}
+                        topSectionContent={
+                            // PREFIX 3: Pinned News (Spotlight)
+                            <KineticSpotlightNews 
+                                items={pinnedNews} 
+                                layoutIdPrefix="homepage-pinned-news" 
+                            />
+                        }
                         latestSectionContent={
                             <div style={{ marginTop: '1.5rem' }}>
+                                {/* PREFIX 4: Latest News (Stream) */}
                                 <NewsfeedStream 
                                     items={newsList} 
                                     isExpanded={isNewsExpanded} 
+                                    layoutIdPrefix="homepage-news-stream" 
                                 />
                             </div>
                         }

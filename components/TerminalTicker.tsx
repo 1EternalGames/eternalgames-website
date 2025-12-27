@@ -6,6 +6,7 @@ import type { SanityNews } from '@/types/sanity';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../app/news/NewsPage.module.css';
+import { useContentStore } from '@/lib/contentStore'; // IMPORTED
 
 const ScrambledText = ({ text }: { text: string }) => {
   const [displayText, setDisplayText] = useState('');
@@ -47,13 +48,15 @@ const ScrambledText = ({ text }: { text: string }) => {
 
 export default function TerminalTicker({ headlines }: { headlines: SanityNews[] }) {
   const [index, setIndex] = useState(0);
+  const isOverlayOpen = useContentStore((s) => s.isOverlayOpen); // MODIFIED
 
   useEffect(() => {
+    if (isOverlayOpen) return; // MODIFIED: Stop ticker if overlay is open
     const timer = setInterval(() => {
       setIndex((prevIndex) => (prevIndex + 1) % headlines.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [headlines.length]);
+  }, [headlines.length, isOverlayOpen]);
 
   return (
     <div className={styles.terminalTickerContainer}>
@@ -77,6 +80,7 @@ export default function TerminalTicker({ headlines }: { headlines: SanityNews[] 
             <Link 
                 href={`/news/${headlines[index].slug}`} 
                 className="no-underline"
+                prefetch={false}
             >
               <p className={styles.terminalTickerCategory}>{headlines[index].category}</p>
               <h4 className={styles.terminalTickerHeadline}>

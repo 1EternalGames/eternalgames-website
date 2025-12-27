@@ -1,7 +1,7 @@
 // app/releases/ReleasePageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, startTransition } from 'react';
 import type { SanityGameRelease } from '@/types/sanity';
 import TimelineCard from '@/components/TimelineCard';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,16 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
   const { bookmarks, setSignInModalOpen } = useUserStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [showWishlistOnly, setShowWishlistOnly] = useState(false);
+
+  // --- OPTIMIZATION: Deferred Rendering ---
+  const [isGridReady, setIsGridReady] = useState(false);
+  useEffect(() => {
+      const t = requestAnimationFrame(() => {
+          startTransition(() => setIsGridReady(true));
+      });
+      return () => cancelAnimationFrame(t);
+  }, []);
+  // ----------------------------------------
 
   // New Filters
   const currentYear = new Date().getFullYear();
@@ -142,7 +152,7 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
       if (release.isTBA) {
           monthLabel = 'موعد غير معلن'; 
       } else if (release.datePrecision === 'year') {
-          monthLabel = 'شهر غير معلن'; // Special group for Year-only precision
+          monthLabel = 'شهر غير معلن'; 
       } else {
           const date = new Date(release.releaseDate);
           monthIdx = date.getMonth();
@@ -174,66 +184,76 @@ export default function ReleasePageClient({ releases, hideHeader = false }: { re
               <h1 className="page-title">إصدارات {selectedYear === 'TBA' ? 'قادمة (TBA)' : selectedYear}</h1>
           )}
           
-          <PinnedReleases 
-            items={pinnedGames} 
-            showAdminControls={isAdmin} // Pass Admin Prop
-          />
-
-          <ReleasesControlBar 
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              showWishlistOnly={showWishlistOnly}
-              onToggleWishlist={handleToggleWishlist}
-              onJumpToNow={handleJumpToNow}
-              isAuthenticated={!!session}
-              
-              selectedYear={selectedYear}
-              onYearChange={setSelectedYear}
-              selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
-              selectedPlatform={selectedPlatform}
-              onPlatformChange={setSelectedPlatform}
-              availableYears={availableYears}
-          />
+          {isGridReady ? (
+              <>
+                  <PinnedReleases 
+                    items={pinnedGames} 
+                    showAdminControls={isAdmin} 
+                  />
+        
+                  <ReleasesControlBar 
+                      searchTerm={searchTerm}
+                      onSearchChange={setSearchTerm}
+                      showWishlistOnly={showWishlistOnly}
+                      onToggleWishlist={handleToggleWishlist}
+                      onJumpToNow={handleJumpToNow}
+                      isAuthenticated={!!session}
+                      
+                      selectedYear={selectedYear}
+                      onYearChange={setSelectedYear}
+                      selectedMonth={selectedMonth}
+                      onMonthChange={setSelectedMonth}
+                      selectedPlatform={selectedPlatform}
+                      onPlatformChange={setSelectedPlatform}
+                      availableYears={availableYears}
+                  />
+              </>
+          ) : (
+              <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="spinner" />
+              </div>
+          )}
       </div>
       
-      <div ref={mainRef} className={styles.chronoTimelineSections}>
-          <motion.div layout className={`${styles.chronoGamesGrid} gpu-cull`} initial="hidden" animate={isInView ? "visible" : "hidden"}>
-            <AnimatePresence mode="popLayout">
-              {flatAnimatedContent.length === 0 ? (
-                <motion.p key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0', gridColumn: '1 / -1', fontSize: '1.6rem'}}>
-                  لا توجد إصدارات تطابق بحثك.
-                </motion.p>
-              ) : (
-                flatAnimatedContent.map(item => {
-                  if (item.type === 'header') {
-                    return (
-                      <motion.div 
-                        key={item.key} 
-                        layout 
-                        id={item.monthIndex !== undefined && item.monthIndex !== -1 ? `month-header-${item.monthIndex}` : undefined}
-                        className={styles.stickyHeaderWrapper} 
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      >
-                        <h2 className={styles.timelineMonthTitle}>{item.data as string}</h2>
-                      </motion.div>
-                    );
-                  }
-                  const release = item.data as SanityGameRelease;
-                  return (
-                    <motion.div key={item.key} layout variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
-                      <TimelineCard 
-                        release={release} 
-                        showAdminControls={isAdmin} 
-                        autoHeight={false} 
-                      />
-                    </motion.div>
-                  );
-                })
-              )}
-            </AnimatePresence>
-          </motion.div>
-      </div>
+      {isGridReady && (
+          <div ref={mainRef} className={styles.chronoTimelineSections}>
+              <motion.div layout className={`${styles.chronoGamesGrid} gpu-cull`} initial="hidden" animate={isInView ? "visible" : "hidden"}>
+                <AnimatePresence mode="popLayout">
+                  {flatAnimatedContent.length === 0 ? (
+                    <motion.p key="no-results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0', gridColumn: '1 / -1', fontSize: '1.6rem'}}>
+                      لا توجد إصدارات تطابق بحثك.
+                    </motion.p>
+                  ) : (
+                    flatAnimatedContent.map(item => {
+                      if (item.type === 'header') {
+                        return (
+                          <motion.div 
+                            key={item.key} 
+                            layout 
+                            id={item.monthIndex !== undefined && item.monthIndex !== -1 ? `month-header-${item.monthIndex}` : undefined}
+                            className={styles.stickyHeaderWrapper} 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                          >
+                            <h2 className={styles.timelineMonthTitle}>{item.data as string}</h2>
+                          </motion.div>
+                        );
+                      }
+                      const release = item.data as SanityGameRelease;
+                      return (
+                        <motion.div key={item.key} layout variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
+                          <TimelineCard 
+                            release={release} 
+                            showAdminControls={isAdmin} 
+                            autoHeight={false} 
+                          />
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </AnimatePresence>
+              </motion.div>
+          </div>
+      )}
     </div>
   );
 }

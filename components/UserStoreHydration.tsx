@@ -5,30 +5,37 @@ import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserStore } from '@/lib/store';
 import { useNotificationStore } from '@/lib/notificationStore';
+import { useContentStore } from '@/lib/contentStore'; 
 import { useRouter, usePathname } from 'next/navigation';
 
-type InitialUserState = {
-    likes: string[];
-    bookmarks: string[];
-    shares: string[];
-} | null;
-
-export default function UserStoreHydration({ initialUserState }: { initialUserState?: InitialUserState }) {
+export default function UserStoreHydration({ 
+    universalData,
+}: { 
+    universalData?: any,
+}) {
     const { data: session, status } = useSession();
     const router = useRouter();
     const pathname = usePathname();
     
     const { syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb } = useUserStore();
     const { setNotifications, setUnreadCount } = useNotificationStore();
+    const { hydrateUniversal } = useContentStore();
     
     const lastSyncedUserId = useRef<string | null>(null);
     const hasHandledOnboarding = useRef(false);
+    const hasHydratedStatic = useRef(false);
 
-    // Safe access to user ID for logic comparison
+    // UNIVERSAL HYDRATION (SYNCHRONOUS EXECUTION)
+    // Only if explicitly passed (which is now mostly handled by HomepageHydrator or the Loader)
+    if (!hasHydratedStatic.current && universalData) {
+        hasHydratedStatic.current = true;
+        hydrateUniversal(universalData);
+    }
+
     const currentUserId = (session?.user as any)?.id;
 
     useEffect(() => {
-        // 1. Handle Onboarding Redirect
+        // Handle Onboarding
         if (status === 'authenticated' && (session as any)?.needsOnboarding && !hasHandledOnboarding.current) {
             if (pathname !== '/welcome') {
                 hasHandledOnboarding.current = true;
@@ -40,9 +47,8 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
 
         if (status === 'loading') return;
 
-        // 2. Handle Data Hydration
+        // Handle User Data Hydration (Notifications, Likes, etc.)
         if (status === 'authenticated') {
-            // Check if we have synced for THIS user ID specifically
             const needsSync = !isSyncedWithDb || (currentUserId && lastSyncedUserId.current !== currentUserId);
 
             if (needsSync && currentUserId) {
@@ -75,12 +81,7 @@ export default function UserStoreHydration({ initialUserState }: { initialUserSt
                 setIsSyncedWithDb(false); 
             }
         }
-
-    // FIX: Removed 'session?.user?.id' to prevent TS error. 
-    // Using 'currentUserId' (defined in body) or just 'session' covers the reactivity needs.
-    }, [status, session, currentUserId, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, initialUserState, pathname]);
+    }, [status, session, currentUserId, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, pathname]);
 
     return null;
 }
-
-

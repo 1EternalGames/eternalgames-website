@@ -5,36 +5,51 @@ import { CardProps } from '@/types';
 const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
 export const adaptToCardProps = (item: any, options: { width?: number } = {}): CardProps | null => {
-    if (!item || item.legacyId === null || item.legacyId === undefined) {
+    if (!item || (!item._id && !item.id)) {
         return null;
     }
 
-    const imageAsset = item.mainImage?.asset || item.mainImageRef;
+    // Defensive Image Extraction
+    let imageAsset = item.mainImage?.asset || item.mainImageRef;
+    
+    if (!imageAsset && item.mainImage && item.mainImage._type === 'image') {
+         imageAsset = item.mainImage.asset;
+    }
+
     let imageUrl = null;
     let blurDataURL: string = '';
     
     const targetWidth = options.width || 1200;
     const targetHeight = Math.round(targetWidth * 0.5625);
 
-    if (imageAsset) {
-        imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
-        blurDataURL = urlFor(imageAsset).width(8).blur(10).auto('format').url();
+    // FIXED: Strict check for asset existence
+    if (imageAsset && (imageAsset._ref || imageAsset._id || imageAsset.url)) {
+        try {
+            imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
+            blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url(); 
+        } catch (e) {
+            console.warn("Image URL generation failed", e);
+            imageUrl = '/placeholder-game.jpg';
+        }
+    } else if (item.imageUrl) {
+        imageUrl = item.imageUrl;
+    } else {
+        imageUrl = '/placeholder-game.jpg';
     }
 
-    if (!imageUrl) return null;
-
-    // Process Vertical Image
     const verticalImageAsset = item.mainImageVertical?.asset || item.mainImageVerticalRef;
     let verticalImageUrl = null;
-    if (verticalImageAsset) {
-        // Vertical aspect ratio 2:3 or similar
-        verticalImageUrl = urlFor(verticalImageAsset).width(600).height(900).fit('crop').auto('format').url();
+    if (verticalImageAsset && (verticalImageAsset._ref || verticalImageAsset._id || verticalImageAsset.url)) {
+        try {
+            verticalImageUrl = urlFor(verticalImageAsset).width(600).height(900).fit('crop').auto('format').url();
+        } catch (e) {
+             // Ignore vertical fail
+        }
     }
 
     let formattedDate = '';
     let publishedYear = null;
 
-    // Handle Content Date (PublishedAt)
     if (item.publishedAt) {
         const date = new Date(item.publishedAt);
         const day = date.getDate();
@@ -42,9 +57,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         const year = date.getFullYear();
         formattedDate = `${day} ${arabicMonths[monthIndex]} ${year}`;
         publishedYear = year;
-    } 
-    // Handle Release Date (Specific formatting based on precision)
-    else if (item.releaseDate) {
+    } else if (item.releaseDate) {
         const date = new Date(item.releaseDate);
         const day = date.getDate();
         const monthIndex = date.getMonth();
@@ -76,10 +89,13 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     const gameTitle = item.game?.title;
     const gameSlug = item.game?.slug;
 
+    // IMPORTANT: Pass through the raw content array so the store can use it
+    const contentBody = item.content || [];
+
     return {
         type: item._type,
         id: item._id, 
-        legacyId: item.legacyId,
+        legacyId: item.legacyId || 0,
         slug: item.slug?.current ?? item.slug ?? '',
         game: gameTitle,
         gameSlug: gameSlug,
@@ -89,9 +105,9 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         date: formattedDate,
         year: publishedYear,
         imageUrl: imageUrl,
-        verticalImageUrl: verticalImageUrl, // Added field
+        verticalImageUrl: verticalImageUrl, 
         mainImageRef: imageAsset,
-        mainImageVerticalRef: verticalImageAsset, // Added field
+        mainImageVerticalRef: verticalImageAsset, 
         score: item.score,
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
         blurDataURL: blurDataURL,
@@ -100,11 +116,9 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],
-        content: item.content || [],
+        content: contentBody, // Pass body
         relatedReviewIds: item.relatedReviewIds || [],
         synopsis: item.synopsis,
-
-        // NEW: Release Specific Fields (Optional for other types)
         onGamePass: item.onGamePass || false,
         onPSPlus: item.onPSPlus || false,
         trailer: item.trailer || '',
@@ -113,5 +127,3 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         isTBA: item.isTBA || false,
     };
 };
-
-

@@ -7,19 +7,22 @@ import { CardProps } from '@/types';
 import styles from './NewsfeedStream.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import { useContentStore } from '@/lib/contentStore'; 
 
 interface NewsfeedStreamProps {
     items: CardProps[];
     isExpanded?: boolean;
+    layoutIdPrefix?: string; // New Prop
 }
 
-export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedStreamProps) {
+export default function NewsfeedStream({ items, isExpanded = false, layoutIdPrefix = "newsfeed-stream" }: NewsfeedStreamProps) {
     const [listItems, setListItems] = useState(items);
     const [isHovered, setIsHovered] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     
     // Use Store
     const { isCarouselAutoScrollEnabled } = usePerformanceStore();
+    const isOverlayOpen = useContentStore((s) => s.isOverlayOpen); 
     
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
@@ -29,8 +32,8 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
     }, [items]);
 
     useEffect(() => {
-        // Check toggle
-        if (!isExpanded && !isHovered && isInView && listItems.length > 5 && isCarouselAutoScrollEnabled) {
+        // MODIFIED: Check isOverlayOpen
+        if (!isExpanded && !isHovered && isInView && listItems.length > 5 && isCarouselAutoScrollEnabled && !isOverlayOpen) {
             intervalRef.current = setInterval(() => {
                 setListItems((prevItems) => {
                     const newItems = [...prevItems];
@@ -46,7 +49,7 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [isHovered, listItems.length, isExpanded, isInView, isCarouselAutoScrollEnabled]);
+    }, [isHovered, listItems.length, isExpanded, isInView, isCarouselAutoScrollEnabled, isOverlayOpen]);
 
     const displayItems = useMemo(() => 
         isExpanded ? items.slice(0, 15) : listItems.slice(0, 5),
@@ -85,7 +88,8 @@ export default function NewsfeedStream({ items, isExpanded = false }: NewsfeedSt
                     >
                         <NewsGridCard 
                             item={item} 
-                            layoutIdPrefix="homepage-stream"
+                            // Update layout ID to match prefix
+                            layoutIdPrefix={`${layoutIdPrefix}-${item.legacyId}`}
                             variant="mini"
                         />
                     </motion.div>

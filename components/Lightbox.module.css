@@ -10,6 +10,13 @@
     justify-content: center;
     padding: 15vh 20vw;
     cursor: zoom-out;
+    
+    /* THE DEFINITIVE FIX: CSS-based Scroll Locking */
+    /* This prevents scroll events from bubbling to the parent (overlay/body) */
+    overscroll-behavior: contain;
+    touch-action: none;
+    /* Ensure it captures all pointer events */
+    pointer-events: auto;
 }
 
 :global(body.no-glass) .lightboxOverlay {
@@ -38,6 +45,9 @@
     border-radius: 12px;
     box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
     background-color: var(--border-color); /* Fallback for loading */
+    
+    /* Ensure clicks here don't close the overlay */
+    cursor: auto;
 }
 
 .lightboxImage {

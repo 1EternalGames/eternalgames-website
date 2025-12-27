@@ -1,7 +1,6 @@
 // app/games/[slug]/page.tsx
 import { client } from '@/lib/sanity.client';
 import { notFound } from 'next/navigation';
-import HubPageClient from '@/components/HubPageClient';
 import type { Metadata } from 'next';
 import { urlFor } from '@/sanity/lib/image';
 import { getCachedGamePageData } from '@/lib/sanity.fetch';
@@ -9,7 +8,8 @@ import { enrichContentList } from '@/lib/enrichment';
 import { unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
-import VideoGameJsonLd from '@/components/seo/VideoGameJsonLd'; // ADDED
+import VideoGameJsonLd from '@/components/seo/VideoGameJsonLd';
+import GameHubClient from '@/components/GameHubClient'; // <--- IMPORTED
 
 export const dynamicParams = true;
 
@@ -27,7 +27,7 @@ const getEnrichedGameData = unstable_cache(
         const releaseQuery = groq`*[_type == "gameRelease" && game->slug.current == $slug][0]{ 
             synopsis,
             price,
-            releaseDate, // ADDED: Need date for schema
+            releaseDate,
             "developer": developer->title,
             "publisher": publisher->title,
             platforms,
@@ -43,7 +43,7 @@ const getEnrichedGameData = unstable_cache(
             items: enrichedItems, 
             releaseTags: releaseData?.tags || [],
             synopsis: releaseData?.synopsis || null,
-            releaseDate: releaseData?.releaseDate, // ADDED
+            releaseDate: releaseData?.releaseDate,
             price: releaseData?.price,
             developer: releaseData?.developer,
             publisher: releaseData?.publisher,
@@ -129,13 +129,12 @@ export default async function GameHubPage({ params }: { params: Promise<{ slug: 
                 developer={developer}
                 publisher={publisher}
             />
-            <HubPageClient
-                initialItems={allItems}
-                hubTitle={gameTitle}
-                hubType="اللعبة"
+            <GameHubClient
+                gameTitle={gameTitle}
+                items={allItems}
                 synopsis={synopsis}
-                tags={releaseTags}
-                fallbackImage={mainImage} 
+                releaseTags={releaseTags}
+                mainImage={mainImage}
                 price={price}
                 developer={developer}
                 publisher={publisher}

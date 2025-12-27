@@ -15,9 +15,10 @@ import {useLightboxStore} from '@/lib/lightboxStore'
 import type {PortableTextBlock} from '@portabletext/types'
 import {useTheme} from 'next-themes'
 import {sanityLoader} from '@/lib/sanity.loader'
-import { generateId } from '@/lib/text-utils' // Import shared ID generator
+import { generateId } from '@/lib/text-utils'
+import KineticLink from '@/components/kinetic/KineticLink' // IMPORT KINETIC LINK
 
-// --- LAZY-LOADED COMPONENTS ---
+// ... (Lazy Loaded Components remain same) ...
 const LoadingSpinner = () => (
   <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px'}}>
     <div className="spinner" />
@@ -44,7 +45,6 @@ const YoutubeEmbed = dynamic(() => import('./content/YoutubeEmbed'), {
   loading: () => <LoadingSpinner />,
   ssr: false,
 })
-// --- END LAZY-LOADED COMPONENTS ---
 
 type ColorMapping = {
   word: string
@@ -99,7 +99,16 @@ const SanityImageComponent = ({value}: {value: any}) => {
   const fullResSrc = urlFor(asset).auto('format').url()
   return (
     <figure style={{ margin: '4rem 0', display: 'block' }}>
-      <div onClick={() => openLightbox([fullResSrc], 0)} className="image-lightbox-trigger" role="button" aria-label="View full size image">
+      <div 
+        onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openLightbox([fullResSrc], 0);
+        }} 
+        className="image-lightbox-trigger" 
+        role="button" 
+        aria-label="View full size image"
+      >
         <NextImage loader={sanityLoader} src={optimizedSrc} alt={alt || 'Content Image'} width={width} height={height} sizes="(max-width: 960px) 90vw, 850px" placeholder={blurDataURL ? 'blur' : 'empty'} blurDataURL={blurDataURL} loading="lazy" draggable={false} style={{ width: '100%', height: 'auto' }} />
       </div>
       {alt && <figcaption style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '1.4rem', marginTop: '1rem', fontStyle: 'italic', maxWidth: '80%', marginLeft: 'auto', marginRight: 'auto' }}>{alt}</figcaption>}
@@ -112,7 +121,6 @@ const HeadingComponent = ({level, children, value}: {level: number; children?: R
     ? value.children.map((child: any) => child.text).join('') 
     : (Array.isArray(children) ? children.join('') : (children as string) || '');
   
-  // Use shared ID generator to match ToC
   const id = generateId(textContent);
 
   const styles: Record<number, React.CSSProperties> = {
@@ -193,9 +201,45 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
       marks: {
         color: ColorMark,
         link: ({value, children}) => {
-          const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined
+          const href = value.href || '';
+          
+          // INTELLIGENT KINETIC LINK REPLACEMENT
+          // Check if it's an internal Creator, Tag, or Game link
+          const isCreatorLink = href.startsWith('/creators/');
+          const isTagLink = href.startsWith('/tags/');
+          const isGameLink = href.startsWith('/games/');
+          
+          if (isCreatorLink) {
+              const slug = href.replace('/creators/', '');
+              return (
+                  <KineticLink href={href} slug={slug} type="creators" className="text-accent underline hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}>
+                      {children}
+                  </KineticLink>
+              );
+          }
+          
+          if (isTagLink) {
+               const slug = href.replace('/tags/', '');
+               return (
+                  <KineticLink href={href} slug={slug} type="tags" className="text-accent underline hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}>
+                      {children}
+                  </KineticLink>
+               );
+          }
+          
+          if (isGameLink) {
+              const slug = href.replace('/games/', '');
+               return (
+                  <KineticLink href={href} slug={slug} type="games" className="text-accent underline hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}>
+                      {children}
+                  </KineticLink>
+               );
+          }
+
+          // Default external/internal link
+          const rel = !href.startsWith('/') ? 'noreferrer noopener' : undefined
           const isExternal = rel === 'noreferrer noopener'
-          return <a href={value.href} rel={rel} target={isExternal ? '_blank' : '_self'}>{children}</a>
+          return <a href={href} rel={rel} target={isExternal ? '_blank' : '_self'}>{children}</a>
         },
       },
     }

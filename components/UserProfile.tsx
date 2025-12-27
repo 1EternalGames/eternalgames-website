@@ -31,6 +31,9 @@ const UserProfile = () => {
         return <div className={styles.userAvatarSkeleton} />;
     }
 
+    // FIX: Provide default avatar if missing to prevent 404
+    const avatarSrc = session?.user?.image || '/default-avatar.svg';
+
     if (session && session.user) {
         const userInitial = session.user.name ? session.user.name.charAt(0).toUpperCase() : '?';
 
@@ -43,9 +46,10 @@ const UserProfile = () => {
                     animate={{ scale: isDropdownOpen ? 1.1 : 1, rotate: isDropdownOpen ? -15 : 0 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                 >
-                    {session.user.image ? (
+                    {/* Always show image if src exists (using default SVG fallback), else initial */}
+                    {avatarSrc ? (
                         <Image
-                            src={session.user.image}
+                            src={avatarSrc}
                             alt={session.user.name || 'User Avatar'}
                             width={36}
                             height={36}
@@ -113,5 +117,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-
-

@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect, RefObject } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -28,7 +28,8 @@ import { CardProps } from '@/types';
 import { translateTag } from '@/lib/translations';
 import TableOfContents, { TocItem } from '@/components/content/TableOfContents';
 import JoinVanguardCard from '@/components/ui/JoinVanguardCard';
-import { formatArabicDuration, generateId } from '@/lib/text-utils'; 
+import { formatArabicDuration, generateId } from '@/lib/text-utils';
+import { generateLayoutId } from '@/lib/layoutUtils'; 
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 type Slug = { current: string } | string;
@@ -38,94 +39,167 @@ type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & {
     relatedContent?: any[]; 
     readingTime?: number; 
     toc?: { id: string; text: string; level: number }[]; 
+    contentLoaded?: boolean;
 };
 
 type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
-const contentVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { delay: 0.4, duration: 0.8 } } };
+
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 'إشاعة', 'leak': 'تسريب' };
-
 const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
-export default function ContentPageClient({ item: initialItem, type, children, colorDictionary }: { item: ContentItem; type: ContentType; children: React.ReactNode; colorDictionary: ColorMapping[]; }) {
-    const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
+export default function ContentPageClient({ 
+    item, 
+    type, 
+    children, 
+    colorDictionary, 
+    forcedLayoutIdPrefix,
+    initialImageSrc,
+    scrollContainerRef
+}: { 
+    item: ContentItem; 
+    type: ContentType; 
+    children: React.ReactNode; 
+    colorDictionary: ColorMapping[]; 
+    forcedLayoutIdPrefix?: string;
+    initialImageSrc?: string;
+    scrollContainerRef?: RefObject<HTMLElement | null>;
+}) {
+    const { prefix: storePrefix, setPrefix } = useLayoutIdStore();
     const openLightbox = useLightboxStore((state) => state.openLightbox);
     const { isHeroTransitionEnabled } = usePerformanceStore();
-    const getBySlug = useContentStore((state) => state.getBySlug);
+    // REMOVED: const getBySlug = useContentStore((state) => state.getBySlug);
 
     // --- INSTANT CACHE CHECK ---
     // If the data exists in the store (from homepage prefetch), use it immediately.
     // The server prop `initialItem` is the fallback/SEO data.
-    const slugKey = typeof initialItem.slug === 'string' ? initialItem.slug : initialItem.slug?.current || '';
-    const cachedItem = getBySlug(slugKey);
+    const slugKey = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
     
-    // Prioritize cachedItem if available, it avoids the hydration flicker if cache is hot
-    const item = cachedItem || initialItem;
-
+    // We already have 'item' passed in, which might be from the store if this component is rendered by KineticOverlayManager.
+    // However, if rendered by Next.js routing, 'item' is from getStaticProps/Server.
+    // The logic below is redundant if we trust the parent, but safe to keep.
+    
     const isReview = type === 'reviews';
     const isNews = type === 'news';
 
-    const [tocItems, setTocItems] = useState<TocItem[]>(item.toc || []);
+    const [tocItems, setTocItems] = useState<TocItem[]>(item?.toc || []);
     const [headings, setHeadings] = useState<Heading[]>([]);
-    
     const [isMobile, setIsMobile] = useState(false);
     
+    const [isHeroVisible, setIsHeroVisible] = useState(true);
+    const [isBodyReady, setIsBodyReady] = useState(false);
+    const [isTransitionComplete, setIsTransitionComplete] = useState(false);
+
     const articleBodyRef = useRef<HTMLDivElement>(null); 
-    const scrollTrackerRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
-    const slugString = typeof item.slug === 'string' ? item.slug : item.slug?.current || '';
+    const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
+    const isLoaded = (item as any).contentLoaded === true || (item.content && Array.isArray(item.content) && item.content.length > 0);
+
+    const layoutIdPrefix = (isHeroVisible ? (forcedLayoutIdPrefix || storePrefix) : 'default');
+    const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
+
+    // ANIMATION PHYSICS: Lightweight and Snappy
+    // Mass: 0.5 (Light), Stiffness: 150 (Responsive), Damping: 22 (No wobble)
+    const springTransition = { 
+        type: 'spring' as const, 
+        stiffness: 150, 
+        damping: 22, 
+        mass: 0.5,
+        // CRITICAL: Force opacity to update instantly to prevent darkening/crossfade dip
+        opacity: { duration: 0 } 
+    };
     
+    const bodyFadeVariants = { 
+        hidden: { opacity: 0, y: 20 }, 
+        visible: { 
+            opacity: 1, 
+            y: 0, 
+            transition: { 
+                duration: 0.4, 
+                ease: "easeOut" as const,
+                // Small delay to let the hero image land before text appears
+                delay: isSharedTransitionActive ? 0.25 : 0 
+            } 
+        },
+        exit: { opacity: 0, transition: { duration: 0.1 } } 
+    };
+
+    useEffect(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setIsBodyReady(true);
+            });
+        });
+        
+        if (!isSharedTransitionActive) {
+            setIsTransitionComplete(true);
+        }
+    }, [isSharedTransitionActive]);
+
+    useEffect(() => {
+        const container = scrollContainerRef?.current || window;
+        const handleScroll = () => {
+             const scrollTop = scrollContainerRef?.current 
+                ? scrollContainerRef.current.scrollTop 
+                : (typeof window !== 'undefined' ? window.scrollY : 0);
+             
+             if (scrollTop > 300) {
+                 setIsHeroVisible(false);
+             } else {
+                 setIsHeroVisible(true);
+             }
+        };
+        
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [scrollContainerRef]);
+
     const measureHeadings = useCallback(() => {
         const contentElement = articleBodyRef.current;
         if (!contentElement) return;
 
         const navbarOffset = 90;
-        const documentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-        const seenIds = new Set<string>();
-        
-        let newHeadings: Heading[] = [];
+        const currentScrollTop = scrollContainerRef?.current 
+            ? scrollContainerRef.current.scrollTop 
+            : (document.documentElement.scrollTop || document.body.scrollTop);
 
+        const seenIds = new Set<string>();
+        let newHeadings: Heading[] = [];
         const headingElements = Array.from(contentElement.querySelectorAll('h1, h2, h3'));
         
         headingElements.forEach((h, index) => {
             let id = h.id;
-            
             if (!id || seenIds.has(id)) { 
                 const textContent = h.textContent || '';
                 id = generateId(textContent) || `heading-${index}`;
             }
-            
             seenIds.add(id);
             h.id = id;
             
-            const topPosition = h.getBoundingClientRect().top + documentScrollTop;
+            const rect = h.getBoundingClientRect();
+            const topPosition = rect.top + currentScrollTop;
             const scrollToPosition = topPosition - navbarOffset;
-            
             const level = parseInt(h.tagName.substring(1));
             const title = h.textContent || '';
-            
             newHeadings.push({ id, title, top: Math.max(0, scrollToPosition), level });
         });
 
         if (isReview) {
              const scoreBoxElement = contentElement.querySelector('.score-box-container');
              if (scoreBoxElement) {
-                 const topPosition = scoreBoxElement.getBoundingClientRect().top + documentScrollTop;
+                 const rect = scoreBoxElement.getBoundingClientRect();
+                 const topPosition = rect.top + currentScrollTop;
                  const scoreBoxScrollPosition = topPosition - navbarOffset;
-                 
                  const verdictHeading = { id: 'verdict-summary', title: 'الخلاصة', top: Math.max(0, scoreBoxScrollPosition), level: 2 };
                  newHeadings.push(verdictHeading);
              }
         }
-        
-        if (newHeadings.length > 0) {
-            setHeadings(newHeadings);
-        }
-
-    }, [isReview]);
+        if (newHeadings.length > 0) setHeadings(newHeadings);
+    }, [isReview, scrollContainerRef]);
 
     useEffect(() => { return () => { setPrefix('default'); }; }, [setPrefix]);
 
@@ -137,121 +211,231 @@ export default function ContentPageClient({ item: initialItem, type, children, c
         return () => window.removeEventListener('resize', handleResize);
     }, [isLayoutStable, measureHeadings]); 
 
-    useIsomorphicLayoutEffect(() => { window.scrollTo(0, 0); }, []);
-    useEffect(() => { const timeout = setTimeout(() => setIsLayoutStable(true), 1500); return () => clearTimeout(timeout); }, [item]);
-    useEffect(() => { if (isLayoutStable) { requestAnimationFrame(() => { measureHeadings(); }); } }, [isLayoutStable, measureHeadings]); 
+    useIsomorphicLayoutEffect(() => { 
+        if (scrollContainerRef?.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        } else {
+            window.scrollTo(0, 0); 
+        }
+    }, [scrollContainerRef]);
+
+    useEffect(() => { 
+        if (!isLoaded || !isBodyReady) return; 
+        const timeout = setTimeout(() => {
+             setIsLayoutStable(true);
+             measureHeadings();
+        }, 500); 
+        return () => clearTimeout(timeout); 
+    }, [item, isLoaded, isBodyReady, measureHeadings]);
 
     if (!item) return null;
 
-    const rawRelatedReviews = (item as any).relatedReviews;
-    const rawRelatedArticles = (item as any).relatedArticles;
-    const rawRelatedNews = (item as any).relatedNews;
-    const relatedReviews = Array.isArray(rawRelatedReviews) ? rawRelatedReviews : [];
-    const relatedArticles = Array.isArray(rawRelatedArticles) ? rawRelatedArticles : [];
-    const relatedNews = Array.isArray(rawRelatedNews) ? rawRelatedNews : [];
+    const relatedReviews = Array.isArray((item as any).relatedReviews) ? (item as any).relatedReviews : [];
+    const relatedArticles = Array.isArray((item as any).relatedArticles) ? (item as any).relatedArticles : [];
+    const relatedNews = Array.isArray((item as any).relatedNews) ? (item as any).relatedNews : [];
+    
     const relatedContent = [...relatedReviews, ...relatedArticles, ...relatedNews];
     const uniqueRelatedContent = relatedContent.length > 0 ? Array.from(new Map(relatedContent.map((related: any) => [related._id, related])).values()) : [];
+    
     const adaptedRelatedContent = uniqueRelatedContent.map((related: any) => adaptToCardProps(related, { width: 600 })).filter(Boolean) as CardProps[];
+    
     const safeTags = Array.isArray(item.tags) ? item.tags : [];
     const safeAuthors = Array.isArray((item as any).authors) ? (item as any).authors : [];
     const safeReporters = Array.isArray((item as any).reporters) ? (item as any).reporters : [];
     const primaryCreators = [...safeAuthors, ...safeReporters];
-
+    
     const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const publishedDate = new Date(item.publishedAt as string);
-    const day = publishedDate.getDate();
-    const year = publishedDate.getFullYear();
-    const monthIndex = publishedDate.getMonth();
-    const formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
+    
+    let formattedDate = '';
+    if (item.publishedAt) {
+        const publishedDate = new Date(item.publishedAt as string);
+        const day = publishedDate.getDate();
+        const year = publishedDate.getFullYear();
+        const monthIndex = publishedDate.getMonth();
+        formattedDate = `${day} ${arabicMonths[monthIndex]} - ${englishMonths[monthIndex]}, ${year}`;
+    }
+
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
-    const heroImageUrl = urlFor(item.mainImage).width(2000).height(400).fit('crop').auto('format').url();
-    const fullResImageUrl = urlFor(item.mainImage).auto('format').url();
-    const springTransition = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1.2 };
+    
+    const highResUrl = item.mainImage ? urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url() : '/placeholder.jpg';
+    // Use initialImageSrc if available to match the card exactly, preventing flicker
+    const displayImageUrl = initialImageSrc || highResUrl;
+    const fullResImageUrl = item.mainImage ? urlFor(item.mainImage).auto('format').url() : displayImageUrl;
+    const blurDataURL = (item.mainImage as any)?.blurDataURL;
+    
     const newsType = (item as any).newsType || 'official';
-    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+
+    const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
+    const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
+
+    const gameObj = (item as any).game;
+    const gameSlug = gameObj ? (typeof gameObj.slug === 'string' ? gameObj.slug : gameObj.slug?.current) : null;
 
     return (
         <>
-            <ReadingHud contentContainerRef={scrollTrackerRef} headings={headings} isMobile={isMobile} />
+            <ReadingHud 
+                headings={headings} 
+                isMobile={isMobile} 
+                scrollContainerRef={scrollContainerRef} 
+            />
 
-            <motion.div layout layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined} transition={springTransition} style={{ backgroundColor: 'var(--bg-primary)', zIndex: 50, position: 'relative' }}>
-                <motion.div layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined} className={`${styles.heroImage} image-lightbox-trigger`} transition={springTransition} onClick={() => openLightbox([fullResImageUrl], 0)}>
-                    <Image loader={sanityLoader} src={heroImageUrl} alt={item.title} fill sizes="100vw" style={{ objectFit: 'cover' }} priority placeholder="blur" blurDataURL={(item.mainImage as any).blurDataURL} />
+            <motion.div 
+                // CRITICAL: Always stay opaque to prevent "darkening" effect
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                style={{ backgroundColor: 'transparent', zIndex: 50, position: 'relative' }}
+            >
+                <motion.div 
+                    layoutId={imageLayoutId} 
+                    className={`${styles.heroImage} image-lightbox-trigger`} 
+                    transition={springTransition} 
+                    onClick={(e) => {
+                        // CRITICAL: Disable lightbox interaction while flying
+                        if (!isTransitionComplete && isSharedTransitionActive) return;
+                        e.stopPropagation(); 
+                        openLightbox([fullResImageUrl], 0);
+                    }}
+                    onLayoutAnimationComplete={() => {
+                        setIsTransitionComplete(true);
+                    }}
+                    // Force opacity: 1 instantly to avoid any crossfade dip
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
+                    style={{ 
+                        pointerEvents: (isSharedTransitionActive && !isTransitionComplete) ? 'none' : 'auto' 
+                    }}
+                >
+                    <Image 
+                        loader={sanityLoader} 
+                        src={displayImageUrl} 
+                        alt={item.title || 'Hero Image'} 
+                        fill 
+                        sizes="100vw" 
+                        style={{ objectFit: 'cover' }} 
+                        priority 
+                        // CRITICAL: Use 'empty' during transition to prevent low-res hash flash
+                        placeholder={isSharedTransitionActive ? 'empty' : (blurDataURL ? 'blur' : 'empty')} 
+                        blurDataURL={blurDataURL} 
+                        unoptimized={!!initialImageSrc}
+                    />
                 </motion.div>
 
                 <div className="container page-container" style={{ paddingTop: '0' }}>
-                    <motion.div initial="hidden" animate="visible" variants={contentVariants} >
-                        
-                        <div className={styles.contentLayout}>
-
-                            <main ref={scrollTrackerRef}>
-                                <div className={styles.titleWrapper}>
-                                    {isNews && ( <div className={styles.headerBadges}> <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> </div> )}
-                                    <motion.h1 layoutId={safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined} className="page-title" style={{ textAlign: 'right', margin: 0 }} transition={springTransition}> {item.title} </motion.h1>
-                                </div>
+                    <div className={styles.contentLayout}>
+                        <main>
+                            <div className={styles.titleWrapper}>
+                                {isNews && ( 
+                                    <motion.div 
+                                        className={styles.headerBadges}
+                                        initial={{ opacity: 1 }} 
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0, transition: { duration: 0 } }}
+                                    > 
+                                        <span className="news-card-category" style={{ margin: 0 }}>{translateTag((item as any).category?.title)}</span> 
+                                        <span className={`${styles.pageClassificationBadge} ${styles[newsType]}`}> {typeLabelMap[newsType]} </span> 
+                                    </motion.div> 
+                                )}
                                 
-                                <div className={styles.metaContainer}>
-                                    <div className={styles.metaBlockLeft}>
-                                        {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug} />}
-                                        <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
-                                    </div>
-                                    <div className={styles.metaBlockRight}>
-                                        <div className={styles.creditsRow}>
-                                            <CreatorCredit label="بقلم" creators={primaryCreators} />
-                                            {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
+                                <motion.h1 
+                                    layoutId={titleLayoutId}
+                                    className="page-title" 
+                                    style={{ textAlign: 'right', margin: 0 }} 
+                                    transition={springTransition}
+                                    // Ensure immediate visibility
+                                    initial={{ opacity: 1, y: isSharedTransitionActive ? 0 : 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                > 
+                                    {item.title} 
+                                </motion.h1>
+                            </div>
+                            
+                            {/* Defer heavy body content */}
+                            {isLoaded && isBodyReady ? (
+                                <motion.div
+                                    variants={bodyFadeVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                >
+                                    <div className={styles.metaContainer}>
+                                        <div className={styles.metaBlockLeft}>
+                                            {gameObj?.title && <GameLink gameName={gameObj.title} gameSlug={gameSlug} />}
+                                            <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                         </div>
-                                        
-                                        <div className={styles.dateContainer}>
-                                             {item.readingTime && ( 
-                                                <span className={styles.readTimeMinimal} title="وقت القراءة المقدر">
-                                                    <span className={styles.timeIcon}><TimeIcon /></span>
-                                                    وقت القراءة: {formatArabicDuration(item.readingTime)}
-                                                </span>
-                                             )}
+                                        <div className={styles.metaBlockRight}>
+                                            <div className={styles.creditsRow}>
+                                                <CreatorCredit label="بقلم" creators={primaryCreators} />
+                                                {item.designers && <CreatorCredit label="تصميم" creators={Array.isArray(item.designers) ? item.designers : []} />}
+                                            </div>
+                                            
+                                            <div className={styles.dateContainer}>
+                                                {item.readingTime && ( 
+                                                    <span className={styles.readTimeMinimal} title="وقت القراءة المقدر">
+                                                        <span className={styles.timeIcon}><TimeIcon /></span>
+                                                        وقت القراءة: {formatArabicDuration(item.readingTime)}
+                                                    </span>
+                                                )}
 
-                                             <div className={styles.metaRowItem}>
-                                                 <Calendar03Icon className={styles.metadataIcon} />
-                                                 <p className={styles.dateText}>{formattedDate}</p>
-                                             </div>
+                                                <div className={styles.metaRowItem}>
+                                                    <Calendar03Icon className={styles.metadataIcon} />
+                                                    <p className={styles.dateText}>{formattedDate}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+                                    
+                                    <TableOfContents 
+                                        headings={tocItems} 
+                                        scrollContainerRef={scrollContainerRef} 
+                                    />
+
+                                    <div ref={articleBodyRef} className="article-body">
+                                        <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
+                                        {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
+                                    </div>
+                                    <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                                        <TagLinks tags={safeTags.map((t: any) => t.title)} />
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div className="spinner" />
                                 </div>
-                                
-                                <TableOfContents headings={tocItems} />
+                            )}
+                        </main>
 
-                                <div ref={articleBodyRef} className="article-body">
-                                    <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
-                                    {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
-                                </div>
-                                <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                                    <TagLinks tags={safeTags.map((t: any) => t.title)} />
-                                </div>
-                            </main>
-
-                            <aside className={styles.sidebar}>
-                                <JoinVanguardCard /> 
-                                
-                                <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
-                                    <motion.div className={styles.relatedGrid} variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" exit="hidden">
-                                        {adaptedRelatedContent.map(related => (
-                                            <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-                                                <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
-                                            </motion.div>
-                                        ))}
-                                    </motion.div>
-                                </ContentBlock>
-                            </aside>
-
-                        </div>
-
-                    </motion.div>
+                        <aside className={styles.sidebar}>
+                            {isLoaded && isBodyReady && (
+                                <motion.div
+                                    variants={bodyFadeVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                >
+                                    <JoinVanguardCard /> 
+                                    <ContentBlock title="قد يروق لك" Icon={SparklesIcon}>
+                                        <motion.div className={styles.relatedGrid} variants={{ visible: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" exit="hidden">
+                                            {adaptedRelatedContent.map(related => (
+                                                <motion.div key={related.id} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                                    <ArticleCard article={related} layoutIdPrefix={`related-${type}`} />
+                                                </motion.div>
+                                            ))}
+                                        </motion.div>
+                                    </ContentBlock>
+                                </motion.div>
+                            )}
+                        </aside>
+                    </div>
                 </div>
             </motion.div>
             
-            <motion.div initial="hidden" animate="visible" variants={contentVariants} className="container" style={{ paddingBottom: '6rem' }}>
-                <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
-            </motion.div>
+            {isLoaded && isBodyReady && (
+                <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
+                    <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
+                </motion.div>
+            )}
         </>
     );
 }

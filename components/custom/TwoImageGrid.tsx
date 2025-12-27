@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import { urlFor } from '@/sanity/lib/image';
 import { useLightboxStore } from '@/lib/lightboxStore';
-import { sanityLoader } from '@/lib/sanity.loader'; // <-- IMPORT ADDED
+import { sanityLoader } from '@/lib/sanity.loader'; 
 import styles from './TwoImageGrid.module.css';
 
 export default function TwoImageGrid({ value }: { value: any }) {
@@ -22,10 +22,13 @@ export default function TwoImageGrid({ value }: { value: any }) {
                 <div 
                     key={image.asset._id || index}
                     className={`${styles.imageWrapper} image-lightbox-trigger`}
-                    onClick={() => openLightbox(imageUrls, index)}
+                    onClick={(e) => {
+                        e.stopPropagation(); // Stop bubbling
+                        openLightbox(imageUrls, index);
+                    }}
                 >
                     <Image
-                        loader={sanityLoader} // <-- LOADER ADDED
+                        loader={sanityLoader} 
                         src={urlFor(image.asset).width(800).auto('format').url()}
                         alt={image.alt || `Grid Image ${index + 1}`}
                         fill
@@ -38,5 +41,3 @@ export default function TwoImageGrid({ value }: { value: any }) {
         </div>
     );
 }
-
-

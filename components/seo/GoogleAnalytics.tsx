@@ -3,10 +3,12 @@
 
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { pageview } from '@/lib/gtm';
 
-export default function GoogleAnalytics({ gaId }: { gaId?: string }) {
+// We split the logic into an inner component.
+// This inner component uses the hook that requires a Suspense boundary.
+function GoogleAnalyticsInner({ gaId }: { gaId?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -50,5 +52,15 @@ export default function GoogleAnalytics({ gaId }: { gaId?: string }) {
         src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
       />
     </>
+  );
+}
+
+// The default export now wraps the logic in Suspense.
+// This satisfies the build requirement for static pages like /404.
+export default function GoogleAnalytics(props: { gaId?: string }) {
+  return (
+    <Suspense fallback={null}>
+      <GoogleAnalyticsInner {...props} />
+    </Suspense>
   );
 }

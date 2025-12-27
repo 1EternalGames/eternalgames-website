@@ -45,10 +45,26 @@ export default function FPSAutoTuner() {
     const lastTierChangeTime = useRef<number>(0);
     const startTimeRef = useRef<number>(0); 
     const currentTierRef = useRef<PerformanceTier>(6);
+    const hasInitializedMobileDefaults = useRef(false);
     
     // Tracks failures per tier (Index 0-6).
     // failuresRef.current[5] = number of times Tier 5 caused lag.
     const failuresRef = useRef<number[]>([0,0,0,0,0,0,0]);
+
+    // 0. MOBILE FIRST RUN CHECK
+    // If this is a fresh visit (no stored settings) and it's mobile, force a lighter tier immediately.
+    useEffect(() => {
+        if (isMobile && !hasInitializedMobileDefaults.current) {
+            const hasStoredSettings = typeof window !== 'undefined' && !!localStorage.getItem('eternalgames-performance-settings');
+            
+            if (!hasStoredSettings) {
+                console.log("[AutoTuner] Fresh mobile visit detected. Defaulting to Tier 3 (No Flying Tags/Glass).");
+                // Tier 3 disables Flying Tags and Glassmorphism but keeps basic animations
+                setPerformanceTier(3);
+            }
+            hasInitializedMobileDefaults.current = true;
+        }
+    }, [isMobile, setPerformanceTier]);
 
     // 1. Sync Ref to Store State
     useEffect(() => {

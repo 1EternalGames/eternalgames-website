@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Footer.module.css';
 
-//  Dedicated, Correctly Scaled Icon Components
+// ... (Icons remain same)
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 <svg viewBox="0 0 1200 1227" fill="currentColor" {...props}>
 <g transform="scale(0.8) translate(150, 150)">
@@ -65,11 +65,11 @@ const Footer = () => {
         <div className={styles.footerDivider}></div>
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', fontSize: '1.4rem', justifyContent: 'center' }}>
-            <Link href="/about" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>من نحن</Link>
-            <Link href="/sitemap-html" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>خريطة الموقع</Link>
-            {/* ADDED LINKS */}
-            <Link href="/privacy-policy" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>سياسة الخصوصية</Link>
-            <Link href="/terms-of-service" className="no-underline" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>شروط الخدمة</Link>
+            <Link href="/about" className="no-underline" prefetch={false} style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>من نحن</Link>
+            <Link href="/sitemap-html" className="no-underline" prefetch={false} style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>خريطة الموقع</Link>
+            {/* FIX: Disable prefetching here */}
+            <Link href="/privacy-policy" className="no-underline" prefetch={false} style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>سياسة الخصوصية</Link>
+            <Link href="/terms-of-service" className="no-underline" prefetch={false} style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>شروط الخدمة</Link>
         </div>
 
         <div className={styles.footerInfo}>

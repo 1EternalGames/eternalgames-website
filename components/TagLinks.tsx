@@ -1,34 +1,31 @@
 // components/TagLinks.tsx
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { translateTag } from '@/lib/translations';
 import styles from './TagLinks.module.css';
+import KineticLink from '@/components/kinetic/KineticLink';
 
 export default function TagLinks({ tags, small = false }: { tags: string[], small?: boolean }) {
-  const router = useRouter();
 
   if (!tags || tags.length === 0) return null;
 
-  const handleTagClick = (e: React.MouseEvent | React.TouchEvent, tag: string) => {
-    e.preventDefault();
-    e.stopPropagation(); // Stop the event from bubbling up to the card's main link/handlers
-    const slug = tag.toLowerCase().replace(/ /g, '-');
-    router.push(`/tags/${slug}`);
-  };
-
   return (
     <div className={`${styles.tagLinksContainer} ${small ? styles.small : ''}`}>
-      {tags.map((tag) => (
-        <span 
-          key={tag} 
-          className={styles.tagLink}
-          onClick={(e) => handleTagClick(e, tag)}
-          onTouchStart={(e) => handleTagClick(e, tag)} // ADDED: Handle touch for immediate response
-        >
-          {translateTag(tag)}
-        </span>
-      ))}
+      {tags.map((tag) => {
+        const slug = tag.toLowerCase().replace(/ /g, '-');
+        return (
+            <KineticLink 
+                key={tag} 
+                href={`/tags/${slug}`}
+                slug={slug}
+                type="tags" // ENABLED
+                className={`${styles.tagLink} no-underline`}
+                onClick={(e) => e.stopPropagation()} 
+            >
+                {translateTag(tag)}
+            </KineticLink>
+        );
+      })}
     </div>
   );
 }

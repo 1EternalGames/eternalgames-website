@@ -20,7 +20,12 @@ import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
-import { Suspense } from 'react'; // ADDED: Import Suspense
+import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
+import { getCachedColorDictionary } from '@/lib/sanity.fetch';
+// IMPORT NEW LOADER
+import UniversalBaseLoader from '@/components/UniversalBaseLoader';
+// IMPORT PERFORMANCE HINT
+import PerformanceHint from '@/components/PerformanceHint';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -101,7 +106,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode; }) {
+export default async function RootLayout({ children }: { children: React.ReactNode; }) {
+  // OPTIMIZATION: Only fetch small dictionary. Heavy data is removed from here.
+  const dictionary = await getCachedColorDictionary();
+  const colors = dictionary?.autoColors || [];
+
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
@@ -119,13 +128,10 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       </head>
       <body>
         <NextAuthProvider>
+          {/* User Store no longer receives universalData here */}
           <UserStoreHydration />
           
-          {/* WRAPPED: GoogleAnalytics uses useSearchParams, so it must be suspended */}
-          <Suspense fallback={null}>
-             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
-          </Suspense>
-
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />
           
           <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -137,13 +143,22 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
                 <SpaceBackground />
                 <ToastProvider />
                 <CookieConsent />
+                <PerformanceHint /> 
                 <Lightbox />
+                
+                <KineticOverlayManager colorDictionary={colors} />
+
                 <Navbar />
+                
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                   <PageTransitionWrapper>
+                    {/* The Universal Loader decides when to fetch/render the heavy base */}
+                    <UniversalBaseLoader />
+                    
                     {children}
                   </PageTransitionWrapper>
                 </main>
+                
                 <Footer />
                 <StudioBar />
                 <ScrollToTopButton />

@@ -40,8 +40,8 @@ export default function SpaceBackground() {
                     alt="" 
                     fill 
                     priority 
-                    // High quality for 4K background
-                    quality={90} 
+                    // High quality for 4K background (Max fidelity)
+                    quality={100} 
                     // "100vw" tells the browser: "This image is always 100% of the viewport width".
                     // The browser then selects the most appropriate size from the srcset automatically.
                     sizes="100vw"
@@ -240,7 +240,7 @@ export default function SpaceBackground() {
                     </g>
                 </g>
 
-                {/* 5. STELLAR FLARES (Pulse Animation) */}
+                {/* 5. STELLAR FLARES */}
                 <g filter="url(#sb_stellarBloom)" className={styles.starAnim}>
                     <circle cx="300" cy="300" r="3" fill="#FFF"></circle>
                     <circle cx="1200" cy="150" r="2.5" fill="#FFF"></circle>

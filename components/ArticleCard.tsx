@@ -3,7 +3,6 @@
 
 import React, { memo, useState, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useScrollStore } from '@/lib/scrollStore';
@@ -17,23 +16,16 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import KineticLink from '@/components/kinetic/KineticLink'; 
+import { generateLayoutId } from '@/lib/layoutUtils'; 
 
-type ArticleCardProps = {
-    article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
-    layoutIdPrefix: string;
-    isPriority?: boolean;
-    disableLivingEffect?: boolean; 
-    smallTags?: boolean;
-};
-
-// Helper: Moved outside to prevent re-creation on render
 const getCreatorName = (creators: any[]): string | null => {
     if (!creators || creators.length === 0) return null;
     return creators[0]?.name || null;
 };
 
-// COMPONENT: Extracted CreatorCapsule to prevent re-mounting on parent re-render
-const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | null, authorUsername?: string | null }) => {
+// MODIFIED: Accept creatorData prop
+const CreatorCapsule = ({ authorName, authorUsername, creatorData }: { authorName: string | null, authorUsername?: string | null, creatorData?: any }) => {
     const content = (
         <>
             <div className={styles.capsuleIcon}>
@@ -45,16 +37,19 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
 
     if (authorUsername) {
         return (
-            <Link 
+            <KineticLink 
                 href={`/creators/${authorUsername}`}
+                slug={authorUsername}
+                type="creators"
                 className={`${styles.creditCapsule} no-underline`}
                 onClick={(e) => e.stopPropagation()} 
+                // PASS DATA for instant load
+                preloadedData={creatorData}
             >
                 {content}
-            </Link>
+            </KineticLink>
         );
     }
-
     return (
         <div className={styles.creditCapsule}>
             {content}
@@ -62,21 +57,26 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
     );
 };
 
+type ArticleCardProps = {
+    article: CardProps & { width?: number; height?: number; mainImageRef?: any; };
+    layoutIdPrefix: string;
+    isPriority?: boolean;
+    disableLivingEffect?: boolean; 
+    smallTags?: boolean;
+};
+
 const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, disableLivingEffect = false, smallTags = false }: ArticleCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const setScrollPos = useScrollStore((state) => state.setScrollPos);
     const isMobile = useIsMobile();
     
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
-    
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
 
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
     
-    // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchStartPos = useRef({ x: 0, y: 0 });
@@ -107,12 +107,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             }
         },
         onMouseEnter: () => {
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseEnter();
-            }
-            
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter();
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-
             if (!isHoverDebounceEnabled) {
                 setIsHoveredLocal(true);
                 setIsTextExpanded(true);
@@ -125,18 +121,14 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         },
         onMouseLeave: () => {
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onMouseLeave();
-            }
+            if (!effectivelyDisabledLiving) livingCardAnimation.onMouseLeave();
             setIsHoveredLocal(false);
         }
     } : {
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             const touch = e.touches[0];
             touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-
             if (touchTimeout.current) clearTimeout(touchTimeout.current);
-            
             if (!isHoverDebounceEnabled) {
                 if (activeCardId !== article.id) {
                     setActiveCardId(article.id);
@@ -150,22 +142,15 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                     }
                 }, 75);
             }
-
-            if (!effectivelyDisabledLiving) {
-                livingCardAnimation.onTouchStart(e);
-            }
+            if (!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
         onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-             // Calculate distance moved
              const touch = e.touches[0];
              const diffX = Math.abs(touch.clientX - touchStartPos.current.x);
              const diffY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-             // If moved more than 10px, assume scrolling and CANCEL the hover activation
              if (diffX > 10 || diffY > 10) {
                  if (touchTimeout.current) clearTimeout(touchTimeout.current);
              }
-
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
         },
         onTouchEnd: () => {
@@ -182,10 +167,16 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
         }
     };
     const linkPath = `${getLinkBasePath()}${article.slug}`;
+    const kineticType = article.type === 'review' ? 'reviews' : article.type === 'article' ? 'articles' : 'news';
 
     const hasScore = article.type === 'review' && typeof article.score === 'number';
-    const authorName = getCreatorName(article.authors);
-    const authorUsername = article.authors[0]?.username;
+    const author = article.authors?.[0];
+    const authorName = author?.name;
+    const authorUsername = author?.username;
+    
+    // Prepare partial data for instant load
+    const creatorData = author ? { name: author.name, image: author.image } : undefined;
+
     const displayTags = article.tags.slice(0, 3);
     
     const satelliteConfig = [
@@ -195,7 +186,10 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     ];
     
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
-    const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+
+    const containerLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'container', article.legacyId) : undefined;
+    const imageLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'image', article.legacyId) : undefined;
+    const titleLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'title', article.legacyId) : undefined;
 
     return (
         <div
@@ -205,41 +199,30 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
-                // OPTIMIZATION: We keep layoutId here for the "Hero Transition" (Shared Element),
-                // but we DO NOT add the generic 'layout' prop.
-                // This ensures the transition works, but random grid re-shuffles don't trigger expensive calculations.
-                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${article.legacyId}` : undefined}
-                style={{ 
-                    height: '100%',
-                    position: 'relative',
-                    zIndex: 1,
-                }}
+                layoutId={containerLayoutId}
+                style={{ height: '100%', position: 'relative', zIndex: 1 }}
             >
                 <motion.div
                     className="tilt-container flex flex-col"
-                    style={{ 
-                        ...animationStyles,
-                        borderRadius: '16px',
-                        height: '100%',
-                        transformStyle: 'preserve-3d',
-                    }}
+                    style={{ ...animationStyles, borderRadius: '16px', height: '100%', transformStyle: 'preserve-3d' }}
                 >
-                    <div 
-                        className="no-underline block w-full flex flex-col"
-                        style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}
-                    >
-                        <Link 
+                    <div className="no-underline block w-full flex flex-col" style={{ height: '100%', cursor: 'pointer', transformStyle: 'preserve-3d' }}>
+                        
+                        <KineticLink 
                             href={linkPath} 
+                            slug={article.slug}
+                            type={kineticType}
+                            layoutId={layoutIdPrefix} 
+                            imageSrc={article.imageUrl}
                             className={`${styles.cardOverlayLink} no-underline`}
                             onClick={() => {
                                 if (!isMobile) {
                                     setScrollPos(window.scrollY);
-                                    if (isHeroTransitionEnabled) {
-                                        setPrefix(layoutIdPrefix);
-                                    }
                                 }
                             }}
-                        />
+                        >
+                            <span />
+                        </KineticLink>
 
                         <div className={styles.monolithFrame}>
                             <div className={styles.innerClippingFrame}>
@@ -254,7 +237,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
 
                                 <motion.div 
                                     className={styles.imageWrapper}
-                                    layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${article.legacyId}` : undefined}
+                                    layoutId={imageLayoutId} 
                                 >
                                     <Image 
                                         loader={sanityLoader}
@@ -266,7 +249,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                         placeholder="blur"
                                         blurDataURL={article.blurDataURL}
                                         priority={isPriority}
-                                        decoding="async" 
                                     />
                                 </motion.div>
 
@@ -274,11 +256,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                     <motion.div 
                                         className={styles.scoreBadge}
                                         initial={{ scale: 1, rotate: 0 }}
-                                        animate={{ 
-                                            scale: isHovered ? 1.2 : 1, 
-                                            rotate: isHovered ? -12 : 0,
-                                            z: 50
-                                        }}
+                                        animate={{ scale: isHovered ? 1.2 : 1, rotate: isHovered ? -12 : 0, z: 50 }}
                                         transition={{ type: "spring", stiffness: 300, damping: 15 }}
                                     >
                                         {article.score!.toFixed(1)}
@@ -297,18 +275,20 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                             }
                                         }}
                                     >
-                                        <h3 className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}>
+                                        <motion.h3 
+                                            className={`${styles.cardTitle} ${isTextExpanded ? styles.expanded : ''}`}
+                                            layoutId={titleLayoutId}
+                                        >
                                             {article.title}
-                                        </h3>
+                                        </motion.h3>
                                     </motion.div>
                                 </div>
-                            
                             </div> 
                             
                             <div className={styles.cyberCorner} />
 
                             <div className={styles.hudContainer} style={{ transform: 'translateZ(60px)' }}>
-                                 {authorName ? <CreatorCapsule authorName={authorName} authorUsername={authorUsername} /> : <div />}
+                                 {authorName ? <CreatorCapsule authorName={authorName} authorUsername={authorUsername} creatorData={creatorData} /> : <div />}
 
                                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
                                     {article.date && (
@@ -334,38 +314,21 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                             key={`${article.id}-${tag.slug}`}
                                             className={styles.satelliteShard}
                                             initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                            animate={{
-                                                opacity: 1,
-                                                scale: 1.15,
-                                                x: satelliteConfig[i]?.hoverX || 0,
-                                                y: satelliteConfig[i]?.hoverY || 0,
-                                                rotate: satelliteConfig[i]?.rotate || 0,
-                                                z: -30 
-                                            }}
-                                            exit={{ 
-                                                opacity: 0, 
-                                                scale: 0.4, 
-                                                x: 0, 
-                                                y: 50, 
-                                                rotate: 0,
-                                                z: 0 
-                                            }}
-                                            transition={{
-                                                type: "spring",
-                                                stiffness: 180,
-                                                damping: 20,
-                                                delay: i * 0.05
-                                            }}
+                                            animate={{ opacity: 1, scale: 1.15, x: satelliteConfig[i]?.hoverX || 0, y: satelliteConfig[i]?.hoverY || 0, rotate: satelliteConfig[i]?.rotate || 0, z: -30 }}
+                                            exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
+                                            transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
                                             style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
                                          >
-                                             <Link 
+                                             <KineticLink 
                                                 href={`/tags/${tag.slug}`} 
+                                                slug={tag.slug}
+                                                type="tags"
                                                 onClick={(e) => e.stopPropagation()}
                                                 className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
-                                            >
+                                             >
                                                  {translateTag(tag.title)}
-                                             </Link>
+                                             </KineticLink>
                                          </motion.div>
                                     ))}
                                 </AnimatePresence>

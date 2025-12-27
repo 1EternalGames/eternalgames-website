@@ -16,6 +16,8 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useActiveCardStore } from '@/lib/activeCardStore';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { usePerformanceStore } from '@/lib/performanceStore'; 
+import KineticLink from '@/components/kinetic/KineticLink';
+import { generateLayoutId } from '@/lib/layoutUtils';
 
 type NewsGridCardProps = {
     item: CardProps;
@@ -40,21 +42,16 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const isMobile = useIsMobile();
     
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
-
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
     const { activeCardId, setActiveCardId } = useActiveCardStore();
-    
     const [isHoveredLocal, setIsHoveredLocal] = useState(false);
     
-    // OPTIMIZATION: Debounce Timer Refs & Touch Tracking
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchStartPos = useRef({ x: 0, y: 0 });
 
     const isHovered = isMobile ? activeCardId === item.id : isHoveredLocal;
-
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
     useClickOutside(livingCardRef, () => {
@@ -63,17 +60,18 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         }
     });
 
-    const getLinkPath = () => {
+    const getLinkData = () => {
         switch (item.type) {
-            case 'review': return `/reviews/${item.slug}`;
-            case 'article': return `/articles/${item.slug}`;
-            default: return `/news/${item.slug}`;
+            case 'review': return { type: 'reviews' as const, path: `/reviews/${item.slug}` };
+            case 'article': return { type: 'articles' as const, path: `/articles/${item.slug}` };
+            default: return { type: 'news' as const, path: `/news/${item.slug}` };
         }
     };
-    const linkPath = getLinkPath();
+    const { type: kineticType, path: linkPath } = getLinkData();
     
     const handleClick = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
+        if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
         if (!isMobile && isHeroTransitionEnabled) {
             setPrefix(layoutIdPrefix);
         }
@@ -85,23 +83,26 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     const isNews = item.type === 'news';
     const newsType = item.newsType || 'official';
     
-    const authorName = item.authors && item.authors.length > 0 ? item.authors[0].name : 'محرر';
-    const authorUsername = item.authors && item.authors.length > 0 ? item.authors[0].username : null;
+    // Creator Data Extraction
+    const authorObj = item.authors && item.authors.length > 0 ? item.authors[0] : null;
+    const authorName = authorObj ? authorObj.name : 'محرر';
+    const authorUsername = authorObj ? authorObj.username : null;
+    // Prepare partial data
+    const creatorData = authorObj ? { name: authorObj.name, image: authorObj.image } : undefined;
 
     const flyingItems = useMemo(() => {
         const satellites = [];
         if (item.game && item.gameSlug) {
-            satellites.push({ label: item.game, link: `/games/${item.gameSlug}` });
+            satellites.push({ label: item.game, link: `/games/${item.gameSlug}`, isKinetic: false });
         } else { satellites.push(null); }
 
         if (item.category) {
-            satellites.push({ label: translateTag(item.category), link: undefined });
+            satellites.push({ label: translateTag(item.category), link: undefined, isKinetic: false });
         } else if (item.tags && item.tags.length > 0) {
-             satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}` });
+             satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}`, isKinetic: false });
         } else { satellites.push(null); }
 
-        satellites.push({ label: typeDisplayMap[item.type] || 'محتوى', link: undefined });
-
+        satellites.push({ label: typeDisplayMap[item.type] || 'محتوى', link: undefined, isKinetic: false });
         return satellites;
     }, [item.type, item.category, item.tags, item.game, item.gameSlug]);
     
@@ -142,20 +143,11 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     );
     
     const handlers = !isMobile ? {
-        // DESKTOP HANDLERS
         onMouseEnter: () => { 
             if(!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
-            
-            // Debounce Desktop Hover
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-
-            if (!isHoverDebounceEnabled) {
-                setIsHoveredLocal(true);
-            } else {
-                hoverTimeout.current = setTimeout(() => {
-                    setIsHoveredLocal(true);
-                }, 75); 
-            }
+            if (!isHoverDebounceEnabled) { setIsHoveredLocal(true); } 
+            else { hoverTimeout.current = setTimeout(() => setIsHoveredLocal(true), 75); }
         },
         onMouseLeave: () => { 
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
@@ -164,48 +156,33 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
         },
         onMouseMove: !effectivelyDisabledLiving ? livingCardAnimation.onMouseMove : undefined,
     } : {
-        // MOBILE HANDLERS
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             const touch = e.touches[0];
             touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-
             if (touchTimeout.current) clearTimeout(touchTimeout.current);
-            
             if (!isHoverDebounceEnabled) {
-                if (activeCardId !== item.id) {
-                    setActiveCardId(item.id);
-                }
+                if (activeCardId !== item.id) setActiveCardId(item.id);
             } else {
                 touchTimeout.current = setTimeout(() => {
-                     if (activeCardId !== item.id) {
-                        setActiveCardId(item.id);
-                    }
+                     if (activeCardId !== item.id) setActiveCardId(item.id);
                 }, 75);
             }
-
             if(!effectivelyDisabledLiving) livingCardAnimation.onTouchStart(e);
         },
         onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-             // Calculate distance moved
              const touch = e.touches[0];
              const diffX = Math.abs(touch.clientX - touchStartPos.current.x);
              const diffY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-             // If moved more than 10px, assume scrolling and CANCEL the hover activation
              if (diffX > 10 || diffY > 10) {
                  if (touchTimeout.current) clearTimeout(touchTimeout.current);
              }
-
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchMove(e);
         },
         onTouchEnd: () => {
-             // We don't clear timeout here to allow "tap" to also trigger the state if it hasn't fired yet
-             // useClickOutside will handle closing it.
              if (!effectivelyDisabledLiving) livingCardAnimation.onTouchEnd();
         },
     };
     
-    // Apply layoutId logic
     const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
@@ -217,18 +194,22 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
             style={animationStyles}
         >
             <motion.div
-                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-container-${item.legacyId}` : undefined}
+                layoutId={!isMobile && safeLayoutIdPrefix ? generateLayoutId(safeLayoutIdPrefix, 'container', item.legacyId) : undefined}
                 className={`${styles.newsCard} ${variant === 'compact' ? styles.compact : ''} ${variant === 'mini' ? styles.mini : ''}`}
             >
-                <Link 
-                    href={linkPath} 
+                <KineticLink 
+                    href={linkPath}
+                    slug={item.slug}
+                    type={kineticType}
+                    layoutId={safeLayoutIdPrefix}
+                    imageSrc={imageSource}
                     className={`${styles.cardLink} no-underline`}
                     onClick={handleClick}
                 >
                     <div className={styles.imageContentWrapper}>
                         <motion.div 
                             className={styles.imageContainer} 
-                            layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-image-${item.legacyId}` : undefined}
+                            layoutId={!isMobile && safeLayoutIdPrefix ? generateLayoutId(safeLayoutIdPrefix, 'image', item.legacyId) : undefined}
                         >
                             {isNews && (
                                 <span className={`${styles.imageBadge} ${styles[newsType]}`}>
@@ -253,21 +234,26 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                         <div className={styles.cardInfoColumn}>
                             <motion.h3 
                                 className={styles.cardTitle}
-                                layoutId={!isMobile && safeLayoutIdPrefix ? `${safeLayoutIdPrefix}-card-title-${item.legacyId}` : undefined}
+                                layoutId={!isMobile && safeLayoutIdPrefix ? generateLayoutId(safeLayoutIdPrefix, 'title', item.legacyId) : undefined}
                             >
                                 {item.title}
                             </motion.h3>
 
                             <div className={styles.cardMetadata}>
                                 <div style={{display:'flex', alignItems:'center', gap:'0.8rem'}}>
+                                    {/* FIX: Use KineticLink for creator */}
                                     {authorUsername ? (
-                                        <Link 
+                                        <KineticLink 
                                             href={`/creators/${authorUsername}`}
+                                            slug={authorUsername}
+                                            type="creators"
                                             className={`${styles.creatorCapsule} no-underline`}
-                                            onClick={(e) => e.stopPropagation()} 
+                                            onClick={(e) => e.stopPropagation()}
+                                            // PASS DATA
+                                            preloadedData={creatorData}
                                         >
                                             {capsuleContent}
-                                        </Link>
+                                        </KineticLink>
                                     ) : (
                                         <div className={styles.creatorCapsule}>
                                             {capsuleContent}
@@ -290,7 +276,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                             </div>
                         </div>
                     </div>
-                </Link>
+                </KineticLink>
 
                 {isFlyingTagsEnabled && (
                     <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
@@ -300,7 +286,6 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                  
                                  const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
                                  const isLeft = config.hoverX < 0;
-                                 
                                  const positionStyle = isLeft 
                                     ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
                                     : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
@@ -310,38 +295,23 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         key={`${item.id}-sat-${i}`}
                                         className={styles.satelliteShard}
                                         initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
-                                        animate={{
-                                            opacity: 1,
-                                            scale: 1.15,
-                                            x: config.hoverX,
-                                            y: config.hoverY,
-                                            rotate: config.rotate,
-                                            z: -30 
-                                        }}
-                                        exit={{
-                                            opacity: 0,
-                                            scale: 0.4,
-                                            x: 0,
-                                            y: 50,
-                                            rotate: 0,
-                                            z: 0
-                                        }}
+                                        animate={{ opacity: 1, scale: 1.15, x: config.hoverX, y: config.hoverY, rotate: config.rotate, z: -30 }}
+                                        exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
                                         transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
-                                        style={{ 
-                                            position: 'absolute', 
-                                            ...positionStyle, 
-                                            transformStyle: 'preserve-3d' 
-                                        }}
+                                        style={{ position: 'absolute', ...positionStyle, transformStyle: 'preserve-3d' }}
                                         onClick={(e) => e.stopPropagation()}
                                      >
                                          {sat.link ? (
-                                             <Link 
+                                             // Use KineticLink for tags? Not strictly required but cleaner
+                                             <KineticLink 
                                                 href={sat.link} 
-                                                onClick={(e) => e.stopPropagation()}
+                                                slug={sat.link.split('/').pop() || ''} // Simple slug extraction
+                                                type={sat.link.includes('/tags/') ? 'tags' : 'games'}
+                                                onClick={(e) => { e.stopPropagation(); }}
                                                 className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                            >
+                                             >
                                                  {sat.label}
-                                             </Link>
+                                             </KineticLink>
                                          ) : (
                                              <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
                                                  {sat.label}

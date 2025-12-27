@@ -7,24 +7,26 @@ import { CardProps } from '@/types';
 import styles from './PaginatedCarousel.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
 import { useActiveCardStore } from '@/lib/activeCardStore';
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
+import { usePerformanceStore } from '@/lib/performanceStore';
+import { useContentStore } from '@/lib/contentStore'; 
 
 type PaginatedCarouselProps = {
     items: CardProps[];
     itemsPerPage?: number;
+    layoutIdPrefix?: string; // New Prop
 };
 
-export default function PaginatedCarousel({ items, itemsPerPage = 5 }: PaginatedCarouselProps) {
+export default function PaginatedCarousel({ items, itemsPerPage = 5, layoutIdPrefix = "paginated-carousel" }: PaginatedCarouselProps) {
     const [currentPage, setCurrentPage] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
+    
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const totalPages = Math.ceil(items.length / itemsPerPage);
     
     const { activeCardId } = useActiveCardStore();
-    // Use Store Check
     const { isCarouselAutoScrollEnabled } = usePerformanceStore();
+    const isOverlayOpen = useContentStore((s) => s.isOverlayOpen);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
@@ -33,15 +35,14 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
 
     useEffect(() => {
         resetTimeout();
-        // Check toggle
-        if (!isHovered && isInView && totalPages > 1 && isCarouselAutoScrollEnabled) {
+        if (!isHovered && isInView && totalPages > 1 && isCarouselAutoScrollEnabled && !isOverlayOpen) {
             timeoutRef.current = setTimeout(
                 () => setCurrentPage((prevPage) => (prevPage + 1) % totalPages),
                 3800
             );
         }
         return () => resetTimeout();
-    }, [currentPage, isHovered, totalPages, isInView, isCarouselAutoScrollEnabled]);
+    }, [currentPage, isHovered, totalPages, isInView, isCarouselAutoScrollEnabled, isOverlayOpen]);
 
     const startIndex = currentPage * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -51,7 +52,7 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => {
             setIsHovered(false);
-            setHoveredIndex(null);
+            setHoveredIndex(null); 
         },
         onTouchStart: () => setIsHovered(true),
         onTouchEnd: () => setIsHovered(false),
@@ -88,7 +89,8 @@ export default function PaginatedCarousel({ items, itemsPerPage = 5 }: Paginated
                             >
                                 <NewsGridCard 
                                     item={item} 
-                                    layoutIdPrefix="homepage-latest-articles"
+                                    // Pass dynamic prefix based on item ID to ensure uniqueness for layoutID
+                                    layoutIdPrefix={`${layoutIdPrefix}-${item.legacyId}`}
                                     variant="compact"
                                 />
                             </motion.div>

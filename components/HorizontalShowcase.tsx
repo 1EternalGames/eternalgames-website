@@ -4,7 +4,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from 'next/link'; // Keep for non-kinetic fallbacks if needed
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
@@ -14,6 +14,7 @@ import { useLivingCard } from '@/hooks/useLivingCard';
 import { PenEdit02Icon, Calendar03Icon } from '@/components/icons';
 import { translateTag } from '@/lib/translations';
 import { usePerformanceStore } from '@/lib/performanceStore';
+import KineticLink from '@/components/kinetic/KineticLink';
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
   <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -28,24 +29,20 @@ const satelliteConfig = [
 ];
 
 const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boolean }) => {
-  const router = useRouter();
   const setPrefix = useLayoutIdStore((state) => state.setPrefix);
   const layoutIdPrefix = "articles-showcase";
   const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
   const [isHovered, setIsHovered] = useState(false);
   
-  // Performance Settings
   const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled } = usePerformanceStore();
   const effectivelyDisabledLiving = !isLivingCardEnabled;
 
   const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
     if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
     if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
     if (isHeroTransitionEnabled) {
         setPrefix(layoutIdPrefix);
     }
-    router.push(`/articles/${article.slug}`, { scroll: false });
   };
 
   const imageSource = article.imageUrl;
@@ -55,10 +52,14 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   const author = article.authors?.[0];
   const authorName = author?.name;
   const authorUsername = author?.username;
+  
+  // Prepare partial data for instant load
+  const creatorData = author ? { name: author.name, image: author.image } : undefined;
 
-  // Conditional Logic
   const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
   const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+  
+  const kineticType = article.type === 'review' ? 'reviews' : article.type === 'article' ? 'articles' : 'news';
 
   return (
     <motion.div
@@ -87,14 +88,17 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
         onTouchEnd={!effectivelyDisabledLiving ? livingCardAnimation.onTouchEnd : undefined}
         style={{ ...animationStyles, perspective: '1000px' }}
       >
-        <Link 
-            href={`/articles/${article.slug}`} 
+        <KineticLink 
+            href={`/articles/${article.slug}`}
+            slug={article.slug}
+            type={kineticType}
+            imageSrc={imageSource}
+            layoutId={safeLayoutIdPrefix}
             onClick={handleClick}
             className={`no-underline ${styles.showcaseCardLink}`}
             draggable="false"
         >
             <div className={styles.monolithFrame}>
-                {/* NEW: Explicit Cyber Corner Div */}
                 <div className={styles.cyberCorner} />
                 
                 <motion.div 
@@ -118,8 +122,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                 </div>
                 
                 <div className={styles.hudContainer} style={{ transform: 'translateZ(40px)' }}>
-                    
-                    {/* LEFT COLUMN: DATE */}
                     <div style={{ justifySelf: 'start' }}>
                         {article.date && (
                             <div className={styles.dateReadout}>
@@ -128,29 +130,29 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                             </div>
                         )}
                     </div>
-                    
-                    {/* CENTER COLUMN: TECH DECORATION */}
                     <div className={styles.techDecoration}>
                         <div className={styles.techDot} />
                         <div className={styles.techDot} />
                         <div className={styles.techDot} />
                     </div>
-                    
-                    {/* RIGHT COLUMN: CREDITS */}
                     <div style={{ justifySelf: 'end' }}>
                         {authorName ? (
                             authorUsername ? (
-                                <Link 
+                                <KineticLink 
                                     href={`/creators/${authorUsername}`}
+                                    slug={authorUsername}
+                                    type="creators"
                                     onClick={(e) => e.stopPropagation()} 
                                     className={`${styles.creditCapsule} no-underline`}
                                     style={{ flexDirection: 'row-reverse' }} 
+                                    // PASS DATA
+                                    preloadedData={creatorData}
                                 >
                                     <div className={styles.capsuleIcon}>
                                         <PenEdit02Icon style={{ width: 14, height: 14 }} />
                                     </div>
                                     <span title={authorName}>{authorName}</span>
-                                </Link>
+                                </KineticLink>
                             ) : (
                                 <div className={styles.creditCapsule} style={{ flexDirection: 'row-reverse' }}>
                                     <div className={styles.capsuleIcon}>
@@ -161,7 +163,6 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                             )
                         ) : <div />}
                     </div>
-
                 </div>
             </div>
             
@@ -190,20 +191,21 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                                 style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                 onClick={(e) => e.stopPropagation()}
                              >
-                                 <Link 
+                                 <KineticLink 
                                     href={`/tags/${tag.slug}`} 
+                                    slug={tag.slug}
+                                    type="tags"
                                     onClick={(e) => e.stopPropagation()}
                                     className={`${styles.satelliteShardLink} no-underline`}
                                 >
                                      {translateTag(tag.title)}
-                                 </Link>
+                                 </KineticLink>
                              </motion.div>
                         ))}
                     </AnimatePresence>
                 </div>
             )}
-
-        </Link>
+        </KineticLink>
       </motion.div>
     </motion.div>
   );

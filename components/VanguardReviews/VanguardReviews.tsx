@@ -17,6 +17,9 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { usePerformanceStore } from '@/lib/performanceStore';
 import { translateTag } from '@/lib/translations';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
+import KineticLink from '@/components/kinetic/KineticLink'; 
+import { generateLayoutId } from '@/lib/layoutUtils'; 
+import { useContentStore } from '@/lib/contentStore'; 
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0, transition: { duration: 0.2, when: "afterChildren" } },
@@ -27,201 +30,13 @@ const creatorBubbleItemVariants = {
     visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } }
 };
 
-// --- CONFIGURATION ---
-const SATELLITE_CONFIG = [
-    { hoverX: -240, hoverY: -100, rotate: -12 }, // Top Left
-    { hoverX: 180, hoverY: 60, rotate: 10 },    // Top Right
-    { hoverX: -50, hoverY: -265, rotate: 5 }     // Upper Center (The "Upper Tag")
-];
+const ArrowIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" color="currentColor"> <path d="M12.293 5.29273C12.6591 4.92662 13.2381 4.90402 13.6309 5.22437L13.707 5.29273L19.707 11.2927L19.7754 11.3689C20.0957 11.7617 20.0731 12.3407 19.707 12.7068L13.707 18.7068C13.3165 19.0973 12.6835 19.0973 12.293 18.7068C11.9025 18.3163 11.9025 17.6833 12.293 17.2927L16.5859 12.9998H5C4.44772 12.9998 4 12.552 4 11.9998C4 11.4475 4.44772 10.9998 5 10.9998H16.5859L12.293 6.7068L12.2246 6.63063C11.9043 6.23785 11.9269 5.65885 12.293 5.29273Z" fill="currentColor"></path> </svg> );
 
-// --- POSITIONING ADJUSTMENTS ---
-const CARD_VERTICAL_OFFSET_DESKTOP = -80; 
-const CARD_VERTICAL_OFFSET_MOBILE = -70;  
+const CARD_SHAPE_PATH = `M 20,0 L 280,0 Q 300,0 300,20 L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 L 300,335 Q 300,345 292,352 L 272,372 Q 265,380 255,380 L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 L 10,160 Q 10,156 7,154 L 3,152 Q 0,150 0,146 L 0,20 Q 0,0 20,0 Z`;
 
-// --- MOBILE ADJUSTMENT NUMBER ---
-const MOBILE_SATELLITE_SCALE = 0.45;
+const VanguardGlobalDefs = () => ( <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}> <defs> <filter id="vg-activeGlow" x="-50%" y="-50%" width="200%" height="200%"> <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur> <feMerge> <feMergeNode in="coloredBlur"></feMergeNode> <feMergeNode in="SourceGraphic"></feMergeNode> </feMerge> </filter> <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox"> <path d={CARD_SHAPE_PATH} transform="scale(0.00333333, 0.00263158)" /> </clipPath> </defs> </svg> );
 
-// --- ARROW POSITION SETTINGS ---
-const ARROW_SETTINGS = {
-    xOffset: -45, 
-    yOffset: -10  
-};
-
-// --- ICONS ---
-const ArrowIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" color="currentColor">
-        <path d="M12.293 5.29273C12.6591 4.92662 13.2381 4.90402 13.6309 5.22437L13.707 5.29273L19.707 11.2927L19.7754 11.3689C20.0957 11.7617 20.0731 12.3407 19.707 12.7068L13.707 18.7068C13.3165 19.0973 12.6835 19.0973 12.293 18.7068C11.9025 18.3163 11.9025 17.6833 12.293 17.2927L16.5859 12.9998H5C4.44772 12.9998 4 12.552 4 11.9998C4 11.4475 4.44772 10.9998 5 10.9998H16.5859L12.293 6.7068L12.2246 6.63063C11.9043 6.23785 11.9269 5.65885 12.293 5.29273Z" fill="currentColor"></path>
-    </svg>
-);
-
-// --- GLOBAL DEFINITIONS ---
-const CARD_SHAPE_PATH = `
-    M 20,0 
-    L 280,0 Q 300,0 300,20 
-    L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 
-    L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 
-    L 300,335 Q 300,345 292,352 
-    L 272,372 Q 265,380 255,380 
-    L 45,380 Q 35,380 28,372 
-    L 8,352 Q 0,345 0,335 
-    L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 
-    L 10,160 Q 10,156 7,154 L 3,152 Q 0,150 0,146 
-    L 0,20 Q 0,0 20,0 Z
-`;
-
-const VanguardGlobalDefs = () => (
-    <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}>
-        <defs>
-             <filter id="vg-activeGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
-                <feMerge>
-                    <feMergeNode in="coloredBlur"></feMergeNode>
-                    <feMergeNode in="SourceGraphic"></feMergeNode>
-                </feMerge>
-            </filter>
-            <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox">
-                 <path d={CARD_SHAPE_PATH} transform="scale(0.00333333, 0.00263158)" /> 
-            </clipPath>
-        </defs>
-    </svg>
-);
-
-const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabled: boolean }) => {
-    if (!isEnabled) return null;
-
-    const defaultTopLength = 0.13;  
-    const defaultSideLength = 0.09; 
-    const defaultOpacity = 0.6;
-    
-    const activeTopLength = 0.66; 
-    const activeSideLength = 1.05;
-
-    // --- ACTIVE PATHS (EXPANDING) ---
-    const topWingPath = `
-        M 0,20 
-        Q 0,0 20,0 
-        L 280,0 
-        Q 300,0 300,20 
-        L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 
-        L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 
-        L 300,335
-    `;
-
-    const leftWingPath = `
-        M 0,20.1 
-        L 0,146 Q 0,150 3,152 L 7,154 Q 10,156 10,160 
-        L 10,220 Q 10,224 7,226 L 3,228 Q 0,230 0,234 
-        L 0,335 Q 0,345 8,352 
-        L 28,372 Q 35,380 45,380
-        L 150,380
-    `;
-
-    // --- STATIC BOTTOM PATHS (RETREATING) ---
-    const bottomRightPath = `
-        M 150,380 
-        L 255,380 Q 265,380 272,372 L 292,352 Q 300,345 300,335 
-        L 300,234 Q 300,230 297,228 L 293,226 Q 290,224 290,220 
-        L 290,130
-    `;
-    
-    const bottomLeftPath = `
-        M 150,380 
-        L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 
-        L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 
-        L 10,130
-    `;
-
-    const activeStrokeThickness = "4"; 
-    const staticStrokeThickness = "2"; 
-
-    const activeTransition = {
-        pathLength: { duration: 0.4, ease: "easeInOut" as const },
-        opacity: { duration: 0.05 },
-        filter: { duration: 0.05 }
-    };
-    
-    const bottomTransition = {
-        duration: 0.4,
-        ease: "easeInOut" as const
-    };
-
-    return (
-        <div className={styles.frameSvgContainer}>
-            <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none">
-                <path d={CARD_SHAPE_PATH} 
-                      fill="var(--bg-secondary)" stroke="none" strokeWidth="0" vectorEffect="non-scaling-stroke" />
-                
-                <motion.path 
-                    d={bottomRightPath}
-                    fill="none" 
-                    stroke="var(--accent)" 
-                    strokeWidth={staticStrokeThickness}
-                    vectorEffect="non-scaling-stroke"
-                    strokeLinecap="round"
-                    filter="url(#vg-activeGlow)"
-                    initial={{ pathLength: 1, opacity: 1 }}
-                    animate={{ 
-                        pathLength: isActive ? 0 : 1, 
-                        opacity: isActive ? 0 : 1 
-                    }}
-                    transition={bottomTransition}
-                />
-                
-                <motion.path 
-                    d={bottomLeftPath}
-                    fill="none" 
-                    stroke="var(--accent)" 
-                    strokeWidth={staticStrokeThickness}
-                    vectorEffect="non-scaling-stroke"
-                    strokeLinecap="round"
-                    filter="url(#vg-activeGlow)"
-                    initial={{ pathLength: 1, opacity: 1 }}
-                    animate={{ 
-                        pathLength: isActive ? 0 : 1, 
-                        opacity: isActive ? 0 : 1 
-                    }}
-                    transition={bottomTransition}
-                />
-
-                {isEnabled && (
-                    <>
-                        <motion.path 
-                            d={topWingPath}
-                            fill="none" 
-                            stroke="var(--accent)" 
-                            strokeWidth={activeStrokeThickness}
-                            vectorEffect="non-scaling-stroke"
-                            strokeLinecap="round"
-                            initial={{ pathLength: defaultTopLength, opacity: defaultOpacity }}
-                            animate={{ 
-                                pathLength: isActive ? activeTopLength : defaultTopLength, 
-                                opacity: isActive ? 1 : defaultOpacity,
-                                filter: isActive ? "url(#vg-activeGlow)" : "none"
-                            }}
-                            transition={activeTransition}
-                        />
-
-                        <motion.path 
-                            d={leftWingPath}
-                            fill="none" 
-                            stroke="var(--accent)" 
-                            strokeWidth={activeStrokeThickness}
-                            vectorEffect="non-scaling-stroke"
-                            strokeLinecap="round"
-                            initial={{ pathLength: defaultSideLength, opacity: defaultOpacity }}
-                            animate={{ 
-                                pathLength: isActive ? activeSideLength : defaultSideLength, 
-                                opacity: isActive ? 1 : defaultOpacity,
-                                filter: isActive ? "url(#vg-activeGlow)" : "none"
-                            }}
-                            transition={activeTransition}
-                        />
-                    </>
-                )}
-            </svg>
-        </div>
-    );
-};
+const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabled: boolean }) => { if (!isEnabled) return null; const defaultTopLength = 0.13; const defaultSideLength = 0.09; const defaultOpacity = 0.6; const activeTopLength = 0.66; const activeSideLength = 1.05; const topWingPath = `M 0,20 Q 0,0 20,0 L 280,0 Q 300,0 300,20 L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 L 300,335`; const leftWingPath = `M 0,20.1 L 0,146 Q 0,150 3,152 L 7,154 Q 10,156 10,160 L 10,220 Q 10,224 7,226 L 3,228 Q 0,230 0,234 L 0,335 Q 0,345 8,352 L 28,372 Q 35,380 45,380 L 150,380`; const bottomRightPath = `M 150,380 L 255,380 Q 265,380 272,372 L 292,352 Q 300,345 300,335 L 300,234 Q 300,230 297,228 L 293,226 Q 290,224 290,220 L 290,130`; const bottomLeftPath = `M 150,380 L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 L 10,130`; const activeStrokeThickness = "4"; const staticStrokeThickness = "2"; const activeTransition = { pathLength: { duration: 0.4, ease: "easeInOut" as const }, opacity: { duration: 0.05 }, filter: { duration: 0.05 } }; const bottomTransition = { duration: 0.4, ease: "easeInOut" as const }; return ( <div className={styles.frameSvgContainer}> <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none"> <path d={CARD_SHAPE_PATH} fill="var(--bg-secondary)" stroke="none" strokeWidth="0" vectorEffect="non-scaling-stroke" /> <motion.path d={bottomRightPath} fill="none" stroke="var(--accent)" strokeWidth={staticStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" filter="url(#vg-activeGlow)" initial={{ pathLength: 1, opacity: 1 }} animate={{ pathLength: isActive ? 0 : 1, opacity: isActive ? 0 : 1 }} transition={bottomTransition} /> <motion.path d={bottomLeftPath} fill="none" stroke="var(--accent)" strokeWidth={staticStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" filter="url(#vg-activeGlow)" initial={{ pathLength: 1, opacity: 1 }} animate={{ pathLength: isActive ? 0 : 1, opacity: isActive ? 0 : 1 }} transition={bottomTransition} /> {isEnabled && ( <> <motion.path d={topWingPath} fill="none" stroke="var(--accent)" strokeWidth={activeStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" initial={{ pathLength: defaultTopLength, opacity: defaultOpacity }} animate={{ pathLength: isActive ? activeTopLength : defaultTopLength, opacity: isActive ? 1 : defaultOpacity, filter: isActive ? "url(#vg-activeGlow)" : "none" }} transition={activeTransition} /> <motion.path d={leftWingPath} fill="none" stroke="var(--accent)" strokeWidth={activeStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" initial={{ pathLength: defaultSideLength, opacity: defaultOpacity }} animate={{ pathLength: isActive ? activeSideLength : defaultSideLength, opacity: isActive ? 1 : defaultOpacity, filter: isActive ? "url(#vg-activeGlow)" : "none" }} transition={activeTransition} /> </> )} </svg> </div> ); };
 
 // --- ANIMATION VARIANTS FOR HOVER ---
 const capsuleVariants: Variants = {
@@ -242,6 +57,8 @@ const arrowVariants: Variants = {
     }
 };
 
+const ARROW_SETTINGS = { xOffset: -45, yOffset: -10 };
+
 const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuthor }) => {
     const handleBubbleClick = (e: React.MouseEvent) => { e.stopPropagation(); };
     const profileSlug = creator.username || (creator.slug as any)?.current || creator.name?.toLowerCase().replace(/\s+/g, '-');
@@ -249,56 +66,55 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
     
     const IconComponent = label === 'تصميم' ? ColorPaletteIcon : PenEdit02Icon;
 
-    const InnerContent = (
-        <>
-             <div className={styles.capsuleIcon}>
+    const InnerContent = ( 
+        <> 
+            <div className={styles.capsuleIcon}>
                 <IconComponent style={{ width: 14, height: 14 }} />
-            </div>
-            <span className={styles.creatorName}>{creator.name}</span>
-        </>
-    );
+            </div> 
+            <span className={styles.creatorName}>{creator.name}</span> 
+        </> 
+    ); 
     
-    const InteractiveWrapper = ({ children }: { children: React.ReactNode }) => (
-        <motion.div 
-            className={styles.capsuleWrapper}
-            initial="idle"
-            whileHover="hover"
-        >
-            <motion.div 
-                className={styles.capsuleArrow} 
-                variants={arrowVariants}
-                style={{ 
-                    left: ARROW_SETTINGS.xOffset, 
-                    marginTop: ARROW_SETTINGS.yOffset 
-                }}
-            >
+    const InteractiveWrapper = ({ children }: { children: React.ReactNode }) => ( 
+        <motion.div className={styles.capsuleWrapper} initial="idle" whileHover="hover"> 
+            <motion.div className={styles.capsuleArrow} variants={arrowVariants} style={{ left: ARROW_SETTINGS.xOffset, marginTop: ARROW_SETTINGS.yOffset }}>
                 <ArrowIcon />
-            </motion.div>
-            
+            </motion.div> 
             <motion.div className={styles.creditCapsule} variants={capsuleVariants}>
                 {children}
-            </motion.div>
-        </motion.div>
-    );
-
-    return (
-        <motion.div variants={creatorBubbleItemVariants} className={styles.safeBridgeWrapper}>
-            {hasPublicProfile ? (
-                <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline" prefetch={false}>
-                    <InteractiveWrapper>
-                        {InnerContent}
-                    </InteractiveWrapper>
-                </Link>
-            ) : (
+            </motion.div> 
+        </motion.div> 
+    ); 
+    
+    return ( 
+        <motion.div variants={creatorBubbleItemVariants} className={styles.safeBridgeWrapper}> 
+            {hasPublicProfile ? ( 
+                <KineticLink 
+                    href={`/creators/${profileSlug}`} 
+                    slug={profileSlug}
+                    type="creators"
+                    onClick={handleBubbleClick} 
+                    className="no-underline"
+                >
+                    <InteractiveWrapper>{InnerContent}</InteractiveWrapper>
+                </KineticLink> 
+            ) : ( 
                 <div title={`${creator.name}`}>
-                     <InteractiveWrapper>
-                        {InnerContent}
-                    </InteractiveWrapper>
-                </div>
-            )}
-        </motion.div>
-    );
+                    <InteractiveWrapper>{InnerContent}</InteractiveWrapper>
+                </div> 
+            )} 
+        </motion.div> 
+    ); 
 };
+
+const SATELLITE_CONFIG = [
+    { hoverX: -240, hoverY: -100, rotate: -12 }, 
+    { hoverX: 180, hoverY: 60, rotate: 10 },    
+    { hoverX: -50, hoverY: -265, rotate: 5 }     
+];
+const CARD_VERTICAL_OFFSET_DESKTOP = -80; 
+const CARD_VERTICAL_OFFSET_MOBILE = -70;  
+const MOBILE_SATELLITE_SCALE = 0.45;
 
 interface VanguardCardProps {
     review: CardProps;
@@ -316,10 +132,9 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     const { livingCardRef, livingCardAnimation } = useLivingCard();
     const router = useRouter(); 
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const layoutIdPrefix = "vanguard-reviews";
     const scoreRef = useRef<HTMLParagraphElement>(null);
     
-    const { isFlyingTagsEnabled, isLivingCardEnabled, isCornerAnimationEnabled } = usePerformanceStore();
+    const { isFlyingTagsEnabled, isLivingCardEnabled, isCornerAnimationEnabled, isHeroTransitionEnabled } = usePerformanceStore();
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
     const mouseX = useMotionValue(0);
@@ -338,19 +153,24 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
     }, [isInView, review.score, isVisible]);
 
     const linkPath = `/reviews/${review.slug}`;
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const layoutIdPrefix = "vanguard-reviews";
+    const layoutId = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
+    
+    const imageLayoutId = generateLayoutId(layoutIdPrefix, 'image', review.legacyId);
+    const titleLayoutId = generateLayoutId(layoutIdPrefix, 'title', review.legacyId);
+
+    const handleClick = (e: React.MouseEvent) => {
         if (e.ctrlKey || e.metaKey) return; 
         if ((e.target as HTMLElement).closest('a[href^="/creators"]')) {
             e.stopPropagation();
             return;
         }
         if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
-        setPrefix(layoutIdPrefix);
     };
     
-    const handleBridgeClick = (e: React.MouseEvent) => {
-        handleClick(e as any);
-        router.push(linkPath);
+    // DEFINED HANDLE BRIDGE CLICK
+    const handleBridgeClick = (e: React.MouseEvent) => { 
+        e.stopPropagation();
     };
     
     const imageRef = review.mainImageVerticalRef || review.mainImageRef;
@@ -397,12 +217,15 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     return (
         <div className={styles.cardWrapper}>
-            <Link 
+            <KineticLink 
                 href={linkPath}
+                slug={review.slug}
+                type="reviews"
+                layoutId={layoutId} 
+                imageSrc={imageUrl}
                 onClick={handleClick}
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
-                // IMPORTANT: Removed prefetch={false} to enable instant nav
             >
                 <motion.div
                     ref={livingCardRef}
@@ -415,21 +238,15 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         boxShadow: 'none',
                         backgroundColor: 'transparent'
                     }}
-                    layoutId={!isMobile ? `${layoutIdPrefix}-card-container-${review.legacyId}` : undefined} 
                     className={styles.vanguardCard}
                 >
-                    <div 
-                        className={styles.hitArea}
-                    />
+                    <div className={styles.hitArea} />
 
                     {isVisible && <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />}
                     
                     <div className={styles.effectLayer}>
                         {isVisible && !isMobile && (
-                            <motion.div 
-                                className={styles.holoSpotlight} 
-                                style={{ x: smoothMouseX, y: smoothMouseY }} 
-                            />
+                            <motion.div className={styles.holoSpotlight} style={{ x: smoothMouseX, y: smoothMouseY }} />
                         )}
                         {isVisible && <div className={styles.scanLine} />}
                     </div>
@@ -453,7 +270,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     
                     <motion.div 
-                        layoutId={!isMobile ? `${layoutIdPrefix}-card-image-${review.legacyId}` : undefined} 
+                        layoutId={!isMobile && imageLayoutId ? imageLayoutId : undefined} 
                         className={styles.cardImageContainer}
                     >
                         <Image 
@@ -470,7 +287,11 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     </motion.div>
                     
                     <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
-                        <motion.h3 layoutId={!isMobile ? `${layoutIdPrefix}-card-title-${review.legacyId}` : undefined}>{review.title}</motion.h3>
+                        <motion.h3 
+                            layoutId={!isMobile && titleLayoutId ? titleLayoutId : undefined}
+                        >
+                            {review.title}
+                        </motion.h3>
                         
                         <div className={styles.cardMetaRow}>
                             {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
@@ -487,7 +308,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                             <AnimatePresence>
                                 {isHovered && displayTags.map((tag, i) => {
                                     const rawConfig = SATELLITE_CONFIG[i];
-                                    
                                     const hoverX = isMobile && rawConfig ? rawConfig.hoverX * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverX || 0);
                                     const hoverY = isMobile && rawConfig ? rawConfig.hoverY * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverY || 0);
                                     const rotate = rawConfig?.rotate || 0;
@@ -497,39 +317,21 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                             key={`${review.id}-${tag.slug}`}
                                             className={styles.satelliteShard}
                                             initial={{ opacity: 0, scale: 0, x: 0, y: 0, z: 0 }}
-                                            animate={{
-                                                opacity: 1,
-                                                scale: 1.15,
-                                                x: hoverX,
-                                                y: hoverY,
-                                                rotate: rotate,
-                                                z: -30 
-                                            }}
-                                            exit={{ 
-                                                opacity: 0, 
-                                                scale: 0.4, 
-                                                x: 0, 
-                                                y: 0, 
-                                                rotate: 0,
-                                                z: 0 
-                                            }}
-                                            transition={{
-                                                type: "spring",
-                                                stiffness: 180,
-                                                damping: 20,
-                                                delay: i * 0.05
-                                            }}
+                                            animate={{ opacity: 1, scale: 1.15, x: hoverX, y: hoverY, rotate: rotate, z: -30 }}
+                                            exit={{ opacity: 0, scale: 0.4, x: 0, y: 0, rotate: 0, z: 0 }}
+                                            transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
                                             style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
                                          >
-                                             <Link 
+                                             <KineticLink 
                                                 href={`/tags/${tag.slug}`} 
-                                                onClick={(e) => e.stopPropagation()}
+                                                slug={tag.slug}
+                                                type="tags"
+                                                onClick={(e) => e.stopPropagation()} 
                                                 className={`${styles.satelliteShardLink} no-underline`} 
-                                                prefetch={false}
                                             >
                                                  {translateTag(tag.title)}
-                                             </Link>
+                                             </KineticLink>
                                          </motion.div>
                                     );
                                 })}
@@ -541,25 +343,14 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                         const rawConfig = SATELLITE_CONFIG[i];
                                         const hoverX = isMobile && rawConfig ? rawConfig.hoverX * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverX || 0);
                                         const hoverY = isMobile && rawConfig ? rawConfig.hoverY * MOBILE_SATELLITE_SCALE : (rawConfig?.hoverY || 0);
-
-                                        return (
-                                            <line 
-                                                key={`bridge-${i}`}
-                                                x1="0" y1="0" 
-                                                x2={hoverX} 
-                                                y2={hoverY} 
-                                                className={styles.satelliteBridgeLine}
-                                                onClick={handleBridgeClick}
-                                            />
-                                        );
+                                        return ( <line key={`bridge-${i}`} x1="0" y1="0" x2={hoverX} y2={hoverY} className={styles.satelliteBridgeLine} onClick={handleBridgeClick} /> );
                                     })}
                                 </svg>
                             )}
                         </div>
                     )}
-
                 </motion.div>
-            </Link>
+            </KineticLink>
         </div>
     );
 });
@@ -572,17 +363,12 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
     useEffect(() => {
         const activeItem = itemRefs.current[currentIndex];
         const track = trackRef.current;
-
         if (activeItem && track) {
             const itemRect = activeItem.getBoundingClientRect();
             const trackRect = track.getBoundingClientRect();
             const relativeLeft = itemRect.left - trackRect.left + track.scrollLeft;
             const targetScrollLeft = relativeLeft - (trackRect.width / 2) + (itemRect.width / 2);
-
-            track.scrollTo({
-                left: targetScrollLeft,
-                behavior: 'smooth'
-            });
+            track.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
         }
     }, [currentIndex]);
 
@@ -604,15 +390,7 @@ const KineticNavigator = ({ reviews, currentIndex, navigateToIndex }: { reviews:
                             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                             style={{ width: 60, height: 40, transformOrigin: 'center' }}
                         >
-                            <Image 
-                                loader={sanityLoader}
-                                src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} 
-                                alt={review.title} 
-                                fill 
-                                sizes="10vw" 
-                                className={styles.navImage} 
-                                unoptimized 
-                            />
+                            <Image loader={sanityLoader} src={`${review.imageUrl.split('?')[0]}?w=200&auto=format`} alt={review.title} fill sizes="10vw" className={styles.navImage} unoptimized />
                             <AnimatePresence>{isActive && <motion.div className={styles.navTitle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{review.title}</motion.div>}</AnimatePresence>
                         </motion.button>
                     );
@@ -630,15 +408,11 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
     const [isManualHover, setIsManualHover] = useState(false);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const {
-        currentIndex,
-        hoveredId,
-        setHoveredId,
-        navigateToIndex,
-        getCardState,
-        isMobile,
-        isAnimating
-    } = useVanguardCarousel(reviews.length, isCurrentlyInView);
+    // MODIFIED: Read overlay state
+    const isOverlayOpen = useContentStore((s) => s.isOverlayOpen);
+    
+    // MODIFIED: Pass paused condition to hook
+    const { currentIndex, hoveredId, setHoveredId, navigateToIndex, getCardState, isMobile, isAnimating } = useVanguardCarousel(reviews.length, isCurrentlyInView && !isOverlayOpen);
 
     useEffect(() => {
         if (hasAnimatedIn && !initialAnimHasRun) {
@@ -649,49 +423,19 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
 
     const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const swipeThreshold = 50;
-        if (info.offset.x < -swipeThreshold) {
-            navigateToIndex((currentIndex + 1) % reviews.length);
-        } else if (info.offset.x > swipeThreshold) {
-            navigateToIndex((currentIndex - 1 + reviews.length) % reviews.length);
-        }
+        if (info.offset.x < -swipeThreshold) navigateToIndex((currentIndex + 1) % reviews.length);
+        else if (info.offset.x > swipeThreshold) navigateToIndex((currentIndex - 1 + reviews.length) % reviews.length);
     };
     
     const handleCardHoverChange = useCallback((id: string, isHovering: boolean) => {
-        if (!initialAnimHasRun) return;
-
-        if (isAnimating) {
-            setHoveredId(null);
-            setIsManualHover(false);
-            return;
-        }
-
+        if (!initialAnimHasRun || isAnimating) { setHoveredId(null); setIsManualHover(false); return; }
         if (isMobile) {
-            if (isHovering) {
-                setHoveredId(id);
-                setIsManualHover(true);
-            } else {
-                setHoveredId(null);
-                setIsManualHover(false);
-            }
+            if (isHovering) { setHoveredId(id); setIsManualHover(true); } else { setHoveredId(null); setIsManualHover(false); }
             return;
         }
-
-        if (hoverTimeoutRef.current) {
-            clearTimeout(hoverTimeoutRef.current);
-            hoverTimeoutRef.current = null;
-        }
-
-        if (isHovering) {
-            hoverTimeoutRef.current = setTimeout(() => {
-                setHoveredId(id);
-                setIsManualHover(true);
-            }, 50);
-        } else {
-            hoverTimeoutRef.current = setTimeout(() => {
-                setHoveredId(null);
-                setIsManualHover(false);
-            }, 50);
-        }
+        if (hoverTimeoutRef.current) { clearTimeout(hoverTimeoutRef.current); hoverTimeoutRef.current = null; }
+        if (isHovering) { hoverTimeoutRef.current = setTimeout(() => { setHoveredId(id); setIsManualHover(true); }, 50); } 
+        else { hoverTimeoutRef.current = setTimeout(() => { setHoveredId(null); setIsManualHover(false); }, 50); }
     }, [initialAnimHasRun, isMobile, setHoveredId, isAnimating]);
 
     if (reviews.length === 0) return null;
@@ -704,16 +448,10 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
         transform: centerStyle.transform ? centerStyle.transform.replace(/scale\([0-9.]+\)/, 'scale(0.8)') : 'scale(0.8)',
     };
 
-
     return (
-        <div 
-            ref={containerRef} 
-            className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''} gpu-cull`}
-        >
+        <div ref={containerRef} className={`${styles.vanguardContainer} ${isManualHover ? styles['manual-hover'] : ''} gpu-cull`}>
             <VanguardGlobalDefs />
-
             <motion.div className={styles.spotlightGlow} animate={{ opacity: hoveredId ? 0.5 : 1 }} />
-            
             <motion.div
                 style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 drag={isMobile ? "x" : false}
@@ -726,13 +464,10 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 {reviews.map((review, reviewIndex) => {
                     const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
                     const isHovered = hoveredId === review.id;
-                    
                     const currentStyle = { ...style };
                     if (currentStyle.transform) {
                         let yOffset = isMobile ? CARD_VERTICAL_OFFSET_MOBILE : CARD_VERTICAL_OFFSET_DESKTOP;
-                        if (isHovered && !isMobile) {
-                            yOffset -= 15; 
-                        }
+                        if (isHovered && !isMobile) yOffset -= 15; 
                         currentStyle.transform = currentStyle.transform.replace(/translateY\([^)]+\)/, `translateY(${yOffset}px)`);
                     }
 
@@ -742,28 +477,15 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                             className={`${styles.cardSlot} ${isHovered ? styles.activeState : ''}`} 
                             initial={!initialAnimHasRun ? initialAnimationConfig : false}
                             animate={currentStyle}
-                            transition={{
-                                ease: [0.4, 0, 0.2, 1],
-                                duration: 0.7,
-                                delay: !initialAnimHasRun ? (isCenter ? 0 : 0.2) : 0,
-                            }}
+                            transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.7, delay: !initialAnimHasRun ? (isCenter ? 0 : 0.2) : 0 }}
                         >
                             <VanguardCard 
-                                review={review} 
-                                isCenter={isCenter} 
-                                isInView={hasAnimatedIn}
-                                isPriority={isCenter}
-                                isMobile={isMobile}
-                                isHovered={isHovered}
-                                isInteractive={initialAnimHasRun}
-                                isVisible={isVisible} 
-                                onHoverChange={(val) => handleCardHoverChange(review.id, val)}
+                                review={review} isCenter={isCenter} isInView={hasAnimatedIn} isPriority={isCenter} isMobile={isMobile} isHovered={isHovered} isInteractive={initialAnimHasRun} isVisible={isVisible} onHoverChange={(val) => handleCardHoverChange(review.id, val)}
                             />
                         </motion.div>
                     );
                 })}
             </motion.div>
-            
             {hasAnimatedIn && <KineticNavigator reviews={reviews} currentIndex={currentIndex} navigateToIndex={navigateToIndex} />}
         </div>
     );

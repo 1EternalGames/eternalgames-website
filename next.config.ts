@@ -4,7 +4,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com;
+    img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com https://img.youtube.com;
     font-src 'self' https://fonts.gstatic.com;
     frame-src 'self' https://www.youtube.com https://youtube.com;
     connect-src 'self' https://*.sanity.io https://api.sanity.io https://*.vercel-storage.com;
@@ -62,12 +62,16 @@ const nextConfig = {
 
     images: {
         formats: ['image/avif', 'image/webp'],
+        // OPTIMIZATION: Explicit device sizes to ensure 2K and 4K screens get exact resolutions
+        deviceSizes: [640, 750, 828, 1080, 1200, 1440, 1920, 2048, 2560, 3840],
         remotePatterns: [
             { protocol: 'https', hostname: 'cdn.sanity.io' },
             { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
             { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
             { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
             { protocol: 'https', hostname: 'images.unsplash.com' },
+            // ADDED: YouTube Thumbnails
+            { protocol: 'https', hostname: 'img.youtube.com' },
         ],
     },
 

@@ -3,6 +3,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScrolled } from '@/hooks/useScrolled';
+import { useUIStore } from '@/lib/uiStore';
 import styles from './ScrollToTopButton.module.css';
 
 const ArrowUpIcon = () => (
@@ -13,13 +14,15 @@ const ArrowUpIcon = () => (
 );
 
 export default function ScrollToTopButton() {
-    const isScrolled = useScrolled(400); // Show button after scrolling 400px
+    const isScrolled = useScrolled(400); 
+    const { overlayScrollRef } = useUIStore();
 
     const scrollToTop = () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth',
-        });
+        if (overlayScrollRef) {
+            overlayScrollRef.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     return (
@@ -42,5 +45,3 @@ export default function ScrollToTopButton() {
         </AnimatePresence>
     );
 }
-
-

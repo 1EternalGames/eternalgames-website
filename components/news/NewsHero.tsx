@@ -4,14 +4,16 @@
 import React, { useState, useEffect, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
 import { CardProps } from '@/types';
 import styles from './NewsHero.module.css';
 import { Calendar03Icon } from '@/components/icons';
 import CreatorCredit from '@/components/CreatorCredit';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader'; 
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Store
+import { usePerformanceStore } from '@/lib/performanceStore';
+import { useContentStore } from '@/lib/contentStore';
+// IMPORT KineticLink
+import KineticLink from '@/components/kinetic/KineticLink';
 
 const transition = { type: 'spring' as const, stiffness: 400, damping: 50 };
 
@@ -36,7 +38,6 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
     const [isPressed, setIsPressed] = useState(false);
     
-    // Performance Check
     const { isHeroTransitionEnabled } = usePerformanceStore();
 
     const handleClick = () => {
@@ -66,10 +67,15 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                         <p className={`${styles.storyCategory} ${styles[newsType]}`}>
                             {label}
                         </p>
-                        <Link 
+                        
+                        {/* CHANGED TO KINETIC LINK */}
+                        <KineticLink 
                             href={`/news/${item.slug}`}
+                            slug={item.slug}
+                            type="news"
+                            imageSrc={item.imageUrl}
+                            layoutId={safeLayoutIdPrefix}
                             onClick={handleClick}
-                            prefetch={false} 
                             className={`${styles.storyLink} no-underline`}
                         >
                             <motion.h1 
@@ -85,7 +91,8 @@ const AnimatedStory = memo(({ item, isActive, layoutIdPrefix }: { item: CardProp
                                     </motion.span>
                                 ))}
                             </motion.h1>
-                        </Link>
+                        </KineticLink>
+
                         <div className={styles.storyMeta}>
                             <CreatorCredit label="بواسطة" creators={item.authors} small disableLink />
                             <span className={styles.storyMetaDate}>
@@ -147,13 +154,15 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     
+    const isOverlayOpen = useContentStore((s) => s.isOverlayOpen);
+
     useEffect(() => {
-        if (isPaused || newsItems.length <= 1) return;
+        if (isPaused || newsItems.length <= 1 || isOverlayOpen) return;
         const interval = setInterval(() => {
             setActiveIndex((prevIndex) => (prevIndex + 1) % newsItems.length);
         }, 4000);
         return () => clearInterval(interval);
-    }, [isPaused, newsItems.length]);
+    }, [isPaused, newsItems.length, isOverlayOpen]);
     
     if (newsItems.length === 0) return null;
 
@@ -200,5 +209,3 @@ export default function NewsHero({ newsItems }: { newsItems: CardProps[] }) {
         </div>
     );
 }
-
-

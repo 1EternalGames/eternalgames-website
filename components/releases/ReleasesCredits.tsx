@@ -14,6 +14,7 @@ import styles from './ReleasesCredits.module.css';
 import { sanityLoader } from '@/lib/sanity.loader';
 import Image from 'next/image';
 import { urlFor } from '@/sanity/lib/image';
+import KineticLink from '@/components/kinetic/KineticLink'; // IMPORT
 
 type Creator = {
     _id: string;
@@ -102,21 +103,24 @@ export default function ReleasesCredits({ initialCredits }: { initialCredits: Cr
                     <div className={styles.namesWrapper}>
                         <span className={styles.label}>إعداد:</span>
                         {credits.map((creator, index) => {
-                            // FIX: Link to /creators/[username] to match ArticleCard behavior
                             const profileLink = creator.username ? `/creators/${creator.username}` : null;
-                            
+                            const creatorData = { name: creator.name, image: creator.image };
+
                             return (
                                 <span key={creator._id} style={{ display: 'inline-flex', alignItems: 'center' }}>
                                     {index > 0 && <span className={styles.separator}>،</span>}
                                     {profileLink ? (
-                                        <Link 
+                                        <KineticLink 
                                             href={profileLink} 
+                                            slug={creator.username!}
+                                            type="creators"
                                             className={`${styles.creatorLink} no-underline`} 
-                                            prefetch={false}
                                             onClick={(e) => e.stopPropagation()} 
+                                            // PASS DATA
+                                            preloadedData={creatorData}
                                         >
                                             {creator.name}
-                                        </Link>
+                                        </KineticLink>
                                     ) : (
                                         <span className={styles.creatorName}>{creator.name}</span>
                                     )}
@@ -211,5 +215,3 @@ export default function ReleasesCredits({ initialCredits }: { initialCredits: Cr
         </>
     );
 }
-
-
