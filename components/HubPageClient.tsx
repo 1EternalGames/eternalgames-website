@@ -21,6 +21,8 @@ import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 import KineticLink from '@/components/kinetic/KineticLink'; 
 
+// ... imports remain the same
+
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface HubPageClientProps {
@@ -49,6 +51,7 @@ const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
 };
 
 const formatSynopsis = (text: string) => {
+    // ... logic unchanged
     const parts = text.split(/(\s+)/);
     return parts.map((part, i) => {
         if (/^[A-Za-z0-9]+$/.test(part.replace(/[^\w\s]/gi, ''))) {
@@ -69,12 +72,9 @@ export default function HubPageClient({
     isLoading = false 
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
-    
-    // --- OPTIMIZATION: Robust Deferred Rendering ---
     const [isGridReady, setIsGridReady] = useState(false);
 
     useEffect(() => {
-        // Double-RAF to ensure the browser has painted the Hero transition frame.
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 setIsGridReady(true);
@@ -94,6 +94,7 @@ export default function HubPageClient({
         return () => setPrefix('default');
     }, [setPrefix]);
     
+    // ... filters state logic unchanged ...
     const [activeTypeFilter, setActiveTypeFilter] = useState<HubTypeFilter>('all');
     const [activeSort, setActiveSort] = useState<HubSortOrder>('latest');
     const [engagementScores, setEngagementScores] = useState<Map<number, number>>(new Map());
@@ -149,7 +150,8 @@ export default function HubPageClient({
         heroImageRef = fallbackImage;
     }
 
-    let heroImageUrl = '/placeholder.jpg';
+    // FIX: Point to SVG fallback
+    let heroImageUrl = '/placeholder.svg';
     let heroBlurDataURL = null;
     let isExternalImage = false;
 
@@ -165,7 +167,8 @@ export default function HubPageClient({
         }
     } catch (e) {
         console.warn("HubPageClient: Failed to resolve hero image", e);
-        heroImageUrl = '/placeholder-game.jpg';
+        // FIX: Point to SVG
+        heroImageUrl = '/placeholder-game.svg';
     }
     
     const heroLayoutId = layoutIdPrefix === 'default' 
@@ -311,7 +314,6 @@ export default function HubPageClient({
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
                  
-                 {/* Only render grid if ready */}
                  {isGridReady ? (
                      initialItems && initialItems.length > 0 ? (
                         <>
@@ -377,7 +379,6 @@ export default function HubPageClient({
                         </motion.div>
                      )
                  ) : (
-                     /* Placeholder during deferral frame (maintains height) */
                      <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                          <div className="spinner" />
                      </div>
