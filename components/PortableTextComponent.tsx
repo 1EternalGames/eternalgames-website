@@ -18,7 +18,7 @@ import {sanityLoader} from '@/lib/sanity.loader'
 import { generateId } from '@/lib/text-utils'
 import KineticLink from '@/components/kinetic/KineticLink' // IMPORT KINETIC LINK
 
-// --- LAZY-LOADED COMPONENTS ---
+// ... (Lazy Loaded Components remain same) ...
 const LoadingSpinner = () => (
   <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px'}}>
     <div className="spinner" />
@@ -45,7 +45,6 @@ const YoutubeEmbed = dynamic(() => import('./content/YoutubeEmbed'), {
   loading: () => <LoadingSpinner />,
   ssr: false,
 })
-// --- END LAZY-LOADED COMPONENTS ---
 
 type ColorMapping = {
   word: string
@@ -205,14 +204,15 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
           const href = value.href || '';
           
           // INTELLIGENT KINETIC LINK REPLACEMENT
-          // Check if it's an internal Creator or Tag link
+          // Check if it's an internal Creator, Tag, or Game link
           const isCreatorLink = href.startsWith('/creators/');
           const isTagLink = href.startsWith('/tags/');
+          const isGameLink = href.startsWith('/games/');
           
           if (isCreatorLink) {
               const slug = href.replace('/creators/', '');
               return (
-                  <KineticLink href={href} slug={slug} type="creators" className="text-accent underline hover:text-white transition-colors">
+                  <KineticLink href={href} slug={slug} type="creators" className="text-accent underline hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}>
                       {children}
                   </KineticLink>
               );
@@ -221,7 +221,16 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
           if (isTagLink) {
                const slug = href.replace('/tags/', '');
                return (
-                  <KineticLink href={href} slug={slug} type="tags" className="text-accent underline hover:text-white transition-colors">
+                  <KineticLink href={href} slug={slug} type="tags" className="text-accent underline hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}>
+                      {children}
+                  </KineticLink>
+               );
+          }
+          
+          if (isGameLink) {
+              const slug = href.replace('/games/', '');
+               return (
+                  <KineticLink href={href} slug={slug} type="games" className="text-accent underline hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}>
                       {children}
                   </KineticLink>
                );

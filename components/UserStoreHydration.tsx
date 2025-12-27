@@ -17,11 +17,13 @@ type InitialUserState = {
 export default function UserStoreHydration({ 
     initialUserState,
     initialCreators = [],
-    initialTags = [] 
+    initialTags = [],
+    initialGames = [] // NEW
 }: { 
     initialUserState?: InitialUserState,
     initialCreators?: any[],
-    initialTags?: any[]
+    initialTags?: any[],
+    initialGames?: any[] // NEW
 }) {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -29,13 +31,13 @@ export default function UserStoreHydration({
     
     const { syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb } = useUserStore();
     const { setNotifications, setUnreadCount } = useNotificationStore();
-    const { hydrateCreators, hydrateTags } = useContentStore(); 
+    const { hydrateCreators, hydrateTags, hydrateContent } = useContentStore(); // Added hydrateContent
     
     const lastSyncedUserId = useRef<string | null>(null);
     const hasHandledOnboarding = useRef(false);
     const hasHydratedStatic = useRef(false);
 
-    // FIX: Hydrate both Creators AND Tags immediately
+    // FIX: Hydrate Creators, Tags, and Games immediately
     useEffect(() => {
         if (!hasHydratedStatic.current) {
             let didHydrate = false;
@@ -47,12 +49,16 @@ export default function UserStoreHydration({
                 hydrateTags(initialTags);
                 didHydrate = true;
             }
+            if (initialGames && initialGames.length > 0) {
+                hydrateContent(initialGames); // Games are stored in main contentMap
+                didHydrate = true;
+            }
             
             if (didHydrate) {
                 hasHydratedStatic.current = true;
             }
         }
-    }, [initialCreators, initialTags, hydrateCreators, hydrateTags]);
+    }, [initialCreators, initialTags, initialGames, hydrateCreators, hydrateTags, hydrateContent]);
 
     const currentUserId = (session?.user as any)?.id;
 

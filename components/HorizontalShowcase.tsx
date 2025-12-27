@@ -4,8 +4,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-// FIX: Link was missing from import even though used in the original component
-import Link from 'next/link';
+import Link from 'next/link'; // Keep for non-kinetic fallbacks if needed
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { CardProps } from '@/types';
@@ -53,6 +52,9 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
   const author = article.authors?.[0];
   const authorName = author?.name;
   const authorUsername = author?.username;
+  
+  // Prepare partial data for instant load
+  const creatorData = author ? { name: author.name, image: author.image } : undefined;
 
   const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
   const safeLayoutIdPrefix = isHeroTransitionEnabled ? layoutIdPrefix : undefined;
@@ -136,19 +138,21 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                     <div style={{ justifySelf: 'end' }}>
                         {authorName ? (
                             authorUsername ? (
-                                <Link 
+                                <KineticLink 
                                     href={`/creators/${authorUsername}`}
-                                    // FIX: Explicitly type event to stop propagation
-                                    onClick={(e: React.MouseEvent) => e.stopPropagation()} 
+                                    slug={authorUsername}
+                                    type="creators"
+                                    onClick={(e) => e.stopPropagation()} 
                                     className={`${styles.creditCapsule} no-underline`}
                                     style={{ flexDirection: 'row-reverse' }} 
-                                    prefetch={false}
+                                    // PASS DATA
+                                    preloadedData={creatorData}
                                 >
                                     <div className={styles.capsuleIcon}>
                                         <PenEdit02Icon style={{ width: 14, height: 14 }} />
                                     </div>
                                     <span title={authorName}>{authorName}</span>
-                                </Link>
+                                </KineticLink>
                             ) : (
                                 <div className={styles.creditCapsule} style={{ flexDirection: 'row-reverse' }}>
                                     <div className={styles.capsuleIcon}>
@@ -187,15 +191,15 @@ const ShowcaseCard = ({ article, isActive }: { article: CardProps, isActive: boo
                                 style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                 onClick={(e) => e.stopPropagation()}
                              >
-                                 <Link 
+                                 <KineticLink 
                                     href={`/tags/${tag.slug}`} 
-                                    // FIX: Explicitly type event
-                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                    slug={tag.slug}
+                                    type="tags"
+                                    onClick={(e) => e.stopPropagation()}
                                     className={`${styles.satelliteShardLink} no-underline`}
-                                    prefetch={false}
                                 >
                                      {translateTag(tag.title)}
-                                 </Link>
+                                 </KineticLink>
                              </motion.div>
                         ))}
                     </AnimatePresence>

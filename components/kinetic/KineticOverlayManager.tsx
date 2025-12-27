@@ -86,15 +86,11 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                  pageview(`/${indexSection}`);
             } else if (activeType === 'creators') {
                 const creator = creatorMap.get(activeSlug);
-                
-                // CRITICAL FIX: Only fetch if we DON'T have the content loaded flag set.
-                // The store update in hydration ensures this flag is true if data was pre-fetched.
                 if (!creator || !creator.contentLoaded) {
                     const id = creator && (creator.prismaUserId || creator._id);
                     if (id) {
                          fetchCreatorContent(activeSlug, id);
                     } else {
-                         // Fallback for direct URL or missing ID
                          fetchCreatorByUsername(activeSlug);
                     }
                 }
@@ -175,8 +171,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         } 
         
         if (activeType === 'creators') {
-            // FIX: Render client if we have the creator object, even if content loading is pending.
-            // The loading state is now correctly managed in the useEffect, which avoids the double fetch.
             if (activeCreator) {
                 const isLoading = !activeCreator.contentLoaded;
                 return {
@@ -193,7 +187,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     paddingTop: '0'
                 };
             }
-            // Only show full spinner if we have ZERO data about the creator (e.g. direct URL loading)
             return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
         } 
         
@@ -209,14 +202,16 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         
         if (activeItem) {
              if (activeType === 'releases' || (activeType as string) === 'games') {
+                const layoutPrefix = sourceLayoutId || undefined;
                 return {
-                    content: <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />,
+                    content: <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={layoutPrefix} scrollContainerRef={overlayRef} />,
                     paddingTop: '0'
                 };
              } else {
+                 const layoutPrefix = sourceLayoutId || undefined;
                  return {
                     content: (
-                        <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> 
+                        <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={layoutPrefix} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> 
                             <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> 
                         </ContentPageClient>
                     ),
@@ -238,7 +233,19 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     animate={{ opacity: 1 }} 
                     exit={{ opacity: 0 }} 
                     transition={{ duration: 0.3 }} 
-                    style={{ position: 'fixed', inset: 0, zIndex: 1060, transform: 'translateZ(0)' }}
+                    // FIX: Ensure pointer events are off when closing
+                    style={{ 
+                        position: 'fixed', 
+                        inset: 0, 
+                        zIndex: 1060, 
+                        transform: 'translateZ(0)',
+                        pointerEvents: 'auto'
+                    }}
+                    onAnimationComplete={(definition) => {
+                        if (definition === 'exit' && overlayRef.current) {
+                           overlayRef.current.style.pointerEvents = 'none';
+                        }
+                    }}
                 >
                     <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: 'var(--bg-primary)', pointerEvents: 'auto' }}>
                          <SpaceBackground />

@@ -19,6 +19,7 @@ import PCIcon from '@/components/icons/platforms/PCIcon';
 import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
+import KineticLink from '@/components/kinetic/KineticLink'; // IMPORT
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -37,7 +38,7 @@ interface HubPageClientProps {
     onGamePass?: boolean;
     onPSPlus?: boolean;
     scrollContainerRef?: RefObject<HTMLElement | null>;
-    isLoading?: boolean; // NEW PROP: Allow parent to signal loading state
+    isLoading?: boolean; 
 }
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -65,7 +66,7 @@ export default function HubPageClient({
     initialItems, hubTitle, hubType, headerAction, synopsis, tags, fallbackImage,
     price, developer, publisher, platforms, onGamePass, onPSPlus,
     scrollContainerRef,
-    isLoading = false // Default to false
+    isLoading = false 
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
@@ -130,30 +131,28 @@ export default function HubPageClient({
 
     const latestItem = (initialItems && initialItems.length > 0) ? initialItems[0] : null;
     
+    // IMAGE HANDLING LOGIC
     let heroImageRef = latestItem?.mainImageRef || fallbackImage;
     if (hubType === 'اللعبة' && fallbackImage) {
         heroImageRef = fallbackImage;
     }
 
-    // ROBUST IMAGE HANDLING (Fixes Crashes with External URLs)
     let heroImageUrl = '/placeholder.jpg';
     let heroBlurDataURL = null;
     let isExternalImage = false;
 
     try {
         if (typeof heroImageRef === 'string') {
-            // Check if it's a URL
             if (heroImageRef.startsWith('http') || heroImageRef.startsWith('/')) {
                 heroImageUrl = heroImageRef;
                 isExternalImage = true;
             }
         } else if (heroImageRef && (heroImageRef.asset || heroImageRef._ref || heroImageRef._id)) {
-             // Valid Sanity Object
              heroImageUrl = urlFor(heroImageRef).width(1920).auto('format').url();
              heroBlurDataURL = urlFor(heroImageRef).width(20).blur(10).auto('format').url();
         }
     } catch (e) {
-        console.warn("HubPageClient: Failed to resolve hero image, using placeholder.", e);
+        console.warn("HubPageClient: Failed to resolve hero image", e);
         heroImageUrl = '/placeholder.jpg';
     }
     
@@ -193,7 +192,7 @@ export default function HubPageClient({
                     priority 
                     placeholder={heroBlurDataURL ? 'blur' : 'empty'}
                     blurDataURL={heroBlurDataURL || ''}
-                    unoptimized={isExternalImage} // FIX: Disable optimization for external URLs to prevent crashes
+                    unoptimized={isExternalImage} 
                 />
             </motion.div>
             <div className={styles.heroOverlay} />
@@ -277,14 +276,17 @@ export default function HubPageClient({
                     {platforms && platforms.length > 0 && tags && tags.length > 0 && <MetadataDivider />}
 
                      {tags && tags.map(t => (
-                        <Link 
+                        // USE KINETIC LINK FOR TAGS IN HUB HEADER
+                        <KineticLink 
                             key={t.title} 
                             href={t.slug ? `/tags/${t.slug}` : '#'}
+                            slug={t.slug || ''}
+                            type="tags"
                             className={`${styles.hubPill} ${styles.genre} ${styles.interactive}`}
-                            prefetch={false}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             {translateTag(t.title)}
-                        </Link>
+                        </KineticLink>
                     ))}
                 </motion.div>
             </motion.div>
@@ -297,12 +299,6 @@ export default function HubPageClient({
         <div className={styles.hubPageContainer}>
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
-                 {/* 
-                    RENDER LOGIC: 
-                    1. If items exist -> Show Grid.
-                    2. If NO items AND Loading -> Show Spinner.
-                    3. If NO items AND Not Loading -> Show "Empty" message.
-                 */}
                  {initialItems && initialItems.length > 0 ? (
                     <>
                         <motion.div

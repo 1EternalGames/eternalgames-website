@@ -1,8 +1,9 @@
 // lib/sanity.queries.ts
 import {groq} from 'next-sanity'
 
-// ... (Keep existing fields constants) ...
-const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
+// EXPORT THIS FIELD
+export const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
+
 const creatorFields = groq`_id, name, prismaUserId, image, bio`
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`
@@ -19,7 +20,6 @@ score,
 "designers": designers[]->{${creatorFields}}, 
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}, newsType`
 
-// EXPORT THIS
 export const cardListProjection = groq`
 _id, _type, legacyId, title, "slug": slug.current, 
 "mainImageRef": mainImage.asset, 
@@ -30,8 +30,6 @@ score,
 "designers": designers[]->{${creatorFields}},
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}, newsType
 `
-
-// ... rest of the file ...
 
 export const fullDocProjection = groq`
   _id, _type, legacyId, title, "slug": slug.current,
@@ -182,7 +180,6 @@ export const editorDataQuery = groq`{
   "metadata": ${studioMetadataQuery}
 }`
 
-// UPDATED: Now accepts an optional projection to switch between Card and FullDoc
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest', projection: string = cardListProjection) => {
   let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`

@@ -3,7 +3,6 @@
 
 import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import type { SanityGameRelease } from '@/types/sanity';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, Transition } from 'framer-motion';
@@ -78,7 +77,6 @@ const PLATFORM_SORT_WEIGHTS: Record<string, number> = { 'Switch': 4, 'Xbox': 3, 
 
 const morphTransition: Transition = { type: "spring", stiffness: 220, damping: 25, mass: 1.0 };
 
-// NEW INTERFACE FOR SATELLITE ITEMS
 interface SatelliteItem {
     type: string;
     label: string;
@@ -115,7 +113,6 @@ const TimelineCardComponent = ({
     variant?: 'default' | 'homepage'
 }) => {
     const isMobile = useIsMobile();
-    // Performance Settings
     const { isLivingCardEnabled, isFlyingTagsEnabled, isHeroTransitionEnabled, isCornerAnimationEnabled, isHoverDebounceEnabled } = usePerformanceStore();
 
     const { livingCardRef, livingCardAnimation } = useLivingCard<HTMLDivElement>();
@@ -129,10 +126,8 @@ const TimelineCardComponent = ({
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-    // Ensure portal is only rendered after client hydration
     useEffect(() => { setMounted(true); }, []);
     
-    // Timers & Position Refs
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
     const touchTimeout = useRef<NodeJS.Timeout | null>(null);
     const lastTouchPos = useRef({ x: 0, y: 0 });
@@ -182,7 +177,6 @@ const TimelineCardComponent = ({
     const effectivelyDisabledLiving = !isLivingCardEnabled;
 
     const handlers = !isMobile ? {
-        // DESKTOP
         onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
             if (!effectivelyDisabledLiving) {
                 livingCardAnimation.onMouseMove(e);
@@ -195,9 +189,7 @@ const TimelineCardComponent = ({
         },
         onMouseEnter: () => { 
             if (!effectivelyDisabledLiving) livingCardAnimation.onMouseEnter(); 
-            
             if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-
             if (!isHoverDebounceEnabled) {
                  setIsHoveredLocal(true);
             } else {
@@ -211,7 +203,6 @@ const TimelineCardComponent = ({
             mouseX.set(0.5); mouseY.set(0.5);
         },
     } : {
-        // MOBILE
         onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
             const touch = e.touches[0];
             lastTouchPos.current = { x: touch.clientX, y: touch.clientY };
@@ -302,9 +293,14 @@ const TimelineCardComponent = ({
         }
     }
 
-    const kineticSlug = release.slug || '';
-    const kineticLinkType = 'releases';
-    const overrideUrl = release.game?.slug ? `/games/${release.game.slug}` : undefined;
+    // FIX 1: DETERMINE EFFECTIVE SLUG AND TYPE FOR KINETIC LINK
+    // We want to open the Game Hub if available, otherwise fallback to release slug (though unlikely)
+    const gameSlug = release.game?.slug;
+    const effectiveSlug = gameSlug || release.slug || '';
+    const kineticLinkType = gameSlug ? 'games' : 'releases';
+    
+    // Construct the URL. This must match the slug we are passing to KineticLink
+    const targetUrl = gameSlug ? `/games/${gameSlug}` : `/releases/${release.slug}`;
     
     const layoutIdPrefix = `timeline-${release._id}`;
     
@@ -344,7 +340,6 @@ const TimelineCardComponent = ({
             PRICE_CFG = VIDEO_PRICE_FLY_CONFIG;
         }
 
-        // Click Hint matches the overrideUrl or main path
         satellites.push({ 
             type: 'clickHint', 
             label: 'اضغط للمزيد', 
@@ -352,7 +347,7 @@ const TimelineCardComponent = ({
             colorClass: 'cyan',
             x: CLICK_CFG.X, y: CLICK_CFG.Y, rotate: CLICK_CFG.SCALE, 
             scale: CLICK_CFG.SCALE, 
-            anchor: 'center', link: overrideUrl || `/releases/${kineticSlug}` 
+            anchor: 'center', link: targetUrl // Use unified URL
         });
 
         if (!isReleased && !isTBA) {
@@ -374,19 +369,17 @@ const TimelineCardComponent = ({
             if (release.publisher?.title) {
                 const pubSlug = release.publisher.slug;
                 const pubLink = pubSlug ? `/publishers/${pubSlug}` : null;
-                // Standard Link for Publisher
                 satellites.push({ type: 'publisher', label: release.publisher.title, x: PUB_FLY_CONFIG.X, y: PUB_FLY_CONFIG.Y, rotate: PUB_FLY_CONFIG.ROT, scale: PUB_FLY_CONFIG.SCALE, anchor: 'left', link: pubLink, colorClass: 'devPill', isKinetic: false });
             }
             if (release.developer?.title && release.developer.title !== release.publisher?.title) {
                 const devSlug = release.developer.slug;
                 const devLink = devSlug ? `/developers/${devSlug}` : null;
-                // Standard Link for Developer
                 satellites.push({ type: 'developer', label: release.developer.title, x: DEV_FLY_CONFIG.X, y: DEV_FLY_CONFIG.Y, rotate: DEV_FLY_CONFIG.ROT, scale: DEV_FLY_CONFIG.SCALE, anchor: 'right', link: devLink, colorClass: 'devPill', isKinetic: false });
             }
         }
         
         return satellites;
-    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, overrideUrl, kineticSlug, isVideoActive]);
+    }, [isReleased, isTBA, releaseDate, release.price, isMobile, mobileConfig, release.publisher, release.developer, targetUrl, isVideoActive]);
 
     const platformConfig = useMemo(() => {
         const validPlatforms = platforms.filter(p => PlatformIcons[p]);
@@ -454,7 +447,6 @@ const TimelineCardComponent = ({
 
     return (
         <>
-            {/* THE FIX: Correctly wrap Portal in mounted check and ensure AnimatePresence is child */}
             {mounted && createPortal(
                 <AnimatePresence>
                     {showVideoModal && trailerId && (
@@ -511,7 +503,6 @@ const TimelineCardComponent = ({
                             {showAdminControls && ( <div onTouchStart={(e) => e.stopPropagation()}> <AdminPinButton releaseId={release._id} isPinned={release.isPinned || false} /> </div> )}
                         </div>
 
-                        {/* --- THE FIX: ALWAYS RENDER PLAY BUTTON (Even on mobile homepage), just change click behavior --- */}
                         {!isVideoActive && trailerId && (
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
                                 <AnimatePresence>
@@ -536,14 +527,13 @@ const TimelineCardComponent = ({
                         )}
                     </div>
 
-                    {/* USE KINETIC LINK WITH OVERRIDE URL */}
+                    {/* FIX 1: Use KineticLink with Game Slug and Type */}
                     <KineticLink 
-                        href={overrideUrl || `/releases/${kineticSlug}`}
-                        slug={kineticSlug}
+                        href={targetUrl}
+                        slug={effectiveSlug}
                         type={kineticLinkType}
                         layoutId={safeLayoutIdPrefix}
                         imageSrc={imageUrl}
-                        overrideUrl={overrideUrl} // <--- MASKED URL
                         className="no-underline block h-full"
                         onClick={handleClick} 
                         style={{ position: 'relative', zIndex: 1 }}
@@ -700,9 +690,10 @@ const TimelineCardComponent = ({
                                                 ) : (
                                                     <KineticLink 
                                                         href={item.link} 
-                                                        slug={kineticSlug} 
-                                                        type="releases"
-                                                        overrideUrl={overrideUrl}
+                                                        // FIX 2: Pass correct slug and type
+                                                        slug={effectiveSlug} 
+                                                        type={kineticLinkType}
+                                                        overrideUrl={targetUrl}
                                                         onClick={(e) => e.stopPropagation()}
                                                         className={`${pillStyleClass} no-underline`}
                                                         style={{ gap: '0.4rem', cursor: 'pointer' }}

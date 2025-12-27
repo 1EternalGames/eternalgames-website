@@ -58,7 +58,7 @@ export default function ContentPageClient({
     item, 
     type, 
     children, 
-    colorDictionary,
+    colorDictionary, 
     forcedLayoutIdPrefix,
     initialImageSrc,
     scrollContainerRef
@@ -88,11 +88,9 @@ export default function ContentPageClient({
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
-    // SAFE SLUG ACCESS
     const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
     
     useEffect(() => {
-        // Fallback timer to ensure content always renders even if RAF stalls
         const timer = setTimeout(() => {
             if (!isContentReady) startTransition(() => setIsContentReady(true));
         }, 100);
@@ -199,7 +197,6 @@ export default function ContentPageClient({
 
     if (!item) return null;
 
-    // SAFE ARRAY HANDLING
     const relatedReviews = Array.isArray((item as any).relatedReviews) ? (item as any).relatedReviews : [];
     const relatedArticles = Array.isArray((item as any).relatedArticles) ? (item as any).relatedArticles : [];
     const relatedNews = Array.isArray((item as any).relatedNews) ? (item as any).relatedNews : [];
@@ -228,7 +225,6 @@ export default function ContentPageClient({
 
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
-    // SAFE IMAGE HANDLING
     const highResUrl = item.mainImage ? urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url() : '/placeholder.jpg';
     const displayImageUrl = initialImageSrc || highResUrl;
     const fullResImageUrl = item.mainImage ? urlFor(item.mainImage).auto('format').url() : displayImageUrl;
@@ -241,6 +237,12 @@ export default function ContentPageClient({
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
     const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
     const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
+
+    // FIX: Correctly access the game slug property.
+    // The projection "slug": slug.current already converts it to a string.
+    // If for some reason it's still an object, we handle it safely.
+    const gameObj = (item as any).game;
+    const gameSlug = gameObj ? (typeof gameObj.slug === 'string' ? gameObj.slug : gameObj.slug?.current) : null;
 
     return (
         <>
@@ -318,7 +320,8 @@ export default function ContentPageClient({
                                 >
                                     <div className={styles.metaContainer}>
                                         <div className={styles.metaBlockLeft}>
-                                            {(item as any).game?.title && <GameLink gameName={(item as any).game.title} gameSlug={(item as any).game.slug?.current} />}
+                                            {/* FIX: Use the resolved gameSlug variable */}
+                                            {gameObj?.title && <GameLink gameName={gameObj.title} gameSlug={gameSlug} />}
                                             <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                         </div>
                                         <div className={styles.metaBlockRight}>

@@ -6,7 +6,7 @@ import { client } from '@/lib/sanity.client';
 import { getAuthenticatedSession } from '@/lib/auth';
 import { revalidateTag, unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
-import { cardListProjection } from '@/lib/sanity.queries'; 
+import { cardListProjection, mainImageFields } from '@/lib/sanity.queries'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 import prisma from '@/lib/prisma';
 
@@ -51,7 +51,6 @@ export async function updateReleasesCreditsAction(creatorIds: string[]) {
 export const getAllStaffAction = unstable_cache(
     async () => {
         try {
-            // Fetch all creator documents WITH their content history (linkedContent)
             const query = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] {
                 _id,
                 name,
@@ -64,7 +63,6 @@ export const getAllStaffAction = unstable_cache(
             
             const rawStaff = await client.fetch(query);
 
-            // Extract Prisma IDs to fetch Usernames
             const userIds = rawStaff
                 .map((c: any) => c.prismaUserId)
                 .filter((id: string) => id);
@@ -85,7 +83,6 @@ export const getAllStaffAction = unstable_cache(
                 }
             }
 
-            // Deduplicate and Merge Content
             const uniqueMap = new Map();
             
             rawStaff.forEach((creator: any) => {
@@ -94,7 +91,6 @@ export const getAllStaffAction = unstable_cache(
                     key = `name:${creator.name}`;
                 }
                 
-                // Inject Username from DB if available
                 if (creator.prismaUserId && usernameMap.has(creator.prismaUserId)) {
                     creator.username = usernameMap.get(creator.prismaUserId);
                 }
@@ -102,17 +98,11 @@ export const getAllStaffAction = unstable_cache(
                 if (!uniqueMap.has(key)) {
                     uniqueMap.set(key, creator);
                 } else {
-                    // Merge content if duplicate found
                     const existing = uniqueMap.get(key);
-                    
                     const combinedContent = [...(existing.linkedContent || []), ...(creator.linkedContent || [])];
-                    
-                    // Deduplicate content items by _id
                     const uniqueContentMap = new Map();
                     combinedContent.forEach(item => uniqueContentMap.set(item._id, item));
                     const uniqueContent = Array.from(uniqueContentMap.values());
-                    
-                    // Sort combined list by date descending
                     uniqueContent.sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
                     
                     existing.linkedContent = uniqueContent.slice(0, 24); 
@@ -124,7 +114,6 @@ export const getAllStaffAction = unstable_cache(
 
             const uniqueStaff = Array.from(uniqueMap.values());
 
-            // Enrich the content lists
             const enrichedStaff = await Promise.all(uniqueStaff.map(async (creator: any) => {
                 if (creator.linkedContent && creator.linkedContent.length > 0) {
                     creator.linkedContent = await enrichContentList(creator.linkedContent);
@@ -145,8 +134,7 @@ export const getAllStaffAction = unstable_cache(
     }
 );
 
-// NEW: CACHED ACTION for TAGS
-// Fetches all tags (Games, Articles, News) and their recent items
+// CACHED ACTION: Fetches all tags and their recent items
 export const getAllTagsAction = unstable_cache(
     async () => {
         try {
@@ -160,7 +148,6 @@ export const getAllTagsAction = unstable_cache(
             
             const rawTags = await client.fetch(query);
 
-            // Enrich content lists inside each tag
             const enrichedTags = await Promise.all(rawTags.map(async (tag: any) => {
                 if (tag.items && tag.items.length > 0) {
                     tag.items = await enrichContentList(tag.items);
@@ -178,5 +165,75 @@ export const getAllTagsAction = unstable_cache(
     { 
         revalidate: 3600, 
         tags: ['tag', 'content'] 
+    }
+);
+
+// NEW: CACHED ACTION for RECENT GAMES
+// Strictly targeted pre-fetching for:
+// 1. Top 10 Reviews
+// 2. Top 12 Articles
+// 3. Top 18 News
+// 4. ALL Releases visible in the system (TBA + Any Date)
+export const getRecentGamesAction = unstable_cache(
+    async () => {
+        try {
+            // FIX: Removed date restrictions to fetch ALL relevant game hubs for releases.
+            // We fetch slugs for:
+            // 1. Recent content (Review/Article/News)
+            // 2. ALL Game Releases that have a linked game
+            const slugQuery = groq`{
+                "reviews": *[_type == "review" && defined(game) && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...10].game->slug.current,
+                "articles": *[_type == "article" && defined(game) && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...12].game->slug.current,
+                "news": *[_type == "news" && defined(game) && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...18].game->slug.current,
+                "releases": *[_type == "gameRelease" && defined(game)].game->slug.current
+            }`;
+
+            const slugsData = await client.fetch(slugQuery);
+            
+            const slugs = new Set<string>();
+            
+            // Add all found slugs to the Set
+            (slugsData.reviews || []).forEach((s: string) => s && slugs.add(s));
+            (slugsData.articles || []).forEach((s: string) => s && slugs.add(s));
+            (slugsData.news || []).forEach((s: string) => s && slugs.add(s));
+            (slugsData.releases || []).forEach((s: string) => s && slugs.add(s));
+
+            const uniqueSlugs = Array.from(slugs);
+
+            if (uniqueSlugs.length === 0) return [];
+
+            // 2. Fetch full Game Hub data for these specific games
+            const query = groq`*[_type == "game" && slug.current in $slugs] {
+                _id,
+                title,
+                "slug": slug.current,
+                "mainImage": mainImage{${mainImageFields}},
+                
+                // Get ALL content for this game (up to 24 items)
+                "linkedContent": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && game->slug.current == ^.slug.current] | order(publishedAt desc)[0...24] { ${cardListProjection} }
+            }`;
+            
+            const rawGames = await client.fetch(query, { slugs: uniqueSlugs });
+            
+            // 3. Enrich the content lists
+            const enrichedGames = await Promise.all(rawGames.map(async (game: any) => {
+                if (game.linkedContent && game.linkedContent.length > 0) {
+                    game.linkedContent = await enrichContentList(game.linkedContent);
+                    // Mark as loaded so store knows not to fetch again
+                    game.contentLoaded = true;
+                }
+                return game;
+            }));
+
+            return enrichedGames;
+        } catch (error) {
+            console.error("Failed to fetch recent games:", error);
+            return [];
+        }
+    },
+    ['recent-games-hubs-targeted-v7'], // Key updated
+    { 
+        revalidate: 3600, 
+        tags: ['game', 'content'] 
     }
 );

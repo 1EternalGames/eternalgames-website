@@ -67,7 +67,31 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
         const slugStr = typeof item.slug === 'string' ? item.slug : item.slug.current;
         if (slugStr) {
              const existing = newMap.get(slugStr);
-             const newItem = { ...item, linkedContent: existing?.linkedContent || [] };
+             
+             // --- FIX: ABSOLUTE PRIORITY FOR PRE-FETCHED DATA ---
+             // If the incoming item has linkedContent (array), it's a Hub. Mark as loaded.
+             // If it has 'contentLoaded: true' explicitly, mark as loaded.
+             let isLoaded = item.contentLoaded || false;
+             
+             if (item.linkedContent && Array.isArray(item.linkedContent)) {
+                 isLoaded = true;
+             } else if (existing?.contentLoaded) {
+                 isLoaded = true;
+             }
+
+             // Merge logic: Incoming data overwrites existing metadata, 
+             // but we preserve existing loaded content if incoming is just a stub.
+             const newItem = { 
+                 ...existing, 
+                 ...item,
+                 contentLoaded: isLoaded
+             };
+             
+             // If existing had content and new one doesn't, keep existing content
+             if (existing?.linkedContent && (!item.linkedContent || item.linkedContent.length === 0)) {
+                 newItem.linkedContent = existing.linkedContent;
+             }
+
              newMap.set(slugStr, newItem);
         }
       }
@@ -115,16 +139,12 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
 
           let merged = { ...c };
           
-          // THE FIX: If 'linkedContent' property exists (even if empty),
-          // it means this data came from a source that fetched content (like getAllStaffAction).
-          // Therefore, we mark it as loaded to prevent re-fetching.
           if (c.linkedContent !== undefined) {
               merged.contentLoaded = true;
           }
 
           if (existing) {
               merged = { ...existing, ...c };
-              // Preserve contentLoaded status if merging
               if (c.linkedContent !== undefined) {
                   merged.linkedContent = c.linkedContent;
                   merged.contentLoaded = true;
@@ -144,7 +164,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           if (t.slug) {
               const existing = newMap.get(t.slug);
               const merged = existing ? { ...t, ...existing } : { ...t };
-              // Same fix for tags
               if (t.items !== undefined) {
                    merged.items = t.items;
                    merged.contentLoaded = true;
@@ -160,20 +179,15 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
-    // OPTIMISTIC SEEDING
     if (type === 'creators' && preloadedData) {
         const { creatorMap } = currentState;
         const existing = creatorMap.get(slug);
-        
-        // Only seed if we strictly don't have it. 
-        // If we have it (even if contentLoaded is false), we let the manager handle fetching.
         if (!existing) {
             const newMap = new Map(creatorMap);
             const partialCreator = {
                 username: slug,
                 name: preloadedData.name,
                 image: preloadedData.image,
-                // Do NOT set contentLoaded=true here, as this is just a stub.
                 contentLoaded: false 
             };
             newMap.set(slug, partialCreator);
@@ -265,7 +279,12 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   fetchLinkedContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      if (item && item.contentLoaded) return;
+      
+      // FIX: Check explicitly for the contentLoaded flag.
+      if (item && item.contentLoaded) {
+          return;
+      }
+      
       try {
           const linkedContent = await fetchGameContentAction(slug);
           const updatedItem = { ...item, linkedContent, contentLoaded: true };
@@ -331,9 +350,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
 
   fetchCreatorByUsername: async (username: string) => {
       const { creatorMap, hydrateCreators } = get();
-      // Check if already loaded by username key and fully loaded
       if (creatorMap.has(username) && creatorMap.get(username).contentLoaded) return;
-      
       try {
           const creatorData = await fetchCreatorByUsernameAction(username);
           if (creatorData) {
