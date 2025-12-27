@@ -4,204 +4,116 @@
 import { useEffect, useRef } from 'react';
 import { usePerformanceStore, PerformanceTier } from '@/lib/performanceStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useToast } from '@/lib/toastStore';
 
-// --- CONFIGURATION ---
-const CHECK_INTERVAL = 250; 
-const STARTUP_GRACE_PERIOD = 4000; 
-const COOLDOWN_AFTER_CHANGE = 2000; 
+// CONFIGURATION
+const CHECK_INTERVAL = 1000; // Check every second
+const STABILIZATION_TIME = 5000; // Wait 5s before first check
+const COOLDOWN_TIME = 10000; // Wait 10s after changing tier before checking again
 
-// --- THRESHOLDS ---
-const DESKTOP_FPS_CRITICAL = 22; // Slide show -> Rocket Drop
-const DESKTOP_FPS_BAD = 30;      // Stutter -> Step Drop
-const DESKTOP_FPS_GOOD = 42;     // Smooth -> Step Up
-const DESKTOP_FPS_PERFECT = 58;  // Butter -> Rocket Up
+// THRESHOLDS
+const DESKTOP_LOW_FPS = 40; // Drop to Tier 5 (No Flying Tags)
+const DESKTOP_CRITICAL_FPS = 15; // Drop to Tier 0 (All Off)
 
-const MOBILE_FPS_CRITICAL = 22;
-const MOBILE_FPS_BAD = 32; 
-const MOBILE_FPS_GOOD = 45;
-const MOBILE_FPS_PERFECT = 58;
-
-// How many times can a tier fail before we ban it?
-// 2 Failures = "Soft Experimentation" -> "Lock"
-const MAX_FAILURES_PER_TIER = 2; 
+const MOBILE_LOW_FPS = 35;
+const MOBILE_CRITICAL_FPS = 15;
 
 export default function FPSAutoTuner() {
     const isMobile = useIsMobile();
+    const toast = useToast();
+    
     const { 
         isAutoTuningEnabled, 
         setPerformanceTier,
         isGlassmorphismEnabled,
-        isBackgroundVisible,
-        isLivingCardEnabled,
         isFlyingTagsEnabled,
-        isCornerAnimationEnabled,
-        isCarouselAutoScrollEnabled
+        isBackgroundVisible
     } = usePerformanceStore();
-    
+
+    // Determine current logical tier
+    const getCurrentTier = (): PerformanceTier => {
+        if (!isBackgroundVisible) return 0;
+        if (!isFlyingTagsEnabled) return 5;
+        if (isFlyingTagsEnabled && isGlassmorphismEnabled) return 6;
+        return 6; // Default to max if ambiguous
+    };
+
     const rafId = useRef<number>(0);
     const lastCheckTime = useRef<number>(0);
     const frameCount = useRef<number>(0);
-    const goodFpsStreak = useRef<number>(0); 
-    const lastTierChangeTime = useRef<number>(0);
-    const startTimeRef = useRef<number>(0); 
-    const currentTierRef = useRef<PerformanceTier>(6);
-    const hasInitializedMobileDefaults = useRef(false);
+    const startTime = useRef<number>(0);
+    const lastTierChange = useRef<number>(0);
     
-    // Tracks failures per tier (Index 0-6).
-    // failuresRef.current[5] = number of times Tier 5 caused lag.
-    const failuresRef = useRef<number[]>([0,0,0,0,0,0,0]);
+    // Critical failure counter
+    const criticalFailures = useRef<number>(0);
 
-    // 0. MOBILE FIRST RUN CHECK
-    // If this is a fresh visit (no stored settings) and it's mobile, force a lighter tier immediately.
-    useEffect(() => {
-        if (isMobile && !hasInitializedMobileDefaults.current) {
-            const hasStoredSettings = typeof window !== 'undefined' && !!localStorage.getItem('eternalgames-performance-settings');
-            
-            if (!hasStoredSettings) {
-                console.log("[AutoTuner] Fresh mobile visit detected. Defaulting to Tier 3 (No Flying Tags/Glass).");
-                // Tier 3 disables Flying Tags and Glassmorphism but keeps basic animations
-                setPerformanceTier(3);
-            }
-            hasInitializedMobileDefaults.current = true;
-        }
-    }, [isMobile, setPerformanceTier]);
-
-    // 1. Sync Ref to Store State
-    useEffect(() => {
-        let tier: PerformanceTier = 0;
-        if (isGlassmorphismEnabled) tier = 6;      
-        else if (isLivingCardEnabled) tier = 5;    
-        else if (isFlyingTagsEnabled) tier = 4;    
-        else if (isCornerAnimationEnabled) tier = 3; 
-        else if (isCarouselAutoScrollEnabled) tier = 2; 
-        else if (isBackgroundVisible) tier = 1;    
-        else tier = 0;                             
-        
-        currentTierRef.current = tier;
-    }, [
-        isGlassmorphismEnabled, 
-        isBackgroundVisible, 
-        isLivingCardEnabled, 
-        isFlyingTagsEnabled, 
-        isCornerAnimationEnabled,
-        isCarouselAutoScrollEnabled
-    ]);
-
-    // 2. The Tuner Loop
     useEffect(() => {
         if (!isAutoTuningEnabled) {
             cancelAnimationFrame(rafId.current);
             return;
         }
 
-        // RESET: If user toggles Auto on manually, clear failures to allow re-testing.
-        failuresRef.current = [0,0,0,0,0,0,0];
-
-        const now = performance.now();
-        lastCheckTime.current = now;
-        lastTierChangeTime.current = now;
-        startTimeRef.current = now;
+        // Reset counters on mount/enable
         frameCount.current = 0;
-        goodFpsStreak.current = 0;
-        
+        startTime.current = performance.now();
+        lastCheckTime.current = performance.now();
+        lastTierChange.current = performance.now();
+        criticalFailures.current = 0;
+
         const loop = () => {
             rafId.current = requestAnimationFrame(loop);
+            const now = performance.now();
             frameCount.current++;
 
-            const loopNow = performance.now();
-            const elapsed = loopNow - lastCheckTime.current;
+            // Wait for initialization grace period
+            if (now - startTime.current < STABILIZATION_TIME) return;
+
+            // Wait for cooldown after a change
+            if (now - lastTierChange.current < COOLDOWN_TIME) return;
+
+            const elapsed = now - lastCheckTime.current;
 
             if (elapsed >= CHECK_INTERVAL) {
                 const fps = Math.round((frameCount.current * 1000) / elapsed);
-                
-                lastCheckTime.current = loopNow;
-                frameCount.current = 0;
+                const currentTier = getCurrentTier();
 
-                if (loopNow - startTimeRef.current < STARTUP_GRACE_PERIOD) return; 
-                if (loopNow - lastTierChangeTime.current < COOLDOWN_AFTER_CHANGE) return; 
+                const LOW_THRESHOLD = isMobile ? MOBILE_LOW_FPS : DESKTOP_LOW_FPS;
+                const CRITICAL_THRESHOLD = isMobile ? MOBILE_CRITICAL_FPS : DESKTOP_CRITICAL_FPS;
 
-                const current = currentTierRef.current;
-                const CRITICAL = isMobile ? MOBILE_FPS_CRITICAL : DESKTOP_FPS_CRITICAL;
-                const BAD = isMobile ? MOBILE_FPS_BAD : DESKTOP_FPS_BAD;
-                const GOOD = isMobile ? MOBILE_FPS_GOOD : DESKTOP_FPS_GOOD;
-                const PERFECT = isMobile ? MOBILE_FPS_PERFECT : DESKTOP_FPS_PERFECT;
-
-                // --- DOWNGRADE LOGIC ---
-                if (fps < BAD) {
-                    if (current > 0) {
-                        let target: PerformanceTier = (current - 1) as PerformanceTier;
-                        
-                        // Mark current tier as failed (Strike 1)
-                        failuresRef.current[current] = (failuresRef.current[current] || 0) + 1;
-
-                        if (fps < CRITICAL) {
-                            // CRITICAL: Rocket Drop (Skip tiers)
-                            const jump = current > 2 ? 2 : 1; 
-                            target = Math.max(0, current - jump) as PerformanceTier;
-                            
-                            // Penalize intermediate tiers max immediately because performance was critical
-                            for (let t = current; t > target; t--) {
-                                failuresRef.current[t] = MAX_FAILURES_PER_TIER; 
-                            }
-                            console.warn(`[AutoTuner] 🚨 CRITICAL (${fps}fps). Rocket Drop ${current} -> ${target}`);
-                        } else {
-                            // BAD: Step Drop (Soft experiment)
-                            console.warn(`[AutoTuner] 📉 Lag (${fps}fps). Soft Drop ${current} -> ${target}`);
-                        }
-
-                        setPerformanceTier(target);
-                        lastTierChangeTime.current = loopNow;
-                        goodFpsStreak.current = 0;
-                    }
-                    return; // Don't check for upgrade in the same tick
-                }
-
-                // --- UPGRADE LOGIC ---
-                if (fps >= GOOD) {
-                    goodFpsStreak.current++;
-
-                    let target: PerformanceTier = current;
+                // 1. CRITICAL CHECK (Unusable Site)
+                if (fps < CRITICAL_THRESHOLD) {
+                    criticalFailures.current++;
                     
-                    // ROCKET JUMP: Perfect FPS
-                    if (fps >= PERFECT && goodFpsStreak.current >= 6) { // 1.5s stable
-                        let rocketTarget = current;
-                        if (current <= 2) rocketTarget = 4;
-                        else if (current === 3) rocketTarget = 5;
-                        else if (current >= 4) rocketTarget = 6;
-                        
-                        // Only jump if target hasn't failed too many times
-                        if (failuresRef.current[rocketTarget as number] < MAX_FAILURES_PER_TIER) {
-                            target = rocketTarget as PerformanceTier;
-                        }
-                    }
-                    
-                    // STEP JUMP: Good FPS (Fallback if Rocket blocked)
-                    if (target === current && current < 6 && goodFpsStreak.current >= 10) { // 2.5s stable
-                         const stepTarget = (current + 1) as PerformanceTier;
-                         // Only step up if target hasn't failed too many times
-                         if (failuresRef.current[stepTarget] < MAX_FAILURES_PER_TIER) {
-                             target = stepTarget;
-                         }
-                    }
-
-                    // Apply Upgrade
-                    if (target > current) {
-                         console.log(`[AutoTuner] 📈 Stable (${fps}fps). Upgrading ${current} -> ${target}`);
-                         setPerformanceTier(target);
-                         lastTierChangeTime.current = loopNow;
-                         goodFpsStreak.current = 0;
+                    // If consistent critical failure (2 seconds in a row)
+                    if (criticalFailures.current >= 2 && currentTier > 0) {
+                        console.warn(`[AutoTuner] 🚨 Critical FPS (${fps}). Emergency Drop to Tier 0.`);
+                        setPerformanceTier(0);
+                        toast.error("تم تعطيل المؤثرات لضمان استقرار الموقع.", "left");
+                        lastTierChange.current = now;
+                        criticalFailures.current = 0;
                     }
                 } else {
-                    // FPS is Okay (Not Good, Not Bad). Hold.
-                    goodFpsStreak.current = 0;
+                    criticalFailures.current = 0; // Reset critical counter if we survived a second
                 }
+
+                // 2. LOW PERFORMANCE CHECK (Disable Flying Tags)
+                // Only if we are at max tier (6)
+                if (fps < LOW_THRESHOLD && currentTier === 6) {
+                    console.warn(`[AutoTuner] 📉 Low FPS (${fps}). Disabling Flying Tags.`);
+                    setPerformanceTier(5);
+                    lastTierChange.current = now;
+                }
+
+                // Reset for next interval
+                frameCount.current = 0;
+                lastCheckTime.current = now;
             }
         };
 
         rafId.current = requestAnimationFrame(loop);
-        
+
         return () => cancelAnimationFrame(rafId.current);
-    }, [isAutoTuningEnabled, isMobile, setPerformanceTier]);
+    }, [isAutoTuningEnabled, isMobile, setPerformanceTier, isGlassmorphismEnabled, isFlyingTagsEnabled, isBackgroundVisible]);
 
     return null;
 }
