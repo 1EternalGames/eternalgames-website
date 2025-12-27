@@ -78,7 +78,6 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                 <OptionButton label="استجابة فورية" isActive={!store.isHoverDebounceEnabled} onClick={store.toggleHoverDebounce} Icon={BoltIcon} isAutoControlled={auto} />
                 <OptionButton label="تقليب تلقائي" isActive={store.isCarouselAutoScrollEnabled} onClick={store.toggleCarouselAutoScroll} Icon={TimerIcon} isAutoControlled={auto} />
                 
-                {/* SMOOTH SCROLLING: Manually Controlled (No Auto Badge) */}
                 <OptionButton label="تمرير سلس" isActive={store.isSmoothScrollingEnabled} onClick={store.toggleSmoothScrolling} Icon={ScrollIcon} isAutoControlled={false} />
 
                 <OptionButton label="تأثير الزجاج" isActive={store.isGlassmorphismEnabled} onClick={store.toggleGlassmorphism} Icon={BlurIcon} isAutoControlled={auto} />
@@ -95,7 +94,7 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                 <OptionButton label="الوسوم الطائرة" isActive={store.isFlyingTagsEnabled} onClick={store.toggleFlyingTags} Icon={TagIcon} isAutoControlled={auto} />
                 <OptionButton label="إطارات مشعة" isActive={store.isCornerAnimationEnabled} onClick={store.toggleCornerAnimation} Icon={BorderIcon} isAutoControlled={auto} />
                 <OptionButton label="حركة الخلفية" isActive={store.isBackgroundAnimated} onClick={store.toggleBackgroundAnimation} Icon={PlayPauseIcon} disabled={isAnimationDisabled} />
-                <OptionButton label="انتقال سلس" isActive={store.isHeroTransitionEnabled} onClick={store.toggleHeroTransition} Icon={HeroIcon} />
+                <OptionButton label="انتقال سلس" isActive={store.isHeroTransitionEnabled} onClick={store.toggleHeroTransition} Icon={HeroIcon} disabled={true} /> 
             </div>
         </>
     );

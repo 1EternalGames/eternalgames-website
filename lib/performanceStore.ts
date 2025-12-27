@@ -48,7 +48,7 @@ export const usePerformanceStore = create<PerformanceState>()(
       // --- DEFAULTS ---
       isLivingCardEnabled: true,
       isFlyingTagsEnabled: true,
-      isHeroTransitionEnabled: true,
+      isHeroTransitionEnabled: false, // Default OFF
       isCornerAnimationEnabled: true,
       isGlassmorphismEnabled: true,
       isHoverDebounceEnabled: true,
@@ -80,6 +80,7 @@ export const usePerformanceStore = create<PerformanceState>()(
       setPerformanceTier: (tier: PerformanceTier) => set((state) => {
           // IMPORTANT: We do NOT touch isBackgroundAnimated or isSmoothScrollingEnabled here.
           // They are purely manual preferences.
+          // Force isHeroTransitionEnabled: false for all tiers for now.
           switch (tier) {
               case 6: // ULTRA
                   return {
@@ -90,6 +91,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: true, 
                       isHoverDebounceEnabled: false, 
                       isCarouselAutoScrollEnabled: true,
+                      isHeroTransitionEnabled: false,
                   };
               case 5: // HIGH
                   return {
@@ -100,6 +102,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: true, 
                       isHoverDebounceEnabled: false, 
                       isCarouselAutoScrollEnabled: true,
+                      isHeroTransitionEnabled: false,
                   };
               case 4: // MEDIUM-HIGH
                   return {
@@ -110,6 +113,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: true, 
                       isHoverDebounceEnabled: false, 
                       isCarouselAutoScrollEnabled: true,
+                      isHeroTransitionEnabled: false,
                   };
               case 3: // MEDIUM
                   return {
@@ -120,6 +124,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: true, 
                       isHoverDebounceEnabled: false, 
                       isCarouselAutoScrollEnabled: true,
+                      isHeroTransitionEnabled: false,
                   };
               case 2: // LOW
                   return {
@@ -130,6 +135,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
                       isCarouselAutoScrollEnabled: true,
+                      isHeroTransitionEnabled: false,
                   };
               case 1: // POTATO
                   return {
@@ -140,6 +146,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
                       isCarouselAutoScrollEnabled: false, 
+                      isHeroTransitionEnabled: false,
                   };
               case 0: // ABYSSAL
                   return {
@@ -150,6 +157,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
                       isCarouselAutoScrollEnabled: false,
+                      isHeroTransitionEnabled: false,
                   };
               default:
                   return state;
