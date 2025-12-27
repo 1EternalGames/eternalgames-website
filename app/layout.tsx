@@ -22,7 +22,9 @@ import SkipLink from '@/components/ui/SkipLink';
 import CookieConsent from '@/components/CookieConsent';
 import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
-import { getAllStaffAction, getAllTagsAction, getRecentGamesAction } from '@/app/actions/homepageActions'; // IMPORT
+// IMPORT NEW ACTIONS
+import { getUniversalBaseData } from '@/app/actions/layoutActions';
+import UniversalBase from '@/components/UniversalBase';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -104,12 +106,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  // Fetch color dictionary, creators, tags AND games on the server layout
-  const [dictionary, creators, tags, games] = await Promise.all([
+  // Fetch ALL core data here once.
+  const [dictionary, universalData] = await Promise.all([
       getCachedColorDictionary(),
-      getAllStaffAction(),
-      getAllTagsAction(),
-      getRecentGamesAction() // <-- NEW
+      getUniversalBaseData()
   ]);
   
   const colors = dictionary?.autoColors || [];
@@ -131,11 +131,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextAuthProvider>
-          {/* Pass fetched data to hydration */}
+          {/* Hydrate Store with EVERYTHING immediately */}
           <UserStoreHydration 
-            initialCreators={creators} 
-            initialTags={tags} 
-            initialGames={games} // <-- NEW
+             universalData={universalData}
           />
           
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
@@ -155,11 +153,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <KineticOverlayManager colorDictionary={colors} />
 
                 <Navbar />
+                
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                   <PageTransitionWrapper>
+                    {/* The Universal Base is always rendered at the bottom */}
+                    <UniversalBase data={universalData} />
+                    
+                    {/* Page specific content renders on top, or can be empty for homepage */}
                     {children}
                   </PageTransitionWrapper>
                 </main>
+                
                 <Footer />
                 <StudioBar />
                 <ScrollToTopButton />

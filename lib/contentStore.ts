@@ -22,22 +22,21 @@ export interface KineticContentState {
   sourceLayoutId: string | null;
   activeImageSrc: string | null;
   savedScrollPosition: number;
-  
   previousPath: string | null;
   
+  hydrateUniversal: (data: any) => void;
   hydrateContent: (items: any[]) => void;
   hydrateIndex: (section: string, data: any) => void;
   hydrateCreators: (creators: any[]) => void;
   hydrateTags: (tags: any[]) => void;
   
   appendToSection: (section: 'reviews' | 'articles' | 'news', newItems: any[], nextOffset: number | null) => void;
-
   openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags', layoutId?: string, imageSrc?: string, overrideUrl?: string, preloadedData?: any) => void;
   openIndexOverlay: (section: 'reviews' | 'articles' | 'news' | 'releases') => void;
-  
   navigateInternal: (slug: string, type: string) => void;
   closeOverlay: () => void;
   forceCloseOverlay: () => void;
+  
   fetchLinkedContent: (slug: string) => Promise<void>;
   fetchCreatorContent: (slug: string, creatorId: string) => Promise<void>;
   fetchTagContent: (slug: string) => Promise<void>;
@@ -60,6 +59,96 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   savedScrollPosition: 0,
   previousPath: null,
 
+  hydrateUniversal: (data) => {
+      const { hydrateContent, hydrateIndex, hydrateCreators, hydrateTags } = get();
+      
+      // 1. Hydrate Content Map with EVERYTHING available
+      // We explicitly include content from hubs here as well to ensure
+      // deep links (KineticLink) work for items only present in hubs.
+      const hubContent = [];
+      if (data.hubs) {
+          if (data.hubs.games) data.hubs.games.forEach((g: any) => g.linkedContent && hubContent.push(...g.linkedContent));
+          if (data.hubs.tags) data.hubs.tags.forEach((t: any) => t.items && hubContent.push(...t.items));
+          if (data.hubs.creators) data.hubs.creators.forEach((c: any) => c.linkedContent && hubContent.push(...c.linkedContent));
+      }
+
+      const allContent = [
+          ...(data.reviews || []), 
+          ...(data.articles || []), 
+          ...(data.news || []), 
+          ...(data.releases || []),
+          ...hubContent
+      ];
+
+      // INTELLIGENT HYDRATION:
+      // Only mark as loaded if we ACTUALLY have content.
+      // Since layoutActions ensures main lists (with full content) overwrite hub lists (slim) in data.reviews/articles/news,
+      // we can trust that if an item is in those arrays, it's the good version.
+      // We process hub content last in the array above? No, order in 'allContent' array here doesn't matter
+      // because 'hydrateContent' has its own priority merge logic.
+      
+      const processedContent = allContent.map(item => {
+          const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
+          const hasHub = item.linkedContent && Array.isArray(item.linkedContent);
+          
+          return {
+              ...item,
+              // Only claim it's loaded if we actually see the data
+              contentLoaded: hasBody || hasHub
+          };
+      });
+      
+      hydrateContent(processedContent);
+      
+      // 2. Hydrate Indices
+      if (data.reviews) {
+          hydrateIndex('reviews', {
+              hero: data.reviews[0],
+              grid: data.reviews,
+              allGames: data.metadata?.games || [],
+              allTags: data.metadata?.gameTags || [],
+              nextOffset: data.reviews.length
+          });
+      }
+      
+      if (data.articles) {
+          hydrateIndex('articles', {
+              featured: data.articles.slice(0, 5),
+              grid: data.articles,
+              allGames: data.metadata?.games || [],
+              allGameTags: data.metadata?.gameTags || [],
+              allArticleTypeTags: data.metadata?.articleTags || [],
+              nextOffset: data.articles.length
+          });
+      }
+      
+      if (data.news) {
+          hydrateIndex('news', {
+              hero: data.news.slice(0, 4),
+              grid: data.news,
+              allGames: data.metadata?.games || [],
+              allTags: data.metadata?.newsTags || [],
+              nextOffset: data.news.length
+          });
+      }
+      
+      if (data.releases) {
+          hydrateIndex('releases', {
+              releases: data.releases
+          });
+      }
+      
+      // 3. Hydrate Hubs (Games, Tags, Creators)
+      if (data.hubs) {
+          if (data.hubs.games) hydrateContent(data.hubs.games.map((g: any) => ({ ...g, contentLoaded: true })));
+          if (data.hubs.tags) hydrateTags(data.hubs.tags.map((t: any) => ({ ...t, contentLoaded: true })));
+          if (data.hubs.creators) hydrateCreators(data.hubs.creators.map((c: any) => ({ ...c, contentLoaded: true })));
+      }
+
+      // 4. Hydrate Credits
+      hydrateCreators(data.credits || []);
+  },
+
   hydrateContent: (items) => {
     const newMap = new Map(get().contentMap);
     items.forEach(item => {
@@ -68,29 +157,36 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
         if (slugStr) {
              const existing = newMap.get(slugStr);
              
-             // --- FIX: ABSOLUTE PRIORITY FOR PRE-FETCHED DATA ---
-             // If the incoming item has linkedContent (array), it's a Hub. Mark as loaded.
-             // If it has 'contentLoaded: true' explicitly, mark as loaded.
-             let isLoaded = item.contentLoaded || false;
-             
-             if (item.linkedContent && Array.isArray(item.linkedContent)) {
+             // --- PRIORITY LOGIC ---
+             let isLoaded = false;
+
+             // 1. Explicit flag (e.g. passed from hydrateUniversal if validated)
+             if (item.contentLoaded === true) {
                  isLoaded = true;
-             } else if (existing?.contentLoaded) {
-                 isLoaded = true;
+             } 
+             // 2. Implicit check (has content body or hub links)
+             else {
+                 const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
+                 const hasLinked = item.linkedContent && Array.isArray(item.linkedContent);
+                 if (hasBody || hasLinked) isLoaded = true;
+                 else if (existing?.contentLoaded) isLoaded = true;
              }
 
-             // Merge logic: Incoming data overwrites existing metadata, 
-             // but we preserve existing loaded content if incoming is just a stub.
+             // Merge logic: Preserve content/linkedContent from whichever source has it
+             // If incoming item HAS content, use it. If not, fallback to existing.
+             // This ensures that if we hydrate from Hubs (slim) AFTER Main Lists (full), we don't clobber the full content.
+             const content = (item.content && item.content.length > 0) ? item.content : existing?.content;
+             const linkedContent = (item.linkedContent && item.linkedContent.length > 0) ? item.linkedContent : existing?.linkedContent;
+             const tiptapContent = item.tiptapContent || existing?.tiptapContent;
+
              const newItem = { 
                  ...existing, 
                  ...item,
+                 content,
+                 linkedContent,
+                 tiptapContent,
                  contentLoaded: isLoaded
              };
-             
-             // If existing had content and new one doesn't, keep existing content
-             if (existing?.linkedContent && (!item.linkedContent || item.linkedContent.length === 0)) {
-                 newItem.linkedContent = existing.linkedContent;
-             }
 
              newMap.set(slugStr, newItem);
         }
@@ -110,11 +206,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const currentData = pageMap.get(section);
       if (currentData) {
           const currentGrid = currentData.grid || [];
-          const updatedData = {
-              ...currentData,
-              grid: [...currentGrid, ...newItems],
-              nextOffset: nextOffset
-          };
+          const updatedData = { ...currentData, grid: [...currentGrid, ...newItems], nextOffset: nextOffset };
           const newPageMap = new Map(pageMap);
           newPageMap.set(section, updatedData);
           set({ pageMap: newPageMap });
@@ -130,25 +222,15 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           if (c.prismaUserId) keys.push(c.prismaUserId);
 
           let existing = null;
-          for (const key of keys) {
-              if (newMap.has(key)) {
-                  existing = newMap.get(key);
-                  break;
-              }
-          }
+          for (const key of keys) { if (newMap.has(key)) { existing = newMap.get(key); break; } }
 
           let merged = { ...c };
-          
-          if (c.linkedContent !== undefined) {
-              merged.contentLoaded = true;
-          }
+          if (c.linkedContent !== undefined) merged.contentLoaded = true;
+          if (c.contentLoaded) merged.contentLoaded = true;
 
           if (existing) {
               merged = { ...existing, ...c };
-              if (c.linkedContent !== undefined) {
-                  merged.linkedContent = c.linkedContent;
-                  merged.contentLoaded = true;
-              }
+              if (c.linkedContent !== undefined) { merged.linkedContent = c.linkedContent; merged.contentLoaded = true; }
           }
           
           if (merged.username) newMap.set(merged.username, merged);
@@ -162,13 +244,14 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const newMap = new Map(get().tagMap);
       tags.forEach(t => {
           if (t.slug) {
-              const existing = newMap.get(t.slug);
-              const merged = existing ? { ...t, ...existing } : { ...t };
-              if (t.items !== undefined) {
-                   merged.items = t.items;
-                   merged.contentLoaded = true;
+              const slugStr = typeof t.slug === 'string' ? t.slug : t.slug.current;
+              if (slugStr) {
+                  const existing = newMap.get(slugStr);
+                  const merged = existing ? { ...t, ...existing } : { ...t };
+                  if (t.items !== undefined) { merged.items = t.items; merged.contentLoaded = true; }
+                  if (t.contentLoaded) merged.contentLoaded = true;
+                  newMap.set(slugStr, merged);
               }
-              newMap.set(t.slug, merged);
           }
       });
       set({ tagMap: newMap });
@@ -184,12 +267,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
         const existing = creatorMap.get(slug);
         if (!existing) {
             const newMap = new Map(creatorMap);
-            const partialCreator = {
-                username: slug,
-                name: preloadedData.name,
-                image: preloadedData.image,
-                contentLoaded: false 
-            };
+            const partialCreator = { username: slug, name: preloadedData.name, image: preloadedData.image, contentLoaded: false };
             newMap.set(slug, partialCreator);
             set({ creatorMap: newMap });
         }
@@ -202,18 +280,11 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
         else targetUrl = `/${type}/${slug}`;
     }
     
-    if (typeof window !== 'undefined') {
-        window.history.pushState({ overlay: true, slug, type }, '', targetUrl);
-    }
+    if (typeof window !== 'undefined') window.history.pushState({ overlay: true, slug, type }, '', targetUrl);
 
     set({ 
-        isOverlayOpen: true, 
-        activeSlug: slug, 
-        activeType: type,
-        indexSection: null,
-        sourceLayoutId: layoutId || null,
-        activeImageSrc: imageSrc || null,
-        savedScrollPosition: scrollY,
+        isOverlayOpen: true, activeSlug: slug, activeType: type, indexSection: null,
+        sourceLayoutId: layoutId || null, activeImageSrc: imageSrc || null, savedScrollPosition: scrollY,
         previousPath: currentState.isOverlayOpen ? currentState.previousPath : currentPath
     });
   },
@@ -222,29 +293,19 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const currentState = get();
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
       const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
-      if (typeof window !== 'undefined') {
-          window.history.pushState({ overlay: true, type: 'index', section }, '', `/${section}`);
-      }
+      if (typeof window !== 'undefined') window.history.pushState({ overlay: true, type: 'index', section }, '', `/${section}`);
       set({
-          isOverlayOpen: true,
-          activeSlug: null,
-          activeType: 'index',
-          indexSection: section,
-          sourceLayoutId: null,
-          activeImageSrc: null,
-          savedScrollPosition: scrollY,
+          isOverlayOpen: true, activeSlug: null, activeType: 'index', indexSection: section,
+          sourceLayoutId: null, activeImageSrc: null, savedScrollPosition: scrollY,
           previousPath: currentState.isOverlayOpen ? currentState.previousPath : currentPath
       });
   },
 
   navigateInternal: (slug, type) => {
       set({
-          isOverlayOpen: true,
-          activeSlug: slug,
-          activeType: type as any,
+          isOverlayOpen: true, activeSlug: slug, activeType: type as any,
           indexSection: type === 'index' ? slug as any : null,
-          sourceLayoutId: null, 
-          activeImageSrc: null
+          sourceLayoutId: null, activeImageSrc: null
       });
   },
 
@@ -253,47 +314,24 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     if (typeof window !== 'undefined' && previousPath) {
         window.history.replaceState(null, '', previousPath);
     }
-    set({ 
-        isOverlayOpen: false, 
-        activeSlug: null, 
-        activeType: null,
-        indexSection: null,
-        sourceLayoutId: null,
-        activeImageSrc: null,
-        previousPath: null
-    });
+    set({ isOverlayOpen: false, activeSlug: null, activeType: null, indexSection: null, sourceLayoutId: null, activeImageSrc: null, previousPath: null });
   },
 
   forceCloseOverlay: () => {
-      set({
-          isOverlayOpen: false,
-          activeSlug: null,
-          activeType: null,
-          indexSection: null,
-          sourceLayoutId: null,
-          activeImageSrc: null,
-          previousPath: null
-      });
+      set({ isOverlayOpen: false, activeSlug: null, activeType: null, indexSection: null, sourceLayoutId: null, activeImageSrc: null, previousPath: null });
   },
 
   fetchLinkedContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      
-      // FIX: Check explicitly for the contentLoaded flag.
-      if (item && item.contentLoaded) {
-          return;
-      }
-      
+      if (item && item.contentLoaded) return;
       try {
           const linkedContent = await fetchGameContentAction(slug);
           const updatedItem = { ...item, linkedContent, contentLoaded: true };
           const newMap = new Map(contentMap);
           newMap.set(slug, updatedItem);
           set({ contentMap: newMap });
-      } catch (e) {
-          console.error("Failed to fetch linked content", e);
-      }
+      } catch (e) { console.error("Failed to fetch linked content", e); }
   },
 
   fetchCreatorContent: async (slug: string, creatorId: string) => {
@@ -304,15 +342,11 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
            const enrichedContent = await fetchCreatorContentAction(creatorId);
            const updatedCreator = { ...creator, linkedContent: enrichedContent, contentLoaded: true };
            const newMap = new Map(creatorMap);
-           
            const primaryKey = updatedCreator.username || updatedCreator._id;
            if (primaryKey) newMap.set(primaryKey, updatedCreator);
            if (updatedCreator.username) newMap.set(updatedCreator.username, updatedCreator);
-           
            set({ creatorMap: newMap });
-      } catch (e) {
-          console.error("Failed to fetch creator content", e);
-      }
+      } catch (e) { console.error("Failed to fetch creator content", e); }
   },
 
   fetchTagContent: async (slug: string) => {
@@ -327,25 +361,23 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
               newMap.set(slug, merged);
               set({ tagMap: newMap });
           }
-      } catch (e) {
-          console.error("Failed to fetch tag content", e);
-      }
+      } catch (e) { console.error("Failed to fetch tag content", e); }
   },
 
   fetchFullContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      if (item && item.content && Array.isArray(item.content)) return;
+      if (item && item.contentLoaded) return; // Strict check
+      
       try {
           const fullItem = await fetchSingleContentAction(slug);
           if (fullItem) {
                const newMap = new Map(contentMap);
-               newMap.set(slug, { ...item, ...fullItem });
+               // IMPORTANT: Mark as contentLoaded here too
+               newMap.set(slug, { ...item, ...fullItem, contentLoaded: true });
                set({ contentMap: newMap });
           }
-      } catch (e) {
-          console.error("Failed to fetch full content", e);
-      }
+      } catch (e) { console.error("Failed to fetch full content", e); }
   },
 
   fetchCreatorByUsername: async (username: string) => {
@@ -353,11 +385,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       if (creatorMap.has(username) && creatorMap.get(username).contentLoaded) return;
       try {
           const creatorData = await fetchCreatorByUsernameAction(username);
-          if (creatorData) {
-              hydrateCreators([creatorData]);
-          }
-      } catch (e) {
-          console.error("Failed to fetch creator by username", e);
-      }
+          if (creatorData) { hydrateCreators([creatorData]); }
+      } catch (e) { console.error("Failed to fetch creator by username", e); }
   },
 }));

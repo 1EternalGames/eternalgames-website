@@ -12,7 +12,6 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     // Defensive Image Extraction
     let imageAsset = item.mainImage?.asset || item.mainImageRef;
     
-    // Handle case where image might be directly the asset object (from some queries)
     if (!imageAsset && item.mainImage && item.mainImage._type === 'image') {
          imageAsset = item.mainImage.asset;
     }
@@ -23,32 +22,34 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     const targetWidth = options.width || 1200;
     const targetHeight = Math.round(targetWidth * 0.5625);
 
-    if (imageAsset) {
-        // Handle both expanded asset objects (with url) and reference objects (with _ref)
-        imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
-        blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url(); // Low res blur
+    // FIXED: Strict check for asset existence
+    if (imageAsset && (imageAsset._ref || imageAsset._id || imageAsset.url)) {
+        try {
+            imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
+            blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url(); 
+        } catch (e) {
+            console.warn("Image URL generation failed", e);
+            imageUrl = '/placeholder-game.jpg';
+        }
     } else if (item.imageUrl) {
-        // Fallback if imageUrl string is pre-calculated
         imageUrl = item.imageUrl;
+    } else {
+        imageUrl = '/placeholder-game.jpg';
     }
 
-    if (!imageUrl) {
-        // Optional: Return a placeholder instead of null if you want cards to show without images
-        // return null; 
-        imageUrl = '/placeholder-game.jpg'; // Fallback
-    }
-
-    // Process Vertical Image
     const verticalImageAsset = item.mainImageVertical?.asset || item.mainImageVerticalRef;
     let verticalImageUrl = null;
-    if (verticalImageAsset) {
-        verticalImageUrl = urlFor(verticalImageAsset).width(600).height(900).fit('crop').auto('format').url();
+    if (verticalImageAsset && (verticalImageAsset._ref || verticalImageAsset._id || verticalImageAsset.url)) {
+        try {
+            verticalImageUrl = urlFor(verticalImageAsset).width(600).height(900).fit('crop').auto('format').url();
+        } catch (e) {
+             // Ignore vertical fail
+        }
     }
 
     let formattedDate = '';
     let publishedYear = null;
 
-    // Handle Content Date (PublishedAt)
     if (item.publishedAt) {
         const date = new Date(item.publishedAt);
         const day = date.getDate();
@@ -56,9 +57,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         const year = date.getFullYear();
         formattedDate = `${day} ${arabicMonths[monthIndex]} ${year}`;
         publishedYear = year;
-    } 
-    // Handle Release Date
-    else if (item.releaseDate) {
+    } else if (item.releaseDate) {
         const date = new Date(item.releaseDate);
         const day = date.getDate();
         const monthIndex = date.getMonth();
@@ -90,10 +89,13 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     const gameTitle = item.game?.title;
     const gameSlug = item.game?.slug;
 
+    // IMPORTANT: Pass through the raw content array so the store can use it
+    const contentBody = item.content || [];
+
     return {
         type: item._type,
         id: item._id, 
-        legacyId: item.legacyId || 0, // Ensure number
+        legacyId: item.legacyId || 0,
         slug: item.slug?.current ?? item.slug ?? '',
         game: gameTitle,
         gameSlug: gameSlug,
@@ -114,7 +116,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],
-        content: item.content || [],
+        content: contentBody, // Pass body
         relatedReviewIds: item.relatedReviewIds || [],
         synopsis: item.synopsis,
         onGamePass: item.onGamePass || false,

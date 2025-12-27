@@ -1,97 +1,44 @@
 // app/reviews/page.tsx
-import { client } from '@/lib/sanity.client';
-import { reviewsIndexQuery } from '@/lib/sanity.queries'; 
-import type { SanityReview } from '@/types/sanity';
-import ReviewsPageClient from './ReviewsPageClient';
+import React from 'react';
 import type { Metadata } from 'next';
-import { enrichContentList, enrichCreators } from '@/lib/enrichment';
-import { unstable_cache } from 'next/cache';
 import CollectionPageJsonLd from '@/components/seo/CollectionPageJsonLd';
+import { getUniversalBaseData } from '@/app/actions/layoutActions';
+import ReviewsPageClient from './ReviewsPageClient';
 
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: 'المراجعات',
-  description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames. تقييمات شاملة، تحليلات دقيقة، وحكم نهائي.',
-  alternates: {
-    canonical: '/reviews',
-  },
-  openGraph: {
-    title: 'مراجعات | EternalGames',
-    description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames.',
-  },
-  twitter: {
-    title: 'مراجعات | EternalGames',
-    description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames.',
-  }
+  description: 'استكشف أحدث وأعمق مراجعات الألعاب من فريق EternalGames.',
+  alternates: { canonical: '/reviews' }
 };
 
-const getCachedReviewsPageData = unstable_cache(
-  async () => {
-    const data = await client.fetch(reviewsIndexQuery);
-    const { hero: heroReviewRaw, grid: initialGridReviewsRaw } = data;
-
-    let heroReview = null;
-    if (heroReviewRaw) {
-        heroReview = {
-            ...heroReviewRaw,
-            authors: await enrichCreators(heroReviewRaw.authors),
-            designers: await enrichCreators(heroReviewRaw.designers)
-        };
-    }
-
-    const initialGridReviews = await enrichContentList(initialGridReviewsRaw) as SanityReview[];
-
-    return {
-      ...data,
-      hero: heroReview,
-      grid: initialGridReviews
-    };
-  },
-  ['reviews-page-index'],
-  { 
-    revalidate: false, 
-    tags: ['review', 'content'] 
-  }
-);
-
 export default async function ReviewsPage() {
-  const data = await getCachedReviewsPageData();
+  // We fetch Universal Data here too because this page acts as an entry point.
+  // The layout has already fetched it, so this cache hit is cheap.
+  // We need it to pass to the Client Component for the "Base Layer" if user reloads here.
+  const data = await getUniversalBaseData();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
 
-  const {
-      hero: heroReview,
-      grid: initialGridReviews,
-      games: allGames,
-      tags: allTags
-  } = data;
+  // Extract Review Data from Universal Set
+  const { reviews: allReviews, metadata: meta } = data;
+  const heroReview = allReviews[0];
+  const gridReviews = allReviews; // Full list
 
-  const itemList = (initialGridReviews || []).map((item: any) => ({
+  const itemList = gridReviews.map((item: any) => ({
       headline: item.title,
       url: `${siteUrl}/reviews/${item.slug}`,
       datePublished: item.publishedAt
   }));
-  if (heroReview) {
-      itemList.unshift({
-          headline: heroReview.title,
-          url: `${siteUrl}/reviews/${heroReview.slug}`,
-          datePublished: heroReview.publishedAt
-      });
-  }
 
   if (!heroReview) {
     return (
       <div className="container page-container">
         <h1 className="page-title">المراجعات</h1>
-        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>الأرشيفُ خالٍ من المراجعاتِ حاليًا. عُد قريبًا.</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>الأرشيفُ خالٍ من المراجعاتِ حاليًا.</p>
       </div>
     );
   }
-  
-  // FIX: Don't slice here. Pass everything to the client.
-  // The client handles visual filtering.
-  // This ensures the client knows the REAL count of items it has.
-  const gridReviews = initialGridReviews; 
 
   return (
     <>
@@ -101,11 +48,17 @@ export default async function ReviewsPage() {
         url={`${siteUrl}/reviews`}
         hasPart={itemList}
       />
+      
+      {/* 
+         We don't need hydration here anymore because UserStoreHydration (in Layout) 
+         has already flooded the store with the Universal Data (including reviews).
+         We just render the visual client.
+      */}
       <ReviewsPageClient 
         heroReview={heroReview} 
         initialGridReviews={gridReviews}
-        allGames={allGames}
-        allTags={allTags}
+        allGames={meta?.games || []}
+        allTags={meta?.gameTags || []}
       />
     </>
   );

@@ -8,22 +8,10 @@ import { useNotificationStore } from '@/lib/notificationStore';
 import { useContentStore } from '@/lib/contentStore'; 
 import { useRouter, usePathname } from 'next/navigation';
 
-type InitialUserState = {
-    likes: string[];
-    bookmarks: string[];
-    shares: string[];
-} | null;
-
 export default function UserStoreHydration({ 
-    initialUserState,
-    initialCreators = [],
-    initialTags = [],
-    initialGames = [] // NEW
+    universalData,
 }: { 
-    initialUserState?: InitialUserState,
-    initialCreators?: any[],
-    initialTags?: any[],
-    initialGames?: any[] // NEW
+    universalData?: any,
 }) {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -31,39 +19,26 @@ export default function UserStoreHydration({
     
     const { syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb } = useUserStore();
     const { setNotifications, setUnreadCount } = useNotificationStore();
-    const { hydrateCreators, hydrateTags, hydrateContent } = useContentStore(); // Added hydrateContent
+    const { hydrateUniversal } = useContentStore();
     
     const lastSyncedUserId = useRef<string | null>(null);
     const hasHandledOnboarding = useRef(false);
     const hasHydratedStatic = useRef(false);
 
-    // FIX: Hydrate Creators, Tags, and Games immediately
-    useEffect(() => {
-        if (!hasHydratedStatic.current) {
-            let didHydrate = false;
-            if (initialCreators && initialCreators.length > 0) {
-                hydrateCreators(initialCreators);
-                didHydrate = true;
-            }
-            if (initialTags && initialTags.length > 0) {
-                hydrateTags(initialTags);
-                didHydrate = true;
-            }
-            if (initialGames && initialGames.length > 0) {
-                hydrateContent(initialGames); // Games are stored in main contentMap
-                didHydrate = true;
-            }
-            
-            if (didHydrate) {
-                hasHydratedStatic.current = true;
-            }
-        }
-    }, [initialCreators, initialTags, initialGames, hydrateCreators, hydrateTags, hydrateContent]);
+    // UNIVERSAL HYDRATION (SYNCHRONOUS EXECUTION)
+    // We run this logic in the render body (guarded by a ref) to ensure
+    // the store is populated BEFORE the first paint/effect cycle completes.
+    // This eliminates the race condition where KineticLink renders before data exists.
+    if (!hasHydratedStatic.current && universalData) {
+        hasHydratedStatic.current = true;
+        // The magic function that populates Everything Everywhere All At Once
+        hydrateUniversal(universalData);
+    }
 
     const currentUserId = (session?.user as any)?.id;
 
     useEffect(() => {
-        // 2. Handle Onboarding Redirect
+        // Handle Onboarding
         if (status === 'authenticated' && (session as any)?.needsOnboarding && !hasHandledOnboarding.current) {
             if (pathname !== '/welcome') {
                 hasHandledOnboarding.current = true;
@@ -75,7 +50,7 @@ export default function UserStoreHydration({
 
         if (status === 'loading') return;
 
-        // 3. Handle User Data Hydration
+        // Handle User Data Hydration (Notifications, Likes, etc.)
         if (status === 'authenticated') {
             const needsSync = !isSyncedWithDb || (currentUserId && lastSyncedUserId.current !== currentUserId);
 
@@ -109,7 +84,7 @@ export default function UserStoreHydration({
                 setIsSyncedWithDb(false); 
             }
         }
-    }, [status, session, currentUserId, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, initialUserState, pathname]);
+    }, [status, session, currentUserId, router, syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb, setNotifications, setUnreadCount, pathname]);
 
     return null;
 }

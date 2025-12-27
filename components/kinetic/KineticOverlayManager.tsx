@@ -110,12 +110,21 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         }
     }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap, fetchCreatorByUsername]);
 
+    // RESET SCROLL ON NAVIGATION INSIDE OVERLAY
+    useLayoutEffect(() => {
+        if (isOverlayOpen && overlayRef.current) {
+            overlayRef.current.scrollTop = 0;
+        }
+    }, [activeSlug, activeType, indexSection, isOverlayOpen]);
+
+    // HANDLE BODY LOCK AND SCROLL RESTORATION
     useLayoutEffect(() => {
         const html = document.documentElement;
         const body = document.body;
         const mainFooter = document.querySelector('body > footer') as HTMLElement; 
 
         if (isOverlayOpen) {
+            // --- LOCK ---
             const scrollbarWidth = window.innerWidth - html.clientWidth;
             if (lenis) lenis.stop();
             body.style.paddingRight = `${scrollbarWidth}px`; 
@@ -127,22 +136,38 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 overlayRef.current.scrollTop = 0;
             }
         } else {
+            // --- UNLOCK & RESTORE ---
             body.style.paddingRight = '';
             html.style.overflow = '';
             body.style.overflow = '';
             if (mainFooter) mainFooter.style.display = '';
-            if (lenis) lenis.start();
-            const currentScroll = window.scrollY;
-            if (currentScroll === 0 && savedScrollPosition > 0) {
-                 window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
-            }
+
+            // Restore Scroll
+            // Use requestAnimationFrame to wait for layout repaint
+            requestAnimationFrame(() => {
+                if (lenis) {
+                    lenis.start();
+                    if (savedScrollPosition > 0) {
+                        // Using lock: true momentarily might help stability, but lock: false is usually better for UX
+                        lenis.scrollTo(savedScrollPosition, { immediate: true, force: true, lock: false });
+                    }
+                } else {
+                    // Fallback for native scroll
+                    if (savedScrollPosition > 0) {
+                        window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
+                    }
+                }
+            });
+            
             setOverlayScrollRef(null);
         }
+
+        // Cleanup function (runs when unmounting or dependencies change)
         return () => {
-            body.style.paddingRight = '';
-            html.style.overflow = '';
-            body.style.overflow = '';
-            if (lenis) lenis.start();
+            // We only want to clean up if we are actually unmounting the manager or closing,
+            // but `useLayoutEffect` cleanup runs before the next effect.
+            // For safety, we just ensure styles are reset if the component dies.
+            // Note: We don't force scroll here to avoid fighting the `else` block above.
         }
     }, [isOverlayOpen, savedScrollPosition, lenis, setOverlayScrollRef]);
 
@@ -233,7 +258,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     animate={{ opacity: 1 }} 
                     exit={{ opacity: 0 }} 
                     transition={{ duration: 0.3 }} 
-                    // FIX: Ensure pointer events are off when closing
                     style={{ 
                         position: 'fixed', 
                         inset: 0, 

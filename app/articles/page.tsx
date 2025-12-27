@@ -1,92 +1,41 @@
 // app/articles/page.tsx
-import { client } from '@/lib/sanity.client';
-import { articlesIndexQuery } from '@/lib/sanity.queries';
-import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
-import ArticlesPageClient from './ArticlesPageClient';
+import React from 'react';
 import type { Metadata } from 'next';
-import { enrichContentList } from '@/lib/enrichment';
-import { unstable_cache } from 'next/cache';
+import ArticlesPageClient from './ArticlesPageClient';
+import { getUniversalBaseData } from '@/app/actions/layoutActions';
 
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: 'المقالات',
-  description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة لأحدث الظواهر في عالم الألعاب من خبراء EternalGames.',
-  alternates: {
-    canonical: '/articles',
-  },
-  openGraph: {
-    title: 'المقالات | EternalGames',
-    description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة لأحدث الظواهر في عالم الألعاب.',
-  },
-  twitter: {
-    title: 'المقالات | EternalGames',
-    description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة لأحدث الظواهر في عالم الألعاب.',
-  }
+  description: 'مقالات معمقة، آراء جريئة، وتحليلات شاملة.',
+  alternates: { canonical: '/articles' }
 };
-
-const deduplicateTags = (tags: SanityTag[]): SanityTag[] => {
-    if (!tags) return [];
-    const uniqueMap = new Map<string, SanityTag>();
-    tags.forEach(tag => {
-        if (tag && tag.title && !uniqueMap.has(tag.title)) {
-            uniqueMap.set(tag.title, tag);
-        }
-    });
-    return Array.from(uniqueMap.values());
-};
-
-const getCachedArticlesPageData = unstable_cache(
-  async () => {
-    const data = await client.fetch(articlesIndexQuery);
-    const { featured: featuredArticlesRaw, grid: initialGridArticlesRaw } = data;
-
-    const featuredArticles = await enrichContentList(featuredArticlesRaw);
-    const initialGridArticles = await enrichContentList(initialGridArticlesRaw);
-
-    return {
-      ...data,
-      featured: featuredArticles,
-      grid: initialGridArticles
-    };
-  },
-  ['articles-page-index'],
-  { 
-    revalidate: false, 
-    tags: ['article', 'content'] 
-  }
-);
 
 export default async function ArticlesPage() {
-  const data = await getCachedArticlesPageData();
-  
-  const { 
-      featured: featuredArticles, 
-      grid: initialGridArticles, 
-      games: allGames, 
-      gameTags: allGameTagsRaw, 
-      typeTags: allArticleTypeTagsRaw 
-  } = data;
+  const data = await getUniversalBaseData();
+  const { articles: allArticles, metadata: meta } = data;
 
-  const allGameTags = deduplicateTags(allGameTagsRaw);
-  const allArticleTypeTags = deduplicateTags(allArticleTypeTagsRaw);
+  const featuredArticles = allArticles.slice(0, 5);
+  // Pass full list to grid for client-side filtering power
+  const gridArticles = allArticles;
 
-  if (!featuredArticles || featuredArticles.length === 0) {
+  if (allArticles.length === 0) {
     return (
         <div className="container page-container">
             <h1 className="page-title">أحدث المقالات</h1>
-            <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>بلغتَ المنتهى. مقالاتٌ أخرى تلوحُ في الأفق.</p>
+            <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>بلغتَ المنتهى.</p>
         </div>
     );
   }
 
   return (
-      <ArticlesPageClient
-        featuredArticles={featuredArticles as SanityArticle[]}
-        initialGridArticles={initialGridArticles as SanityArticle[]}
-        allGames={allGames}
-        allGameTags={allGameTags}
-        allArticleTypeTags={allArticleTypeTags}
-      />
+    <ArticlesPageClient
+      featuredArticles={featuredArticles}
+      initialGridArticles={gridArticles}
+      allGames={meta?.games || []}
+      allGameTags={meta?.gameTags || []}
+      allArticleTypeTags={meta?.articleTags || []}
+    />
   );
 }

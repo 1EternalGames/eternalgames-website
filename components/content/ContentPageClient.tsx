@@ -1,7 +1,7 @@
 // components/content/ContentPageClient.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useLayoutEffect, RefObject, startTransition } from 'react';
+import { useEffect, useState, useRef, useCallback, useLayoutEffect, RefObject } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -38,16 +38,18 @@ type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & {
     relatedContent?: any[]; 
     readingTime?: number; 
     toc?: { id: string; text: string; level: number }[]; 
+    contentLoaded?: boolean;
 };
 
 type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
 
+// Removed delay from variants
 const bodyFadeVariants = { 
     hidden: { opacity: 0, y: 20 }, 
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-    exit: { opacity: 0, transition: { duration: 0.2 } } 
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+    exit: { opacity: 0, transition: { duration: 0.1 } } 
 };
 
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
@@ -83,29 +85,14 @@ export default function ContentPageClient({
     const [isMobile, setIsMobile] = useState(false);
     
     const [isHeroVisible, setIsHeroVisible] = useState(true);
-    const [isContentReady, setIsContentReady] = useState(false);
 
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
     const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
-    
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (!isContentReady) startTransition(() => setIsContentReady(true));
-        }, 100);
 
-        const t = requestAnimationFrame(() => {
-            startTransition(() => {
-                setIsContentReady(true);
-            });
-        });
-        
-        return () => {
-            cancelAnimationFrame(t);
-            clearTimeout(timer);
-        };
-    }, [isContentReady]);
+    // THE FIX: Consider it loaded if the flag is true OR if content array exists.
+    const isLoaded = (item as any).contentLoaded === true || (item.content && Array.isArray(item.content) && item.content.length > 0);
 
     useEffect(() => {
         const container = scrollContainerRef?.current || window;
@@ -187,13 +174,15 @@ export default function ContentPageClient({
         }
     }, [scrollContainerRef]);
 
+    // Optimize Layout Stability check
     useEffect(() => { 
-        if (!isContentReady) return;
-        const timeout = setTimeout(() => setIsLayoutStable(true), 1500); 
+        if (!isLoaded) return;
+        const timeout = setTimeout(() => {
+             setIsLayoutStable(true);
+             measureHeadings();
+        }, 500); 
         return () => clearTimeout(timeout); 
-    }, [item, isContentReady]);
-
-    useEffect(() => { if (isLayoutStable) { requestAnimationFrame(() => { measureHeadings(); }); } }, [isLayoutStable, measureHeadings]); 
+    }, [item, isLoaded, measureHeadings]);
 
     if (!item) return null;
 
@@ -238,9 +227,6 @@ export default function ContentPageClient({
     const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
     const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
-    // FIX: Correctly access the game slug property.
-    // The projection "slug": slug.current already converts it to a string.
-    // If for some reason it's still an object, we handle it safely.
     const gameObj = (item as any).game;
     const gameSlug = gameObj ? (typeof gameObj.slug === 'string' ? gameObj.slug : gameObj.slug?.current) : null;
 
@@ -311,7 +297,8 @@ export default function ContentPageClient({
                                 </motion.h1>
                             </div>
                             
-                            {isContentReady && (
+                            {/* RENDER CONTENT IF LOADED, ELSE SPINNER */}
+                            {isLoaded ? (
                                 <motion.div
                                     variants={bodyFadeVariants}
                                     initial="hidden"
@@ -320,7 +307,6 @@ export default function ContentPageClient({
                                 >
                                     <div className={styles.metaContainer}>
                                         <div className={styles.metaBlockLeft}>
-                                            {/* FIX: Use the resolved gameSlug variable */}
                                             {gameObj?.title && <GameLink gameName={gameObj.title} gameSlug={gameSlug} />}
                                             <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
                                         </div>
@@ -359,11 +345,15 @@ export default function ContentPageClient({
                                         <TagLinks tags={safeTags.map((t: any) => t.title)} />
                                     </div>
                                 </motion.div>
+                            ) : (
+                                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div className="spinner" />
+                                </div>
                             )}
                         </main>
 
                         <aside className={styles.sidebar}>
-                            {isContentReady && (
+                            {isLoaded && (
                                 <motion.div
                                     variants={bodyFadeVariants}
                                     initial="hidden"
@@ -387,7 +377,7 @@ export default function ContentPageClient({
                 </div>
             </motion.div>
             
-            {isContentReady && (
+            {isLoaded && (
                 <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
                     <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
                 </motion.div>
