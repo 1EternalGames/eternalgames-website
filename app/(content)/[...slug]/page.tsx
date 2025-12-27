@@ -14,7 +14,8 @@ import { calculateReadingTime, toPlainText } from '@/lib/readingTime';
 import { extractHeadingsFromContent } from '@/lib/text-utils'; 
 import { groq } from 'next-sanity';
 
-export const dynamic = 'force-static';
+// Allow ISR for pages not generated at build time (e.g. older archives)
+export const dynamicParams = true;
 
 const typeMap: Record<string, string> = {
     reviews: 'review',
@@ -158,12 +159,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        // OPTIMIZATION: Fetch ONLY slugs and types.
-        // Removed unnecessary fields to make this query ultra-fast and lightweight.
-        const query = groq`*[_type in ["review", "article", "news"]] | order(_createdAt desc){ "slug": slug.current, _type }`;
-        const allContent = await client.fetch<{ slug: string, _type: string }[]>(query);
+        // OPTIMIZATION: Only generate the 100 most recent items at build time.
+        // Older items will be generated on-demand (ISR) when accessed.
+        // This dramatically reduces build time and prevents timeouts/memory issues.
+        const query = groq`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100] { "slug": slug.current, _type }`;
+        const recentContent = await client.fetch<{ slug: string, _type: string }[]>(query);
         
-        return allContent
+        return recentContent
             .filter(c => c.slug)
             .map(c => {
                 const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');

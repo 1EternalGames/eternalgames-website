@@ -22,8 +22,6 @@ interface UniversalBaseProps {
 }
 
 // Optimization: Memoize the heavy internal structure.
-// This ensures that when the parent UniversalBase re-renders (e.g. to toggle display:none),
-// React doesn't try to diff the entire 3D scene and grid again.
 const HeavyHomeContent = memo(function HeavyHomeContent({ data }: UniversalBaseProps) {
     const { reviews, articles, news, releases, credits } = data;
 
@@ -64,18 +62,22 @@ export default function UniversalBase({ data }: UniversalBaseProps) {
     const pathname = usePathname();
     const isOverlayOpen = useContentStore(s => s.isOverlayOpen);
     
-    // If on homepage OR overlay is open, we keep this mounted.
-    // If on sub-pages (e.g. /reviews) without overlay, we hide it via CSS.
-    // Note: We avoid unmounting entirely to keep the 3D context alive if possible,
-    // but Next.js router might unmount it on page change anyway.
-    // This logic mainly helps when navigating BACK to home or opening overlay from home.
-    const shouldRender = pathname === '/' || isOverlayOpen;
+    // Logic: 
+    // 1. If we are on the homepage, we MUST render the base (it's the main content).
+    // 2. If we are on any other page, we ONLY render if the overlay is open (to show background).
+    // 3. This CSS-based toggle is much cheaper than unmounting/remounting the heavy 3D scene.
+    
+    const shouldDisplay = pathname === '/' || isOverlayOpen;
     
     return (
         <div 
             id="universal-base-layer"
             style={{ 
-                display: shouldRender ? 'block' : 'none'
+                // Hide purely with CSS to keep WebGL context alive but invisible
+                display: shouldDisplay ? 'block' : 'none',
+                // Ensure it sits below everything on the Z-index stack if it's the background
+                position: 'relative',
+                zIndex: 0
             }}
         >
             <HeavyHomeContent data={data} />
