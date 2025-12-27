@@ -94,7 +94,9 @@ export default function PerformanceSettings({ isMobile = false }: { isMobile?: b
                 <OptionButton label="الوسوم الطائرة" isActive={store.isFlyingTagsEnabled} onClick={store.toggleFlyingTags} Icon={TagIcon} isAutoControlled={auto} />
                 <OptionButton label="إطارات مشعة" isActive={store.isCornerAnimationEnabled} onClick={store.toggleCornerAnimation} Icon={BorderIcon} isAutoControlled={auto} />
                 <OptionButton label="حركة الخلفية" isActive={store.isBackgroundAnimated} onClick={store.toggleBackgroundAnimation} Icon={PlayPauseIcon} disabled={isAnimationDisabled} />
-                <OptionButton label="انتقال سلس" isActive={store.isHeroTransitionEnabled} onClick={store.toggleHeroTransition} Icon={HeroIcon} disabled={true} /> 
+                
+                {/* LOCKED BUTTON */}
+                <OptionButton label="انتقال سلس" isActive={false} onClick={() => {}} Icon={HeroIcon} disabled={true} /> 
             </div>
         </>
     );

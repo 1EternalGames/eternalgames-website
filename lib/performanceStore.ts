@@ -48,27 +48,25 @@ export const usePerformanceStore = create<PerformanceState>()(
       // --- DEFAULTS ---
       isLivingCardEnabled: true,
       isFlyingTagsEnabled: true,
-      isHeroTransitionEnabled: false, // Default OFF
+      isHeroTransitionEnabled: false, // Default OFF and Locked
       isCornerAnimationEnabled: true,
       isGlassmorphismEnabled: true,
       isHoverDebounceEnabled: true,
       isCarouselAutoScrollEnabled: true,
-      isSmoothScrollingEnabled: false, // Default OFF
+      isSmoothScrollingEnabled: false, 
       
-      // Default: Visible (Image), but NOT Animated (SVG)
       isBackgroundVisible: true,
       isBackgroundAnimated: false, 
       isAutoTuningEnabled: true,
 
-      // Manual toggles disable Auto-Tuning to respect user choice
       toggleLivingCard: () => set((state) => ({ isLivingCardEnabled: !state.isLivingCardEnabled, isAutoTuningEnabled: false })),
       toggleFlyingTags: () => set((state) => ({ isFlyingTagsEnabled: !state.isFlyingTagsEnabled, isAutoTuningEnabled: false })),
-      toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: !state.isHeroTransitionEnabled, isAutoTuningEnabled: false })),
+      // FIX: Forced to false/disabled
+      toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: false, isAutoTuningEnabled: false })), 
       toggleCornerAnimation: () => set((state) => ({ isCornerAnimationEnabled: !state.isCornerAnimationEnabled, isAutoTuningEnabled: false })),
       toggleHoverDebounce: () => set((state) => ({ isHoverDebounceEnabled: !state.isHoverDebounceEnabled, isAutoTuningEnabled: false })),
       toggleCarouselAutoScroll: () => set((state) => ({ isCarouselAutoScrollEnabled: !state.isCarouselAutoScrollEnabled, isAutoTuningEnabled: false })),
       
-      // Smooth Scrolling does NOT disable auto-tuning because it is a personal preference outside the tier system now
       toggleSmoothScrolling: () => set((state) => ({ isSmoothScrollingEnabled: !state.isSmoothScrollingEnabled })), 
       
       toggleBackgroundAnimation: () => set((state) => ({ isBackgroundAnimated: !state.isBackgroundAnimated, isAutoTuningEnabled: false })),
@@ -78,9 +76,7 @@ export const usePerformanceStore = create<PerformanceState>()(
       toggleAutoTuning: () => set((state) => ({ isAutoTuningEnabled: !state.isAutoTuningEnabled })),
 
       setPerformanceTier: (tier: PerformanceTier) => set((state) => {
-          // IMPORTANT: We do NOT touch isBackgroundAnimated or isSmoothScrollingEnabled here.
-          // They are purely manual preferences.
-          // Force isHeroTransitionEnabled: false for all tiers for now.
+          // IMPORTANT: isHeroTransitionEnabled is forced to FALSE in all tiers
           switch (tier) {
               case 6: // ULTRA
                   return {
@@ -156,7 +152,7 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isFlyingTagsEnabled: false, 
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
-                      isCarouselAutoScrollEnabled: false,
+                      isCarouselAutoScrollEnabled: false, 
                       isHeroTransitionEnabled: false,
                   };
               default:
