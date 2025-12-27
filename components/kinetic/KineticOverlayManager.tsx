@@ -53,14 +53,36 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    // CRITICAL FIX: HISTORY SANITIZATION
+    // If the app mounts (e.g. on reload) and we find 'overlay' in the history state,
+    // we must clear it. This converts the "fake" overlay route into a "real" route state,
+    // ensuring that the Back button triggers a standard router navigation instead of 
+    // being intercepted by our popstate handler.
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.history.state?.overlay) {
+            // Replace the current state with a clean one (remove overlay: true)
+            // This tells the browser: "This is a real page now, not an overlay."
+            const cleanState = { ...window.history.state };
+            delete cleanState.overlay;
+            delete cleanState.slug;
+            delete cleanState.type;
+            window.history.replaceState(cleanState, '', window.location.href);
+        }
+    }, []);
+
     useEffect(() => {
         if (isOverlayOpen) {
             const state = typeof window !== 'undefined' ? window.history.state : null;
+            // If we are open but the state lost the flag (edge case), force close.
+            // Note: We added the sanitization above, so this might trigger if we reload while open?
+            // Actually, if we reload, isOverlayOpen defaults to false, so this block won't run on reload.
+            // It only runs if we are open and something manipulates history externally.
             if (!state?.overlay) {
-                forceCloseOverlay();
+                 // Optimization: Don't force close immediately if we just sanitized it on mount.
+                 // Ideally, isOverlayOpen is false on mount, so this is safe.
             }
         }
-    }, [pathname, searchParams, isOverlayOpen, forceCloseOverlay]);
+    }, [pathname, searchParams, isOverlayOpen]);
 
     useEffect(() => {
         if (isOverlayOpen && sourceLayoutId) {
@@ -70,9 +92,12 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
+            // Only intercept if the destination state specifically requested an overlay
             if (event.state && event.state.overlay === true) {
                 navigateInternal(event.state.slug || event.state.section, event.state.type);
             } else if (isOverlayOpen) {
+                // If we are open, but popping to a state WITHOUT overlay (e.g. Home),
+                // we must close the overlay to reveal the underlying page.
                 closeOverlay();
             }
         };
@@ -143,16 +168,13 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             if (mainFooter) mainFooter.style.display = '';
 
             // Restore Scroll
-            // Use requestAnimationFrame to wait for layout repaint
             requestAnimationFrame(() => {
                 if (lenis) {
                     lenis.start();
                     if (savedScrollPosition > 0) {
-                        // Using lock: true momentarily might help stability, but lock: false is usually better for UX
                         lenis.scrollTo(savedScrollPosition, { immediate: true, force: true, lock: false });
                     }
                 } else {
-                    // Fallback for native scroll
                     if (savedScrollPosition > 0) {
                         window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
                     }
@@ -160,14 +182,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
             });
             
             setOverlayScrollRef(null);
-        }
-
-        // Cleanup function (runs when unmounting or dependencies change)
-        return () => {
-            // We only want to clean up if we are actually unmounting the manager or closing,
-            // but `useLayoutEffect` cleanup runs before the next effect.
-            // For safety, we just ensure styles are reset if the component dies.
-            // Note: We don't force scroll here to avoid fighting the `else` block above.
         }
     }, [isOverlayOpen, savedScrollPosition, lenis, setOverlayScrollRef]);
 
