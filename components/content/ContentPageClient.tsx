@@ -82,11 +82,12 @@ export default function ContentPageClient({
         
         // Fallback: Generate TOC from content
         const generated = extractHeadingsFromContent(item.content || []);
-        if (isReview && item.verdict) {
+        // FIX: Cast item to any to access verdict, as it doesn't exist on all ContentItem types
+        if (isReview && (item as any).verdict) {
              generated.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
         }
         return generated;
-    }, [item.toc, item.content, isReview, item.verdict]);
+    }, [item.toc, item.content, isReview, (item as any).verdict]);
 
     const readingTime = useMemo(() => {
         if (item.readingTime) return item.readingTime;
