@@ -25,13 +25,11 @@ export default function UniversalBase({ data }: UniversalBaseProps) {
     const pathname = usePathname();
     const isOverlayOpen = useContentStore(s => s.isOverlayOpen);
     
-    // Determine visibility:
-    // 1. If we are on the root path '/', we are fully visible.
-    // 2. If we are on a subpath (e.g. '/reviews'), we are technically "covered" by the page content (children).
-    //    HOWEVER, for the overlay system to work smoothly, we keep this mounted.
-    //    If an overlay is OPEN, this base layer sits behind it.
-    
-    const isRoot = pathname === '/';
+    // LOGIC UPDATE:
+    // 1. If we are on the root path ('/'), show the base.
+    // 2. If an overlay is OPEN (isOverlayOpen === true), show the base (it acts as the glass background).
+    // 3. Otherwise (e.g. on '/reviews' without overlay), hide it via CSS.
+    const shouldRender = pathname === '/' || isOverlayOpen;
     
     // Processing Data for DigitalAtrium
     const { reviews, articles, news, releases, credits } = data;
@@ -60,21 +58,15 @@ export default function UniversalBase({ data }: UniversalBaseProps) {
         return <AnimatedReleases releases={sanitizedReleases} credits={credits} />;
     }, [releases, credits]);
 
-    // OPTIMIZATION: When overlay is open, we can freeze/hide this layer to save GPU,
-    // but to keep scroll position valid, we just leave it.
-    // CSS module usually handles `display: none` via `body.editor-active` for Studio, 
-    // but for the public site overlays, we want it visible underneath (glass effect).
-
+    // OPTIMIZATION:
+    // Instead of returning null, we return the div with display: none.
+    // This keeps the heavy 3D scene and layout mounted in the React tree,
+    // preventing re-mount lag and navigation glitches when returning to Home.
     return (
         <div 
             id="universal-base-layer"
             style={{ 
-                // If not root and no overlay is open, the children (Next.js Page) cover this.
-                // But we want to allow "seeing through" if the top page is transparent?
-                // Actually, Next.js mounts children *after* layout content by default? No, layout wraps children.
-                // So this component renders *before* {children} in layout.tsx.
-                // We keep it flow-normal.
-                display: 'block'
+                display: shouldRender ? 'block' : 'none'
             }}
         >
             <DigitalAtriumHomePage 

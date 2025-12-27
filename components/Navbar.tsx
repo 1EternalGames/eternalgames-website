@@ -150,7 +150,7 @@ const Navbar = () => {
     
     // NEW: Also check store state for active section
     const indexSection = useContentStore(s => s.indexSection);
-    const { isOverlayOpen, closeOverlay } = useContentStore(); 
+    const { isOverlayOpen, closeOverlay, forceCloseOverlay } = useContentStore(); // FIX: Import forceCloseOverlay
 
     useBodyClass('mobile-menu-open', isMobileMenuOpen);
 
@@ -159,8 +159,12 @@ const Navbar = () => {
     
     const handleLogoClick = (e: React.MouseEvent) => {
         closeAll();
+        // FIX: Force close ANY overlay state when clicking logo, regardless of current flag
+        // This ensures a clean state reset when returning home.
+        forceCloseOverlay();
         if (isOverlayOpen) {
             e.preventDefault();
+            // closeOverlay will handle the URL replacement if needed
             closeOverlay();
         }
     };
