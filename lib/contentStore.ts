@@ -9,6 +9,7 @@ import {
 } from '@/app/actions/batchActions';
 
 export interface KineticContentState {
+  universalData: any | null; // NEW: Store the full raw universal object
   contentMap: Map<string, any>;
   pageMap: Map<string, any>;
   creatorMap: Map<string, any>;
@@ -45,6 +46,7 @@ export interface KineticContentState {
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
+  universalData: null, // Initial state
   contentMap: new Map(),
   pageMap: new Map(),
   creatorMap: new Map(),
@@ -60,12 +62,12 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   previousPath: null,
 
   hydrateUniversal: (data) => {
+      // 0. Store the raw data for the Loader to use
+      set({ universalData: data });
+
       const { hydrateContent, hydrateIndex, hydrateCreators, hydrateTags } = get();
       
-      // 1. Hydrate Content Map with EVERYTHING available
-      // We explicitly include content from hubs here as well to ensure
-      // deep links (KineticLink) work for items only present in hubs.
-      const hubContent: any[] = []; // Explicitly typed as any[] to satisfy TS
+      const hubContent: any[] = [];
       
       if (data.hubs) {
           if (data.hubs.games) data.hubs.games.forEach((g: any) => g.linkedContent && hubContent.push(...g.linkedContent));
@@ -81,27 +83,18 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           ...hubContent
       ];
 
-      // INTELLIGENT HYDRATION:
-      // Only mark as loaded if we ACTUALLY have content.
-      // Since layoutActions ensures main lists (with full content) overwrite hub lists (slim) in data.reviews/articles/news,
-      // we can trust that if an item is in those arrays, it's the good version.
-      // We process hub content last in the array above? No, order in 'allContent' array here doesn't matter
-      // because 'hydrateContent' has its own priority merge logic.
-      
       const processedContent = allContent.map(item => {
           const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
           const hasHub = item.linkedContent && Array.isArray(item.linkedContent);
           
           return {
               ...item,
-              // Only claim it's loaded if we actually see the data
               contentLoaded: hasBody || hasHub
           };
       });
       
       hydrateContent(processedContent);
       
-      // 2. Hydrate Indices
       if (data.reviews) {
           hydrateIndex('reviews', {
               hero: data.reviews[0],
@@ -139,14 +132,12 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           });
       }
       
-      // 3. Hydrate Hubs (Games, Tags, Creators)
       if (data.hubs) {
           if (data.hubs.games) hydrateContent(data.hubs.games.map((g: any) => ({ ...g, contentLoaded: true })));
           if (data.hubs.tags) hydrateTags(data.hubs.tags.map((t: any) => ({ ...t, contentLoaded: true })));
           if (data.hubs.creators) hydrateCreators(data.hubs.creators.map((c: any) => ({ ...c, contentLoaded: true })));
       }
 
-      // 4. Hydrate Credits
       hydrateCreators(data.credits || []);
   },
 
@@ -157,15 +148,8 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
         const slugStr = typeof item.slug === 'string' ? item.slug : item.slug.current;
         if (slugStr) {
              const existing = newMap.get(slugStr);
-             
-             // --- PRIORITY LOGIC ---
              let isLoaded = false;
-
-             // 1. Explicit flag (e.g. passed from hydrateUniversal if validated)
-             if (item.contentLoaded === true) {
-                 isLoaded = true;
-             } 
-             // 2. Implicit check (has content body or hub links)
+             if (item.contentLoaded === true) { isLoaded = true; } 
              else {
                  const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
                  const hasLinked = item.linkedContent && Array.isArray(item.linkedContent);
@@ -173,9 +157,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
                  else if (existing?.contentLoaded) isLoaded = true;
              }
 
-             // Merge logic: Preserve content/linkedContent from whichever source has it
-             // If incoming item HAS content, use it. If not, fallback to existing.
-             // This ensures that if we hydrate from Hubs (slim) AFTER Main Lists (full), we don't clobber the full content.
              const content = (item.content && item.content.length > 0) ? item.content : existing?.content;
              const linkedContent = (item.linkedContent && item.linkedContent.length > 0) ? item.linkedContent : existing?.linkedContent;
              const tiptapContent = item.tiptapContent || existing?.tiptapContent;
@@ -368,7 +349,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   fetchFullContent: async (slug: string) => {
       const { contentMap } = get();
       const item = contentMap.get(slug);
-      if (item && item.contentLoaded) return; // Strict check
+      if (item && item.contentLoaded) return; 
       
       try {
           const fullItem = await fetchSingleContentAction(slug);
