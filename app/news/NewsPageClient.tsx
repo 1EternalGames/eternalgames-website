@@ -13,7 +13,10 @@ import { CardProps } from '@/types';
 import styles from './NewsPage.module.css';
 import { NewsIcon } from '@/components/icons';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
-import NewsItemSkeleton from '@/components/ui/NewsItemSkeleton'; // NEW IMPORT
+import NewsItemSkeleton from '@/components/ui/NewsItemSkeleton';
+import { useContentStore } from '@/lib/contentStore';
+import { batchFetchFullContentAction } from '@/app/actions/batchActions'; // IMPORT
+import { loadMoreNews } from '@/app/actions/batchActions'; // NEW ACTION
 
 const fetchNews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/news?${params.toString()}`);
@@ -22,11 +25,34 @@ const fetchNews = async (params: URLSearchParams) => {
 };
 
 export default function NewsPageClient({ heroArticles, initialGridArticles, allGames, allTags }: { heroArticles: SanityNews[]; initialGridArticles: SanityNews[]; allGames: SanityGame[]; allTags: SanityTag[]; }) {
+    const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore();
+
+    // --- STATE INITIALIZATION WITH PERSISTENCE ---
+    const storedData = pageMap.get('news');
+    const hasStoredData = storedData && storedData.grid && storedData.grid.length >= initialGridArticles.length;
+    
+    const sourceGrid = hasStoredData ? storedData.grid : initialGridArticles;
+    const initialOffset = hasStoredData ? storedData.nextOffset : initialGridArticles.length;
+
     const adaptedHeroArticles = useMemo(() => heroArticles.map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[], [heroArticles]);
-    const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
+    const initialCards = useMemo(() => sourceGrid.map((item: any) => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [sourceGrid]);
+    
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
+    // Store Initialization
+    useEffect(() => {
+        if (!hasStoredData) {
+            hydrateIndex('news', {
+                hero: heroArticles,
+                grid: initialGridArticles,
+                allGames: allGames,
+                allTags: allTags,
+                nextOffset: initialGridArticles.length
+            });
+        }
+    }, [hasStoredData, hydrateIndex, heroArticles, initialGridArticles, allGames, allTags]);
+
     const [isGridReady, setIsGridReady] = useState(false);
     useEffect(() => {
         const t = requestAnimationFrame(() => {
@@ -35,7 +61,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         return () => cancelAnimationFrame(t);
     }, []);
     
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length);
+    const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'viral'>('latest');
@@ -62,20 +88,34 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const handleLoadMore = useCallback(async () => {
         if (!canLoadMore) return;
         setIsLoading(true);
-        const params = new URLSearchParams({ offset: String(nextOffset), limit: '50', sort: activeSort });
+        
         try {
-            const result = await fetchNews(params);
-            setAllFetchedNews(prev => {
-                const newItems = result.data.filter((newItem: CardProps) => !prev.some(p => p.id === newItem.id));
-                return [...prev, ...newItems];
+            // UNIFIED LOAD ACTION
+            const result = await loadMoreNews({
+                offset: nextOffset as number,
+                limit: 50,
+                sort: activeSort,
             });
+
+            const newItems = result.cards.filter((newItem: CardProps) => !allFetchedNews.some(p => p.id === newItem.id));
+            
+            if (newItems.length > 0) {
+                 // Hydrate Store
+                 hydrateContent(result.fullContent);
+                 appendToSection('news', result.fullContent, result.nextOffset);
+
+                 // Update UI
+                 setAllFetchedNews(prev => [...prev, ...newItems]);
+            }
+            
             setNextOffset(result.nextOffset);
+
         } catch (error) {
             console.error("Failed to load more news:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [canLoadMore, nextOffset, activeSort]);
+    }, [canLoadMore, nextOffset, activeSort, allFetchedNews, hydrateContent, appendToSection]);
 
     const handleTagToggle = (tag: SanityTag) => {
         setSelectedTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]);
@@ -99,7 +139,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
 
                         <InfiniteScrollSentinel onIntersect={handleLoadMore} />
                         
-                        {/* NEWS SKELETONS */}
                         <AnimatePresence>
                             {isLoading && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '3rem' }}>

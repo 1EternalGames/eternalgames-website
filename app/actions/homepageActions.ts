@@ -4,8 +4,10 @@
 import { sanityWriteClient } from '@/lib/sanity.server';
 import { client } from '@/lib/sanity.client';
 import { getAuthenticatedSession } from '@/lib/auth';
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
+import { cardListProjection } from '@/lib/sanity.queries'; // IMPORT PROJECTION
+import { enrichContentList } from '@/lib/enrichment'; // IMPORT ENRICHMENT
 
 export async function updateReleasesCreditsAction(creatorIds: string[]) {
     try {
@@ -34,7 +36,6 @@ export async function updateReleasesCreditsAction(creatorIds: string[]) {
             .set({ releasesCredits: references })
             .commit();
 
-        // FIX: Added 'max' profile argument to satisfy Next.js cache API
         revalidateTag('content', 'max');
         revalidateTag('homepage-content-consolidated-v2', 'max');
 
@@ -45,36 +46,54 @@ export async function updateReleasesCreditsAction(creatorIds: string[]) {
     }
 }
 
-export async function getAllStaffAction() {
-    try {
-        // Fetch all creator documents
-        const query = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] {
-            _id,
-            name,
-            "image": image,
-            prismaUserId,
-            username
-        }`;
-        const rawStaff = await client.fetch(query);
+// CACHED ACTION: Fetches all staff members and their recent content
+export const getAllStaffAction = unstable_cache(
+    async () => {
+        try {
+            // Fetch all creator documents WITH their content history (linkedContent)
+            const query = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] {
+                _id,
+                name,
+                "image": image,
+                prismaUserId,
+                username,
+                "linkedContent": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references(^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
+            }`;
+            
+            const rawStaff = await client.fetch(query);
 
-        // Deduplicate logic
-        const uniqueMap = new Map();
-        
-        rawStaff.forEach((creator: any) => {
-            let key = creator.prismaUserId;
-            if (!key) {
-                key = `name:${creator.name}`;
-            }
-            if (!uniqueMap.has(key)) {
-                uniqueMap.set(key, creator);
-            }
-        });
+            // Deduplicate logic
+            const uniqueMap = new Map();
+            
+            rawStaff.forEach((creator: any) => {
+                let key = creator.prismaUserId;
+                if (!key) {
+                    key = `name:${creator.name}`;
+                }
+                if (!uniqueMap.has(key)) {
+                    uniqueMap.set(key, creator);
+                }
+            });
 
-        return Array.from(uniqueMap.values()).sort((a: any, b: any) => a.name.localeCompare(b.name));
-    } catch (error) {
-        console.error("Failed to fetch staff:", error);
-        return [];
+            const uniqueStaff = Array.from(uniqueMap.values());
+
+            // Enrich the content lists (add usernames to the articles inside the creator's feed)
+            const enrichedStaff = await Promise.all(uniqueStaff.map(async (creator: any) => {
+                if (creator.linkedContent && creator.linkedContent.length > 0) {
+                    creator.linkedContent = await enrichContentList(creator.linkedContent);
+                }
+                return creator;
+            }));
+
+            return enrichedStaff.sort((a: any, b: any) => a.name.localeCompare(b.name));
+        } catch (error) {
+            console.error("Failed to fetch staff:", error);
+            return [];
+        }
+    },
+    ['all-staff-full-data'], // Cache Key
+    { 
+        revalidate: 3600, // Cache for 1 hour (refresh via revalidateTag)
+        tags: ['creators', 'content', 'enriched-creators'] 
     }
-}
-
-
+);

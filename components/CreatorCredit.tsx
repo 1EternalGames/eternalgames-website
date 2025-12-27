@@ -1,7 +1,7 @@
 // components/CreatorCredit.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import type { SanityAuthor } from '@/types/sanity';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 import styles from './CreatorCredit.module.css';
@@ -17,32 +17,23 @@ export default function CreatorCredit({ label, creators, disableLink = false }: 
     const safeCreators = Array.isArray(creators) ? creators : [];
     const { creatorMap } = useContentStore(); 
 
-    // Directly derive state from props + store. No useEffect delay.
     const enrichedCreators = safeCreators.map(creator => {
-        // 1. Check if username is already on the object (Sanity enriched it)
         if (creator.username) return creator;
-        
-        // 2. Check Client Store by Prisma ID
+        // Try to resolve username from store if missing in prop
         if (creator.prismaUserId) {
-            // Iterate map values to find by prismaUserId
-            // (Store is keyed by username, but object has prismaUserId)
             for (const c of creatorMap.values()) {
                 if (c.prismaUserId === creator.prismaUserId && c.username) {
                     return { ...creator, username: c.username };
                 }
             }
         }
-        
-        // 3. Check Client Store by Sanity ID
         if (creator._id) {
-             // creatorMap stores data by username usually, but let's check values
              for (const c of creatorMap.values()) {
                  if (c._id === creator._id && c.username) {
                      return { ...creator, username: c.username };
                  }
              }
         }
-
         return creator;
     });
 
@@ -63,6 +54,9 @@ export default function CreatorCredit({ label, creators, disableLink = false }: 
                         <span className={styles.creatorName}>{creator.name}</span>
                     </>
                 );
+                
+                // Construct partial data to seed the store instantly
+                const creatorData = { name: creator.name, image: creator.image };
 
                 if (creator.username && !disableLink) {
                     return (
@@ -73,6 +67,8 @@ export default function CreatorCredit({ label, creators, disableLink = false }: 
                             type="creators"
                             className={`${styles.creditCapsule} no-underline`}
                             onClick={(e) => e.stopPropagation()} 
+                            // PASS PRELOADED DATA
+                            preloadedData={creatorData}
                         >
                             {content}
                         </KineticLink>

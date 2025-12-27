@@ -4,7 +4,8 @@ import {
     fetchGameContentAction, 
     fetchCreatorContentAction, 
     fetchTagContentAction,
-    fetchSingleContentAction // IMPORT NEW ACTION
+    fetchSingleContentAction,
+    fetchCreatorByUsernameAction
 } from '@/app/actions/batchActions';
 
 export interface KineticContentState {
@@ -29,16 +30,19 @@ export interface KineticContentState {
   hydrateCreators: (creators: any[]) => void;
   hydrateTags: (tags: any[]) => void;
   
-  openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags', layoutId?: string, imageSrc?: string, overrideUrl?: string) => void;
+  appendToSection: (section: 'reviews' | 'articles' | 'news', newItems: any[], nextOffset: number | null) => void;
+
+  openOverlay: (slug: string, type: 'reviews' | 'articles' | 'news' | 'releases' | 'games' | 'creators' | 'tags', layoutId?: string, imageSrc?: string, overrideUrl?: string, preloadedData?: any) => void;
   openIndexOverlay: (section: 'reviews' | 'articles' | 'news' | 'releases') => void;
   
   navigateInternal: (slug: string, type: string) => void;
   closeOverlay: () => void;
-  forceCloseOverlay: () => void; // <--- NEW ACTION
+  forceCloseOverlay: () => void;
   fetchLinkedContent: (slug: string) => Promise<void>;
   fetchCreatorContent: (slug: string, creatorId: string) => Promise<void>;
   fetchTagContent: (slug: string) => Promise<void>;
   fetchFullContent: (slug: string) => Promise<void>;
+  fetchCreatorByUsername: (username: string) => Promise<void>;
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
@@ -77,19 +81,55 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       set({ pageMap: newPageMap });
   },
 
+  appendToSection: (section, newItems, nextOffset) => {
+      const { pageMap } = get();
+      const currentData = pageMap.get(section);
+      if (currentData) {
+          const currentGrid = currentData.grid || [];
+          const updatedData = {
+              ...currentData,
+              grid: [...currentGrid, ...newItems],
+              nextOffset: nextOffset
+          };
+          const newPageMap = new Map(pageMap);
+          newPageMap.set(section, updatedData);
+          set({ pageMap: newPageMap });
+      }
+  },
+
   hydrateCreators: (creators) => {
       const newMap = new Map(get().creatorMap);
       creators.forEach(c => {
-          const primaryKey = c.username || c._id;
-          const existing = newMap.get(primaryKey);
-          let merged = c;
-          if (existing) {
-              merged = { ...c, ...existing };
-              if (existing.contentLoaded) {
-                  merged.contentLoaded = true;
-                  merged.linkedContent = existing.linkedContent;
+          const keys = [];
+          if (c.username) keys.push(c.username);
+          if (c._id) keys.push(c._id);
+          if (c.prismaUserId) keys.push(c.prismaUserId);
+
+          let existing = null;
+          for (const key of keys) {
+              if (newMap.has(key)) {
+                  existing = newMap.get(key);
+                  break;
               }
           }
+
+          let merged = { ...c };
+          
+          if (existing) {
+              merged = { ...existing, ...c };
+              if (c.linkedContent && c.linkedContent.length > 0) {
+                  merged.linkedContent = c.linkedContent;
+                  merged.contentLoaded = true;
+              } else if (existing.contentLoaded) {
+                  merged.linkedContent = existing.linkedContent;
+                  merged.contentLoaded = true;
+              }
+          } else {
+               if (c.linkedContent && c.linkedContent.length > 0) {
+                  merged.contentLoaded = true;
+              }
+          }
+          
           if (merged.username) newMap.set(merged.username, merged);
           if (merged._id) newMap.set(merged._id, merged);
           if (merged.prismaUserId) newMap.set(merged.prismaUserId, merged);
@@ -102,18 +142,40 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       tags.forEach(t => {
           if (t.slug) {
               const existing = newMap.get(t.slug);
-              const merged = existing ? { ...t, ...existing } : { ...t, contentLoaded: true };
+              const merged = existing ? { ...t, ...existing } : { ...t };
+              if (t.items && t.items.length >= 0) {
+                   merged.items = t.items;
+                   merged.contentLoaded = true;
+              }
               newMap.set(t.slug, merged);
           }
       });
       set({ tagMap: newMap });
   },
 
-  openOverlay: (slug, type, layoutId, imageSrc, overrideUrl) => {
+  openOverlay: (slug, type, layoutId, imageSrc, overrideUrl, preloadedData) => {
     const currentState = get();
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
+    // OPTIMISTIC SEEDING: If we have preloaded data for creators, inject it immediately
+    if (type === 'creators' && preloadedData) {
+        const { creatorMap } = currentState;
+        const existing = creatorMap.get(slug);
+        if (!existing) {
+            const newMap = new Map(creatorMap);
+            // Construct a partial creator object
+            const partialCreator = {
+                username: slug,
+                name: preloadedData.name,
+                image: preloadedData.image, // Can be string URL or object
+                ...preloadedData // Spread any other props
+            };
+            newMap.set(slug, partialCreator);
+            set({ creatorMap: newMap });
+        }
+    }
+
     let targetUrl = overrideUrl;
     if (!targetUrl) {
         if (type === 'creators') targetUrl = `/creators/${slug}`;
@@ -183,7 +245,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     });
   },
 
-  // NEW: Force close overlay without reverting URL (for forward navigation fallback)
   forceCloseOverlay: () => {
       set({
           isOverlayOpen: false,
@@ -219,9 +280,11 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
            const enrichedContent = await fetchCreatorContentAction(creatorId);
            const updatedCreator = { ...creator, linkedContent: enrichedContent, contentLoaded: true };
            const newMap = new Map(creatorMap);
+           
+           const primaryKey = updatedCreator.username || updatedCreator._id;
+           if (primaryKey) newMap.set(primaryKey, updatedCreator);
            if (updatedCreator.username) newMap.set(updatedCreator.username, updatedCreator);
-           if (updatedCreator._id) newMap.set(updatedCreator._id, updatedCreator);
-           if (updatedCreator.prismaUserId) newMap.set(updatedCreator.prismaUserId, updatedCreator);
+           
            set({ creatorMap: newMap });
       } catch (e) {
           console.error("Failed to fetch creator content", e);
@@ -249,7 +312,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       const { contentMap } = get();
       const item = contentMap.get(slug);
       if (item && item.content && Array.isArray(item.content)) return;
-
       try {
           const fullItem = await fetchSingleContentAction(slug);
           if (fullItem) {
@@ -260,5 +322,20 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       } catch (e) {
           console.error("Failed to fetch full content", e);
       }
-  }
+  },
+
+  fetchCreatorByUsername: async (username: string) => {
+      const { creatorMap, hydrateCreators } = get();
+      // Check if already loaded by username key and fully loaded
+      if (creatorMap.has(username) && creatorMap.get(username).contentLoaded) return;
+      
+      try {
+          const creatorData = await fetchCreatorByUsernameAction(username);
+          if (creatorData) {
+              hydrateCreators([creatorData]);
+          }
+      } catch (e) {
+          console.error("Failed to fetch creator by username", e);
+      }
+  },
 }));

@@ -14,10 +14,23 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
     className?: string;
     imageSrc?: string; 
     overrideUrl?: string; 
+    preloadedData?: any; // NEW PROP
     onClick?: (e: React.MouseEvent) => void;
 }
 
-export default function KineticLink({ href, slug, type, layoutId, children, className, onClick, imageSrc, overrideUrl, ...props }: KineticLinkProps) {
+export default function KineticLink({ 
+    href, 
+    slug, 
+    type, 
+    layoutId, 
+    children, 
+    className, 
+    onClick, 
+    imageSrc, 
+    overrideUrl,
+    preloadedData,
+    ...props 
+}: KineticLinkProps) {
     const { contentMap, openOverlay } = useContentStore();
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -29,20 +42,16 @@ export default function KineticLink({ href, slug, type, layoutId, children, clas
         if (type === 'creators' || type === 'tags') {
             hasData = true; 
         } else {
-            // For standard content (reviews/articles), only open overlay if data is already in store
+            // For standard content, only open if data is already in store
             hasData = contentMap.has(slug);
         }
 
         if (hasData) {
             e.preventDefault();
             e.stopPropagation(); 
-            // @ts-ignore
-            openOverlay(slug, type, layoutId, imageSrc, overrideUrl);
+            // Pass preloadedData to openOverlay
+            openOverlay(slug, type, layoutId, imageSrc, overrideUrl, preloadedData);
         } 
-        
-        // FIX: Removed the else block that called forceCloseOverlay().
-        // We now let the standard Link navigation proceed without immediately closing the overlay.
-        // The overlay will persist (masking the loading state) until the route actually changes.
     };
 
     return (

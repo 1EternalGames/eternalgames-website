@@ -1,7 +1,7 @@
 // components/HubPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useLayoutEffect, RefObject } from 'react'; // Added useLayoutEffect, RefObject
+import { useState, useMemo, useRef, useEffect, useLayoutEffect, RefObject } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import HubFilters, { HubTypeFilter, HubSortOrder } from './HubFilters';
 import ArticleCard from './ArticleCard';
@@ -15,13 +15,11 @@ import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { sanityLoader } from '@/lib/sanity.loader'; 
 import { translateTag } from '@/lib/translations';
 
-// Icons
 import PCIcon from '@/components/icons/platforms/PCIcon';
 import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 
-// Safe layout effect for Next.js SSR
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface HubPageClientProps {
@@ -36,10 +34,10 @@ interface HubPageClientProps {
     developer?: string;
     publisher?: string;
     platforms?: string[];
-    // NEW PROPS
     onGamePass?: boolean;
     onPSPlus?: boolean;
-    scrollContainerRef?: RefObject<HTMLElement | null>; // Added Prop
+    scrollContainerRef?: RefObject<HTMLElement | null>;
+    isLoading?: boolean; // NEW PROP: Allow parent to signal loading state
 }
 
 const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -66,11 +64,11 @@ const MetadataDivider = () => (
 export default function HubPageClient({ 
     initialItems, hubTitle, hubType, headerAction, synopsis, tags, fallbackImage,
     price, developer, publisher, platforms, onGamePass, onPSPlus,
-    scrollContainerRef // Destructure
+    scrollContainerRef,
+    isLoading = false // Default to false
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
-    // SCROLL RESET LOGIC
     useIsomorphicLayoutEffect(() => { 
         if (scrollContainerRef?.current) {
             scrollContainerRef.current.scrollTop = 0;
@@ -137,13 +135,27 @@ export default function HubPageClient({
         heroImageRef = fallbackImage;
     }
 
-    const heroImageUrl = heroImageRef 
-        ? urlFor(heroImageRef).width(1920).auto('format').url() 
-        : null;
-        
-    const heroBlurDataURL = heroImageRef 
-        ? urlFor(heroImageRef).width(20).blur(10).auto('format').url()
-        : null;
+    // ROBUST IMAGE HANDLING (Fixes Crashes with External URLs)
+    let heroImageUrl = '/placeholder.jpg';
+    let heroBlurDataURL = null;
+    let isExternalImage = false;
+
+    try {
+        if (typeof heroImageRef === 'string') {
+            // Check if it's a URL
+            if (heroImageRef.startsWith('http') || heroImageRef.startsWith('/')) {
+                heroImageUrl = heroImageRef;
+                isExternalImage = true;
+            }
+        } else if (heroImageRef && (heroImageRef.asset || heroImageRef._ref || heroImageRef._id)) {
+             // Valid Sanity Object
+             heroImageUrl = urlFor(heroImageRef).width(1920).auto('format').url();
+             heroBlurDataURL = urlFor(heroImageRef).width(20).blur(10).auto('format').url();
+        }
+    } catch (e) {
+        console.warn("HubPageClient: Failed to resolve hero image, using placeholder.", e);
+        heroImageUrl = '/placeholder.jpg';
+    }
     
     const heroLayoutId = layoutIdPrefix === 'default' 
         ? `hub-hero-${hubTitle.replace(/\s+/g, '-')}` 
@@ -167,27 +179,24 @@ export default function HubPageClient({
             className={styles.hubHero} 
             layoutId={`${layoutIdPrefix}-container`}
         >
-            {heroImageUrl && (
-                <>
-                    <motion.div 
-                        className={styles.heroBg}
-                        layoutId={heroLayoutId}
-                        style={{ position: 'absolute', inset: 0, zIndex: -2 }}
-                    >
-                        <Image 
-                            loader={sanityLoader}
-                            src={heroImageUrl} 
-                            alt={`Background for ${hubTitle}`} 
-                            fill 
-                            style={{ objectFit: 'cover' }} 
-                            priority 
-                            placeholder={heroBlurDataURL ? 'blur' : 'empty'}
-                            blurDataURL={heroBlurDataURL || ''}
-                        />
-                    </motion.div>
-                    <div className={styles.heroOverlay} />
-                </>
-            )}
+            <motion.div 
+                className={styles.heroBg}
+                layoutId={heroLayoutId}
+                style={{ position: 'absolute', inset: 0, zIndex: -2 }}
+            >
+                <Image 
+                    loader={sanityLoader}
+                    src={heroImageUrl} 
+                    alt={`Background for ${hubTitle}`} 
+                    fill 
+                    style={{ objectFit: 'cover' }} 
+                    priority 
+                    placeholder={heroBlurDataURL ? 'blur' : 'empty'}
+                    blurDataURL={heroBlurDataURL || ''}
+                    unoptimized={isExternalImage} // FIX: Disable optimization for external URLs to prevent crashes
+                />
+            </motion.div>
+            <div className={styles.heroOverlay} />
             
             <motion.div 
                 className={`container ${styles.heroContentContainer}`}
@@ -208,17 +217,14 @@ export default function HubPageClient({
                     </motion.div>
                 )}
                 
-                {/* --- METADATA ROW --- */}
                 <motion.div 
                     className={styles.metadataRow}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                 >
-                    {/* Price */}
                     {price && <div className={`${styles.hubPill} ${styles.price}`}>{price}</div>}
                     
-                    {/* Game Pass Badge */}
                     {onGamePass && (
                         <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#10B981', color: '#10B981' }}>
                             <XboxIcon style={{ width: 14, height: 14 }} />
@@ -226,7 +232,6 @@ export default function HubPageClient({
                         </div>
                     )}
                     
-                    {/* PS Plus Badge */}
                     {onPSPlus && (
                         <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#3B82F6', color: '#3B82F6' }}>
                             <PS5Icon style={{ width: 16, height: 16 }} />
@@ -236,7 +241,6 @@ export default function HubPageClient({
                     
                     {price && (developer || publisher) && <MetadataDivider />}
 
-                    {/* Developer */}
                     {developer && (
                         <Link 
                             href={`/developers/${developer.toLowerCase().replace(/\s+/g, '-')}`} 
@@ -247,7 +251,6 @@ export default function HubPageClient({
                         </Link>
                     )}
                     
-                    {/* Publisher */}
                     {publisher && publisher !== developer && (
                         <Link 
                             href={`/publishers/${publisher.toLowerCase().replace(/\s+/g, '-')}`} 
@@ -260,7 +263,6 @@ export default function HubPageClient({
 
                     {(developer || publisher) && platforms && platforms.length > 0 && <MetadataDivider />}
 
-                    {/* Platforms */}
                     {platforms && platforms.map(p => {
                         const Icon = PlatformIcons[p];
                         if (!Icon) return null;
@@ -274,7 +276,6 @@ export default function HubPageClient({
 
                     {platforms && platforms.length > 0 && tags && tags.length > 0 && <MetadataDivider />}
 
-                     {/* UPDATE: Tag Rendering */}
                      {tags && tags.map(t => (
                         <Link 
                             key={t.title} 
@@ -286,7 +287,6 @@ export default function HubPageClient({
                         </Link>
                     ))}
                 </motion.div>
-
             </motion.div>
         </motion.div>
     );
@@ -297,6 +297,12 @@ export default function HubPageClient({
         <div className={styles.hubPageContainer}>
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
+                 {/* 
+                    RENDER LOGIC: 
+                    1. If items exist -> Show Grid.
+                    2. If NO items AND Loading -> Show Spinner.
+                    3. If NO items AND Not Loading -> Show "Empty" message.
+                 */}
                  {initialItems && initialItems.length > 0 ? (
                     <>
                         <motion.div
@@ -314,7 +320,7 @@ export default function HubPageClient({
                         
                         <motion.div 
                             layout 
-                            className="content-grid gpu-cull" // Added gpu-cull here
+                            className="content-grid gpu-cull"
                             style={{ paddingBottom: '6rem' }}
                         >
                             <AnimatePresence>
@@ -353,7 +359,11 @@ export default function HubPageClient({
                         transition={{ delay: 0.5 }}
                         style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }}
                     >
-                        <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) لهذه اللعبة بعد.</p>
+                        {isLoading ? (
+                            <div className="spinner" style={{margin: '0 auto'}}></div>
+                        ) : (
+                            <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p>
+                        )}
                     </motion.div>
                  )}
             </div>

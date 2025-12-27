@@ -1,8 +1,8 @@
 // app/articles/ArticlesPageClient.tsx
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import React, { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import HorizontalShowcase from '@/components/HorizontalShowcase';
 import ArticleFilters from '@/components/filters/ArticleFilters';
@@ -11,12 +11,13 @@ import Image from 'next/image';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from '@/components/HorizontalShowcase.module.css';
-import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ArticleIcon } from '@/components/icons';
 import { sanityLoader } from '@/lib/sanity.loader';
-import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel'; // IMPORT
-import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton'; // IMPORT
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
+import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton';
+import { useContentStore } from '@/lib/contentStore';
+import { batchFetchFullContentAction } from '@/app/actions/batchActions'; // IMPORT
 
 const fetchArticles = async (params: URLSearchParams) => {
     const res = await fetch(`/api/articles?${params.toString()}`);
@@ -82,11 +83,33 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const [activeIndex, setActiveIndex] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     
-    const initialCards = useMemo(() => initialGridArticles.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [initialGridArticles]);
+    const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore(); // USE STORE
+
+    // --- STATE INITIALIZATION WITH PERSISTENCE ---
+    const storedData = pageMap.get('articles');
+    const hasStoredData = storedData && storedData.grid && storedData.grid.length >= initialGridArticles.length;
+    
+    const sourceGrid = hasStoredData ? storedData.grid : initialGridArticles;
+    const initialOffset = hasStoredData ? storedData.nextOffset : initialGridArticles.length;
+
+    const initialCards = useMemo(() => sourceGrid.map((item: any) => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [sourceGrid]);
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // --- OPTIMIZATION: Deferred Rendering ---
+    // Store Initialization if empty
+    useEffect(() => {
+        if (!hasStoredData) {
+            hydrateIndex('articles', {
+                featured: featuredArticles,
+                grid: initialGridArticles,
+                allGames: allGames,
+                allGameTags: allGameTags,
+                allArticleTypeTags: allArticleTypeTags,
+                nextOffset: initialGridArticles.length
+            });
+        }
+    }, [hasStoredData, hydrateIndex, featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags]);
+
     const [isGridReady, setIsGridReady] = useState(false);
     useEffect(() => {
         const t = requestAnimationFrame(() => {
@@ -94,9 +117,8 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         });
         return () => cancelAnimationFrame(t);
     }, []);
-    // ----------------------------------------
     
-    const [nextOffset, setNextOffset] = useState<number | null>(initialCards.length);
+    const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
     
     useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener('resize', checkMobile); return () => window.removeEventListener('resize', checkMobile); }, []);
 
@@ -127,17 +149,29 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: sortOrder });
         try {
             const result = await fetchArticles(params);
-            setAllFetchedArticles(prev => {
-                const newItems = result.data.filter((newItem: CardProps) => !prev.some(p => p.id === newItem.id));
-                return [...prev, ...newItems];
-            });
+            const newItems = result.data.filter((newItem: CardProps) => !allFetchedArticles.some(p => p.id === newItem.id));
+            
+            if (newItems.length > 0) {
+                // BLOCKING: Fetch full content before updating UI
+                const ids = newItems.map((i: CardProps) => i.id);
+                const fullContent = await batchFetchFullContentAction(ids);
+                
+                // Hydrate & Persist
+                hydrateContent(fullContent);
+                appendToSection('articles', fullContent, result.nextOffset);
+
+                // Update UI
+                setAllFetchedArticles(prev => [...prev, ...newItems]);
+            }
+            
             setNextOffset(result.nextOffset);
+
         } catch (error) { 
             console.error("Failed to load more articles:", error); 
         } finally { 
             setIsLoading(false); 
         }
-    }, [canLoadMore, nextOffset, sortOrder]);
+    }, [canLoadMore, nextOffset, sortOrder, allFetchedArticles, hydrateContent, appendToSection]);
 
     const handleGameTagToggle = (tag: SanityTag) => { setSelectedGameTags(prev => prev.some(t => t._id === tag._id) ? prev.filter(t => t._id !== tag._id) : [...prev, tag]); };
     const handleClearAllFilters = () => { setSelectedGame(null); setSelectedGameTags([]); setSelectedArticleType(null); setSearchTerm(''); setSortOrder('latest'); };
@@ -190,7 +224,6 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                                             </motion.div>
                                         ))}
                                         
-                                        {/* LOADING SKELETONS */}
                                         {isLoading && (
                                             <>
                                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

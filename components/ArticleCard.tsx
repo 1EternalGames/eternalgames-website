@@ -3,7 +3,6 @@
 
 import React, { memo, useState, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useScrollStore } from '@/lib/scrollStore';
@@ -25,7 +24,8 @@ const getCreatorName = (creators: any[]): string | null => {
     return creators[0]?.name || null;
 };
 
-const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | null, authorUsername?: string | null }) => {
+// MODIFIED: Accept creatorData prop
+const CreatorCapsule = ({ authorName, authorUsername, creatorData }: { authorName: string | null, authorUsername?: string | null, creatorData?: any }) => {
     const content = (
         <>
             <div className={styles.capsuleIcon}>
@@ -37,14 +37,17 @@ const CreatorCapsule = ({ authorName, authorUsername }: { authorName: string | n
 
     if (authorUsername) {
         return (
-            <Link 
+            <KineticLink 
                 href={`/creators/${authorUsername}`}
+                slug={authorUsername}
+                type="creators"
                 className={`${styles.creditCapsule} no-underline`}
                 onClick={(e) => e.stopPropagation()} 
-                prefetch={false}
+                // PASS DATA for instant load
+                preloadedData={creatorData}
             >
                 {content}
-            </Link>
+            </KineticLink>
         );
     }
     return (
@@ -167,8 +170,13 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     const kineticType = article.type === 'review' ? 'reviews' : article.type === 'article' ? 'articles' : 'news';
 
     const hasScore = article.type === 'review' && typeof article.score === 'number';
-    const authorName = getCreatorName(article.authors);
-    const authorUsername = article.authors[0]?.username;
+    const author = article.authors?.[0];
+    const authorName = author?.name;
+    const authorUsername = author?.username;
+    
+    // Prepare partial data for instant load
+    const creatorData = author ? { name: author.name, image: author.image } : undefined;
+
     const displayTags = article.tags.slice(0, 3);
     
     const satelliteConfig = [
@@ -179,8 +187,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
     
     const animationStyles = !effectivelyDisabledLiving ? livingCardAnimation.style : {};
 
-    // Standardized ID Generation
-    // RESTORED: Container Layout ID to enable Card -> Header morph
     const containerLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'container', article.legacyId) : undefined;
     const imageLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'image', article.legacyId) : undefined;
     const titleLayoutId = !isMobile && isHeroTransitionEnabled ? generateLayoutId(layoutIdPrefix, 'title', article.legacyId) : undefined;
@@ -193,7 +199,6 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
             style={{ zIndex: isHovered ? 500 : 1 }}
         >
             <motion.div
-                // RESTORED CONTAINER LAYOUT ID HERE
                 layoutId={containerLayoutId}
                 style={{ height: '100%', position: 'relative', zIndex: 1 }}
             >
@@ -208,7 +213,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                             slug={article.slug}
                             type={kineticType}
                             layoutId={layoutIdPrefix} 
-                            imageSrc={article.imageUrl} // <--- PASS URL
+                            imageSrc={article.imageUrl}
                             className={`${styles.cardOverlayLink} no-underline`}
                             onClick={() => {
                                 if (!isMobile) {
@@ -283,7 +288,7 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                             <div className={styles.cyberCorner} />
 
                             <div className={styles.hudContainer} style={{ transform: 'translateZ(60px)' }}>
-                                 {authorName ? <CreatorCapsule authorName={authorName} authorUsername={authorUsername} /> : <div />}
+                                 {authorName ? <CreatorCapsule authorName={authorName} authorUsername={authorUsername} creatorData={creatorData} /> : <div />}
 
                                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem'}}>
                                     {article.date && (
@@ -315,14 +320,15 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                             style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
                                          >
-                                             <Link 
+                                             <KineticLink 
                                                 href={`/tags/${tag.slug}`} 
+                                                slug={tag.slug}
+                                                type="tags"
                                                 onClick={(e) => e.stopPropagation()}
                                                 className={`${styles.satelliteShardLink} ${smallTags ? styles.small : ''} no-underline`}
-                                                prefetch={false}
-                                            >
+                                             >
                                                  {translateTag(tag.title)}
-                                             </Link>
+                                             </KineticLink>
                                          </motion.div>
                                     ))}
                                 </AnimatePresence>

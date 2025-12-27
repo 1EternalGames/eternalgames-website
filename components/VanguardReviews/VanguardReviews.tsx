@@ -19,7 +19,7 @@ import { translateTag } from '@/lib/translations';
 import { PenEdit02Icon, ColorPaletteIcon } from '@/components/icons/index';
 import KineticLink from '@/components/kinetic/KineticLink'; 
 import { generateLayoutId } from '@/lib/layoutUtils'; 
-import { useContentStore } from '@/lib/contentStore'; // IMPORTED
+import { useContentStore } from '@/lib/contentStore'; 
 
 const creatorBubbleContainerVariants = {
     hidden: { opacity: 0, transition: { duration: 0.2, when: "afterChildren" } },
@@ -71,9 +71,15 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
     return ( 
         <motion.div variants={creatorBubbleItemVariants} className={styles.safeBridgeWrapper}> 
             {hasPublicProfile ? ( 
-                <Link href={`/creators/${profileSlug}`} onClick={handleBubbleClick} className="no-underline" prefetch={false}>
+                <KineticLink 
+                    href={`/creators/${profileSlug}`} 
+                    slug={profileSlug}
+                    type="creators"
+                    onClick={handleBubbleClick} 
+                    className="no-underline"
+                >
                     <InteractiveWrapper>{InnerContent}</InteractiveWrapper>
-                </Link> 
+                </KineticLink> 
             ) : ( 
                 <div title={`${creator.name}`}>
                     <InteractiveWrapper>{InnerContent}</InteractiveWrapper>
@@ -299,9 +305,15 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                             style={{ position: 'absolute', left: '50%', top: '50%', transformStyle: 'preserve-3d' }}
                                             onClick={(e) => e.stopPropagation()}
                                          >
-                                             <Link href={`/tags/${tag.slug}`} onClick={(e) => e.stopPropagation()} className={`${styles.satelliteShardLink} no-underline`} prefetch={false}>
+                                             <KineticLink 
+                                                href={`/tags/${tag.slug}`} 
+                                                slug={tag.slug}
+                                                type="tags"
+                                                onClick={(e) => e.stopPropagation()} 
+                                                className={`${styles.satelliteShardLink} no-underline`} 
+                                            >
                                                  {translateTag(tag.title)}
-                                             </Link>
+                                             </KineticLink>
                                          </motion.div>
                                     );
                                 })}

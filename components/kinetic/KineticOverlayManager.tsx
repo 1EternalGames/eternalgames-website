@@ -1,7 +1,7 @@
 // components/kinetic/KineticOverlayManager.tsx
 'use client';
 
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useContentStore } from '@/lib/contentStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContentPageClient from '@/components/content/ContentPageClient';
@@ -20,7 +20,7 @@ import ReviewsPageClient from '@/app/reviews/ReviewsPageClient';
 import ArticlesPageClient from '@/app/articles/ArticlesPageClient';
 import NewsPageClient from '@/app/news/NewsPageClient';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
-import { usePathname, useSearchParams } from 'next/navigation'; // IMPORT ADDED
+import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -33,7 +33,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         pageMap,
         indexSection,
         closeOverlay, 
-        forceCloseOverlay, // IMPORT ADDED
+        forceCloseOverlay,
         navigateInternal,
         sourceLayoutId, 
         activeImageSrc,
@@ -41,7 +41,8 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         fetchLinkedContent,
         fetchCreatorContent,
         fetchTagContent,
-        fetchFullContent
+        fetchFullContent,
+        fetchCreatorByUsername 
     } = useContentStore();
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
@@ -49,18 +50,12 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     const overlayRef = useRef<HTMLDivElement>(null);
     const lenis = useLenis();
     
-    // NEW: Track navigation changes
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // NEW EFFECT: Handle Route Changes while Overlay is Open
     useEffect(() => {
         if (isOverlayOpen) {
-            // Check if this navigation is an overlay state push or a real route change
             const state = typeof window !== 'undefined' ? window.history.state : null;
-            
-            // If the history state lacks our 'overlay' flag, it means a standard navigation occurred (Link clicked)
-            // We must close the overlay now to reveal the new page.
             if (!state?.overlay) {
                 forceCloseOverlay();
             }
@@ -86,31 +81,37 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     }, [isOverlayOpen, closeOverlay, navigateInternal]);
 
     useEffect(() => {
-        if (isOverlayOpen) {
+        if (isOverlayOpen && activeSlug && activeType) {
             if (activeType === 'index' && indexSection) {
                  pageview(`/${indexSection}`);
-            } else if (activeSlug && activeType) {
-                if (activeType === 'creators') {
-                    const creator = creatorMap.get(activeSlug);
-                    if (creator && creator._id) {
-                        fetchCreatorContent(activeSlug, creator._id);
+            } else if (activeType === 'creators') {
+                const creator = creatorMap.get(activeSlug);
+                
+                // If creator is not found OR hasn't fully loaded content, fetch.
+                if (!creator || !creator.contentLoaded) {
+                    const id = creator && (creator.prismaUserId || creator._id);
+                    if (id) {
+                         fetchCreatorContent(activeSlug, id);
+                    } else {
+                         // Fallback: If we only have the username (from URL), search by username
+                         fetchCreatorByUsername(activeSlug);
                     }
-                    pageview(`/creators/${activeSlug}`);
-                } else if (activeType === 'tags') {
-                    fetchTagContent(activeSlug);
-                    pageview(`/tags/${activeSlug}`);
-                } else {
-                    const virtualUrl = `/${activeType}/${activeSlug}`;
-                    pageview(virtualUrl);
-                    if (activeType === 'releases' || (activeType as string) === 'games') {
-                        fetchLinkedContent(activeSlug);
-                    } else if (activeType === 'reviews' || activeType === 'articles' || activeType === 'news') {
-                        fetchFullContent(activeSlug);
-                    }
+                }
+                pageview(`/creators/${activeSlug}`);
+            } else if (activeType === 'tags') {
+                fetchTagContent(activeSlug);
+                pageview(`/tags/${activeSlug}`);
+            } else {
+                const virtualUrl = `/${activeType}/${activeSlug}`;
+                pageview(virtualUrl);
+                if (activeType === 'releases' || (activeType as string) === 'games') {
+                    fetchLinkedContent(activeSlug);
+                } else if (activeType === 'reviews' || activeType === 'articles' || activeType === 'news') {
+                    fetchFullContent(activeSlug);
                 }
             }
         }
-    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap]);
+    }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap, fetchCreatorByUsername]);
 
     useLayoutEffect(() => {
         const html = document.documentElement;
@@ -148,68 +149,127 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         }
     }, [isOverlayOpen, savedScrollPosition, lenis, setOverlayScrollRef]);
 
-    const activeItem = activeSlug ? contentMap.get(activeSlug) : null;
-    const activeIndexData = indexSection ? pageMap.get(indexSection) : null;
-    const activeCreator = (activeSlug && activeType === 'creators') ? creatorMap.get(activeSlug) : null;
-    const activeTag = (activeSlug && activeType === 'tags') ? tagMap.get(activeSlug) : null;
-    
-    useEffect(() => {
-        if (isOverlayOpen) {
-            if (activeType === 'index') {
-                if (!activeIndexData) closeOverlay();
-            } else if (activeType === 'creators') {
-                if (!activeCreator) closeOverlay();
-            } else if (activeType === 'tags') {
-                // Allow opening if tag data is missing (it fetches)
-            } else {
-                if (!activeItem && activeSlug) closeOverlay();
+    const renderContent = useMemo(() => {
+        if (!isOverlayOpen) return null;
+
+        const activeItem = activeSlug ? contentMap.get(activeSlug) : null;
+        const activeIndexData = indexSection ? pageMap.get(indexSection) : null;
+        const activeCreator = (activeSlug && activeType === 'creators') ? creatorMap.get(activeSlug) : null;
+        const activeTag = (activeSlug && activeType === 'tags') ? tagMap.get(activeSlug) : null;
+
+        if (activeType === 'index' && activeIndexData) {
+            let content = null;
+            let paddingTop = '0';
+            
+            switch(indexSection) {
+                case 'reviews': content = <ReviewsPageClient heroReview={activeIndexData.hero} initialGridReviews={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
+                case 'articles': content = <ArticlesPageClient featuredArticles={activeIndexData.featured} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allGameTags={activeIndexData.allGameTags} allArticleTypeTags={activeIndexData.allArticleTypeTags} />; break;
+                case 'news': content = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
+                case 'releases': 
+                    paddingTop = 'calc(var(--nav-height-scrolled) + 4rem)';
+                    content = <ReleasePageClient releases={activeIndexData.releases} />; 
+                    break;
             }
+            return { content, paddingTop };
+        } 
+        
+        if (activeType === 'creators') {
+            // FIX: Render client even if partial data (optimistic UI). 
+            // The client handles loading state for the grid internally or we pass an explicit isLoading prop.
+            if (activeCreator) {
+                const isLoading = !activeCreator.contentLoaded;
+                return {
+                    content: <CreatorHubClient 
+                        creatorName={activeCreator.name} 
+                        username={activeCreator.username} 
+                        image={activeCreator.image} 
+                        bio={activeCreator.bio} 
+                        items={activeCreator.linkedContent || []} 
+                        scrollContainerRef={overlayRef} 
+                        // @ts-ignore
+                        isLoading={isLoading}
+                    />,
+                    paddingTop: '0'
+                };
+            }
+            // Only if we know NOTHING about the creator (e.g. direct URL open where hydration failed), show spinner
+            return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
+        } 
+        
+        if (activeType === 'tags') {
+            if (activeTag && activeTag.contentLoaded) {
+                 return {
+                    content: <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />,
+                    paddingTop: '0'
+                 };
+            }
+            return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
+        } 
+        
+        if (activeItem) {
+             if (activeType === 'releases' || (activeType as string) === 'games') {
+                return {
+                    content: <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />,
+                    paddingTop: '0'
+                };
+             } else {
+                 return {
+                    content: (
+                        <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> 
+                            <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> 
+                        </ContentPageClient>
+                    ),
+                    paddingTop: '0'
+                 };
+             }
         }
-    }, [isOverlayOpen, activeItem, activeCreator, activeTag, activeSlug, activeIndexData, activeType, closeOverlay]);
+        
+        // Fallback for completely unknown content
+        return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
 
-    if (!isOverlayOpen) return null;
-    
-    let contentToRender = null;
-    let extraPaddingTop = '0';
-
-    if (activeType === 'index' && activeIndexData) {
-        switch(indexSection) {
-            case 'reviews': contentToRender = <ReviewsPageClient heroReview={activeIndexData.hero} initialGridReviews={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
-            case 'articles': contentToRender = <ArticlesPageClient featuredArticles={activeIndexData.featured} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allGameTags={activeIndexData.allGameTags} allArticleTypeTags={activeIndexData.allArticleTypeTags} />; break;
-            case 'news': contentToRender = <NewsPageClient heroArticles={activeIndexData.hero} initialGridArticles={activeIndexData.grid} allGames={activeIndexData.allGames} allTags={activeIndexData.allTags} />; break;
-            case 'releases': extraPaddingTop = 'calc(var(--nav-height-scrolled) + 4rem)'; contentToRender = <ReleasePageClient releases={activeIndexData.releases} />; break;
-        }
-    } else if (activeCreator && activeType === 'creators') {
-        contentToRender = <CreatorHubClient creatorName={activeCreator.name} username={activeCreator.username} image={activeCreator.image} bio={activeCreator.bio} items={activeCreator.linkedContent || []} scrollContainerRef={overlayRef} />;
-    } else if (activeType === 'tags') {
-        if (activeTag && activeTag.contentLoaded) {
-            contentToRender = <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />;
-        } else {
-            contentToRender = <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>;
-        }
-    } else if (activeItem) {
-         if (activeType === 'releases' || (activeType as string) === 'games') {
-            contentToRender = <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={sourceLayoutId || undefined} scrollContainerRef={overlayRef} />;
-         } else {
-             contentToRender = <ContentPageClient key={activeSlug} item={activeItem} type={activeType as any} colorDictionary={colorDictionary} forcedLayoutIdPrefix={sourceLayoutId || undefined} initialImageSrc={activeImageSrc || undefined} scrollContainerRef={overlayRef}> <div style={{ marginTop: '4rem' }}> <CommentSection slug={activeSlug || ''} contentType={activeType === 'reviews' ? 'reviews' : activeType === 'articles' ? 'articles' : 'news'} /> </div> </ContentPageClient>;
-         }
-    }
-
-    if (!contentToRender) return null;
+    }, [isOverlayOpen, activeSlug, activeType, indexSection, contentMap, creatorMap, tagMap, pageMap, colorDictionary, sourceLayoutId, activeImageSrc]);
 
     return (
         <AnimatePresence mode="wait">
-            <motion.div key="overlay-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} style={{ position: 'fixed', inset: 0, zIndex: 1060, backgroundColor: 'var(--bg-primary)', transform: 'translateZ(0)', pointerEvents: 'auto' }}>
-                <SpaceBackground />
-            </motion.div>
-            <div key="kinetic-content-wrapper" ref={overlayRef} className={styles.overlayScrollContainer} style={{ position: 'fixed', inset: 0, zIndex: 1065, paddingTop: 0, overflowY: 'auto', overflowX: 'hidden', isolation: 'isolate', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', direction: 'ltr', pointerEvents: 'auto' }}>
-                <div style={{ direction: 'rtl', minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', paddingTop: extraPaddingTop }}>
-                    <div style={{ flexGrow: 1 }}>
-                        {contentToRender}
+            {isOverlayOpen && renderContent && (
+                <motion.div 
+                    key="overlay-root"
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }} 
+                    transition={{ duration: 0.3 }} 
+                    style={{ position: 'fixed', inset: 0, zIndex: 1060, transform: 'translateZ(0)' }}
+                >
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: 'var(--bg-primary)', pointerEvents: 'auto' }}>
+                         <SpaceBackground />
                     </div>
-                    <Footer />
-                </div>
-            </div>
+
+                    <div 
+                        ref={overlayRef} 
+                        className={styles.overlayScrollContainer} 
+                        style={{ 
+                            position: 'absolute', 
+                            inset: 0, 
+                            zIndex: 1, 
+                            paddingTop: 0, 
+                            overflowY: 'auto', 
+                            overflowX: 'hidden', 
+                            isolation: 'isolate', 
+                            WebkitOverflowScrolling: 'touch', 
+                            overscrollBehavior: 'contain', 
+                            direction: 'ltr', 
+                            pointerEvents: 'auto' 
+                        }}
+                    >
+                        <div style={{ direction: 'rtl', minHeight: '100%', width: '100%', display: 'flex', flexDirection: 'column', paddingTop: renderContent.paddingTop }}>
+                            <div style={{ flexGrow: 1 }}>
+                                {renderContent.content}
+                            </div>
+                            <Footer />
+                        </div>
+                    </div>
+                </motion.div>
+            )}
         </AnimatePresence>
     );
 }

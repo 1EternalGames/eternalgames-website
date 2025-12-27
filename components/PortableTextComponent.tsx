@@ -15,7 +15,8 @@ import {useLightboxStore} from '@/lib/lightboxStore'
 import type {PortableTextBlock} from '@portabletext/types'
 import {useTheme} from 'next-themes'
 import {sanityLoader} from '@/lib/sanity.loader'
-import { generateId } from '@/lib/text-utils' 
+import { generateId } from '@/lib/text-utils'
+import KineticLink from '@/components/kinetic/KineticLink' // IMPORT KINETIC LINK
 
 // --- LAZY-LOADED COMPONENTS ---
 const LoadingSpinner = () => (
@@ -201,9 +202,35 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
       marks: {
         color: ColorMark,
         link: ({value, children}) => {
-          const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined
+          const href = value.href || '';
+          
+          // INTELLIGENT KINETIC LINK REPLACEMENT
+          // Check if it's an internal Creator or Tag link
+          const isCreatorLink = href.startsWith('/creators/');
+          const isTagLink = href.startsWith('/tags/');
+          
+          if (isCreatorLink) {
+              const slug = href.replace('/creators/', '');
+              return (
+                  <KineticLink href={href} slug={slug} type="creators" className="text-accent underline hover:text-white transition-colors">
+                      {children}
+                  </KineticLink>
+              );
+          }
+          
+          if (isTagLink) {
+               const slug = href.replace('/tags/', '');
+               return (
+                  <KineticLink href={href} slug={slug} type="tags" className="text-accent underline hover:text-white transition-colors">
+                      {children}
+                  </KineticLink>
+               );
+          }
+
+          // Default external/internal link
+          const rel = !href.startsWith('/') ? 'noreferrer noopener' : undefined
           const isExternal = rel === 'noreferrer noopener'
-          return <a href={value.href} rel={rel} target={isExternal ? '_blank' : '_self'}>{children}</a>
+          return <a href={href} rel={rel} target={isExternal ? '_blank' : '_self'}>{children}</a>
         },
       },
     }

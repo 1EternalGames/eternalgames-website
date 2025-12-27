@@ -18,9 +18,9 @@ export default function TagLinks({ tags, small = false }: { tags: string[], smal
                 key={tag} 
                 href={`/tags/${slug}`}
                 slug={slug}
-                type="tags"
+                type="tags" // ENABLED
                 className={`${styles.tagLink} no-underline`}
-                onClick={(e) => e.stopPropagation()} // Stop bubbling
+                onClick={(e) => e.stopPropagation()} 
             >
                 {translateTag(tag)}
             </KineticLink>

@@ -31,13 +31,14 @@ export default function UserStoreHydration({
     
     const lastSyncedUserId = useRef<string | null>(null);
     const hasHandledOnboarding = useRef(false);
-    const hasHydratedCreators = useRef(false);
-
-    // 1. Hydrate Creators Immediately (Synchronously if possible in effect)
-    if (!hasHydratedCreators.current && initialCreators.length > 0) {
-        hydrateCreators(initialCreators);
-        hasHydratedCreators.current = true;
-    }
+    
+    // FIX: Optimized Creator Hydration to run immediately if data is present
+    useEffect(() => {
+        if (initialCreators && initialCreators.length > 0) {
+            // console.log(`[UserStoreHydration] Hydrating ${initialCreators.length} creators.`);
+            hydrateCreators(initialCreators);
+        }
+    }, [initialCreators, hydrateCreators]);
 
     const currentUserId = (session?.user as any)?.id;
 

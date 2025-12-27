@@ -82,8 +82,13 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     
     const isNews = item.type === 'news';
     const newsType = item.newsType || 'official';
-    const authorName = item.authors && item.authors.length > 0 ? item.authors[0].name : 'محرر';
-    const authorUsername = item.authors && item.authors.length > 0 ? item.authors[0].username : null;
+    
+    // Creator Data Extraction
+    const authorObj = item.authors && item.authors.length > 0 ? item.authors[0] : null;
+    const authorName = authorObj ? authorObj.name : 'محرر';
+    const authorUsername = authorObj ? authorObj.username : null;
+    // Prepare partial data
+    const creatorData = authorObj ? { name: authorObj.name, image: authorObj.image } : undefined;
 
     const flyingItems = useMemo(() => {
         const satellites = [];
@@ -236,16 +241,19 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
                             <div className={styles.cardMetadata}>
                                 <div style={{display:'flex', alignItems:'center', gap:'0.8rem'}}>
-                                    {/* FIX: Use Link component for semantic navigation */}
+                                    {/* FIX: Use KineticLink for creator */}
                                     {authorUsername ? (
-                                        <Link 
+                                        <KineticLink 
                                             href={`/creators/${authorUsername}`}
+                                            slug={authorUsername}
+                                            type="creators"
                                             className={`${styles.creatorCapsule} no-underline`}
                                             onClick={(e) => e.stopPropagation()}
-                                            prefetch={false}
+                                            // PASS DATA
+                                            preloadedData={creatorData}
                                         >
                                             {capsuleContent}
-                                        </Link>
+                                        </KineticLink>
                                     ) : (
                                         <div className={styles.creatorCapsule}>
                                             {capsuleContent}
@@ -294,14 +302,16 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         onClick={(e) => e.stopPropagation()}
                                      >
                                          {sat.link ? (
-                                             <Link 
+                                             // Use KineticLink for tags? Not strictly required but cleaner
+                                             <KineticLink 
                                                 href={sat.link} 
+                                                slug={sat.link.split('/').pop() || ''} // Simple slug extraction
+                                                type={sat.link.includes('/tags/') ? 'tags' : 'games'}
                                                 onClick={(e) => { e.stopPropagation(); }}
                                                 className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
-                                                prefetch={false}
                                              >
                                                  {sat.label}
-                                             </Link>
+                                             </KineticLink>
                                          ) : (
                                              <span className={`${styles.satelliteShardLink} ${styles.static} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''}`}>
                                                  {sat.label}
