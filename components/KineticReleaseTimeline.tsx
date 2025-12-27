@@ -1,7 +1,7 @@
 // components/KineticReleaseTimeline.tsx
 'use client';
 
-import React, { useMemo, useRef, useState, useLayoutEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { motion, useScroll, useInView, useTransform, MotionValue, AnimatePresence } from 'framer-motion';
 // Link is replaced by button for kinetic action
 import TimelineCard from './TimelineCard';
@@ -103,23 +103,64 @@ export default function KineticReleaseTimeline({ releases: allReleases, credits 
             .sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
     }, [allReleases]);
 
-    useLayoutEffect(() => {
-        if (timelineRef.current && releasesForThisMonth.length > 0) {
-            const timeoutId = setTimeout(() => {
-                const containerEl = timelineRef.current; 
-                if (!containerEl) return;
-                const containerHeight = containerEl.scrollHeight;
-                const itemElements = Array.from(containerEl.querySelectorAll(`.${styles.timelineItemWrapper}`));
-                const positions = itemElements.map(el => { 
-                    const item = el as HTMLElement; 
-                    const top = item.offsetTop + (item.offsetHeight / 2); 
-                    return top / containerHeight; 
-                });
-                setDotPositions(positions);
-            }, 100);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [releasesForThisMonth]);
+    // Recalculate positions based on real DOM geometry
+    const calculatePositions = useCallback(() => {
+        if (!timelineRef.current) return;
+        const containerEl = timelineRef.current;
+        
+        // Get precise dimensions
+        const containerRect = containerEl.getBoundingClientRect();
+        const containerHeight = containerRect.height;
+        
+        if (containerHeight === 0) return;
+
+        const itemElements = Array.from(containerEl.querySelectorAll(`.${styles.timelineItemWrapper}`));
+        
+        const positions = itemElements.map(el => { 
+            const item = el as HTMLElement; 
+            const itemRect = item.getBoundingClientRect();
+            
+            // Calculate center relative to the container's current visual position
+            // boundingClientRect accounts for transforms and scrolling, ensuring accuracy
+            const relativeTop = itemRect.top - containerRect.top;
+            const center = relativeTop + (itemRect.height / 2);
+            
+            return center / containerHeight; 
+        });
+        
+        // Avoid state update loops if values haven't changed
+        setDotPositions(prev => {
+            if (prev.length === positions.length && prev.every((v, i) => Math.abs(v - positions[i]) < 0.0001)) {
+                return prev;
+            }
+            return positions;
+        });
+    }, []);
+
+    // Observer setup to catch layout shifts (images loading, window resize)
+    useEffect(() => {
+        if (!timelineRef.current || releasesForThisMonth.length === 0) return;
+
+        // 1. Calculate immediately
+        calculatePositions();
+
+        // 2. Observe container resize
+        const observer = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                calculatePositions();
+            });
+        });
+        
+        observer.observe(timelineRef.current);
+        
+        // 3. Safety fallback for late loading assets that might not trigger resize immediately
+        const timeoutId = setTimeout(calculatePositions, 1000);
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timeoutId);
+        };
+    }, [releasesForThisMonth, calculatePositions]);
 
     return (
         <div ref={timelineRef} className={styles.timelineContainer}>

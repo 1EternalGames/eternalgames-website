@@ -82,3 +82,39 @@
 .brand:active {
   color: var(--accent); 
 }
+
+/* NEW: Divider & Close Button */
+.divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-color);
+  margin: 0 0.2rem;
+  opacity: 0.6;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+@media (hover: hover) {
+  .closeButton:hover {
+      background-color: rgba(220, 38, 38, 0.15);
+      color: #DC2626;
+  }
+}
+
+.closeButton:active {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #DC2626;
+  transform: scale(0.9);
+}

@@ -61,8 +61,8 @@ export default async function AboutPage() {
                         <p style={{ fontSize: '1.6rem', marginBottom: '2rem' }}>
                             هل لديك استفسار، اقتراح، أو ترغب في الانضمام لفريقنا؟ لا تتردد في مراسلتنا.
                         </p>
-                        <a href="mailto:contact@eternalgames.vercel.app" className="primary-button no-underline">
-                            contact@eternalgames.vercel.app
+                        <a href="mailto:contact@EternalGamesWeb.com" className="primary-button no-underline">
+                            contact@EternalGamesWeb.com
                         </a>
                     </div>
                 </ContentBlock>

@@ -41,7 +41,7 @@ const navItems = [
     { href: '/news', label: 'الأخبار', Icon: NewsIcon, section: 'news' },
     { href: '/articles', label: 'المقالات', Icon: ArticleIcon, section: 'articles' },
     { href: '/releases', label: 'الإصدارات', Icon: ReleaseIcon, section: 'releases' },
-    { href: '/celestial-almanac', label: 'التقويم', Icon: CelestialAlmanacIcon },
+    { href: '/celestial-almanac', label: 'قريباً', Icon: CelestialAlmanacIcon },
     { href: '/constellation', label: 'الكوكبة', Icon: ConstellationIcon }
 ];
 

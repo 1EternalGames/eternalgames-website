@@ -6,49 +6,65 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StudioIcon } from '@/components/icons/index';
+import { useState } from 'react';
 import styles from './StudioBar.module.css';
 
 const EditIcon = () => ( <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /> </svg> );
+const CloseIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"> <line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line> </svg> );
 
 export default function StudioBar() {
-    // FIX: Use client-side session hook instead of server props
     const { data: session } = useSession();
     const pathname = usePathname();
+    const [isVisible, setIsVisible] = useState(true);
     
     const userRoles = (session?.user as any)?.roles || [];
     const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
     
-    let editPath = null;
+    // Check if on studio page
+    const isStudioPage = pathname.startsWith('/studio');
+    
+    // Determine if we should render anything
+    const shouldRender = isCreatorOrAdmin && !isStudioPage && isVisible;
 
-    if (!isCreatorOrAdmin || pathname.startsWith('/studio')) {
-        return null;
-    }
+    let editPath = null;
+    // (Logic for determining edit path could be added here if needed, currently unused in provided code)
 
     return (
         <AnimatePresence>
-            <motion.div
-                className={styles.studioBar}
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: '0%', opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
-            >
-                <div className={styles.studioBarContent}>
-                    <Link href="/studio" className={`${styles.studioBarButton} ${styles.brand}`} prefetch={false}>
-                        <StudioIcon height={20} width={20} />
-                        <span>الديوان</span>
-                    </Link>
-
-                    {editPath && (
-                        <Link href={editPath} className={styles.studioBarButton} prefetch={false}>
-                            <EditIcon />
-                            <span>تعديل الصفحة</span>
+            {shouldRender && (
+                <motion.div
+                    className={styles.studioBar}
+                    initial={{ y: '100%', opacity: 0 }}
+                    animate={{ y: '0%', opacity: 1 }}
+                    exit={{ y: '100%', opacity: 0 }}
+                    transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
+                >
+                    <div className={styles.studioBarContent}>
+                        <Link href="/studio" className={`${styles.studioBarButton} ${styles.brand}`} prefetch={false}>
+                            <StudioIcon height={20} width={20} />
+                            <span>الديوان</span>
                         </Link>
-                    )}
-                </div>
-            </motion.div>
+
+                        {editPath && (
+                            <Link href={editPath} className={styles.studioBarButton} prefetch={false}>
+                                <EditIcon />
+                                <span>تعديل الصفحة</span>
+                            </Link>
+                        )}
+                        
+                        <div className={styles.divider} />
+                        
+                        <button 
+                            onClick={() => setIsVisible(false)} 
+                            className={styles.closeButton} 
+                            aria-label="Close Studio Bar"
+                            title="إخفاء حتى التحديث"
+                        >
+                            <CloseIcon />
+                        </button>
+                    </div>
+                </motion.div>
+            )}
         </AnimatePresence>
     );
 }
-
-

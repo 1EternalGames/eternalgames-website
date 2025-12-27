@@ -435,7 +435,7 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
             return;
         }
         if (hoverTimeoutRef.current) { clearTimeout(hoverTimeoutRef.current); hoverTimeoutRef.current = null; }
-        if (isHovering) { hoverTimeoutRef.current = setTimeout(() => { setHoveredId(id); setIsManualHover(true); }, 50); } 
+        if (isHovering) { hoverTimeoutRef.current = setTimeout(() => { setHoveredId(id); setIsManualHover(true); }, 0); } 
         else { hoverTimeoutRef.current = setTimeout(() => { setHoveredId(null); setIsManualHover(false); }, 50); }
     }, [initialAnimHasRun, isMobile, setHoveredId, isAnimating]);
 

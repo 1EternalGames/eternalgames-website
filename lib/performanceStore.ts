@@ -48,7 +48,7 @@ export const usePerformanceStore = create<PerformanceState>()(
       // --- DEFAULTS ---
       isLivingCardEnabled: true,
       isFlyingTagsEnabled: true,
-      isHeroTransitionEnabled: false, // Default OFF and Locked
+      isHeroTransitionEnabled: true, // ENABLED DEFAULT
       isCornerAnimationEnabled: true,
       isGlassmorphismEnabled: true,
       isHoverDebounceEnabled: true,
@@ -61,7 +61,7 @@ export const usePerformanceStore = create<PerformanceState>()(
 
       toggleLivingCard: () => set((state) => ({ isLivingCardEnabled: !state.isLivingCardEnabled, isAutoTuningEnabled: false })),
       toggleFlyingTags: () => set((state) => ({ isFlyingTagsEnabled: !state.isFlyingTagsEnabled, isAutoTuningEnabled: false })),
-      toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: false, isAutoTuningEnabled: false })), 
+      toggleHeroTransition: () => set((state) => ({ isHeroTransitionEnabled: !state.isHeroTransitionEnabled, isAutoTuningEnabled: false })), 
       toggleCornerAnimation: () => set((state) => ({ isCornerAnimationEnabled: !state.isCornerAnimationEnabled, isAutoTuningEnabled: false })),
       toggleHoverDebounce: () => set((state) => ({ isHoverDebounceEnabled: !state.isHoverDebounceEnabled, isAutoTuningEnabled: false })),
       toggleCarouselAutoScroll: () => set((state) => ({ isCarouselAutoScrollEnabled: !state.isCarouselAutoScrollEnabled, isAutoTuningEnabled: false })),
@@ -75,7 +75,6 @@ export const usePerformanceStore = create<PerformanceState>()(
       toggleAutoTuning: () => set((state) => ({ isAutoTuningEnabled: !state.isAutoTuningEnabled })),
 
       setPerformanceTier: (tier: PerformanceTier) => set((state) => {
-          // NOTE: isHeroTransitionEnabled is always FALSE for stability
           switch (tier) {
               case 6: // ULTRA: Everything ON
                   return {
@@ -86,20 +85,20 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCornerAnimationEnabled: true, 
                       isHoverDebounceEnabled: false, 
                       isCarouselAutoScrollEnabled: true,
-                      isHeroTransitionEnabled: false,
+                      isHeroTransitionEnabled: true, // ENABLED
                   };
-              case 5: // HIGH: Everything ON EXCEPT Flying Tags (First Step)
+              case 5: // HIGH
                   return {
                       isGlassmorphismEnabled: true, 
                       isBackgroundVisible: true, 
                       isLivingCardEnabled: true,
-                      isFlyingTagsEnabled: false, // OFF
+                      isFlyingTagsEnabled: false, 
                       isCornerAnimationEnabled: true, 
                       isHoverDebounceEnabled: false, 
                       isCarouselAutoScrollEnabled: true,
                       isHeroTransitionEnabled: false,
                   };
-              case 4: // MEDIUM: Glass OFF, Flying OFF (Intermediate)
+              case 4: // MEDIUM
                   return {
                       isGlassmorphismEnabled: false, 
                       isBackgroundVisible: true, 
@@ -110,40 +109,40 @@ export const usePerformanceStore = create<PerformanceState>()(
                       isCarouselAutoScrollEnabled: true,
                       isHeroTransitionEnabled: false,
                   };
-              case 3: // LOW: No 3D Cards
+              case 3: // LOW
                   return {
                       isGlassmorphismEnabled: false, 
                       isBackgroundVisible: true, 
-                      isLivingCardEnabled: false,
+                      isLivingCardEnabled: false, 
                       isFlyingTagsEnabled: false, 
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
                       isCarouselAutoScrollEnabled: true,
                       isHeroTransitionEnabled: false,
                   };
-              case 2: // MINIMAL: No Auto Scroll
+              case 2: // MINIMAL
                   return {
                       isGlassmorphismEnabled: false, 
                       isBackgroundVisible: true, 
-                      isLivingCardEnabled: false,
+                      isLivingCardEnabled: false, 
                       isFlyingTagsEnabled: false, 
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
                       isCarouselAutoScrollEnabled: false, 
                       isHeroTransitionEnabled: false,
                   };
-              case 1: // POTATO: Background Only
+              case 1: // POTATO
                   return {
                       isGlassmorphismEnabled: false, 
                       isBackgroundVisible: true, 
-                      isLivingCardEnabled: false,
+                      isLivingCardEnabled: false, 
                       isFlyingTagsEnabled: false, 
                       isCornerAnimationEnabled: false, 
                       isHoverDebounceEnabled: true, 
                       isCarouselAutoScrollEnabled: false, 
                       isHeroTransitionEnabled: false,
                   };
-              case 0: // ABYSSAL: Everything OFF (Emergency)
+              case 0: // ABYSSAL
                   return {
                       isGlassmorphismEnabled: false, 
                       isBackgroundVisible: false, 
