@@ -15,14 +15,7 @@ import { NewsIcon } from '@/components/icons';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import NewsItemSkeleton from '@/components/ui/NewsItemSkeleton';
 import { useContentStore } from '@/lib/contentStore';
-import { batchFetchFullContentAction } from '@/app/actions/batchActions';
 import { loadMoreNews } from '@/app/actions/batchActions';
-
-const fetchNews = async (params: URLSearchParams) => {
-    const res = await fetch(`/api/news?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch news');
-    return res.json();
-};
 
 export default function NewsPageClient({ heroArticles, initialGridArticles, allGames, allTags }: { heroArticles: SanityNews[]; initialGridArticles: SanityNews[]; allGames: SanityGame[]; allTags: SanityTag[]; }) {
     const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore();
@@ -100,6 +93,11 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             
             if (newItems.length > 0) {
                  hydrateContent(result.fullContent);
+                 // NEW: Hydrate pre-fetched Game Hubs
+                 if (result.hubs) {
+                     hydrateContent(result.hubs);
+                 }
+
                  appendToSection('news', result.fullContent, result.nextOffset);
                  setAllFetchedNews(prev => [...prev, ...newItems]);
             }

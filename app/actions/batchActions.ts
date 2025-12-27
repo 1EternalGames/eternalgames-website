@@ -12,7 +12,8 @@ import {
     paginatedReviewsQuery, 
     paginatedArticlesQuery, 
     paginatedNewsQuery,
-    cardListProjection 
+    cardListProjection,
+    batchGameHubsQuery // Ensure this is imported
 } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
@@ -78,13 +79,11 @@ export async function batchFetchCreatorsAction(creatorIds: string[]) {
 }
 
 // CACHED: Fetch Creator Profile by Username
-// Optimized to reduce server wait time.
 export const fetchCreatorByUsernameAction = unstable_cache(
     async (username: string) => {
         if (!username) return null;
         
         try {
-            // 1. Prisma Lookup (Fast)
             const user = await prisma.user.findUnique({
                 where: { username },
                 select: { id: true, name: true, username: true, image: true, bio: true }
@@ -92,8 +91,6 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             
             if (!user) return null;
 
-            // 2. Sanity ID Lookup (Fast)
-            // We just need the ID first to query content efficiently
             const creatorDocs = await client.fetch<{ _id: string }[]>(
                 `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id}`,
                 { prismaUserId: user.id }
@@ -103,11 +100,9 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             
             let enrichedContent: any[] = [];
             
-            // 3. Content Lookup (The expensive part)
             if (creatorIds.length > 0) {
                 const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc)[0...12] { ${cardListProjection} }`;
                 const rawContent = await client.fetch(query, { creatorIds });
-                // We enrich content which might trigger more Prisma calls, but they are cached too.
                 enrichedContent = await enrichContentList(rawContent);
             }
 
@@ -116,7 +111,7 @@ export const fetchCreatorByUsernameAction = unstable_cache(
                 prismaUserId: user.id,
                 name: user.name,
                 username: user.username,
-                image: user.image, // string URL
+                image: user.image, 
                 bio: user.bio,
                 linkedContent: enrichedContent,
                 contentLoaded: true
@@ -127,11 +122,11 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             return null;
         }
     },
-    ['creator-profile-by-username-v2'], // Bumped cache key version
+    ['creator-profile-by-username-v2'],
     { tags: ['creator-profile'] }
 );
 
-// ... (Rest of file kept as is) ...
+// ... (Other fetch functions remain same) ...
 export async function fetchGameContentAction(slug: string) {
     if (!slug) return [];
     try {
@@ -209,8 +204,39 @@ export async function loadMoreNews(params: { offset: number, limit: number, sort
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
+// UPDATED: Fetches associated Game Hubs in parallel
 async function processUnifiedResponse(rawData: any[], limit: number, offset: number) {
+    // 1. Enrich main content (Authors, etc.)
     const enrichedData = await enrichContentList(rawData);
+    
+    // 2. Extract Game IDs for Hub Fetching
+    const gameIds = new Set<string>();
+    rawData.forEach(item => {
+        if (item.game && item.game._id) {
+            gameIds.add(item.game._id);
+        }
+    });
+
+    let enrichedHubs: any[] = [];
+    
+    // 3. Fetch & Enrich Game Hubs if any games exist
+    if (gameIds.size > 0) {
+        try {
+            const gameHubs = await client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) });
+            // Enrich the 'linkedContent' inside the game hubs
+            enrichedHubs = await Promise.all(gameHubs.map(async (hub: any) => {
+                if (hub.linkedContent && hub.linkedContent.length > 0) {
+                    hub.linkedContent = await enrichContentList(hub.linkedContent);
+                }
+                // Mark as fully loaded so store knows it's safe to use
+                return { ...hub, contentLoaded: true };
+            }));
+        } catch (error) {
+            console.error("Failed to pre-fetch game hubs in loadMore:", error);
+            // Non-blocking failure, just continue without hubs
+        }
+    }
+
     const fullContent = enrichedData.map((item: any) => {
         const tocHeadings = extractHeadingsFromContent(item.content);
         if (item._type === 'review' && item.verdict) {
@@ -218,7 +244,14 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
         }
         return { ...item, toc: tocHeadings };
     });
+    
     const cards = fullContent.map((item: any) => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[];
     const nextOffset = rawData.length === limit ? offset + limit : null;
-    return { cards, fullContent, nextOffset };
+    
+    return { 
+        cards, 
+        fullContent, 
+        hubs: enrichedHubs, // NEW: Return the hubs
+        nextOffset 
+    };
 }

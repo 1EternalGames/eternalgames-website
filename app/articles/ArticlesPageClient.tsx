@@ -17,13 +17,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton';
 import { useContentStore } from '@/lib/contentStore';
-import { batchFetchFullContentAction } from '@/app/actions/batchActions';
-
-const fetchArticles = async (params: URLSearchParams) => {
-    const res = await fetch(`/api/articles?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch articles');
-    return res.json();
-};
+import { loadMoreArticles } from '@/app/actions/batchActions';
 
 const ArrowIcon = ({ direction = 'right' }: { direction?: 'left' | 'right' }) => (
     <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -146,18 +140,24 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const handleLoadMore = useCallback(async () => {
         if (!canLoadMore) return;
         setIsLoading(true);
-        const params = new URLSearchParams({ offset: String(nextOffset), limit: '20', sort: sortOrder });
+
         try {
-            const result = await fetchArticles(params);
-            const newItems = result.data.filter((newItem: CardProps) => !allFetchedArticles.some(p => p.id === newItem.id));
+            const result = await loadMoreArticles({
+                offset: nextOffset as number,
+                limit: 20,
+                sort: sortOrder,
+            });
+
+            const newItems = result.cards.filter((newItem: CardProps) => !allFetchedArticles.some(p => p.id === newItem.id));
             
             if (newItems.length > 0) {
-                const ids = newItems.map((i: CardProps) => i.id);
-                const fullContent = await batchFetchFullContentAction(ids);
-                
-                hydrateContent(fullContent);
-                appendToSection('articles', fullContent, result.nextOffset);
+                hydrateContent(result.fullContent);
+                // NEW: Hydrate pre-fetched Game Hubs
+                if (result.hubs) {
+                    hydrateContent(result.hubs);
+                }
 
+                appendToSection('articles', result.fullContent, result.nextOffset);
                 setAllFetchedArticles(prev => [...prev, ...newItems]);
             }
             

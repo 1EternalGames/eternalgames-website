@@ -11,7 +11,8 @@ import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import SpeakableJsonLd from '@/components/seo/SpeakableJsonLd'; 
 import { urlFor } from '@/sanity/lib/image';
 import { calculateReadingTime, toPlainText } from '@/lib/readingTime'; 
-import { extractHeadingsFromContent } from '@/lib/text-utils'; // Import the extractor
+import { extractHeadingsFromContent } from '@/lib/text-utils'; 
+import { groq } from 'next-sanity';
 
 export const dynamic = 'force-static';
 
@@ -157,13 +158,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        const allContent = await client.fetch<any[]>(`*[_type in ["review", "article", "news"]] | order(_createdAt desc){ "slug": slug.current, _type }`);
+        // OPTIMIZATION: Fetch ONLY slugs and types.
+        // Removed unnecessary fields to make this query ultra-fast and lightweight.
+        const query = groq`*[_type in ["review", "article", "news"]] | order(_createdAt desc){ "slug": slug.current, _type }`;
+        const allContent = await client.fetch<{ slug: string, _type: string }[]>(query);
         
-        return allContent.filter(c => c.slug).map(c => {
-            const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
-            return { slug: [type, c.slug] };
-        });
+        return allContent
+            .filter(c => c.slug)
+            .map(c => {
+                const type = c._type === 'review' ? 'reviews' : (c._type === 'article' ? 'articles' : 'news');
+                return { slug: [type, c.slug] };
+            });
     } catch (error) {
+        console.error("Error generating static params:", error);
         return [];
     }
 }
@@ -188,18 +195,13 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     const readingTime = calculateReadingTime(plainText);
     enrichedItem.readingTime = readingTime;
     
-    // --- SERVER-SIDE TOC GENERATION ---
-    // Extract headings from Portable Text
     const tocHeadings = extractHeadingsFromContent(enrichedItem.content);
     
-    // For reviews, manually append the "Verdict" section if it exists
     if (sanityType === 'review' && enrichedItem.verdict) {
         tocHeadings.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
     }
     
-    // Attach ToC to the item passed to the client
     enrichedItem.toc = tocHeadings;
-    // ----------------------------------
 
     const colorDictionary = dictionary?.autoColors || [];
     

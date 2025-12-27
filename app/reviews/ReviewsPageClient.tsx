@@ -115,6 +115,11 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 
                 if (newCards.length > 0) {
                     hydrateContent(result.fullContent);
+                    // NEW: Hydrate pre-fetched Game Hubs
+                    if (result.hubs) {
+                        hydrateContent(result.hubs);
+                    }
+                    
                     appendToSection('reviews', result.fullContent, result.nextOffset);
                     setAllFetchedReviews(prev => [...prev, ...newCards]);
                 }

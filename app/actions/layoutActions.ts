@@ -15,12 +15,52 @@ import {
 } from '@/lib/sanity.queries';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import prisma from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 
-// Fetch ALL core data for the application in one shot.
-// This serves as the "OS Boot" data.
+// --- FRAGMENTED CACHED FETCHERS (To stay under 2MB limit) ---
+
+const getCachedReviews = unstable_cache(
+    async () => client.fetch(homepageReviewsQuery),
+    ['homepage-reviews-fragment'],
+    { revalidate: 3600, tags: ['content', 'review'] }
+);
+
+const getCachedArticles = unstable_cache(
+    async () => client.fetch(homepageArticlesQuery),
+    ['homepage-articles-fragment'],
+    { revalidate: 3600, tags: ['content', 'article'] }
+);
+
+const getCachedNews = unstable_cache(
+    async () => client.fetch(homepageNewsQuery),
+    ['homepage-news-fragment'],
+    { revalidate: 3600, tags: ['content', 'news'] }
+);
+
+const getCachedReleases = unstable_cache(
+    async () => client.fetch(homepageReleasesQuery),
+    ['homepage-releases-fragment'],
+    { revalidate: 3600, tags: ['content', 'gameRelease'] }
+);
+
+const getCachedCredits = unstable_cache(
+    async () => client.fetch(homepageCreditsQuery),
+    ['homepage-credits-fragment'],
+    { revalidate: 3600, tags: ['creators'] }
+);
+
+const getCachedMetadata = unstable_cache(
+    async () => client.fetch(homepageMetadataQuery),
+    ['homepage-metadata-fragment'],
+    { revalidate: 3600, tags: ['studio-metadata'] }
+);
+
+// --- MAIN ORCHESTRATOR ---
+
 export async function getUniversalBaseData() {
     try {
         // 1. MAIN FETCH: Parallel requests to split payload size
+        // Each of these calls hits a separate cache entry, bypassing the 2MB limit for the aggregate.
         const [
             reviews,
             articles,
@@ -29,12 +69,12 @@ export async function getUniversalBaseData() {
             credits,
             metadata
         ] = await Promise.all([
-            client.fetch(homepageReviewsQuery, {}, { next: { revalidate: 3600, tags: ['content', 'review'] } }),
-            client.fetch(homepageArticlesQuery, {}, { next: { revalidate: 3600, tags: ['content', 'article'] } }),
-            client.fetch(homepageNewsQuery, {}, { next: { revalidate: 3600, tags: ['content', 'news'] } }),
-            client.fetch(homepageReleasesQuery, {}, { next: { revalidate: 3600, tags: ['content', 'gameRelease'] } }),
-            client.fetch(homepageCreditsQuery, {}, { next: { revalidate: 3600, tags: ['creators'] } }),
-            client.fetch(homepageMetadataQuery, {}, { next: { revalidate: 3600, tags: ['studio-metadata'] } })
+            getCachedReviews(),
+            getCachedArticles(),
+            getCachedNews(),
+            getCachedReleases(),
+            getCachedCredits(),
+            getCachedMetadata()
         ]);
         
         // 2. EXTRACTION: Collect IDs for Hubs
@@ -51,8 +91,8 @@ export async function getUniversalBaseData() {
                 const creators = [...(item.authors || []), ...(item.reporters || []), ...(item.designers || [])];
                 creators.forEach((c: any) => {
                     const id = c.prismaUserId || c._id;
-                    if(id) creatorIds.add(id); // For Prisma enrichment
-                    if(c._id) creatorIds.add(c._id); // For Sanity Hub fetching
+                    if(id) creatorIds.add(id); 
+                    if(c._id) creatorIds.add(c._id); 
                 });
             });
         };
@@ -60,10 +100,11 @@ export async function getUniversalBaseData() {
         collectIds(reviews || []);
         collectIds(articles || []);
         collectIds(news || []);
-        // FIX: Explicitly collect IDs from releases so their Game Hubs are pre-fetched
         collectIds(releases || []);
         
-        // 3. HUB FETCH: Parallel Batch Request
+        // 3. HUB FETCH: Parallel Batch Request (Cached dynamically based on IDs is tricky, so we fetch live here but query is optimized)
+        // Note: We don't unstable_cache this dynamic ID query easily without generating infinite keys.
+        // However, Sanity client usage with useCdn: true already handles edge caching for these GET requests.
         const [gameHubs, tagHubs, creatorHubs] = await Promise.all([
             gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: 3600, tags: ['content', 'game'] } }) : [],
             tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: 3600, tags: ['content', 'tag'] } }) : [],
@@ -71,9 +112,8 @@ export async function getUniversalBaseData() {
         ]);
 
         // 4. ENRICHMENT: Prisma User Data
-        // We enrich both the main content lists AND the hub content lists
-        // CRITICAL: We put the Hubs (slim content) FIRST and Main Lists (full content) LAST.
-        // When creating the Map for deduplication, the LAST item with the same ID wins.
+        // Enrichment logic remains same, but operates on fresh data arrays.
+        // Important: enrichContentList uses its own unstable_cache for DB lookups, so it is efficient.
         const allContentLists = [
             ...(gameHubs.map((g: any) => g.linkedContent)),
             ...(tagHubs.map((t: any) => t.items)),
@@ -83,11 +123,9 @@ export async function getUniversalBaseData() {
             news,
         ];
         
-        // Optimization: Enrich unique set of items to avoid duplicate DB calls
         const flattenedContent = allContentLists.flat().filter(Boolean);
         const enrichedFlattened = await enrichContentList(flattenedContent);
         
-        // Re-distribute enriched items
         const contentMap = new Map(enrichedFlattened.map((i: any) => [i._id, i]));
         
         const enrichArray = (arr: any[]) => arr.map(i => contentMap.get(i._id) || i);
@@ -96,7 +134,6 @@ export async function getUniversalBaseData() {
         const enrichedArticles = enrichArray(articles || []);
         const enrichedNews = enrichArray(news || []);
         
-        // Enrich Hubs
         const enrichedGameHubs = gameHubs.map((g: any) => ({ ...g, linkedContent: enrichArray(g.linkedContent || []) }));
         const enrichedTagHubs = tagHubs.map((t: any) => ({ ...t, items: enrichArray(t.items || []) }));
         const enrichedCreatorHubs = await Promise.all(creatorHubs.map(async (c: any) => {
@@ -118,7 +155,6 @@ export async function getUniversalBaseData() {
         
         const enrichedCredits = await enrichCreators(credits || []);
 
-        // Sort Reviews by score for the hero logic
         if (enrichedReviews.length > 0) {
             const topRatedIndex = enrichedReviews.reduce((topIndex: number, current: any, index: number) => {
                 return (current.score ?? 0) > (enrichedReviews[topIndex].score ?? 0) ? index : topIndex;
