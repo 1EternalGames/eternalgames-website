@@ -52,11 +52,12 @@ export const getAllStaffAction = unstable_cache(
     async () => {
         try {
             // 1. Fetch all creator documents from Sanity
-            // Limit increased to 24 to show a fuller initial profile
+            // ADDED: bio field
             const query = groq`*[_type in ["reviewer", "author", "reporter", "designer"]] {
                 _id,
                 name,
                 "image": image,
+                bio,
                 prismaUserId,
                 username,
                 "linkedContent": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references(^._id)] | order(publishedAt desc)[0...24] { ${cardListProjection} }
@@ -102,9 +103,7 @@ export const getAllStaffAction = unstable_cache(
                 if (!uniqueMap.has(key)) {
                     uniqueMap.set(key, creator);
                 } else {
-                    // --- THE FIX: MERGE CONTENT ---
-                    // If a creator has multiple docs (e.g. Author doc + Reviewer doc), 
-                    // we merge their linkedContent arrays to show EVERYTHING.
+                    // --- MERGE LOGIC ---
                     const existing = uniqueMap.get(key);
                     
                     const combinedContent = [...(existing.linkedContent || []), ...(creator.linkedContent || [])];
@@ -118,11 +117,14 @@ export const getAllStaffAction = unstable_cache(
                     uniqueContent.sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
                     
                     // Update existing entry
-                    existing.linkedContent = uniqueContent.slice(0, 24); // Keep top 24
+                    existing.linkedContent = uniqueContent.slice(0, 24); 
                     
-                    // Prefer the doc with an image if the existing one doesn't have one
+                    // Prefer the doc with an image/bio if the existing one doesn't have one
                     if (!existing.image && creator.image) {
                         existing.image = creator.image;
+                    }
+                    if (!existing.bio && creator.bio) {
+                        existing.bio = creator.bio;
                     }
                 }
             });
@@ -143,7 +145,7 @@ export const getAllStaffAction = unstable_cache(
             return [];
         }
     },
-    ['all-staff-full-data-v3'], // Cache Key Updated to v3
+    ['all-staff-full-data-v4'], // Cache Key Updated to v4
     { 
         revalidate: 3600, 
         tags: ['creators', 'content', 'enriched-creators'] 
