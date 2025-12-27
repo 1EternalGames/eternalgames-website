@@ -20,6 +20,7 @@ import reviewer from './creators/reviewerType'
 import colorDictionary from './custom_inputs/colorDictionaryType'
 import youtube from './custom_objects/youtubeType'
 import homepageSettings from './homepageSettingsType'
+import aboutPageSettings from './aboutPageSettingsType'
 
 export const schemaTypes = [
   // Documents
@@ -39,6 +40,7 @@ export const schemaTypes = [
   // Singleton Documents
   colorDictionary,
   homepageSettings,
+  aboutPageSettings,
   // Objects & Custom Inputs
   blockContent,
   imageCompare,
@@ -48,5 +50,3 @@ export const schemaTypes = [
   table,
   youtube,
 ]
-
-

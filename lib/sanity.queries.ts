@@ -204,6 +204,17 @@ export const editorDataQuery = groq`{
   "metadata": ${studioMetadataQuery}
 }`
 
+export const aboutPageQuery = groq`*[_id == "aboutPageSettings"][0] {
+  ceo->{_id, name, image, bio, prismaUserId},
+  headOfCommunication->{_id, name, image, bio, prismaUserId},
+  headOfReviews->{_id, name, image, bio, prismaUserId},
+  editorInChief->{_id, name, image, bio, prismaUserId},
+  headOfVisuals->{_id, name, image, bio, prismaUserId},
+  reportersSection[]->{_id, name, image, bio, prismaUserId},
+  authorsSection[]->{_id, name, image, bio, prismaUserId},
+  designersSection[]->{_id, name, image, bio, prismaUserId}
+}`
+
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest', projection: string = cardListProjection) => {
   let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`

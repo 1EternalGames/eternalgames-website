@@ -4,7 +4,7 @@ import {structureTool, StructureBuilder} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './schemaTypes'
 import {apiVersion, dataset, projectId} from './env'
-import {ColorWheelIcon, HomeIcon} from '@sanity/icons'
+import {ColorWheelIcon, HomeIcon, UsersIcon} from '@sanity/icons'
 
 // Custom desk structure for singletons
 export const singletonStructure = (S: StructureBuilder) =>
@@ -22,6 +22,17 @@ export const singletonStructure = (S: StructureBuilder) =>
             .documentId('homepageSettings')
             .title('Homepage Settings')
         ),
+      // About Page Settings Singleton
+      S.listItem()
+        .title('About Page Settings')
+        .id('aboutPageSettings')
+        .icon(UsersIcon)
+        .child(
+          S.document()
+            .schemaType('aboutPageSettings')
+            .documentId('aboutPageSettings')
+            .title('About Page Settings')
+        ),
       // Color Dictionary Singleton
       S.listItem()
         .title('Color Dictionary')
@@ -36,7 +47,7 @@ export const singletonStructure = (S: StructureBuilder) =>
       S.divider(),
       // The rest of our document types
       ...S.documentTypeListItems().filter(
-        (listItem) => !['colorDictionary', 'homepageSettings'].includes(listItem.getId() || '')
+        (listItem) => !['colorDictionary', 'homepageSettings', 'aboutPageSettings'].includes(listItem.getId() || '')
       ),
     ])
 
@@ -55,5 +66,3 @@ export default defineConfig({
     visionTool({defaultApiVersion: apiVersion}),
   ],
 })
-
-
