@@ -1,7 +1,7 @@
 // components/kinetic/KineticOverlayManager.tsx
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useRef, useMemo, Suspense } from 'react';
 import { useContentStore } from '@/lib/contentStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContentPageClient from '@/components/content/ContentPageClient';
@@ -22,7 +22,7 @@ import NewsPageClient from '@/app/news/NewsPageClient';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-export default function KineticOverlayManager({ colorDictionary }: { colorDictionary: any[] }) {
+function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
         isOverlayOpen, 
         activeSlug, 
@@ -295,5 +295,13 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                 </motion.div>
             )}
         </AnimatePresence>
+    );
+}
+
+export default function KineticOverlayManager(props: { colorDictionary: any[] }) {
+    return (
+        <Suspense fallback={null}>
+            <KineticOverlayManagerContent {...props} />
+        </Suspense>
     );
 }
