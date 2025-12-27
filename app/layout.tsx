@@ -22,7 +22,7 @@ import SkipLink from '@/components/ui/SkipLink';
 import CookieConsent from '@/components/CookieConsent';
 import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
-import { getAllStaffAction } from '@/app/actions/homepageActions'; // IMPORT
+import { getAllStaffAction, getAllTagsAction } from '@/app/actions/homepageActions'; // IMPORT
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -104,10 +104,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  // Fetch color dictionary and creators on the server layout
-  const [dictionary, creators] = await Promise.all([
+  // Fetch color dictionary, creators AND tags on the server layout
+  const [dictionary, creators, tags] = await Promise.all([
       getCachedColorDictionary(),
-      getAllStaffAction()
+      getAllStaffAction(),
+      getAllTagsAction()
   ]);
   
   const colors = dictionary?.autoColors || [];
@@ -129,8 +130,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextAuthProvider>
-          {/* Pass fetched creators to hydration */}
-          <UserStoreHydration initialCreators={creators} />
+          {/* Pass fetched creators AND tags to hydration */}
+          <UserStoreHydration initialCreators={creators} initialTags={tags} />
           
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />

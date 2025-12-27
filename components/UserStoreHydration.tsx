@@ -16,10 +16,12 @@ type InitialUserState = {
 
 export default function UserStoreHydration({ 
     initialUserState,
-    initialCreators = [] 
+    initialCreators = [],
+    initialTags = [] 
 }: { 
     initialUserState?: InitialUserState,
-    initialCreators?: any[]
+    initialCreators?: any[],
+    initialTags?: any[]
 }) {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -27,18 +29,30 @@ export default function UserStoreHydration({
     
     const { syncWithDb, reset, _hasHydrated, isSyncedWithDb, setIsSyncedWithDb } = useUserStore();
     const { setNotifications, setUnreadCount } = useNotificationStore();
-    const { hydrateCreators } = useContentStore(); 
+    const { hydrateCreators, hydrateTags } = useContentStore(); 
     
     const lastSyncedUserId = useRef<string | null>(null);
     const hasHandledOnboarding = useRef(false);
-    
-    // FIX: Optimized Creator Hydration to run immediately if data is present
+    const hasHydratedStatic = useRef(false);
+
+    // FIX: Hydrate both Creators AND Tags immediately
     useEffect(() => {
-        if (initialCreators && initialCreators.length > 0) {
-            // console.log(`[UserStoreHydration] Hydrating ${initialCreators.length} creators.`);
-            hydrateCreators(initialCreators);
+        if (!hasHydratedStatic.current) {
+            let didHydrate = false;
+            if (initialCreators && initialCreators.length > 0) {
+                hydrateCreators(initialCreators);
+                didHydrate = true;
+            }
+            if (initialTags && initialTags.length > 0) {
+                hydrateTags(initialTags);
+                didHydrate = true;
+            }
+            
+            if (didHydrate) {
+                hasHydratedStatic.current = true;
+            }
         }
-    }, [initialCreators, hydrateCreators]);
+    }, [initialCreators, initialTags, hydrateCreators, hydrateTags]);
 
     const currentUserId = (session?.user as any)?.id;
 
