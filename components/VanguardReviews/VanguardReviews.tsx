@@ -21,14 +21,8 @@ import KineticLink from '@/components/kinetic/KineticLink';
 import { generateLayoutId } from '@/lib/layoutUtils'; 
 import { useContentStore } from '@/lib/contentStore'; 
 
-const creatorBubbleContainerVariants = {
-    hidden: { opacity: 0, transition: { duration: 0.2, when: "afterChildren" } },
-    visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
-};
-const creatorBubbleItemVariants = {
-    hidden: { opacity: 0, x: 20, transition: { duration: 0.2 } },
-    visible: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } }
-};
+// REMOVED: creatorBubbleContainerVariants and creatorBubbleItemVariants
+// We want instant rendering without stagger to prevent "catching up"
 
 const ArrowIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" role="img" color="currentColor"> <path d="M12.293 5.29273C12.6591 4.92662 13.2381 4.90402 13.6309 5.22437L13.707 5.29273L19.707 11.2927L19.7754 11.3689C20.0957 11.7617 20.0731 12.3407 19.707 12.7068L13.707 18.7068C13.3165 19.0973 12.6835 19.0973 12.293 18.7068C11.9025 18.3163 11.9025 17.6833 12.293 17.2927L16.5859 12.9998H5C4.44772 12.9998 4 12.552 4 11.9998C4 11.4475 4.44772 10.9998 5 10.9998H16.5859L12.293 6.7068L12.2246 6.63063C11.9043 6.23785 11.9269 5.65885 12.293 5.29273Z" fill="currentColor"></path> </svg> );
 
@@ -86,8 +80,9 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
         </motion.div> 
     ); 
     
+    // MODIFIED: Removed variants prop from motion.div wrapper to stop staggered entrance
     return ( 
-        <motion.div variants={creatorBubbleItemVariants} className={styles.safeBridgeWrapper}> 
+        <motion.div className={styles.safeBridgeWrapper}> 
             {hasPublicProfile ? ( 
                 <KineticLink 
                     href={`/creators/${profileSlug}`} 
@@ -95,6 +90,8 @@ const CreatorCapsule = ({ label, creator }: { label: string, creator: SanityAuth
                     type="creators"
                     onClick={handleBubbleClick} 
                     className="no-underline"
+                    // PASS DATA
+                    preloadedData={{ name: creator.name, image: creator.image }}
                 >
                     <InteractiveWrapper>{InnerContent}</InteractiveWrapper>
                 </KineticLink> 
@@ -178,6 +175,8 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
         ? urlFor(imageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
 
+    // MODIFIED: Credits show logic
+    // They are always rendered but opacity controlled to prevent mount flicker
     const showCredits = isCenter || isHovered;
     const displayTags = review.tags.slice(0, 3);
     
@@ -251,21 +250,23 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         {isVisible && <div className={styles.scanLine} />}
                     </div>
 
-                    <AnimatePresence>
-                        {isVisible && showCredits && (
-                            <motion.div
-                                className={styles.creatorCapsuleContainer}
-                                variants={creatorBubbleContainerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="hidden"
-                                style={{ pointerEvents: 'auto', transform: 'translateZ(50px)' }}
-                            >
-                                {review.authors.map(author => <CreatorCapsule key={author._id} label="بقلم" creator={author} />)}
-                                {review.designers?.map(designer => <CreatorCapsule key={designer._id} label="تصميم" creator={designer} />)}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {/* MODIFIED: CREATOR CAPSULE CONTAINER */}
+                    {/* AnimatePresence Removed to stop mount/unmount thrashing */}
+                    {isVisible && (
+                        <motion.div
+                            className={styles.creatorCapsuleContainer}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: showCredits ? 1 : 0 }} // Simple fade
+                            transition={{ duration: 0.3 }}
+                            style={{ 
+                                pointerEvents: showCredits ? 'auto' : 'none', 
+                                transform: 'translateZ(50px)' 
+                            }}
+                        >
+                            {review.authors.map(author => <CreatorCapsule key={author._id} label="بقلم" creator={author} />)}
+                            {review.designers?.map(designer => <CreatorCapsule key={designer._id} label="تصميم" creator={designer} />)}
+                        </motion.div>
+                    )}
 
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
                     
