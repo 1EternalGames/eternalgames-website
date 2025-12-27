@@ -4,11 +4,14 @@ import { notFound } from 'next/navigation';
 import { groq } from 'next-sanity';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
 import type { SanityGameRelease } from '@/types/sanity';
-import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
 
 export async function generateStaticParams() {
-    // OPTIMIZATION: ISR
-    return [];
+    const developers = await client.fetch<string[]>(`
+        *[_type == "developer"].slug.current
+    `);
+    
+    return developers.map(slug => ({ slug }));
 }
 
 export const dynamicParams = true;
