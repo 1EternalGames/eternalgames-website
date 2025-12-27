@@ -26,12 +26,9 @@ export default function UserStoreHydration({
     const hasHydratedStatic = useRef(false);
 
     // UNIVERSAL HYDRATION (SYNCHRONOUS EXECUTION)
-    // We run this logic in the render body (guarded by a ref) to ensure
-    // the store is populated BEFORE the first paint/effect cycle completes.
-    // This eliminates the race condition where KineticLink renders before data exists.
+    // Only if explicitly passed (which is now mostly handled by HomepageHydrator or the Loader)
     if (!hasHydratedStatic.current && universalData) {
         hasHydratedStatic.current = true;
-        // The magic function that populates Everything Everywhere All At Once
         hydrateUniversal(universalData);
     }
 

@@ -4,15 +4,12 @@ import HomeJsonLd from '@/components/seo/HomeJsonLd';
 import CarouselJsonLd from '@/components/seo/CarouselJsonLd'; 
 import { getUniversalBaseData } from '@/app/actions/layoutActions';
 import { urlFor } from '@/sanity/lib/image';
+import HomepageHydrator from '@/components/HomepageHydrator';
 
 export const dynamic = 'force-static';
 
 export default async function HomePage() {
-    // We fetch here purely for Metadata/JSON-LD purposes if needed, 
-    // but visual content is now in Layout -> UniversalBase.
-    
-    // To generate Carousel JSON-LD, we need the reviews.
-    // Since getUniversalBaseData is cached, calling it again is cheap.
+    // Only the homepage fetches the heavy data at build time.
     const data = await getUniversalBaseData();
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
     
@@ -27,10 +24,9 @@ export default async function HomePage() {
         <>
             <HomeJsonLd />
             {carouselItems.length > 0 && <CarouselJsonLd data={carouselItems} />}
-            {/* 
-              This component is now visually empty because UniversalBase in layout handles the UI.
-              This acts as the "Home" route handler.
-            */}
+            
+            {/* Hydrate the store so UniversalBaseLoader (in layout) can render */}
+            <HomepageHydrator data={data} />
         </>
     );
 }

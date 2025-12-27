@@ -22,9 +22,8 @@ import SkipLink from '@/components/ui/SkipLink';
 import CookieConsent from '@/components/CookieConsent';
 import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
-// IMPORT NEW ACTIONS
-import { getUniversalBaseData } from '@/app/actions/layoutActions';
-import UniversalBase from '@/components/UniversalBase';
+// IMPORT NEW LOADER
+import UniversalBaseLoader from '@/components/UniversalBaseLoader';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -106,12 +105,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
-  // Fetch ALL core data here once.
-  const [dictionary, universalData] = await Promise.all([
-      getCachedColorDictionary(),
-      getUniversalBaseData()
-  ]);
-  
+  // OPTIMIZATION: Only fetch small dictionary. Heavy data is removed from here.
+  const dictionary = await getCachedColorDictionary();
   const colors = dictionary?.autoColors || [];
 
   return (
@@ -131,10 +126,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextAuthProvider>
-          {/* Hydrate Store with EVERYTHING immediately */}
-          <UserStoreHydration 
-             universalData={universalData}
-          />
+          {/* User Store no longer receives universalData here */}
+          <UserStoreHydration />
           
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />
@@ -156,10 +149,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                   <PageTransitionWrapper>
-                    {/* The Universal Base is always rendered at the bottom */}
-                    <UniversalBase data={universalData} />
+                    {/* The Universal Loader decides when to fetch/render the heavy base */}
+                    <UniversalBaseLoader />
                     
-                    {/* Page specific content renders on top, or can be empty for homepage */}
                     {children}
                   </PageTransitionWrapper>
                 </main>
