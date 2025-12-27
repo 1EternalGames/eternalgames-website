@@ -18,7 +18,6 @@ import prisma from '@/lib/prisma';
 
 // Fetch ALL core data for the application in one shot.
 // This serves as the "OS Boot" data.
-// NO 'unstable_cache' wrapper here - we use individual fetch caching to stay under 2MB/entry.
 export async function getUniversalBaseData() {
     try {
         // 1. MAIN FETCH: Parallel requests to split payload size
@@ -61,9 +60,10 @@ export async function getUniversalBaseData() {
         collectIds(reviews || []);
         collectIds(articles || []);
         collectIds(news || []);
+        // FIX: Explicitly collect IDs from releases so their Game Hubs are pre-fetched
+        collectIds(releases || []);
         
         // 3. HUB FETCH: Parallel Batch Request
-        // We cache these fetches as well based on their input IDs
         const [gameHubs, tagHubs, creatorHubs] = await Promise.all([
             gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: 3600, tags: ['content', 'game'] } }) : [],
             tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: 3600, tags: ['content', 'tag'] } }) : [],
@@ -88,8 +88,6 @@ export async function getUniversalBaseData() {
         const enrichedFlattened = await enrichContentList(flattenedContent);
         
         // Re-distribute enriched items
-        // The Map constructor uses the last occurrence of a key.
-        // Since reviews/articles/news are at the end of flattenedContent, their Full Docs will win.
         const contentMap = new Map(enrichedFlattened.map((i: any) => [i._id, i]));
         
         const enrichArray = (arr: any[]) => arr.map(i => contentMap.get(i._id) || i);

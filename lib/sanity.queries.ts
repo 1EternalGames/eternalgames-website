@@ -88,6 +88,7 @@ export const fullDocProjection = groq`
   }
 `;
 
+// FIXED: Added _id to game expansion so the Hub Fetcher can see it
 const gameReleaseProjection = groq`
     _id, legacyId, title, releaseDate, isTBA, platforms, synopsis, price, 
     "isPinned": coalesce(isPinned, false),
@@ -98,7 +99,7 @@ const gameReleaseProjection = groq`
     "developer": developer->{title, "slug": slug.current}, 
     "publisher": publisher->{title, "slug": slug.current}, 
     "mainImage": mainImage{${mainImageFields}}, 
-    "game": game->{ "slug": slug.current }, 
+    "game": game->{ _id, "slug": slug.current }, 
     "slug": game->slug.current, 
     "tags": tags[]->{${tagFields}}
 `
@@ -252,8 +253,6 @@ export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${pu
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
 export const allReleasesQuery = groq`*[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { ${gameReleaseProjection} }`
 
-// NEW: Consolidated queries have been removed. We now fetch separate parts in parallel.
-
 // NEW: Fragmented queries for parallel fetching to bypass 2MB cache limit
 export const homepageReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...20] { ${fullDocProjection} }`
 export const homepageArticlesQuery = groq`*[_type == "article" && ${publishedFilter}] | order(publishedAt desc)[0...20] { ${fullDocProjection} }`
@@ -261,7 +260,6 @@ export const homepageNewsQuery = groq`*[_type == "news" && ${publishedFilter}] |
 export const homepageReleasesQuery = groq`*[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { ${gameReleaseProjection} }`
 export const homepageCreditsQuery = groq`*[_id == "homepageSettings"][0].releasesCredits[]->{_id, name, image, prismaUserId}`
 
-// Metadata query kept monolithic as it's usually smaller than content blobs, but can be split if needed.
 export const homepageMetadataQuery = groq`{
     "games": *[_type == "game"] | order(title asc) {_id, title, "slug": slug.current},
     "gameTags": *[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category},
