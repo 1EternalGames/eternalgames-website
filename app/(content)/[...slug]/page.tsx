@@ -1,4 +1,5 @@
 // app/(content)/[...slug]/page.tsx
+// ... imports unchanged ...
 import { notFound } from 'next/navigation';
 import ContentPageClient from '@/components/content/ContentPageClient';
 import CommentSection from '@/components/comments/CommentSection';
@@ -14,7 +15,6 @@ import { calculateReadingTime, toPlainText } from '@/lib/readingTime';
 import { extractHeadingsFromContent } from '@/lib/text-utils'; 
 import { groq } from 'next-sanity';
 
-// Allow ISR for pages not generated at build time (e.g. older archives)
 export const dynamicParams = true;
 
 const typeMap: Record<string, string> = {
@@ -30,6 +30,7 @@ const sectionLabelMap: Record<string, string> = {
 };
 
 function generateStructuredData(item: any, type: string, url: string) {
+    // ... function content unchanged ...
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
     const imageUrl = item.mainImage ? urlFor(item.mainImage).width(1200).height(630).url() : `${siteUrl}/og.png`;
     const datePublished = item.publishedAt || new Date().toISOString();
@@ -159,10 +160,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export async function generateStaticParams() {
     try {
-        // OPTIMIZATION: Only generate the 100 most recent items at build time.
-        // Older items will be generated on-demand (ISR) when accessed.
-        // This dramatically reduces build time and prevents timeouts/memory issues.
-        const query = groq`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...100] { "slug": slug.current, _type }`;
+        // OPTIMIZATION: Reduced from 100 to 20 to prevent build timeouts/ENOSPC.
+        const query = groq`*[_type in ["review", "article", "news"]] | order(_createdAt desc)[0...20] { "slug": slug.current, _type }`;
         const recentContent = await client.fetch<{ slug: string, _type: string }[]>(query);
         
         return recentContent

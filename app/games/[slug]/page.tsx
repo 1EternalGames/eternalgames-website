@@ -9,7 +9,7 @@ import { unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import VideoGameJsonLd from '@/components/seo/VideoGameJsonLd';
-import GameHubClient from '@/components/GameHubClient'; // <--- IMPORTED
+import GameHubClient from '@/components/GameHubClient';
 
 export const dynamicParams = true;
 
@@ -85,14 +85,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export async function generateStaticParams() {
-    try {
-        const slugs = await client.fetch<string[]>(`*[_type == "game" && defined(slug.current)][].slug.current`);
-        return slugs.map((slug) => ({
-            slug,
-        }));
-    } catch (error) {
-        return [];
-    }
+    // OPTIMIZATION: Return empty array to enable ISR (generate on demand)
+    // This prevents building thousands of game pages at build time.
+    return [];
 }
 
 export default async function GameHubPage({ params }: { params: Promise<{ slug: string }> }) {
