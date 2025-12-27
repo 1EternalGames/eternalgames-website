@@ -65,7 +65,8 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       // 1. Hydrate Content Map with EVERYTHING available
       // We explicitly include content from hubs here as well to ensure
       // deep links (KineticLink) work for items only present in hubs.
-      const hubContent = [];
+      const hubContent: any[] = []; // Explicitly typed as any[] to satisfy TS
+      
       if (data.hubs) {
           if (data.hubs.games) data.hubs.games.forEach((g: any) => g.linkedContent && hubContent.push(...g.linkedContent));
           if (data.hubs.tags) data.hubs.tags.forEach((t: any) => t.items && hubContent.push(...t.items));
