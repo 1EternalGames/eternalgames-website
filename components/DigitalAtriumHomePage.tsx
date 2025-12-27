@@ -18,7 +18,11 @@ const DigitalAtriumHomePage = memo(function DigitalAtriumHomePage({
     feedsContent: React.ReactNode;
     releasesSection: React.ReactNode;
 }) {
-  const adaptedReviews = (reviews || []).map(item => adaptToCardProps(item, { width: 800 })).filter(Boolean) as CardProps[];
+  // LIMIT: Slice to top 10 items for the Vanguard carousel
+  const adaptedReviews = (reviews || [])
+      .slice(0, 10)
+      .map(item => adaptToCardProps(item, { width: 800 }))
+      .filter(Boolean) as CardProps[];
   
   return (
     <div className={styles.atriumPageContainer}>

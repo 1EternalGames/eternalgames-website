@@ -45,13 +45,6 @@ type ContentType = 'reviews' | 'articles' | 'news';
 export type Heading = { id: string; title: string; top: number; level: number }; 
 type ColorMapping = { word: string; color: string; }
 
-// Removed delay from variants
-const bodyFadeVariants = { 
-    hidden: { opacity: 0, y: 20 }, 
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
-    exit: { opacity: 0, transition: { duration: 0.1 } } 
-};
-
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 'إشاعة', 'leak': 'تسريب' };
 const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
@@ -85,28 +78,55 @@ export default function ContentPageClient({
     const [isMobile, setIsMobile] = useState(false);
     
     const [isHeroVisible, setIsHeroVisible] = useState(true);
-    
-    // --- OPTIMIZATION: Robust Deferred Rendering ---
-    // Start as false to force a lightweight initial render
     const [isBodyReady, setIsBodyReady] = useState(false);
+    const [isTransitionComplete, setIsTransitionComplete] = useState(false);
 
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
     const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
-
-    // Consider it loaded if the flag is true OR if content array exists.
     const isLoaded = (item as any).contentLoaded === true || (item.content && Array.isArray(item.content) && item.content.length > 0);
 
+    const layoutIdPrefix = (isHeroVisible ? (forcedLayoutIdPrefix || storePrefix) : 'default');
+    const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
+
+    // ANIMATION PHYSICS: Lightweight and Snappy
+    // Mass: 0.5 (Light), Stiffness: 150 (Responsive), Damping: 22 (No wobble)
+    const springTransition = { 
+        type: 'spring' as const, 
+        stiffness: 150, 
+        damping: 22, 
+        mass: 0.5,
+        // CRITICAL: Force opacity to update instantly to prevent darkening/crossfade dip
+        opacity: { duration: 0 } 
+    };
+    
+    const bodyFadeVariants = { 
+        hidden: { opacity: 0, y: 20 }, 
+        visible: { 
+            opacity: 1, 
+            y: 0, 
+            transition: { 
+                duration: 0.4, 
+                ease: "easeOut" as const,
+                // Small delay to let the hero image land before text appears
+                delay: isSharedTransitionActive ? 0.25 : 0 
+            } 
+        },
+        exit: { opacity: 0, transition: { duration: 0.1 } } 
+    };
+
     useEffect(() => {
-        // Double-RAF to ensure browser paints the Hero transition frame first
-        // before we try to parse and render the heavy body content.
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 setIsBodyReady(true);
             });
         });
-    }, []);
+        
+        if (!isSharedTransitionActive) {
+            setIsTransitionComplete(true);
+        }
+    }, [isSharedTransitionActive]);
 
     useEffect(() => {
         const container = scrollContainerRef?.current || window;
@@ -188,7 +208,6 @@ export default function ContentPageClient({
         }
     }, [scrollContainerRef]);
 
-    // Optimize Layout Stability check
     useEffect(() => { 
         if (!isLoaded || !isBodyReady) return; 
         const timeout = setTimeout(() => {
@@ -229,15 +248,13 @@ export default function ContentPageClient({
     const contentTypeForActionBar = type.slice(0, -1) as 'review' | 'article' | 'news';
     
     const highResUrl = item.mainImage ? urlFor(item.mainImage).width(2000).height(1125).fit('crop').auto('format').url() : '/placeholder.jpg';
+    // Use initialImageSrc if available to match the card exactly, preventing flicker
     const displayImageUrl = initialImageSrc || highResUrl;
     const fullResImageUrl = item.mainImage ? urlFor(item.mainImage).auto('format').url() : displayImageUrl;
     const blurDataURL = (item.mainImage as any)?.blurDataURL;
     
-    const springTransition = { type: 'spring' as const, stiffness: 60, damping: 20, mass: 1 };
     const newsType = (item as any).newsType || 'official';
 
-    const layoutIdPrefix = (isHeroVisible ? (forcedLayoutIdPrefix || storePrefix) : 'default');
-    const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
     const imageLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'image', item.legacyId) : undefined;
     const titleLayoutId = isSharedTransitionActive ? generateLayoutId(layoutIdPrefix, 'title', item.legacyId) : undefined;
 
@@ -253,6 +270,7 @@ export default function ContentPageClient({
             />
 
             <motion.div 
+                // CRITICAL: Always stay opaque to prevent "darkening" effect
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, transition: { duration: 0 } }}
@@ -263,11 +281,20 @@ export default function ContentPageClient({
                     className={`${styles.heroImage} image-lightbox-trigger`} 
                     transition={springTransition} 
                     onClick={(e) => {
+                        // CRITICAL: Disable lightbox interaction while flying
+                        if (!isTransitionComplete && isSharedTransitionActive) return;
                         e.stopPropagation(); 
                         openLightbox([fullResImageUrl], 0);
                     }}
-                    initial={isSharedTransitionActive ? undefined : { opacity: 0 }}
-                    animate={isSharedTransitionActive ? undefined : { opacity: 1 }}
+                    onLayoutAnimationComplete={() => {
+                        setIsTransitionComplete(true);
+                    }}
+                    // Force opacity: 1 instantly to avoid any crossfade dip
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
+                    style={{ 
+                        pointerEvents: (isSharedTransitionActive && !isTransitionComplete) ? 'none' : 'auto' 
+                    }}
                 >
                     <Image 
                         loader={sanityLoader} 
@@ -277,7 +304,8 @@ export default function ContentPageClient({
                         sizes="100vw" 
                         style={{ objectFit: 'cover' }} 
                         priority 
-                        placeholder={blurDataURL ? 'blur' : 'empty'} 
+                        // CRITICAL: Use 'empty' during transition to prevent low-res hash flash
+                        placeholder={isSharedTransitionActive ? 'empty' : (blurDataURL ? 'blur' : 'empty')} 
                         blurDataURL={blurDataURL} 
                         unoptimized={!!initialImageSrc}
                     />
@@ -304,14 +332,15 @@ export default function ContentPageClient({
                                     className="page-title" 
                                     style={{ textAlign: 'right', margin: 0 }} 
                                     transition={springTransition}
-                                    initial={isSharedTransitionActive ? undefined : { opacity: 0, y: 20 }}
-                                    animate={isSharedTransitionActive ? undefined : { opacity: 1, y: 0 }}
+                                    // Ensure immediate visibility
+                                    initial={{ opacity: 1, y: isSharedTransitionActive ? 0 : 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
                                 > 
                                     {item.title} 
                                 </motion.h1>
                             </div>
                             
-                            {/* RENDER CONTENT ONLY IF LOADED AND AFTER FRAME DELAY */}
+                            {/* Defer heavy body content */}
                             {isLoaded && isBodyReady ? (
                                 <motion.div
                                     variants={bodyFadeVariants}
@@ -360,7 +389,6 @@ export default function ContentPageClient({
                                     </div>
                                 </motion.div>
                             ) : (
-                                /* Show a small spinner while body prepares, keeps layout generally stable */
                                 <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <div className="spinner" />
                                 </div>
@@ -368,7 +396,6 @@ export default function ContentPageClient({
                         </main>
 
                         <aside className={styles.sidebar}>
-                            {/* Defer Sidebar Too */}
                             {isLoaded && isBodyReady && (
                                 <motion.div
                                     variants={bodyFadeVariants}
@@ -393,7 +420,6 @@ export default function ContentPageClient({
                 </div>
             </motion.div>
             
-            {/* Defer Comments */}
             {isLoaded && isBodyReady && (
                 <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
                     <ContentBlock title="حديث المجتمع">{children}</ContentBlock>

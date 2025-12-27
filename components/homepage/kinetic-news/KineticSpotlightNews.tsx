@@ -7,7 +7,12 @@ import { CardProps } from '@/types';
 import styles from './KineticSpotlightNews.module.css';
 import NewsGridCard from '@/components/news/NewsGridCard';
 
-export default function KineticSpotlightNews({ items }: { items: CardProps[] }) {
+interface KineticSpotlightNewsProps {
+    items: CardProps[];
+    layoutIdPrefix?: string; // Add prop
+}
+
+export default function KineticSpotlightNews({ items, layoutIdPrefix = "homepage-spotlight" }: KineticSpotlightNewsProps) {
     if (!items || items.length === 0) return null;
 
     return (
@@ -22,8 +27,9 @@ export default function KineticSpotlightNews({ items }: { items: CardProps[] }) 
                     <NewsGridCard 
                         item={item} 
                         isPriority={index === 0} 
-                        layoutIdPrefix="homepage-spotlight"
-                        variant="compact" // Changed from default to compact
+                        // Use dynamic prefix + ID for uniqueness
+                        layoutIdPrefix={`${layoutIdPrefix}-${item.legacyId}`}
+                        variant="compact"
                     />
                 </motion.div>
             ))}
