@@ -1,7 +1,7 @@
 // components/UniversalBase.tsx
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import DigitalAtriumHomePage from '@/components/DigitalAtriumHomePage';
 import AnimatedReleases from '@/components/AnimatedReleases';
 import HomepageFeeds from '@/components/homepage/HomepageFeeds';
@@ -21,17 +21,10 @@ interface UniversalBaseProps {
     };
 }
 
-export default function UniversalBase({ data }: UniversalBaseProps) {
-    const pathname = usePathname();
-    const isOverlayOpen = useContentStore(s => s.isOverlayOpen);
-    
-    // LOGIC UPDATE:
-    // 1. If we are on the root path ('/'), show the base.
-    // 2. If an overlay is OPEN (isOverlayOpen === true), show the base (it acts as the glass background).
-    // 3. Otherwise (e.g. on '/reviews' without overlay), hide it via CSS.
-    const shouldRender = pathname === '/' || isOverlayOpen;
-    
-    // Processing Data for DigitalAtrium
+// Optimization: Memoize the heavy internal structure.
+// This ensures that when the parent UniversalBase re-renders (e.g. to toggle display:none),
+// React doesn't try to diff the entire 3D scene and grid again.
+const HeavyHomeContent = memo(function HeavyHomeContent({ data }: UniversalBaseProps) {
     const { reviews, articles, news, releases, credits } = data;
 
     const feedsContent = useMemo(() => {
@@ -58,10 +51,26 @@ export default function UniversalBase({ data }: UniversalBaseProps) {
         return <AnimatedReleases releases={sanitizedReleases} credits={credits} />;
     }, [releases, credits]);
 
-    // OPTIMIZATION:
-    // Instead of returning null, we return the div with display: none.
-    // This keeps the heavy 3D scene and layout mounted in the React tree,
-    // preventing re-mount lag and navigation glitches when returning to Home.
+    return (
+        <DigitalAtriumHomePage 
+            reviews={reviews}
+            feedsContent={feedsContent}
+            releasesSection={releasesSection}
+        />
+    );
+});
+
+export default function UniversalBase({ data }: UniversalBaseProps) {
+    const pathname = usePathname();
+    const isOverlayOpen = useContentStore(s => s.isOverlayOpen);
+    
+    // If on homepage OR overlay is open, we keep this mounted.
+    // If on sub-pages (e.g. /reviews) without overlay, we hide it via CSS.
+    // Note: We avoid unmounting entirely to keep the 3D context alive if possible,
+    // but Next.js router might unmount it on page change anyway.
+    // This logic mainly helps when navigating BACK to home or opening overlay from home.
+    const shouldRender = pathname === '/' || isOverlayOpen;
+    
     return (
         <div 
             id="universal-base-layer"
@@ -69,11 +78,7 @@ export default function UniversalBase({ data }: UniversalBaseProps) {
                 display: shouldRender ? 'block' : 'none'
             }}
         >
-            <DigitalAtriumHomePage 
-                reviews={reviews}
-                feedsContent={feedsContent}
-                releasesSection={releasesSection}
-            />
+            <HeavyHomeContent data={data} />
         </div>
     );
 }

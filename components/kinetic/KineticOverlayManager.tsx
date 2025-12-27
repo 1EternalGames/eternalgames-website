@@ -53,15 +53,9 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // CRITICAL FIX: HISTORY SANITIZATION
-    // If the app mounts (e.g. on reload) and we find 'overlay' in the history state,
-    // we must clear it. This converts the "fake" overlay route into a "real" route state,
-    // ensuring that the Back button triggers a standard router navigation instead of 
-    // being intercepted by our popstate handler.
+    // HISTORY SANITIZATION
     useEffect(() => {
         if (typeof window !== 'undefined' && window.history.state?.overlay) {
-            // Replace the current state with a clean one (remove overlay: true)
-            // This tells the browser: "This is a real page now, not an overlay."
             const cleanState = { ...window.history.state };
             delete cleanState.overlay;
             delete cleanState.slug;
@@ -71,20 +65,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
     }, []);
 
     useEffect(() => {
-        if (isOverlayOpen) {
-            const state = typeof window !== 'undefined' ? window.history.state : null;
-            // If we are open but the state lost the flag (edge case), force close.
-            // Note: We added the sanitization above, so this might trigger if we reload while open?
-            // Actually, if we reload, isOverlayOpen defaults to false, so this block won't run on reload.
-            // It only runs if we are open and something manipulates history externally.
-            if (!state?.overlay) {
-                 // Optimization: Don't force close immediately if we just sanitized it on mount.
-                 // Ideally, isOverlayOpen is false on mount, so this is safe.
-            }
-        }
-    }, [pathname, searchParams, isOverlayOpen]);
-
-    useEffect(() => {
         if (isOverlayOpen && sourceLayoutId) {
             setPrefix(sourceLayoutId);
         }
@@ -92,12 +72,9 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
-            // Only intercept if the destination state specifically requested an overlay
             if (event.state && event.state.overlay === true) {
                 navigateInternal(event.state.slug || event.state.section, event.state.type);
             } else if (isOverlayOpen) {
-                // If we are open, but popping to a state WITHOUT overlay (e.g. Home),
-                // we must close the overlay to reveal the underlying page.
                 closeOverlay();
             }
         };
@@ -107,17 +84,15 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
 
     useEffect(() => {
         if (isOverlayOpen && activeSlug && activeType) {
+            // Analytics & Fetching Logic
             if (activeType === 'index' && indexSection) {
                  pageview(`/${indexSection}`);
             } else if (activeType === 'creators') {
                 const creator = creatorMap.get(activeSlug);
                 if (!creator || !creator.contentLoaded) {
                     const id = creator && (creator.prismaUserId || creator._id);
-                    if (id) {
-                         fetchCreatorContent(activeSlug, id);
-                    } else {
-                         fetchCreatorByUsername(activeSlug);
-                    }
+                    if (id) fetchCreatorContent(activeSlug, id);
+                    else fetchCreatorByUsername(activeSlug);
                 }
                 pageview(`/creators/${activeSlug}`);
             } else if (activeType === 'tags') {
@@ -135,39 +110,44 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
         }
     }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap, fetchCreatorByUsername]);
 
-    // RESET SCROLL ON NAVIGATION INSIDE OVERLAY
+    // RESET SCROLL
     useLayoutEffect(() => {
         if (isOverlayOpen && overlayRef.current) {
             overlayRef.current.scrollTop = 0;
         }
     }, [activeSlug, activeType, indexSection, isOverlayOpen]);
 
-    // HANDLE BODY LOCK AND SCROLL RESTORATION
-    useLayoutEffect(() => {
+    // CRITICAL FIX: Moved Body Lock to useEffect + RAF to prevent synchronous layout thrashing
+    useEffect(() => {
         const html = document.documentElement;
         const body = document.body;
         const mainFooter = document.querySelector('body > footer') as HTMLElement; 
 
         if (isOverlayOpen) {
-            // --- LOCK ---
-            const scrollbarWidth = window.innerWidth - html.clientWidth;
-            if (lenis) lenis.stop();
-            body.style.paddingRight = `${scrollbarWidth}px`; 
-            html.style.overflow = 'hidden';
-            body.style.overflow = 'hidden';
-            if (mainFooter) mainFooter.style.display = 'none';
-            if (overlayRef.current) {
-                setOverlayScrollRef(overlayRef.current);
-                overlayRef.current.scrollTop = 0;
-            }
+            // Defer the heavy DOM writes to the next animation frame
+            const rafId = requestAnimationFrame(() => {
+                const scrollbarWidth = window.innerWidth - html.clientWidth;
+                if (lenis) lenis.stop();
+                
+                body.style.paddingRight = `${scrollbarWidth}px`; 
+                html.style.overflow = 'hidden';
+                body.style.overflow = 'hidden';
+                
+                if (mainFooter) mainFooter.style.display = 'none';
+                
+                if (overlayRef.current) {
+                    setOverlayScrollRef(overlayRef.current);
+                    overlayRef.current.scrollTop = 0;
+                }
+            });
+            return () => cancelAnimationFrame(rafId);
         } else {
-            // --- UNLOCK & RESTORE ---
+            // Unlock immediately but restoring scroll position needs care
             body.style.paddingRight = '';
             html.style.overflow = '';
             body.style.overflow = '';
             if (mainFooter) mainFooter.style.display = '';
 
-            // Restore Scroll
             requestAnimationFrame(() => {
                 if (lenis) {
                     lenis.start();
@@ -180,7 +160,6 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                     }
                 }
             });
-            
             setOverlayScrollRef(null);
         }
     }, [isOverlayOpen, savedScrollPosition, lenis, setOverlayScrollRef]);
@@ -255,7 +234,7 @@ export default function KineticOverlayManager({ colorDictionary }: { colorDictio
                         </ContentPageClient>
                     ),
                     paddingTop: '0'
-                 };
+                };
              }
         }
         

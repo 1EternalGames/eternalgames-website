@@ -17,7 +17,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton';
 import { useContentStore } from '@/lib/contentStore';
-import { batchFetchFullContentAction } from '@/app/actions/batchActions'; // IMPORT
+import { batchFetchFullContentAction } from '@/app/actions/batchActions';
 
 const fetchArticles = async (params: URLSearchParams) => {
     const res = await fetch(`/api/articles?${params.toString()}`);
@@ -83,9 +83,18 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const [activeIndex, setActiveIndex] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     
-    const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore(); // USE STORE
+    const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore();
 
-    // --- STATE INITIALIZATION WITH PERSISTENCE ---
+    // --- OPTIMIZATION: Deferred Rendering State ---
+    const [isGridReady, setIsGridReady] = useState(false);
+    useEffect(() => {
+        const t = requestAnimationFrame(() => {
+            startTransition(() => setIsGridReady(true));
+        });
+        return () => cancelAnimationFrame(t);
+    }, []);
+    // ----------------------------------------
+
     const storedData = pageMap.get('articles');
     const hasStoredData = storedData && storedData.grid && storedData.grid.length >= initialGridArticles.length;
     
@@ -96,7 +105,6 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // Store Initialization if empty
     useEffect(() => {
         if (!hasStoredData) {
             hydrateIndex('articles', {
@@ -110,14 +118,6 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         }
     }, [hasStoredData, hydrateIndex, featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags]);
 
-    const [isGridReady, setIsGridReady] = useState(false);
-    useEffect(() => {
-        const t = requestAnimationFrame(() => {
-            startTransition(() => setIsGridReady(true));
-        });
-        return () => cancelAnimationFrame(t);
-    }, []);
-    
     const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
     
     useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener('resize', checkMobile); return () => window.removeEventListener('resize', checkMobile); }, []);
@@ -152,15 +152,12 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
             const newItems = result.data.filter((newItem: CardProps) => !allFetchedArticles.some(p => p.id === newItem.id));
             
             if (newItems.length > 0) {
-                // BLOCKING: Fetch full content before updating UI
                 const ids = newItems.map((i: CardProps) => i.id);
                 const fullContent = await batchFetchFullContentAction(ids);
                 
-                // Hydrate & Persist
                 hydrateContent(fullContent);
                 appendToSection('articles', fullContent, result.nextOffset);
 
-                // Update UI
                 setAllFetchedArticles(prev => [...prev, ...newItems]);
             }
             
@@ -200,6 +197,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                     <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>أحدث المقالات</h1>
                     <div className={styles.showcaseSection}>{isMobile ? (<MobileShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />) : (<HorizontalShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />)}</div>
                     
+                    {/* Render grid only if ready */}
                     {isGridReady ? (
                         <div className={styles.gridSection}>
                             <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
@@ -226,15 +224,8 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                                         
                                         {isLoading && (
                                             <>
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                                    <ArticleCardSkeleton variant="no-score" />
-                                                </motion.div>
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                                    <ArticleCardSkeleton variant="no-score" />
-                                                </motion.div>
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                                    <ArticleCardSkeleton variant="no-score" />
-                                                </motion.div>
+                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ArticleCardSkeleton variant="no-score" /></motion.div>
+                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ArticleCardSkeleton variant="no-score" /></motion.div>
                                             </>
                                         )}
                                     </AnimatePresence>

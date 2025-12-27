@@ -15,8 +15,8 @@ import { NewsIcon } from '@/components/icons';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import NewsItemSkeleton from '@/components/ui/NewsItemSkeleton';
 import { useContentStore } from '@/lib/contentStore';
-import { batchFetchFullContentAction } from '@/app/actions/batchActions'; // IMPORT
-import { loadMoreNews } from '@/app/actions/batchActions'; // NEW ACTION
+import { batchFetchFullContentAction } from '@/app/actions/batchActions';
+import { loadMoreNews } from '@/app/actions/batchActions';
 
 const fetchNews = async (params: URLSearchParams) => {
     const res = await fetch(`/api/news?${params.toString()}`);
@@ -27,7 +27,16 @@ const fetchNews = async (params: URLSearchParams) => {
 export default function NewsPageClient({ heroArticles, initialGridArticles, allGames, allTags }: { heroArticles: SanityNews[]; initialGridArticles: SanityNews[]; allGames: SanityGame[]; allTags: SanityTag[]; }) {
     const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore();
 
-    // --- STATE INITIALIZATION WITH PERSISTENCE ---
+    // --- OPTIMIZATION: Deferred Rendering State ---
+    const [isGridReady, setIsGridReady] = useState(false);
+    useEffect(() => {
+        const t = requestAnimationFrame(() => {
+            startTransition(() => setIsGridReady(true));
+        });
+        return () => cancelAnimationFrame(t);
+    }, []);
+    // ----------------------------------------
+
     const storedData = pageMap.get('news');
     const hasStoredData = storedData && storedData.grid && storedData.grid.length >= initialGridArticles.length;
     
@@ -40,7 +49,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // Store Initialization
     useEffect(() => {
         if (!hasStoredData) {
             hydrateIndex('news', {
@@ -52,14 +60,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             });
         }
     }, [hasStoredData, hydrateIndex, heroArticles, initialGridArticles, allGames, allTags]);
-
-    const [isGridReady, setIsGridReady] = useState(false);
-    useEffect(() => {
-        const t = requestAnimationFrame(() => {
-            startTransition(() => setIsGridReady(true));
-        });
-        return () => cancelAnimationFrame(t);
-    }, []);
     
     const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
 
@@ -90,7 +90,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         setIsLoading(true);
         
         try {
-            // UNIFIED LOAD ACTION
             const result = await loadMoreNews({
                 offset: nextOffset as number,
                 limit: 50,
@@ -100,11 +99,8 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             const newItems = result.cards.filter((newItem: CardProps) => !allFetchedNews.some(p => p.id === newItem.id));
             
             if (newItems.length > 0) {
-                 // Hydrate Store
                  hydrateContent(result.fullContent);
                  appendToSection('news', result.fullContent, result.nextOffset);
-
-                 // Update UI
                  setAllFetchedNews(prev => [...prev, ...newItems]);
             }
             
@@ -131,6 +127,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
             
+            {/* Render grid only if ready */}
             {isGridReady ? (
                 <div className="container">
                     <NewsFilters activeSort={activeSort} onSortChange={setActiveSort} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} />

@@ -19,7 +19,7 @@ import PCIcon from '@/components/icons/platforms/PCIcon';
 import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
-import KineticLink from '@/components/kinetic/KineticLink'; // IMPORT
+import KineticLink from '@/components/kinetic/KineticLink'; 
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -70,6 +70,18 @@ export default function HubPageClient({
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
+    // --- OPTIMIZATION: Robust Deferred Rendering ---
+    const [isGridReady, setIsGridReady] = useState(false);
+
+    useEffect(() => {
+        // Double-RAF to ensure the browser has painted the Hero transition frame.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setIsGridReady(true);
+            });
+        });
+    }, []);
+
     useIsomorphicLayoutEffect(() => { 
         if (scrollContainerRef?.current) {
             scrollContainerRef.current.scrollTop = 0;
@@ -153,7 +165,7 @@ export default function HubPageClient({
         }
     } catch (e) {
         console.warn("HubPageClient: Failed to resolve hero image", e);
-        heroImageUrl = '/placeholder.jpg';
+        heroImageUrl = '/placeholder-game.jpg';
     }
     
     const heroLayoutId = layoutIdPrefix === 'default' 
@@ -276,7 +288,6 @@ export default function HubPageClient({
                     {platforms && platforms.length > 0 && tags && tags.length > 0 && <MetadataDivider />}
 
                      {tags && tags.map(t => (
-                        // USE KINETIC LINK FOR TAGS IN HUB HEADER
                         <KineticLink 
                             key={t.title} 
                             href={t.slug ? `/tags/${t.slug}` : '#'}
@@ -299,68 +310,77 @@ export default function HubPageClient({
         <div className={styles.hubPageContainer}>
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
-                 {initialItems && initialItems.length > 0 ? (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={isInView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ duration: 0.7, ease: "easeOut" as const }}
-                        >
-                            <HubFilters
-                                activeTypeFilter={activeTypeFilter}
-                                onTypeFilterChange={setActiveTypeFilter}
-                                activeSort={activeSort}
-                                onSortChange={setActiveSort}
-                            />
-                        </motion.div>
-                        
-                        <motion.div 
-                            layout 
-                            className="content-grid gpu-cull"
-                            style={{ paddingBottom: '6rem' }}
-                        >
-                            <AnimatePresence>
-                                {filteredAndSortedItems.length > 0 ? (
-                                    filteredAndSortedItems.map(item => (
-                                        <motion.div
-                                            key={item.id}
-                                            layout
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
-                                            style={{ height: '100%' }}
+                 
+                 {/* Only render grid if ready */}
+                 {isGridReady ? (
+                     initialItems && initialItems.length > 0 ? (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ duration: 0.7, ease: "easeOut" as const }}
+                            >
+                                <HubFilters
+                                    activeTypeFilter={activeTypeFilter}
+                                    onTypeFilterChange={setActiveTypeFilter}
+                                    activeSort={activeSort}
+                                    onSortChange={setActiveSort}
+                                />
+                            </motion.div>
+                            
+                            <motion.div 
+                                layout 
+                                className="content-grid gpu-cull"
+                                style={{ paddingBottom: '6rem' }}
+                            >
+                                <AnimatePresence>
+                                    {filteredAndSortedItems.length > 0 ? (
+                                        filteredAndSortedItems.map(item => (
+                                            <motion.div
+                                                key={item.id}
+                                                layout
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
+                                                style={{ height: '100%' }}
+                                            >
+                                                <ArticleCard
+                                                    article={item}
+                                                    layoutIdPrefix={listLayoutIdPrefix}
+                                                />
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                            <motion.div 
+                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                            style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
                                         >
-                                            <ArticleCard
-                                                article={item}
-                                                layoutIdPrefix={listLayoutIdPrefix}
-                                            />
+                                            لا يوجد محتوى يطابق بحثك.
                                         </motion.div>
-                                    ))
-                                ) : (
-                                        <motion.div 
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                        style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
-                                    >
-                                        لا يوجد محتوى يطابق بحثك.
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        </>
+                     ) : (
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            transition={{ delay: 0.5 }}
+                            style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }}
+                        >
+                            {isLoading ? (
+                                <div className="spinner" style={{margin: '0 auto'}}></div>
+                            ) : (
+                                <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p>
+                            )}
                         </motion.div>
-                    </>
+                     )
                  ) : (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        transition={{ delay: 0.5 }}
-                        style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }}
-                    >
-                        {isLoading ? (
-                            <div className="spinner" style={{margin: '0 auto'}}></div>
-                        ) : (
-                            <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p>
-                        )}
-                    </motion.div>
+                     /* Placeholder during deferral frame (maintains height) */
+                     <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <div className="spinner" />
+                     </div>
                  )}
             </div>
         </div>

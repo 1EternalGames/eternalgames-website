@@ -85,14 +85,28 @@ export default function ContentPageClient({
     const [isMobile, setIsMobile] = useState(false);
     
     const [isHeroVisible, setIsHeroVisible] = useState(true);
+    
+    // --- OPTIMIZATION: Robust Deferred Rendering ---
+    // Start as false to force a lightweight initial render
+    const [isBodyReady, setIsBodyReady] = useState(false);
 
     const articleBodyRef = useRef<HTMLDivElement>(null); 
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
     const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
 
-    // THE FIX: Consider it loaded if the flag is true OR if content array exists.
+    // Consider it loaded if the flag is true OR if content array exists.
     const isLoaded = (item as any).contentLoaded === true || (item.content && Array.isArray(item.content) && item.content.length > 0);
+
+    useEffect(() => {
+        // Double-RAF to ensure browser paints the Hero transition frame first
+        // before we try to parse and render the heavy body content.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setIsBodyReady(true);
+            });
+        });
+    }, []);
 
     useEffect(() => {
         const container = scrollContainerRef?.current || window;
@@ -176,13 +190,13 @@ export default function ContentPageClient({
 
     // Optimize Layout Stability check
     useEffect(() => { 
-        if (!isLoaded) return;
+        if (!isLoaded || !isBodyReady) return; 
         const timeout = setTimeout(() => {
              setIsLayoutStable(true);
              measureHeadings();
         }, 500); 
         return () => clearTimeout(timeout); 
-    }, [item, isLoaded, measureHeadings]);
+    }, [item, isLoaded, isBodyReady, measureHeadings]);
 
     if (!item) return null;
 
@@ -297,8 +311,8 @@ export default function ContentPageClient({
                                 </motion.h1>
                             </div>
                             
-                            {/* RENDER CONTENT IF LOADED, ELSE SPINNER */}
-                            {isLoaded ? (
+                            {/* RENDER CONTENT ONLY IF LOADED AND AFTER FRAME DELAY */}
+                            {isLoaded && isBodyReady ? (
                                 <motion.div
                                     variants={bodyFadeVariants}
                                     initial="hidden"
@@ -346,6 +360,7 @@ export default function ContentPageClient({
                                     </div>
                                 </motion.div>
                             ) : (
+                                /* Show a small spinner while body prepares, keeps layout generally stable */
                                 <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <div className="spinner" />
                                 </div>
@@ -353,7 +368,8 @@ export default function ContentPageClient({
                         </main>
 
                         <aside className={styles.sidebar}>
-                            {isLoaded && (
+                            {/* Defer Sidebar Too */}
+                            {isLoaded && isBodyReady && (
                                 <motion.div
                                     variants={bodyFadeVariants}
                                     initial="hidden"
@@ -377,7 +393,8 @@ export default function ContentPageClient({
                 </div>
             </motion.div>
             
-            {isLoaded && (
+            {/* Defer Comments */}
+            {isLoaded && isBodyReady && (
                 <motion.div initial="hidden" animate="visible" exit="exit" variants={bodyFadeVariants} className="container" style={{ paddingBottom: '6rem' }}>
                     <ContentBlock title="حديث المجتمع">{children}</ContentBlock>
                 </motion.div>

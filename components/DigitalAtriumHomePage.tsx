@@ -1,7 +1,7 @@
 // components/DigitalAtriumHomePage.tsx
 'use client';
 
-import { Suspense } from 'react';
+import React, { Suspense, memo } from 'react';
 import { ContentBlock } from './ContentBlock';
 import VanguardReviews from './VanguardReviews/VanguardReviews';
 import { adaptToCardProps } from '@/lib/adapters';
@@ -9,7 +9,7 @@ import { ReviewIcon, ReleaseIcon } from '@/components/icons/index';
 import styles from './DigitalAtriumHomePage.module.css';
 import { CardProps } from '@/types';
 
-export default function DigitalAtriumHomePage({
+const DigitalAtriumHomePage = memo(function DigitalAtriumHomePage({
     reviews,
     feedsContent,
     releasesSection
@@ -22,7 +22,6 @@ export default function DigitalAtriumHomePage({
   
   return (
     <div className={styles.atriumPageContainer}>
-      {/* AnimatedGridBackground removed */}
       <div className={styles.vanguardFullBleedContainer}>
         <div className="container">
             <ContentBlock title="أحدث المراجعات" Icon={ReviewIcon} />
@@ -48,6 +47,6 @@ export default function DigitalAtriumHomePage({
       </div>
     </div>
   );
-}
+});
 
-
+export default DigitalAtriumHomePage;

@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useRef, useEffect, startTransition, useCallback } from 'react';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import ReviewFilters, { ScoreFilter } from '@/components/filters/ReviewFilters';
 import ArticleCard from '@/components/ArticleCard';
@@ -18,18 +18,10 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import { useContentStore } from '@/lib/contentStore';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton';
-import { loadMoreReviews } from '@/app/actions/batchActions'; // NEW ACTION
-
-const fetchReviews = async (params: URLSearchParams) => {
-    const res = await fetch(`/api/reviews?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch reviews');
-    return res.json();
-};
+import { loadMoreReviews } from '@/app/actions/batchActions';
 
 export default function ReviewsPageClient({ heroReview, initialGridReviews, allGames, allTags }: { heroReview: SanityReview, initialGridReviews: SanityReview[], allGames: SanityGame[], allTags: SanityTag[] }) {
-    const intersectionRef = useRef(null);
     const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const router = useRouter();
     const { openOverlay, hydrateContent, pageMap, appendToSection, hydrateIndex } = useContentStore();
 
     const storedData = pageMap.get('reviews');
@@ -40,7 +32,17 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const initialCards = useMemo(() => sourceGrid.map((item: any) => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[], [sourceGrid]);
     const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // --- OPTIMIZATION: Deferred Rendering ---
     const [isGridReady, setIsGridReady] = useState(false);
+    useEffect(() => {
+        const t = requestAnimationFrame(() => {
+            startTransition(() => setIsGridReady(true));
+        });
+        return () => cancelAnimationFrame(t);
+    }, []);
+    // ----------------------------------------
+    
     const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
     
     useEffect(() => {
@@ -55,13 +57,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         }
     }, [hasStoredData, hydrateIndex, heroReview, initialGridReviews, allGames, allTags]);
 
-    useEffect(() => {
-        const t = requestAnimationFrame(() => {
-            startTransition(() => setIsGridReady(true));
-        });
-        return () => cancelAnimationFrame(t);
-    }, []);
-    
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'score'>('latest');
     const [selectedScoreRange, setSelectedScoreRange] = useState<ScoreFilter>('All');
@@ -106,7 +101,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         setIsLoading(true);
         
         try {
-            // UNIFIED LOAD ACTION
             const result = await loadMoreReviews({
                 offset: nextOffset as number,
                 limit: 20,
@@ -120,11 +114,8 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 const newCards = result.cards.filter((newItem: CardProps) => !allFetchedReviews.some(p => p.id === newItem.id));
                 
                 if (newCards.length > 0) {
-                    // Hydrate store with FULL content
                     hydrateContent(result.fullContent);
                     appendToSection('reviews', result.fullContent, result.nextOffset);
-                    
-                    // Show cards
                     setAllFetchedReviews(prev => [...prev, ...newCards]);
                 }
                 setNextOffset(result.nextOffset);
@@ -171,6 +162,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
             <div className="container" style={{paddingTop: '4rem'}}>
                 <ReviewFilters activeSort={activeSort} onSortChange={setActiveSort} selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
                 
+                {/* RENDER GRID ONLY AFTER FRAME DELAY */}
                 {isGridReady ? (
                     <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
                         <div className="content-grid gpu-cull">
@@ -192,15 +184,8 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                             
                             {isLoading && (
                                 <>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                        <ArticleCardSkeleton />
-                                    </motion.div>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.1 }}>
-                                        <ArticleCardSkeleton />
-                                    </motion.div>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.2 }}>
-                                        <ArticleCardSkeleton />
-                                    </motion.div>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}><ArticleCardSkeleton /></motion.div>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.1 }}><ArticleCardSkeleton /></motion.div>
                                 </>
                             )}
                         </div>
