@@ -88,7 +88,9 @@ export default function AboutPageClient({ initialData }: { initialData: any }) {
                 <ContentBlock title="تواصل معنا">
                     <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '3rem', borderRadius: '12px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
                         <p style={{ fontSize: '1.6rem', marginBottom: '2rem' }}>هل لديك استفسار، اقتراح، أو ترغب في الانضمام لفريقنا؟ لا تتردد في مراسلتنا.</p>
-                        <a href="mailto:contact@EternalGamesWeb.com" className="primary-button no-underline">contact@EternalGamesWeb.com</a>
+                        <a href="mailto:me@EternalGamesWeb.com" className="primary-button no-underline">
+                            me@EternalGamesWeb.com
+                        </a>
                     </div>
                 </ContentBlock>
             </div>

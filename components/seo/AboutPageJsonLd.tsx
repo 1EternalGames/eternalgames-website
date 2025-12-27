@@ -20,7 +20,7 @@ export default function AboutPageJsonLd() {
       "contactPoint": {
         "@type": "ContactPoint",
         "contactType": "editorial",
-        "email": "contact@EternalGamesWeb.com"
+        "email": "me@EternalGamesWeb.com"
       }
     }
   };
