@@ -24,6 +24,8 @@ import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager';
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
 // IMPORT NEW LOADER
 import UniversalBaseLoader from '@/components/UniversalBaseLoader';
+// IMPORT PERFORMANCE HINT
+import PerformanceHint from '@/components/PerformanceHint';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -141,6 +143,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <SpaceBackground />
                 <ToastProvider />
                 <CookieConsent />
+                <PerformanceHint /> 
                 <Lightbox />
                 
                 <KineticOverlayManager colorDictionary={colors} />
