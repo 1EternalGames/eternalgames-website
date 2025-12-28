@@ -21,25 +21,15 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
-    // 1. Robust Font Fetching (Inter - Black/Bold)
-    // We use a high-availability CDN. If this fails, it falls back gracefully.
-    const fontBold = await fetch(
-        new URL('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-900-normal.ttf', import.meta.url)
-    ).then((res) => res.arrayBuffer()).catch(() => null);
-
-    const fontRegular = await fetch(
-        new URL('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-500-normal.ttf', import.meta.url)
-    ).then((res) => res.arrayBuffer()).catch(() => null);
-
     if (!slug) return new Response("Missing slug", { status: 400 });
 
     const data = await client.fetch(query, { slug });
     if (!data || !data.imageUrl) return new Response("Content not found", { status: 404 });
 
-    // --- DESIGN CONSTANTS (MATCHING YOUR SITE) ---
-    const ACCENT = '#00FFF0'; // The EternalGames Cyan
-    const BG_DARK = '#0A0B0F'; // Your bg-primary
-    const CARD_BG = '#14161D'; // Your bg-secondary
+    // --- DESIGN CONSTANTS ---
+    const ACCENT = '#00FFF0'; // Cyan
+    const BG_DARK = '#0A0B0F'; 
+    const CARD_BG = '#14161D'; 
 
     return new ImageResponse(
         (
@@ -50,8 +40,8 @@ export async function GET(request: Request) {
                     display: 'flex',
                     backgroundColor: BG_DARK,
                     position: 'relative',
-                    fontFamily: '"Inter", sans-serif',
-                    padding: '40px', // Outer spacing
+                    fontFamily: 'sans-serif', // Fallback to robust system font
+                    padding: '40px', 
                 }}
             >
                 {/* THE CARD CONTAINER */}
@@ -63,8 +53,8 @@ export async function GET(request: Request) {
                         position: 'relative',
                         borderRadius: '24px',
                         overflow: 'hidden',
-                        border: `2px solid ${ACCENT}`, // The Cyber Border
-                        boxShadow: `0 0 40px ${ACCENT}40`, // Soft Glow
+                        border: `4px solid ${ACCENT}`, // Thicker border for visibility
+                        boxShadow: `0 0 60px ${ACCENT}40`, 
                         backgroundColor: CARD_BG,
                     }}
                 >
@@ -83,15 +73,15 @@ export async function GET(request: Request) {
                         }}
                     />
 
-                    {/* GRADIENT OVERLAY (Bottom Up) */}
+                    {/* GRADIENT OVERLAY (Bottom Up for text contrast) */}
                     <div
                         style={{
                             position: 'absolute',
                             bottom: 0,
                             left: 0,
                             width: '100%',
-                            height: '80%',
-                            background: 'linear-gradient(to top, #0A0B0F 10%, rgba(10,11,15,0.8) 50%, transparent 100%)',
+                            height: '85%',
+                            background: 'linear-gradient(to top, #0A0B0F 15%, rgba(10,11,15,0.8) 55%, transparent 100%)',
                         }}
                     />
 
@@ -103,31 +93,31 @@ export async function GET(request: Request) {
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'flex-end',
-                        padding: '40px',
+                        padding: '50px',
                     }}>
                         
                         {/* SCORE BADGE (Top Right - Floating) */}
                         {data.score && (
                             <div style={{
                                 position: 'absolute',
-                                top: '30px',
-                                right: '30px',
-                                width: '120px',
-                                height: '120px',
+                                top: '40px',
+                                right: '40px',
+                                width: '140px',
+                                height: '140px',
                                 borderRadius: '50%',
-                                backgroundColor: BG_DARK, // Dark background
-                                border: `4px solid ${ACCENT}`,
+                                backgroundColor: BG_DARK,
+                                border: `5px solid ${ACCENT}`,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                boxShadow: `0 10px 30px rgba(0,0,0,0.5)`,
+                                boxShadow: `0 10px 40px rgba(0,0,0,0.6)`,
                             }}>
                                 <div style={{
                                     color: ACCENT,
-                                    fontSize: '64px',
+                                    fontSize: '72px',
                                     fontWeight: 900,
                                     lineHeight: '1',
-                                    marginTop: '-5px',
+                                    marginTop: '-10px',
                                 }}>
                                     {data.score}
                                 </div>
@@ -135,19 +125,16 @@ export async function GET(request: Request) {
                         )}
 
                         {/* CATEGORY PILL */}
-                        <div style={{
-                            display: 'flex',
-                            marginBottom: '20px',
-                        }}>
+                        <div style={{ display: 'flex', marginBottom: '25px' }}>
                             <div style={{
-                                backgroundColor: `${ACCENT}20`, // 20% opacity cyan
-                                border: `1px solid ${ACCENT}`,
+                                backgroundColor: 'rgba(0, 255, 240, 0.15)',
+                                border: `2px solid ${ACCENT}`,
                                 borderRadius: '50px',
-                                padding: '8px 24px',
+                                padding: '10px 30px',
                                 color: ACCENT,
-                                fontSize: '20px',
+                                fontSize: '24px',
                                 fontWeight: 700,
-                                letterSpacing: '1px',
+                                letterSpacing: '2px',
                                 textTransform: 'uppercase',
                             }}>
                                 {data._type === 'review' ? 'REVIEW' : (data._type === 'news' ? 'NEWS' : 'ARTICLE')}
@@ -156,15 +143,15 @@ export async function GET(request: Request) {
 
                         {/* TITLE */}
                         <div style={{
-                            fontSize: '64px',
+                            fontSize: '70px',
                             fontWeight: 900,
                             color: 'white',
                             lineHeight: '1.1',
-                            textShadow: '0 4px 10px rgba(0,0,0,0.8)',
-                            // Ensure long titles don't overflow
+                            textShadow: '0 4px 15px rgba(0,0,0,0.9)',
                             display: 'flex',
                             flexWrap: 'wrap',
-                            marginBottom: '10px'
+                            marginBottom: '20px',
+                            maxWidth: '90%',
                         }}>
                             {data.title}
                         </div>
@@ -174,19 +161,19 @@ export async function GET(request: Request) {
                             display: 'flex',
                             alignItems: 'center',
                             marginTop: '10px',
-                            gap: '10px'
+                            gap: '15px'
                         }}>
                             <div style={{
-                                width: '40px',
-                                height: '4px',
+                                width: '60px',
+                                height: '6px',
                                 backgroundColor: ACCENT,
-                                borderRadius: '2px',
+                                borderRadius: '3px',
                             }} />
                             <div style={{
-                                color: '#AAA',
-                                fontSize: '24px',
-                                fontWeight: 500,
-                                letterSpacing: '1px',
+                                color: '#CCCCCC',
+                                fontSize: '28px',
+                                fontWeight: 600,
+                                letterSpacing: '2px',
                             }}>
                                 ETERNALGAMES.COM
                             </div>
@@ -199,20 +186,7 @@ export async function GET(request: Request) {
         {
             width: 1200,
             height: 630,
-            fonts: fontBold && fontRegular ? [
-                {
-                    name: 'Inter',
-                    data: fontBold,
-                    style: 'normal',
-                    weight: 900,
-                },
-                {
-                    name: 'Inter',
-                    data: fontRegular,
-                    style: 'normal',
-                    weight: 500,
-                },
-            ] : undefined,
+            // Removed 'fonts' option completely to force system font usage
         }
     );
   } catch (e: any) {
