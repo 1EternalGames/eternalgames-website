@@ -13,9 +13,9 @@ import styles from './KineticOverlayManager.module.css';
 import Footer from '@/components/Footer'; 
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { translateTag } from '@/lib/translations'; // Added for Tag title translation
 
 // OPTIMIZATION: Dynamically import heavy page clients to code-split the overlay bundle.
-// This prevents the JS for every page type from being loaded on every route.
 const ReviewsPageClient = dynamic(() => import('@/app/reviews/ReviewsPageClient'), { ssr: false });
 const ArticlesPageClient = dynamic(() => import('@/app/articles/ArticlesPageClient'), { ssr: false });
 const NewsPageClient = dynamic(() => import('@/app/news/NewsPageClient'), { ssr: false });
@@ -25,6 +25,13 @@ const CommentSection = dynamic(() => import('@/components/comments/CommentSectio
 const GameHubClient = dynamic(() => import('@/components/GameHubClient'), { ssr: false });
 const CreatorHubClient = dynamic(() => import('@/components/CreatorHubClient'), { ssr: false });
 const HubPageClient = dynamic(() => import('@/components/HubPageClient'), { ssr: false });
+
+const sectionTitles: Record<string, string> = {
+    reviews: 'المراجعات',
+    articles: 'المقالات',
+    news: 'الأخبار',
+    releases: 'الإصدارات',
+};
 
 function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: any[] }) {
     const { 
@@ -55,6 +62,48 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
     const lenis = useLenis();
     
     const pathname = usePathname();
+
+    // --- NEW: DYNAMIC TITLE MANAGEMENT ---
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+
+        if (isOverlayOpen) {
+            // Capture the underlying page title to restore later
+            const previousTitle = document.title;
+            let newTitle = '';
+
+            // 1. Determine Title based on Active Type
+            if (activeType === 'index' && indexSection) {
+                newTitle = sectionTitles[indexSection] || 'EternalGames';
+            } else if (activeType === 'creators' && activeSlug) {
+                const creator = creatorMap.get(activeSlug);
+                if (creator) newTitle = `أعمال ${creator.name}`;
+                else newTitle = activeSlug; // Fallback
+            } else if (activeType === 'tags' && activeSlug) {
+                const tag = tagMap.get(activeSlug);
+                if (tag) newTitle = `وسم: ${translateTag(tag.title)}`;
+                else newTitle = activeSlug; // Fallback
+            } else if (activeSlug) {
+                // Content types (Review, Article, News, Game, Release)
+                const item = contentMap.get(activeSlug);
+                if (item) {
+                     newTitle = item.title;
+                     if (activeType === 'games') newTitle = `محور لعبة: ${item.title}`;
+                }
+            }
+
+            // 2. Set the document title
+            if (newTitle) {
+                document.title = `${newTitle} | EternalGames`;
+            }
+
+            // 3. Restore on unmount (Close Overlay)
+            return () => {
+                document.title = previousTitle;
+            };
+        }
+    }, [isOverlayOpen, activeSlug, activeType, indexSection, contentMap, creatorMap, tagMap]);
+    // -------------------------------------
 
     // HISTORY SANITIZATION
     useEffect(() => {

@@ -82,7 +82,6 @@ export default function ContentPageClient({
         
         // Fallback: Generate TOC from content
         const generated = extractHeadingsFromContent(item.content || []);
-        // FIX: Cast item to any to access verdict, as it doesn't exist on all ContentItem types
         if (isReview && (item as any).verdict) {
              generated.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
         }
@@ -105,7 +104,6 @@ export default function ContentPageClient({
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     
-    const [isHeroVisible, setIsHeroVisible] = useState(true);
     const [isBodyReady, setIsBodyReady] = useState(false);
     const [isTransitionComplete, setIsTransitionComplete] = useState(false);
 
@@ -115,7 +113,8 @@ export default function ContentPageClient({
     const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
     const isLoaded = (item as any).contentLoaded === true || (item.content && Array.isArray(item.content) && item.content.length > 0);
 
-    const layoutIdPrefix = (isHeroVisible ? (forcedLayoutIdPrefix || storePrefix) : 'default');
+    // FIXED: Removed isHeroVisible dependency. The ID now remains constant.
+    const layoutIdPrefix = (forcedLayoutIdPrefix || storePrefix);
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
 
     const springTransition = { 
@@ -151,25 +150,6 @@ export default function ContentPageClient({
             setIsTransitionComplete(true);
         }
     }, [isSharedTransitionActive]);
-
-    useEffect(() => {
-        const container = scrollContainerRef?.current || window;
-        const handleScroll = () => {
-             const scrollTop = scrollContainerRef?.current 
-                ? scrollContainerRef.current.scrollTop 
-                : (typeof window !== 'undefined' ? window.scrollY : 0);
-             
-             if (scrollTop > 300) {
-                 setIsHeroVisible(false);
-             } else {
-                 setIsHeroVisible(true);
-             }
-        };
-        
-        container.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll();
-        return () => container.removeEventListener('scroll', handleScroll);
-    }, [scrollContainerRef]);
 
     const measureHeadings = useCallback(() => {
         const contentElement = articleBodyRef.current;
