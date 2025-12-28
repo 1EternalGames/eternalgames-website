@@ -33,92 +33,107 @@ export async function GET(request: Request) {
     }
 
     // Force Sanity CDN to deliver Max Quality (100) at exact Dimensions
-    // This prevents client-side scaling artifacts
     const highResImage = `${data.imageUrl}?w=1200&h=630&fit=crop&q=100&auto=format`;
 
     const ACCENT = '#00FFF0';
 
     return new ImageResponse(
         (
+            // 1. OUTER CONTAINER: Full square rectangle with dark background.
+            // This ensures the "corners" outside the border radius are #0A0B0F, not white/transparent.
             <div
                 style={{
                     display: 'flex',
                     width: '100%',
                     height: '100%',
-                    backgroundColor: '#0A0B0F',
-                    position: 'relative',
+                    backgroundColor: '#0A0B0F', 
+                    alignItems: 'center',
+                    justifyContent: 'center',
                 }}
             >
-                {/* 1. Full Screen Background Image (High Res) */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={highResImage}
-                    alt=""
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                    }}
-                />
-
-                {/* 2. Gradient Overlay */}
+                {/* 2. INNER CONTAINER: Rounded and Clipped */}
                 <div
                     style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '60%',
                         display: 'flex',
-                        background: 'linear-gradient(to top, #0A0B0F 0%, rgba(10,11,15,0.6) 40%, transparent 100%)',
-                    }}
-                />
-
-                {/* 3. Cyber Border Overlay */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
                         width: '100%',
                         height: '100%',
-                        border: `4px solid ${ACCENT}`,
-                        boxShadow: `inset 0 0 50px ${ACCENT}60`, 
-                        display: 'flex', 
+                        position: 'relative',
+                        borderRadius: '42px', // Visible rounding
+                        overflow: 'hidden',   // Clips the image
                     }}
-                />
+                >
+                    {/* 1. Background Image */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={highResImage}
+                        alt=""
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                        }}
+                    />
 
-                {/* 4. Score Badge */}
-                {data.score && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '40px',
-                        right: '40px',
-                        width: '140px',
-                        height: '140px',
-                        borderRadius: '50%',
-                        backgroundColor: '#0A0B0F', 
-                        border: `5px solid ${ACCENT}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: `0 10px 40px rgba(0,0,0,0.8)`,
-                    }}>
-                        <div style={{
+                    {/* 2. Gradient Overlay */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '60%',
                             display: 'flex',
-                            color: ACCENT,
-                            fontSize: '72px',
-                            fontWeight: 900,
-                            fontFamily: 'sans-serif',
-                            marginTop: '-10px',
+                            background: 'linear-gradient(to top, #0A0B0F 0%, rgba(10,11,15,0.6) 40%, transparent 100%)',
+                        }}
+                    />
+
+                    {/* 3. Cyber Border Overlay */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            border: `4px solid ${ACCENT}`,
+                            borderRadius: '42px', // Match inner container radius
+                            boxShadow: `inset 0 0 50px ${ACCENT}60`, 
+                            display: 'flex', 
+                        }}
+                    />
+
+                    {/* 4. Score Badge */}
+                    {data.score && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '40px',
+                            right: '40px',
+                            width: '140px',
+                            height: '140px',
+                            borderRadius: '50%',
+                            backgroundColor: '#0A0B0F', 
+                            border: `5px solid ${ACCENT}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 10px 40px rgba(0,0,0,0.8)`,
                         }}>
-                            {data.score}
+                            <div style={{
+                                display: 'flex',
+                                color: ACCENT,
+                                fontSize: '72px',
+                                fontWeight: 900,
+                                fontFamily: 'sans-serif',
+                                marginTop: '-10px',
+                            }}>
+                                {data.score}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         ),
         {

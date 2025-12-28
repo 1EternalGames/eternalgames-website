@@ -15,9 +15,14 @@ const HeartIcon = ({ isLiked }: { isLiked: boolean }) => ( <motion.div initial={
 const ShareIcon = () => (<svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>);
 const CheckIcon = () => (<svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
 
-interface ContentActionBarProps { contentId: number; contentType: 'review' | 'article' | 'news'; contentSlug: string; }
+interface ContentActionBarProps { 
+    contentId: number; 
+    contentType: 'review' | 'article' | 'news'; 
+    contentSlug: string; 
+    title: string;
+}
 
-export default function ContentActionBar({ contentId, contentType, contentSlug }: ContentActionBarProps) {
+export default function ContentActionBar({ contentId, contentType, contentSlug, title }: ContentActionBarProps) {
     const { status } = useSession();
     const { setSignInModalOpen, likes, toggleLike, addShare } = useUserStore();
     const [justCopied, setJustCopied] = useState(false);
@@ -29,7 +34,28 @@ export default function ContentActionBar({ contentId, contentType, contentSlug }
     const isLiked = hasMounted && likes.includes(contentKey);
 
     const handleLike = () => { if (status !== 'authenticated') { setSignInModalOpen(true); return; } toggleLike(contentId, contentType, contentSlug); };
-    const handleShare = async () => { const shareData = { title: `EternalGames: ${document.title}`, text: `Check out this ${contentType} on EternalGames!`, url: window.location.href }; if (navigator.share) { try { await navigator.share(shareData); if (status === 'authenticated') { addShare(contentId, contentType, contentSlug); } } catch (error) { console.log('Web Share API canceled or failed.', error); } } else { await navigator.clipboard.writeText(window.location.href); setJustCopied(true); if (status === 'authenticated') { addShare(contentId, contentType, contentSlug); } setTimeout(() => setJustCopied(false), 2000); } };
+    
+    const handleShare = async () => { 
+        const shareData = { 
+            title: title, 
+            text: title, 
+            url: window.location.href 
+        }; 
+        
+        if (navigator.share) { 
+            try { 
+                await navigator.share(shareData); 
+                if (status === 'authenticated') { addShare(contentId, contentType, contentSlug); } 
+            } catch (error) { 
+                console.log('Web Share API canceled or failed.', error); 
+            } 
+        } else { 
+            await navigator.clipboard.writeText(window.location.href); 
+            setJustCopied(true); 
+            if (status === 'authenticated') { addShare(contentId, contentType, contentSlug); } 
+            setTimeout(() => setJustCopied(false), 2000); 
+        } 
+    };
 
     if (!hasMounted) { return <div style={{display: 'flex', gap: '1rem', height: '44px'}}><div style={{width:'44px'}}></div><div style={{width:'44px'}}></div><div style={{width:'44px'}}></div></div>; }
 
@@ -41,8 +67,3 @@ export default function ContentActionBar({ contentId, contentType, contentSlug }
         </div>
     );
 }
-
-
-
-
-

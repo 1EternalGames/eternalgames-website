@@ -49,7 +49,7 @@ type ColorMapping = { word: string; color: string; }
 
 const adaptReviewForScoreBox = (review: any) => ({ score: review.score, verdict: review.verdict, pros: review.pros, cons: review.cons });
 const typeLabelMap: Record<string, string> = { 'official': 'رسمي', 'rumor': 'إشاعة', 'leak': 'تسريب' };
-const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const TimeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></polyline></svg>;
 
 export default function ContentPageClient({ 
     item, 
@@ -348,7 +348,12 @@ export default function ContentPageClient({
                                     <div className={styles.metaContainer}>
                                         <div className={styles.metaBlockLeft}>
                                             {gameObj?.title && <GameLink gameName={gameObj.title} gameSlug={gameSlug} />}
-                                            <ContentActionBar contentId={item.legacyId} contentType={contentTypeForActionBar} contentSlug={slugString} />
+                                            <ContentActionBar 
+                                                contentId={item.legacyId} 
+                                                contentType={contentTypeForActionBar} 
+                                                contentSlug={slugString} 
+                                                title={item.title}
+                                            />
                                         </div>
                                         <div className={styles.metaBlockRight}>
                                             <div className={styles.creditsRow}>
