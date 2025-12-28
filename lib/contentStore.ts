@@ -139,6 +139,29 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       }
 
       hydrateCreators(data.credits || []);
+      
+      // NEW: Seed Metadata into Maps for Instant Headers
+      // This ensures we can open the overlay immediately with Title/Name even if content list is missing
+      if (data.metadata) {
+          // Seed Games
+          if (data.metadata.games) {
+              const gameItems = data.metadata.games.map((g: any) => ({ ...g, contentLoaded: false }));
+              hydrateContent(gameItems);
+          }
+          // Seed Tags
+          const allTags = [
+              ...(data.metadata.gameTags || []),
+              ...(data.metadata.newsTags || []),
+              ...(data.metadata.articleTags || [])
+          ];
+          const uniqueTags = Array.from(new Map(allTags.map((t:any) => [t.slug, t])).values());
+          hydrateTags(uniqueTags.map((t: any) => ({ ...t, contentLoaded: false })));
+
+          // Seed Creators
+          if (data.metadata.creators) {
+              hydrateCreators(data.metadata.creators.map((c: any) => ({ ...c, contentLoaded: false })));
+          }
+      }
   },
 
   hydrateContent: (items) => {
@@ -244,14 +267,24 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
+    // Optimistic Seeding
     if (type === 'creators' && preloadedData) {
         const { creatorMap } = currentState;
-        const existing = creatorMap.get(slug);
-        if (!existing) {
-            const newMap = new Map(creatorMap);
-            const partialCreator = { username: slug, name: preloadedData.name, image: preloadedData.image, contentLoaded: false };
-            newMap.set(slug, partialCreator);
-            set({ creatorMap: newMap });
+        if (!creatorMap.has(slug)) {
+             const newMap = new Map(creatorMap);
+             newMap.set(slug, { username: slug, ...preloadedData, contentLoaded: false });
+             set({ creatorMap: newMap });
+        }
+    }
+    
+    // Seed Tag if not exists (we at least know the slug)
+    if (type === 'tags') {
+        const { tagMap } = currentState;
+        if (!tagMap.has(slug)) {
+            const newMap = new Map(tagMap);
+            // We use the slug as title temporarily until fetch completes
+            newMap.set(slug, { slug, title: slug, contentLoaded: false });
+            set({ tagMap: newMap });
         }
     }
 
@@ -355,7 +388,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           const fullItem = await fetchSingleContentAction(slug);
           if (fullItem) {
                const newMap = new Map(contentMap);
-               // IMPORTANT: Mark as contentLoaded here too
                newMap.set(slug, { ...item, ...fullItem, contentLoaded: true });
                set({ contentMap: newMap });
           }

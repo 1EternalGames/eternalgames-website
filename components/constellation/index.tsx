@@ -13,15 +13,7 @@ import { StarPreviewCard } from './StarPreviewCard';
 import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from './ConstellationControlPanel';
 import { getCommentedContentIds } from '@/app/actions/userActions';
-import styles from './ConstellationControlPanel.module.css';
-import { PerformanceMonitor } from '@react-three/drei'; // <-- IMPORT ADDED
-
-const CelestialGearIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="8"></circle>
-        <path d="M12 2v2m0 16v2m8.5-10h-2m-13 0h-2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"></path>
-    </svg>
-);
+import { PerformanceMonitor } from '@react-three/drei'; 
 
 type InitialData = {
     userContent: SanityContentObject[];
@@ -32,7 +24,6 @@ type InitialData = {
 export default function Constellation({ initialData }: { initialData?: InitialData }) {
     const [isHydrated, setIsHydrated] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    // SMART PERFORMANCE: Start at 1.5, let the monitor adjust up to 2 or down to 0.5
     const [dpr, setDpr] = useState(1.5);
 
     useEffect(() => { setIsHydrated(true); }, []);
@@ -55,10 +46,7 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
     const [userContent, setUserContent] = useState<SanityContentObject[]>(initialData?.userContent || []);
     const [activeStar, setActiveStar] = useState<StarData | null>(null);
     const [activeStarPosition, setActiveStarPosition] = useState<ScreenPosition | null>(null);
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [commentedContentSlugs, setCommentedContentSlugs] = useState<string[]>(initialData?.commentedSlugs || []);
-
-    useBodyClass('editor-active', isPanelOpen);
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -203,17 +191,21 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
         <>
             <AnimatePresence>
                 {activeStar && activeStarPosition && ( <motion.div style={{ position: 'fixed', inset: 0, zIndex: 10000 }} onClick={handleClosePreview} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <StarPreviewCard starData={activeStar} position={activeStarPosition} onClose={handleClosePreview} /> </motion.div> )}
-                {isPanelOpen && <ConstellationControlPanel settings={settings} setSettings={setSettings} onClose={() => setIsPanelOpen(false)} onPresetChange={handlePresetChange} isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} />}
             </AnimatePresence>
-            <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - var(--nav-height-scrolled))' }}>
-                <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الكوكبة" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
-                    <CelestialGearIcon />
-                </motion.button>
+            
+            <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+                <ConstellationControlPanel 
+                    settings={settings} 
+                    setSettings={setSettings} 
+                    onPresetChange={handlePresetChange} 
+                    isFullscreen={isFullscreen} 
+                    onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} 
+                />
+                
                 <Canvas 
                     camera={{ position: [0, 0, isMobile ? 10 : 7], fov: 60 }}
                     dpr={dpr}
                 >
-                    {/* SMART MONITOR: Adjusts resolution based on actual FPS */}
                     <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(2)} />
                     <Scene 
                         settings={settings} 
@@ -223,10 +215,9 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
                         isMobile={isMobile}
                     />
                 </Canvas>
+                
                 {chronologicalStars.length === 0 && ( <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', pointerEvents: 'none', padding: '2rem' }}> <motion.h1 className="page-title" style={{ fontSize: '6rem' }} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}> كوكبتك في انتظارك </motion.h1> <motion.p style={{ maxWidth: '600px', fontSize: '2rem', color: 'var(--text-secondary)' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}> بينما تستكشف وتعجب وتشارك، ستبدأ خريطتك النجمية الشخصية في التكون هنا. </motion.p> </div> )}
             </div>
         </>
     );
 }
-
-

@@ -20,6 +20,7 @@ import Search from './Search';
 import styles from './Navbar.module.css';
 import editorStyles from '@/app/studio/[contentType]/[id]/Editor.module.css';
 import { useContentStore } from '@/lib/contentStore'; 
+import { startNavigation } from '@/components/ui/ProgressBar'; 
 
 const SearchIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -49,16 +50,17 @@ const orbitalContainerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1
 const itemTransition: Transition = { type: 'spring', stiffness: 400, damping: 20 };
 
 const OrbitalNavItem = ({ item, angle, radius, isActive, onClick }: any) => {
-    const { openIndexOverlay } = useContentStore();
+    const { openIndexOverlay, forceCloseOverlay } = useContentStore();
     
     const handleNavClick = (e: React.MouseEvent) => {
         if (item.section) {
             e.preventDefault();
             openIndexOverlay(item.section as any);
-            onClick();
         } else {
-            onClick();
+            forceCloseOverlay();
+            startNavigation(); // TRIGGER LOADER
         }
+        onClick();
     };
     
     const cosAngle = Math.round(Math.cos(angle) * 1e10) / 1e10;
@@ -91,13 +93,16 @@ const EditorPreviewButton = () => {
 };
 
 const BlackHoleNavLink = ({ item, isActive, onClick }: any) => {
-    const { openIndexOverlay } = useContentStore();
+    const { openIndexOverlay, forceCloseOverlay } = useContentStore();
     const [isHovered, setIsHovered] = useState(false);
     
     const handleClick = (e: React.MouseEvent) => {
         if (item.section) {
             e.preventDefault();
             openIndexOverlay(item.section as any);
+        } else {
+            forceCloseOverlay();
+            startNavigation(); // TRIGGER LOADER
         }
         if (onClick) onClick();
     };
@@ -150,9 +155,8 @@ const Navbar = () => {
     
     const handleLogoClick = (e: React.MouseEvent) => {
         closeAll();
-        // FORCE CLOSE OVERLAY: Ensures state is reset.
         forceCloseOverlay();
-        // REMOVED PREVENT DEFAULT: We want the Link to perform standard navigation to '/'
+        startNavigation(); // TRIGGER LOADER
     };
     
     useEffect(() => {
@@ -165,19 +169,30 @@ const Navbar = () => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    const isImmersiveRoute = pathname === '/constellation' || pathname === '/celestial-almanac';
     
     return (
         <>
             <header 
-                className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}
-                style={isOverlayOpen ? { width: 'calc(100% - 8px)', right: 'auto', left: 0 } : undefined}
+                className={`${styles.navbar} ${scrolled && !isImmersiveRoute ? styles.scrolled : ''}`}
+                style={{ 
+                    ...(isOverlayOpen ? { width: 'calc(100% - 8px)', right: 'auto', left: 0 } : undefined),
+                    ...(isImmersiveRoute ? { 
+                        backgroundColor: 'transparent',
+                        backdropFilter: 'none',
+                        borderBottom: 'none',
+                        boxShadow: 'none'
+                    } : {})
+                }}
             >
                 <div className={`container ${styles.navContainer}`}>
                     <div className={styles.desktopView}>
                         <Link href="/" className={`${styles.navLogo} no-underline`} onClick={handleLogoClick} prefetch={false}>
                             <EternalGamesIcon style={{ width: '30px', height: '30px' }} />
                         </Link>
-                        <nav>
+                        {/* Add ID here for global CSS targeting */}
+                        <nav id="navbar-desktop-nav">
                             <ul className={styles.navLinks}>
                                 {navItems.map(item => {
                                     const isActive = pathname.startsWith(item.href) || indexSection === item.section;
@@ -192,7 +207,8 @@ const Navbar = () => {
                                 })}
                             </ul>
                         </nav>
-                        <div className={styles.navControls}>
+                        {/* Add ID here for global CSS targeting */}
+                        <div id="navbar-desktop-controls" className={styles.navControls}>
                             <PerformanceSettings />
                             {isEditorActive && <EditorPreviewButton />}
                             <NotificationBell />
@@ -205,7 +221,8 @@ const Navbar = () => {
                     </div>
 
                     <div className={styles.mobileView}>
-                        <div className={styles.mobileNavGroupLeft}>
+                        {/* Add ID here for global CSS targeting */}
+                        <div id="navbar-mobile-left" className={styles.mobileNavGroupLeft}>
                             <button className={styles.hamburgerButton} onClick={toggleMobileMenu} aria-label="تبديل القائمة">
                                 <HamburgerIcon isOpen={isMobileMenuOpen} />
                             </button>
@@ -220,7 +237,8 @@ const Navbar = () => {
                         <Link href="/" className={`${styles.navLogo} no-underline`} onClick={handleLogoClick} prefetch={false}>
                             <EternalGamesIcon style={{ width: '28px', height: '28px' }} />
                         </Link>
-                        <div className={styles.mobileNavGroupRight}>
+                        {/* Add ID here for global CSS targeting */}
+                        <div id="navbar-mobile-right" className={styles.mobileNavGroupRight}>
                             {isEditorActive && <EditorPreviewButton />}
                             <NotificationBell />
                             <ThemeToggle />

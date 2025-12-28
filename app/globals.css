@@ -389,11 +389,42 @@ body.constellation-active footer {
     display: none !important;
 }
 
-body.fullscreen-active > header,
+/* --- FULLSCREEN MODE (Constellation / Almanac) --- */
+
+/* Hide Footer and Studio Bar */
 body.fullscreen-active > footer,
 body.fullscreen-active > div[class*="StudioBar_studioBar"] {
     display: none !important;
 }
+
+/* Make Navbar Transparent */
+body.fullscreen-active header {
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    pointer-events: none; /* Click-through */
+}
+
+/* Keep Logo Interactive */
+body.fullscreen-active header a[href="/"] {
+    pointer-events: auto !important;
+    opacity: 1 !important; /* THE FIX: Force full opacity */
+    transition: opacity 0.3s;
+}
+/* REMOVED: Hover opacity change as we want it fully visible always */
+
+/* Hide Navigation Links & Controls */
+body.fullscreen-active header #navbar-desktop-nav,
+body.fullscreen-active header #navbar-desktop-controls,
+body.fullscreen-active header #navbar-mobile-left,
+body.fullscreen-active header #navbar-mobile-right {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* --- End Fullscreen Mode --- */
 
 body.fullscreen-active button[class*="ConstellationControlPanel_settingsButton"] {
     background: transparent !important;

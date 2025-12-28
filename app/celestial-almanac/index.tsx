@@ -188,7 +188,8 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
           </AnimatePresence>
       )}
 
-      <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - var(--nav-height-scrolled))' }}>
+      {/* FIX: Set height to 100vh to fill screen behind transparent navbar */}
+      <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
         {isFeatureLive && (
             <motion.button className={styles.settingsButton} onClick={() => setIsPanelOpen(true)} title="فتح إعدادات الفلك" whileHover={{ scale: 1.1, rotate: 90 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} whileTap={{ scale: 0.9 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}>
                 <CelestialGearIcon />
@@ -208,5 +209,3 @@ export default function CelestialAlmanac({ releases }: { releases: SanityGameRel
     </>
   );
 }
-
-

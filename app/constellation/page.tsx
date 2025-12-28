@@ -66,10 +66,9 @@ export default async function ConstellationPage() {
     const initialData = await getConstellationData();
 
     return (
-        <div style={{ paddingTop: 'var(--nav-height-scrolled)' }}>
+        // FIX: Removed padding-top so the 3D scene fills the background behind the transparent navbar
+        <div style={{ paddingTop: 0 }}>
             <ConstellationWrapper initialData={initialData} />
         </div>
     );
 }
-
-

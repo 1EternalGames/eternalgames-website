@@ -13,9 +13,8 @@ import styles from './KineticOverlayManager.module.css';
 import Footer from '@/components/Footer'; 
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { translateTag } from '@/lib/translations'; // Added for Tag title translation
+import { translateTag } from '@/lib/translations'; 
 
-// OPTIMIZATION: Dynamically import heavy page clients to code-split the overlay bundle.
 const ReviewsPageClient = dynamic(() => import('@/app/reviews/ReviewsPageClient'), { ssr: false });
 const ArticlesPageClient = dynamic(() => import('@/app/articles/ArticlesPageClient'), { ssr: false });
 const NewsPageClient = dynamic(() => import('@/app/news/NewsPageClient'), { ssr: false });
@@ -63,28 +62,24 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
     
     const pathname = usePathname();
 
-    // --- NEW: DYNAMIC TITLE MANAGEMENT ---
     useEffect(() => {
         if (typeof document === 'undefined') return;
 
         if (isOverlayOpen) {
-            // Capture the underlying page title to restore later
             const previousTitle = document.title;
             let newTitle = '';
 
-            // 1. Determine Title based on Active Type
             if (activeType === 'index' && indexSection) {
                 newTitle = sectionTitles[indexSection] || 'EternalGames';
             } else if (activeType === 'creators' && activeSlug) {
                 const creator = creatorMap.get(activeSlug);
                 if (creator) newTitle = `أعمال ${creator.name}`;
-                else newTitle = activeSlug; // Fallback
+                else newTitle = activeSlug; 
             } else if (activeType === 'tags' && activeSlug) {
                 const tag = tagMap.get(activeSlug);
                 if (tag) newTitle = `وسم: ${translateTag(tag.title)}`;
-                else newTitle = activeSlug; // Fallback
+                else newTitle = activeSlug; 
             } else if (activeSlug) {
-                // Content types (Review, Article, News, Game, Release)
                 const item = contentMap.get(activeSlug);
                 if (item) {
                      newTitle = item.title;
@@ -92,20 +87,16 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                 }
             }
 
-            // 2. Set the document title
             if (newTitle) {
                 document.title = `${newTitle} | EternalGames`;
             }
 
-            // 3. Restore on unmount (Close Overlay)
             return () => {
                 document.title = previousTitle;
             };
         }
     }, [isOverlayOpen, activeSlug, activeType, indexSection, contentMap, creatorMap, tagMap]);
-    // -------------------------------------
 
-    // HISTORY SANITIZATION
     useEffect(() => {
         if (typeof window !== 'undefined' && window.history.state?.overlay) {
             const cleanState = { ...window.history.state };
@@ -147,6 +138,7 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                 }
                 pageview(`/creators/${activeSlug}`);
             } else if (activeType === 'tags') {
+                // Always fetch to ensure items are up to date
                 fetchTagContent(activeSlug);
                 pageview(`/tags/${activeSlug}`);
             } else {
@@ -235,22 +227,30 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                     paddingTop: '0'
                 };
             }
-            return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
+            // Fallback skeleton if creator map empty but we have slug
+            return { content: <CreatorHubClient creatorName={activeSlug!} username={activeSlug!} items={[]} scrollContainerRef={overlayRef} isLoading={true} />, paddingTop: '0' };
         } 
         
         if (activeType === 'tags') {
-            if (activeTag && activeTag.contentLoaded) {
+            if (activeTag) {
+                // Pass isLoading true if contentLoaded is false
+                const isLoading = !activeTag.contentLoaded;
                  return {
-                    content: <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} />,
+                    content: <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} isLoading={isLoading} />,
                     paddingTop: '0'
                  };
             }
-            return { content: <div className="container" style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center'}}><div className="spinner"></div></div>, paddingTop: '0' };
+            // Fallback skeleton
+             return {
+                content: <HubPageClient initialItems={[]} hubTitle={activeSlug || '...'} hubType="وسم" scrollContainerRef={overlayRef} isLoading={true} />,
+                paddingTop: '0'
+             };
         } 
         
         if (activeItem) {
              if (activeType === 'releases' || (activeType as string) === 'games') {
                 const layoutPrefix = sourceLayoutId || undefined;
+                // Game Hub loading state logic would live inside GameHubClient, similar to CreatorHubClient
                 return {
                     content: <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={layoutPrefix} scrollContainerRef={overlayRef} />,
                     paddingTop: '0'

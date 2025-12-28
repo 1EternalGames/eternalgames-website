@@ -4,6 +4,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useContentStore } from '@/lib/contentStore';
+import { startNavigation } from '@/components/ui/ProgressBar'; // IMPORTED
 
 interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
@@ -14,7 +15,7 @@ interface KineticLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
     className?: string;
     imageSrc?: string; 
     overrideUrl?: string; 
-    preloadedData?: any; // NEW PROP
+    preloadedData?: any; 
     onClick?: (e: React.MouseEvent) => void;
 }
 
@@ -36,22 +37,22 @@ export default function KineticLink({
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (onClick) onClick(e);
 
+        // Check if we should open in overlay
         let hasData = false;
-
-        // Force overlay attempt for types that support lazy fetching or are always "available" via ID/Slug
         if (type === 'creators' || type === 'tags') {
             hasData = true; 
         } else {
-            // For standard content, only open if data is already in store
             hasData = contentMap.has(slug);
         }
 
         if (hasData) {
             e.preventDefault();
             e.stopPropagation(); 
-            // Pass preloadedData to openOverlay
             openOverlay(slug, type, layoutId, imageSrc, overrideUrl, preloadedData);
-        } 
+        } else {
+            // Standard Navigation - Trigger Loading Bar
+            startNavigation();
+        }
     };
 
     return (

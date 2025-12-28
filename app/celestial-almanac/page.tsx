@@ -1,44 +1,60 @@
 // app/celestial-almanac/page.tsx
-'use client'; // This page is now a client component boundary
+'use client';
 
-import { client } from '@/lib/sanity.client';
-import { allReleasesQuery } from '@/lib/sanity.queries';
-import type { SanityGameRelease } from '@/types/sanity';
-import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
-
-// The loader component is removed. We now handle the dynamic import directly here.
-const CelestialAlmanac = dynamic(() => import('@/app/celestial-almanac'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ height: 'calc(100vh - var(--nav-height-scrolled))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="spinner" style={{ width: '60px', height: '60px' }} />
-    </div>
-  ),
-});
+import React from 'react';
+import SpaceBackground from '@/components/ui/SpaceBackground';
+import { motion } from 'framer-motion';
 
 export default function CelestialAlmanacPage() {
-  const [releases, setReleases] = useState<SanityGameRelease[]>([]);
-
-  useEffect(() => {
-    const fetchReleases = async () => {
-      const fetchedReleases: SanityGameRelease[] = await client.fetch(allReleasesQuery);
-      const sanitizedReleases = (fetchedReleases || []).filter(item =>
-        item?.mainImage?.url && item.releaseDate && item.title && item.slug
-      );
-      setReleases(sanitizedReleases);
-    };
-    fetchReleases();
-  }, []);
-
   return (
-    <div style={{ paddingTop: 'var(--nav-height-scrolled)' }}>
-      <CelestialAlmanac releases={releases} />
+    <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
+      {/* Background Layer */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+        <SpaceBackground />
+      </div>
+
+      {/* Content Layer */}
+      <div style={{
+          position: 'relative',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          textAlign: 'center',
+          color: '#fff',
+          paddingBottom: '10vh' // Visual balance
+      }}>
+          <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              style={{
+                  fontSize: 'clamp(4rem, 10vw, 8rem)',
+                  fontWeight: 900,
+                  margin: 0,
+                  textShadow: '0 0 40px rgba(0, 255, 240, 0.3)',
+                  fontFamily: 'var(--font-heading)'
+              }}
+          >
+              قريباً
+          </motion.h1>
+          
+          <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              style={{
+                  fontSize: '1.8rem',
+                  color: 'var(--text-secondary)',
+                  marginTop: '2.5rem',
+                  fontFamily: 'var(--font-main)'
+              }}
+          >
+              يأتيكم في قادم الأيام...
+          </motion.p>
+      </div>
     </div>
   );
 }
-
-
-
-
-
