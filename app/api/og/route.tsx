@@ -1,30 +1,52 @@
 // app/api/og/route.tsx
 import { ImageResponse } from 'next/og';
-import { client } from '@/lib/sanity.client';
-import { groq } from 'next-sanity';
 
 export const runtime = 'edge';
 
-// Fetch title, image, score, and category
-const query = groq`
-  *[_type in ["review", "article", "news"] && slug.current == $slug][0] {
+// We explicitly define these here to avoid importing the heavy sanity client/env files
+const PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '0zany1dm';
+const DATASET = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+const QUERY = `*[_type in ["review", "article", "news"] && slug.current == $slug][0]{
     title,
     "imageUrl": mainImage.asset->url,
     score,
     "category": category->title,
     _type
-  }
-`;
+}`;
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
-    if (!slug) return new Response("Missing slug", { status: 400 });
+    if (!slug) {
+        return new Response("Missing Slug Parameter", { status: 400 });
+    }
 
-    const data = await client.fetch(query, { slug });
-    if (!data || !data.imageUrl) return new Response("Content not found", { status: 404 });
+    // 1. RAW FETCH (No Sanity Client Library)
+    // This is lightweight and guaranteed to work in Edge Runtime
+    const url = `https://${PROJECT_ID}.api.sanity.io/v2022-03-07/data/query/${DATASET}?query=${encodeURIComponent(QUERY)}&%24slug="${slug}"`;
+
+    const sanityRes = await fetch(url);
+    
+    if (!sanityRes.ok) {
+        throw new Error(`Sanity API Error: ${sanityRes.statusText}`);
+    }
+
+    const json = await sanityRes.json();
+    const data = json.result;
+
+    if (!data || !data.imageUrl) {
+         // Fallback layout if no data found
+         return new ImageResponse(
+            (
+                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 900, fontFamily: 'sans-serif' }}>
+                    EternalGames
+                </div>
+            ),
+            { width: 1200, height: 630 }
+        );
+    }
 
     // --- DESIGN CONSTANTS ---
     const ACCENT = '#00FFF0'; // Cyan
@@ -40,7 +62,7 @@ export async function GET(request: Request) {
                     display: 'flex',
                     backgroundColor: BG_DARK,
                     position: 'relative',
-                    fontFamily: 'sans-serif', // Fallback to robust system font
+                    fontFamily: 'sans-serif',
                     padding: '40px', 
                 }}
             >
@@ -53,7 +75,7 @@ export async function GET(request: Request) {
                         position: 'relative',
                         borderRadius: '24px',
                         overflow: 'hidden',
-                        border: `4px solid ${ACCENT}`, // Thicker border for visibility
+                        border: `4px solid ${ACCENT}`,
                         boxShadow: `0 0 60px ${ACCENT}40`, 
                         backgroundColor: CARD_BG,
                     }}
@@ -73,7 +95,7 @@ export async function GET(request: Request) {
                         }}
                     />
 
-                    {/* GRADIENT OVERLAY (Bottom Up for text contrast) */}
+                    {/* GRADIENT OVERLAY */}
                     <div
                         style={{
                             position: 'absolute',
@@ -96,7 +118,7 @@ export async function GET(request: Request) {
                         padding: '50px',
                     }}>
                         
-                        {/* SCORE BADGE (Top Right - Floating) */}
+                        {/* SCORE BADGE */}
                         {data.score && (
                             <div style={{
                                 position: 'absolute',
@@ -186,11 +208,13 @@ export async function GET(request: Request) {
         {
             width: 1200,
             height: 630,
-            // Removed 'fonts' option completely to force system font usage
         }
     );
   } catch (e: any) {
-    console.error('OG Generation Error:', e);
-    return new Response(`Failed: ${e.message}`, { status: 500 });
+    // Return a JSON error so we can see it in the browser instead of a white screen
+    return new Response(JSON.stringify({ error: e.message, stack: e.stack }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' } 
+    });
   }
 }
