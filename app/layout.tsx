@@ -24,7 +24,9 @@ import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager';
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
 import UniversalBaseLoader from '@/components/UniversalBaseLoader';
 import PerformanceHint from '@/components/PerformanceHint';
-import ProgressBar from '@/components/ui/ProgressBar'; // IMPORTED
+import ProgressBar from '@/components/ui/ProgressBar';
+// IMPORT VERCEL ANALYTICS
+import { Analytics } from '@vercel/analytics/react';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -127,6 +129,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextAuthProvider>
           <UserStoreHydration />
+          
+          {/* Vercel Analytics - Requires NO configuration, just this component */}
+          <Analytics />
           
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
           <OrganizationJsonLd />
