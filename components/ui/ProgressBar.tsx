@@ -1,7 +1,7 @@
 // components/ui/ProgressBar.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,7 +14,7 @@ const notify = (state: boolean) => listeners.forEach(l => l(state));
 export const startNavigation = () => notify(true);
 export const endNavigation = () => notify(false);
 
-export default function ProgressBar() {
+function ProgressBarInner() {
     const [isLoading, setIsLoading] = useState(false);
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -59,5 +59,13 @@ export default function ProgressBar() {
                 />
             )}
         </AnimatePresence>
+    );
+}
+
+export default function ProgressBar() {
+    return (
+        <Suspense fallback={null}>
+            <ProgressBarInner />
+        </Suspense>
     );
 }
