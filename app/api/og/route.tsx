@@ -21,9 +21,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
-    // 1. Fetch Font Safely (Using Direct Raw URL)
+    // 1. Fetch Font from JsDelivr CDN (Much more reliable than GitHub Raw)
     const fontData = await fetch(
-      'https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo-Bold.ttf'
+      'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cairo/Cairo-Bold.ttf'
     ).then((res) => {
         if (!res.ok) throw new Error('Failed to load font file');
         return res.arrayBuffer();
@@ -105,7 +105,6 @@ export async function GET(request: Request) {
                     width: '100%',
                     height: '100%',
                     zIndex: 10,
-                    // Use flex-end alignment for RTL visual look in standard flex container
                     alignItems: 'flex-end', 
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '10px' }}>
@@ -175,8 +174,11 @@ export async function GET(request: Request) {
         }
     );
   } catch (e: any) {
-    // If generation fails, return a text response so we can see the error in the browser
     console.error('OG Generation Error:', e);
-    return new Response(`Failed to generate image: ${e.message}`, { status: 500 });
+    // Return a JSON error so it's easier to debug if it fails again
+    return new Response(JSON.stringify({ error: 'Failed to generate image', details: e.message }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
