@@ -11,8 +11,7 @@ const query = groq`
     "imageUrl": mainImage.asset->url,
     score,
     "category": category->title,
-    _type,
-    "authorName": coalesce(authors[0]->name, reporters[0]->name, "EternalGames")
+    _type
   }
 `;
 
@@ -21,35 +20,27 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
-    // 1. Fetch Font from JsDelivr CDN (Much more reliable than GitHub Raw)
-    const fontData = await fetch(
-      'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cairo/Cairo-Bold.ttf'
-    ).then((res) => {
-        if (!res.ok) throw new Error('Failed to load font file');
-        return res.arrayBuffer();
-    });
-
     if (!slug) {
         return new ImageResponse(
             (
-                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 700, fontFamily: '"Cairo"' }}>
+                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 900, fontFamily: 'sans-serif' }}>
                     EternalGames
                 </div>
             ),
-            { width: 1200, height: 630, fonts: [{ name: 'Cairo', data: fontData, style: 'normal', weight: 700 }] }
+            { width: 1200, height: 630 }
         );
     }
 
     const data = await client.fetch(query, { slug });
 
-    if (!data) {
+    if (!data || !data.imageUrl) {
         return new ImageResponse(
             (
-                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 700, fontFamily: '"Cairo"' }}>
-                    404: Content Not Found
+                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 900, fontFamily: 'sans-serif' }}>
+                    EternalGames
                 </div>
             ),
-            { width: 1200, height: 630, fonts: [{ name: 'Cairo', data: fontData, style: 'normal', weight: 700 }] }
+            { width: 1200, height: 630 }
         );
     }
 
@@ -62,29 +53,25 @@ export async function GET(request: Request) {
                     display: 'flex',
                     flexDirection: 'column',
                     backgroundColor: '#0A0B0F',
-                    fontFamily: '"Cairo"',
                     position: 'relative',
                 }}
             >
-                 {/* Background Image */}
-                 {data.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={data.imageUrl}
-                        alt=""
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            opacity: 0.6,
-                        }}
-                    />
-                )}
+                 {/* Background Image - Full Cover */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src={data.imageUrl}
+                    alt=""
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                    }}
+                />
                 
-                {/* Gradient Overlay */}
+                {/* Subtle Gradient Overlay for Text Readability */}
                 <div
                     style={{
                         position: 'absolute',
@@ -92,93 +79,61 @@ export async function GET(request: Request) {
                         left: 0,
                         width: '100%',
                         height: '100%',
-                        background: 'linear-gradient(to top, #0A0B0F 10%, transparent 100%)',
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)',
                     }}
                 />
 
                 {/* Content Container */}
                 <div style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'flex-end',
-                    padding: '60px',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-end',
+                    padding: '40px',
                     width: '100%',
                     height: '100%',
                     zIndex: 10,
-                    alignItems: 'flex-end', 
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '10px' }}>
-                        {data.score && (
-                            <div style={{
-                                backgroundColor: '#00FFF0',
-                                color: '#000',
-                                fontSize: '32px',
-                                fontWeight: 700,
-                                padding: '5px 20px',
-                                borderRadius: '50px',
-                            }}>
-                                {data.score}/10
-                            </div>
-                        )}
-                        <div style={{
-                            color: '#00FFF0',
-                            fontSize: '24px',
-                            fontWeight: 700,
-                            border: '2px solid #00FFF0',
-                            padding: '5px 20px',
-                            borderRadius: '50px',
-                            background: 'rgba(0,0,0,0.5)'
-                        }}>
-                             {data._type === 'review' ? 'مراجعة' : (data.category || 'مقال')}
-                        </div>
-                    </div>
-
+                    {/* Brand Logo (Bottom Left) */}
                     <div style={{
-                        fontSize: '70px',
-                        fontWeight: 700,
-                        color: 'white',
-                        lineHeight: 1.1,
-                        textShadow: '0 4px 10px rgba(0,0,0,0.8)',
-                        textAlign: 'right',
-                        marginBottom: '20px',
-                        maxWidth: '90%',
+                        color: '#00FFF0',
+                        fontSize: '40px',
+                        fontWeight: 900,
+                        fontFamily: 'sans-serif',
+                        textShadow: '0 2px 10px rgba(0,0,0,0.5)',
                     }}>
-                        {data.title}
+                        EternalGames.
                     </div>
-                </div>
 
-                {/* Brand Logo (Top Left) */}
-                <div style={{
-                    position: 'absolute',
-                    top: '40px',
-                    left: '40px',
-                    color: '#00FFF0',
-                    fontSize: '32px',
-                    fontWeight: 700,
-                }}>
-                    EternalGames.
+                    {/* Score Badge (Bottom Right) - Only if score exists */}
+                    {data.score && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#00FFF0',
+                            color: '#000',
+                            fontSize: '48px',
+                            fontWeight: 900,
+                            padding: '10px 30px',
+                            borderRadius: '50px',
+                            fontFamily: 'sans-serif',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                        }}>
+                            {data.score}
+                        </div>
+                    )}
                 </div>
             </div>
         ),
         {
             width: 1200,
             height: 630,
-            fonts: [
-                {
-                    name: 'Cairo',
-                    data: fontData,
-                    style: 'normal',
-                    weight: 700,
-                },
-            ],
+            // No custom fonts = No fetch errors
         }
     );
   } catch (e: any) {
     console.error('OG Generation Error:', e);
-    // Return a JSON error so it's easier to debug if it fails again
-    return new Response(JSON.stringify({ error: 'Failed to generate image', details: e.message }), { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(`Failed to generate image: ${e.message}`, { status: 500 });
   }
 }
