@@ -3,7 +3,8 @@ import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 import { urlFor } from '@/sanity/lib/image';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+// UPDATE: Changed base URL
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
 
 export async function GET() {
   const query = groq`

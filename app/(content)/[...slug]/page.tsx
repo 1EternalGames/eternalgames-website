@@ -30,7 +30,8 @@ const sectionLabelMap: Record<string, string> = {
 };
 
 function generateStructuredData(item: any, type: string, url: string) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    // UPDATE: Changed base URL
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
     const imageUrl = item.mainImage ? urlFor(item.mainImage).width(1200).height(630).url() : `${siteUrl}/og.png`;
     const datePublished = item.publishedAt || new Date().toISOString();
     const dateModified = item._updatedAt || datePublished;
@@ -126,7 +127,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     if (!item) return {};
     
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    // UPDATE: Changed base URL
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
     const ogImageUrl = `${siteUrl}/api/og?slug=${slug}`;
     const canonicalUrl = `${siteUrl}/${section}/${slug}`;
 
@@ -207,7 +209,8 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
 
     const colorDictionary = dictionary?.autoColors || [];
     
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    // UPDATE: Changed base URL
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
     const jsonLdData = generateStructuredData(enrichedItem, sanityType, `${siteUrl}/${section}/${slug}`);
 
     const breadcrumbItems = [

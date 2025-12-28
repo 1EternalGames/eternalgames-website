@@ -34,10 +34,11 @@ const cairo = Cairo({
   weight: ['400', '500', '700', '800'],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+// UPDATE: Changed default domain to the new one
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(siteUrl), // CRITICAL for Open Graph images to work
   title: {
     default: 'EternalGames | حيث لا تُفنى الألعاب',
     template: '%s | EternalGames',
@@ -71,7 +72,7 @@ export const metadata: Metadata = {
     siteName: 'EternalGames',
     images: [
       {
-        url: `${siteUrl}/og.png`,
+        url: `/og.png`, // metadataBase will handle the domain prefix
         width: 1200,
         height: 630,
         alt: 'EternalGames Logo',
@@ -87,7 +88,7 @@ export const metadata: Metadata = {
       template: '%s | EternalGames',
     },
     description: 'منصة محتوى متخصصة في عالم الألعاب، تقدم مراجعات عميقة، مقالات تحليلية، وآخر الأخبار بتجربة تفاعلية فريدة.',
-    images: [`${siteUrl}/og.png`],
+    images: [`/og.png`],
   },
   verification: {
     google: 'YOUR_GOOGLE_VERIFICATION_CODE', 

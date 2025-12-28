@@ -3,7 +3,8 @@ import { MetadataRoute } from 'next';
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app'; // Fixed URL to main
+// UPDATE: Changed base URL
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com'; 
 
 // 1. Fetch ALL dynamic routes. 
 // We explicitly exclude drafts and ensure slugs are defined.

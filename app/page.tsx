@@ -11,7 +11,8 @@ export const dynamic = 'force-static';
 export default async function HomePage() {
     // Only the homepage fetches the heavy data at build time.
     const data = await getUniversalBaseData();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    // UPDATE: Changed base URL
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
     
     const carouselItems = data.reviews.slice(0, 5).map((review: any, index: number) => ({
         url: `${siteUrl}/reviews/${review.slug}`,
