@@ -13,7 +13,15 @@ import { StarPreviewCard } from './StarPreviewCard';
 import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from './ConstellationControlPanel';
 import { getCommentedContentIds } from '@/app/actions/userActions';
+import styles from './ConstellationControlPanel.module.css'; // This is correct, uses shared styles
 import { PerformanceMonitor } from '@react-three/drei'; 
+
+const CelestialGearIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8"></circle>
+        <path d="M12 2v2m0 16v2m8.5-10h-2m-13 0h-2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"></path>
+    </svg>
+);
 
 type InitialData = {
     userContent: SanityContentObject[];
@@ -46,7 +54,10 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
     const [userContent, setUserContent] = useState<SanityContentObject[]>(initialData?.userContent || []);
     const [activeStar, setActiveStar] = useState<StarData | null>(null);
     const [activeStarPosition, setActiveStarPosition] = useState<ScreenPosition | null>(null);
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [commentedContentSlugs, setCommentedContentSlugs] = useState<string[]>(initialData?.commentedSlugs || []);
+
+    // REMOVED useBodyClass('editor-active', isPanelOpen); as panel is now self-contained popover
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -199,7 +210,8 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
                     setSettings={setSettings} 
                     onPresetChange={handlePresetChange} 
                     isFullscreen={isFullscreen} 
-                    onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} 
+                    onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+                    onClose={() => setIsPanelOpen(false)} // Added onClose
                 />
                 
                 <Canvas 
