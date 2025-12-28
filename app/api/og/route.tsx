@@ -12,7 +12,6 @@ const query = groq`
     score,
     "category": category->title,
     _type,
-    // ADDED: Fetch author name
     "authorName": coalesce(authors[0]->name, reporters[0]->name, "EternalGames")
   }
 `;
@@ -21,14 +20,24 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
 
+  // 1. Fetch the Cairo Font (Required for Arabic support)
+  // We fetch the Bold weight (700) for titles
+  const fontData = await fetch(
+    new URL('https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-Bold.ttf', import.meta.url)
+  ).then((res) => res.arrayBuffer());
+
   if (!slug) {
     return new ImageResponse(
       (
-        <div style={{ background: '#050505', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '48px', fontWeight: 900 }}>
+        <div style={{ background: '#050505', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '48px', fontWeight: 900, fontFamily: '"Cairo"' }}>
           EternalGames
         </div>
       ),
-      { width: 1200, height: 630 }
+      { 
+          width: 1200, 
+          height: 630,
+          fonts: [{ name: 'Cairo', data: fontData, style: 'normal', weight: 700 }]
+      }
     );
   }
 
@@ -37,11 +46,15 @@ export async function GET(request: Request) {
   if (!data) {
      return new ImageResponse(
       (
-        <div style={{ background: '#050505', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '48px', fontWeight: 900 }}>
+        <div style={{ background: '#050505', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '48px', fontWeight: 900, fontFamily: '"Cairo"' }}>
           EternalGames
         </div>
       ),
-      { width: 1200, height: 630 }
+      { 
+          width: 1200, 
+          height: 630,
+          fonts: [{ name: 'Cairo', data: fontData, style: 'normal', weight: 700 }]
+      }
     );
   }
 
@@ -55,7 +68,7 @@ export async function GET(request: Request) {
           display: 'flex',
           position: 'relative',
           overflow: 'hidden',
-          fontFamily: 'sans-serif',
+          fontFamily: '"Cairo"', // Use the loaded font
         }}
       >
         {data.imageUrl && (
@@ -139,13 +152,13 @@ export async function GET(request: Request) {
                     {data._type === 'review' ? 'مراجعة' : (data.category || 'مقال')}
                 </div>
                 
-                {/* ADDED: Author Name Badge */}
+                {/* Author Name Badge */}
                 {data.authorName && (
                    <div style={{
                        color: '#cccccc',
                        fontSize: '24px',
                        fontWeight: 600,
-                       marginLeft: 'auto' // Pushes to left in RTL
+                       marginLeft: 'auto' 
                    }}>
                        بقلم: {data.authorName}
                    </div>
@@ -167,7 +180,7 @@ export async function GET(request: Request) {
                 {data.title}
             </h1>
             
-            {/* Brand Watermark (Moved to top-left for RTL consistency) */}
+            {/* Brand Watermark */}
             <div 
                 style={{
                     position: 'absolute',
@@ -186,6 +199,15 @@ export async function GET(request: Request) {
     {
       width: 1200,
       height: 630,
+      // Load the Arabic-compatible font
+      fonts: [
+          {
+              name: 'Cairo',
+              data: fontData,
+              style: 'normal',
+              weight: 700
+          }
+      ]
     }
   );
 }
