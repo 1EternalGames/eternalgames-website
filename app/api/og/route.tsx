@@ -20,29 +20,27 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
-    if (!slug) {
-        return new ImageResponse(
-            (
-                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 900, fontFamily: 'sans-serif' }}>
-                    EternalGames
-                </div>
-            ),
-            { width: 1200, height: 630 }
-        );
+    // 1. Fetch "Inter" Font (Robust CDN link)
+    // We use a try/catch for the font specifically so the image still generates even if the font fails.
+    let fontData: ArrayBuffer | null = null;
+    try {
+        const fontResponse = await fetch('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-900-normal.ttf');
+        if (fontResponse.ok) {
+            fontData = await fontResponse.arrayBuffer();
+        }
+    } catch (e) {
+        console.warn("Font fetch failed, falling back to system font");
     }
+
+    if (!slug) return new Response("Missing slug", { status: 400 });
 
     const data = await client.fetch(query, { slug });
 
-    if (!data || !data.imageUrl) {
-        return new ImageResponse(
-            (
-                <div style={{ display: 'flex', height: '100%', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: 'white', fontSize: 60, fontWeight: 900, fontFamily: 'sans-serif' }}>
-                    EternalGames
-                </div>
-            ),
-            { width: 1200, height: 630 }
-        );
-    }
+    if (!data || !data.imageUrl) return new Response("Content not found", { status: 404 });
+
+    // Design Configuration
+    const accentColor = '#00FFF0'; // Cyan
+    const darkBg = '#050505';
 
     return new ImageResponse(
         (
@@ -52,11 +50,12 @@ export async function GET(request: Request) {
                     width: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    backgroundColor: '#0A0B0F',
+                    backgroundColor: darkBg,
                     position: 'relative',
+                    fontFamily: '"Inter", sans-serif', // Use Inter if loaded
                 }}
             >
-                 {/* Background Image - Full Cover */}
+                 {/* 1. Background Image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={data.imageUrl}
@@ -71,65 +70,114 @@ export async function GET(request: Request) {
                     }}
                 />
                 
-                {/* Subtle Gradient Overlay for Text Readability */}
+                {/* 2. Overlays */}
+                {/* Dark Vignette for text readability */}
                 <div
                     style={{
                         position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(5,5,5,0.95) 0%, rgba(5,5,5,0.4) 30%, transparent 60%)',
+                    }}
+                />
+                
+                {/* Cyber Border Inset */}
+                <div 
+                    style={{
+                        position: 'absolute',
+                        top: '20px', left: '20px', right: '20px', bottom: '20px',
+                        border: `2px solid ${accentColor}`,
+                        borderRadius: '20px',
+                        opacity: 0.8,
+                        boxShadow: `0 0 40px ${accentColor}40`, // Soft glow
+                        zIndex: 5
                     }}
                 />
 
-                {/* Content Container */}
+                {/* 3. Top Section: Score */}
                 <div style={{
+                    position: 'absolute',
+                    top: '40px',
+                    right: '40px',
                     display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                    padding: '40px',
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 10,
+                    zIndex: 10
                 }}>
-                    {/* Brand Logo (Bottom Left) */}
-                    <div style={{
-                        color: '#00FFF0',
-                        fontSize: '40px',
-                        fontWeight: 900,
-                        fontFamily: 'sans-serif',
-                        textShadow: '0 2px 10px rgba(0,0,0,0.5)',
-                    }}>
-                        EternalGames.
-                    </div>
-
-                    {/* Score Badge (Bottom Right) - Only if score exists */}
                     {data.score && (
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#00FFF0',
-                            color: '#000',
-                            fontSize: '48px',
-                            fontWeight: 900,
-                            padding: '10px 30px',
-                            borderRadius: '50px',
-                            fontFamily: 'sans-serif',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                            width: '140px',
+                            height: '140px',
+                            backgroundColor: accentColor,
+                            borderRadius: '50%',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                            border: '8px solid rgba(0,0,0,0.2)',
                         }}>
-                            {data.score}
+                            <span style={{
+                                color: '#000',
+                                fontSize: '80px',
+                                fontWeight: 900,
+                                lineHeight: '1',
+                                marginTop: '-5px', // Visual centering
+                            }}>
+                                {data.score}
+                            </span>
                         </div>
                     )}
+                </div>
+
+                {/* 4. Bottom Section: Logo & Category */}
+                <div style={{
+                    position: 'absolute',
+                    bottom: '40px',
+                    left: '50px',
+                    right: '50px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-end',
+                    zIndex: 10,
+                }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{
+                            color: accentColor,
+                            fontSize: '24px',
+                            fontWeight: 900,
+                            textTransform: 'uppercase',
+                            letterSpacing: '2px',
+                            background: 'rgba(0, 255, 240, 0.1)',
+                            padding: '10px 20px',
+                            borderRadius: '50px',
+                            border: `1px solid ${accentColor}60`,
+                            width: 'fit-content'
+                        }}>
+                             {data._type === 'review' ? 'REVIEW' : (data.category || 'ARTICLE')}
+                        </div>
+                        <div style={{
+                            color: '#FFF',
+                            fontSize: '60px',
+                            fontWeight: 900,
+                            letterSpacing: '-2px',
+                            textShadow: '0 4px 20px rgba(0,0,0,0.8)',
+                        }}>
+                            ETERNALGAMES
+                        </div>
+                    </div>
                 </div>
             </div>
         ),
         {
             width: 1200,
             height: 630,
-            // No custom fonts = No fetch errors
+            // Only attach fonts if fetch succeeded
+            fonts: fontData ? [
+                {
+                    name: 'Inter',
+                    data: fontData,
+                    style: 'normal',
+                    weight: 900,
+                },
+            ] : undefined,
         }
     );
   } catch (e: any) {
