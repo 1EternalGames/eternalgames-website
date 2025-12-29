@@ -17,7 +17,6 @@ import { unstable_cache } from 'next/cache';
 
 // OPTIMIZATION: Infinite Cache (revalidate: false).
 // Updates are triggered ONLY by Sanity Webhook (Tag-based revalidation).
-// This eliminates "polling" bandwidth entirely.
 const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment'], { revalidate: false, tags: ['content', 'review'] });
 const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment'], { revalidate: false, tags: ['content', 'article'] });
 const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment'], { revalidate: false, tags: ['content', 'news'] });
@@ -59,8 +58,25 @@ export async function fetchUniversalData() {
         collectIds(reviews || []);
         collectIds(articles || []);
         collectIds(news || []);
-        collectIds(releases || []);
         
+        // Collect Game IDs from Releases (Current Month Only)
+        if (releases && releases.length > 0) {
+            const now = new Date();
+            const currentMonth = now.getUTCMonth();
+            const currentYear = now.getUTCFullYear();
+            
+            const releasesThisMonth = releases.filter((r: any) => {
+                if (!r.releaseDate) return false;
+                const d = new Date(r.releaseDate);
+                return d.getUTCMonth() === currentMonth && d.getUTCFullYear() === currentYear;
+            });
+            
+            releasesThisMonth.forEach((r: any) => {
+                if (r.game?._id) gameIds.add(r.game._id);
+            });
+        }
+        
+        // OPTIMIZATION: Ensure these batch fetches also use infinite caching (revalidate: false)
         const [gameHubs, tagHubs, creatorHubs] = await Promise.all([
             gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: false, tags: ['content', 'game'] } }) : [],
             tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: false, tags: ['content', 'tag'] } }) : [],

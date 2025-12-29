@@ -9,7 +9,7 @@ import {
 } from '@/app/actions/batchActions';
 
 export interface KineticContentState {
-  universalData: any | null; // NEW: Store the full raw universal object
+  universalData: any | null;
   contentMap: Map<string, any>;
   pageMap: Map<string, any>;
   creatorMap: Map<string, any>;
@@ -46,7 +46,7 @@ export interface KineticContentState {
 }
 
 export const useContentStore = create<KineticContentState>((set, get) => ({
-  universalData: null, // Initial state
+  universalData: null, 
   contentMap: new Map(),
   pageMap: new Map(),
   creatorMap: new Map(),
@@ -62,19 +62,32 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   previousPath: null,
 
   hydrateUniversal: (data) => {
-      // 0. Store the raw data for the Loader to use
+      // 0. Store the raw data
       set({ universalData: data });
 
       const { hydrateContent, hydrateIndex, hydrateCreators, hydrateTags } = get();
       
       const hubContent: any[] = [];
+      const gameHubs: any[] = [];
+      const tagHubs: any[] = [];
+      const creatorHubs: any[] = [];
       
       if (data.hubs) {
-          if (data.hubs.games) data.hubs.games.forEach((g: any) => g.linkedContent && hubContent.push(...g.linkedContent));
-          if (data.hubs.tags) data.hubs.tags.forEach((t: any) => t.items && hubContent.push(...t.items));
-          if (data.hubs.creators) data.hubs.creators.forEach((c: any) => c.linkedContent && hubContent.push(...c.linkedContent));
+          if (data.hubs.games) {
+              gameHubs.push(...data.hubs.games);
+              data.hubs.games.forEach((g: any) => g.linkedContent && hubContent.push(...g.linkedContent));
+          }
+          if (data.hubs.tags) {
+              tagHubs.push(...data.hubs.tags);
+              data.hubs.tags.forEach((t: any) => t.items && hubContent.push(...t.items));
+          }
+          if (data.hubs.creators) {
+              creatorHubs.push(...data.hubs.creators);
+              data.hubs.creators.forEach((c: any) => c.linkedContent && hubContent.push(...c.linkedContent));
+          }
       }
 
+      // Collect ALL content items into a single array for one atomic update
       const allContent = [
           ...(data.reviews || []), 
           ...(data.articles || []), 
@@ -83,6 +96,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           ...hubContent
       ];
 
+      // Process content items (Body/Loaded checks)
       const processedContent = allContent.map(item => {
           const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
           const hasHub = item.linkedContent && Array.isArray(item.linkedContent);
@@ -92,9 +106,25 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
               contentLoaded: hasBody || hasHub
           };
       });
+
+      // Add Game Hubs (loaded state)
+      gameHubs.forEach(g => processedContent.push({ ...g, contentLoaded: true }));
       
+      // Add Metadata Games (unloaded state - for instant header resolution)
+      if (data.metadata && data.metadata.games) {
+          data.metadata.games.forEach((g: any) => {
+              // Only add if not already present from gameHubs (to avoid overwriting 'contentLoaded: true')
+              // But since this array is processed in order, we can just push it. 
+              // Actually, hydrateContent merges, so we should ensure loaded items take precedence.
+              // We'll rely on hydrateContent's merge logic to prefer existing data if available.
+              processedContent.push({ ...g, contentLoaded: false });
+          });
+      }
+
+      // 1. ATOMIC HYDRATION: Hydrate all content and games in one go
       hydrateContent(processedContent);
       
+      // 2. Hydrate Indexes (These go to pageMap, independent of contentMap)
       if (data.reviews) {
           hydrateIndex('reviews', {
               hero: data.reviews[0],
@@ -132,13 +162,25 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           });
       }
       
-      if (data.hubs) {
-          if (data.hubs.games) hydrateContent(data.hubs.games.map((g: any) => ({ ...g, contentLoaded: true })));
-          if (data.hubs.tags) hydrateTags(data.hubs.tags.map((t: any) => ({ ...t, contentLoaded: true })));
-          if (data.hubs.creators) hydrateCreators(data.hubs.creators.map((c: any) => ({ ...c, contentLoaded: true })));
+      // 3. Hydrate Creators (Atomic)
+      const allCreators = [...(data.credits || []), ...creatorHubs.map((c: any) => ({ ...c, contentLoaded: true }))];
+      if (data.metadata && data.metadata.creators) {
+          allCreators.push(...data.metadata.creators.map((c: any) => ({ ...c, contentLoaded: false })));
       }
+      hydrateCreators(allCreators);
 
-      hydrateCreators(data.credits || []);
+      // 4. Hydrate Tags (Atomic)
+      const allTags = [...tagHubs.map((t: any) => ({ ...t, contentLoaded: true }))];
+      if (data.metadata) {
+          const metaTags = [
+              ...(data.metadata.gameTags || []),
+              ...(data.metadata.newsTags || []),
+              ...(data.metadata.articleTags || [])
+          ];
+          const uniqueMetaTags = Array.from(new Map(metaTags.map((t:any) => [t.slug, t])).values());
+          allTags.push(...uniqueMetaTags.map((t: any) => ({ ...t, contentLoaded: false })));
+      }
+      hydrateTags(allTags);
   },
 
   hydrateContent: (items) => {
@@ -149,12 +191,15 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
         if (slugStr) {
              const existing = newMap.get(slugStr);
              let isLoaded = false;
+             
+             // If incoming item says it's loaded, trust it.
              if (item.contentLoaded === true) { isLoaded = true; } 
+             // If existing item was loaded, keep it loaded.
+             else if (existing?.contentLoaded) { isLoaded = true; }
              else {
                  const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
                  const hasLinked = item.linkedContent && Array.isArray(item.linkedContent);
                  if (hasBody || hasLinked) isLoaded = true;
-                 else if (existing?.contentLoaded) isLoaded = true;
              }
 
              const content = (item.content && item.content.length > 0) ? item.content : existing?.content;
@@ -207,13 +252,20 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           for (const key of keys) { if (newMap.has(key)) { existing = newMap.get(key); break; } }
 
           let merged = { ...c };
-          if (c.linkedContent !== undefined) merged.contentLoaded = true;
-          if (c.contentLoaded) merged.contentLoaded = true;
+          
+          // Determine Loaded State
+          let isLoaded = false;
+          if (c.contentLoaded === true) isLoaded = true;
+          else if (existing?.contentLoaded) isLoaded = true;
+          else if (c.linkedContent !== undefined) isLoaded = true;
 
           if (existing) {
               merged = { ...existing, ...c };
-              if (c.linkedContent !== undefined) { merged.linkedContent = c.linkedContent; merged.contentLoaded = true; }
+              if (c.linkedContent !== undefined) { 
+                  merged.linkedContent = c.linkedContent; 
+              }
           }
+          merged.contentLoaded = isLoaded;
           
           if (merged.username) newMap.set(merged.username, merged);
           if (merged._id) newMap.set(merged._id, merged);
@@ -230,8 +282,15 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
               if (slugStr) {
                   const existing = newMap.get(slugStr);
                   const merged = existing ? { ...t, ...existing } : { ...t };
-                  if (t.items !== undefined) { merged.items = t.items; merged.contentLoaded = true; }
-                  if (t.contentLoaded) merged.contentLoaded = true;
+                  
+                  let isLoaded = false;
+                  if (t.contentLoaded === true) isLoaded = true;
+                  else if (existing?.contentLoaded) isLoaded = true;
+                  else if (t.items !== undefined) isLoaded = true;
+
+                  if (t.items !== undefined) { merged.items = t.items; }
+                  merged.contentLoaded = isLoaded;
+                  
                   newMap.set(slugStr, merged);
               }
           }
@@ -244,14 +303,24 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
+    // Optimistic Seeding
     if (type === 'creators' && preloadedData) {
         const { creatorMap } = currentState;
-        const existing = creatorMap.get(slug);
-        if (!existing) {
-            const newMap = new Map(creatorMap);
-            const partialCreator = { username: slug, name: preloadedData.name, image: preloadedData.image, contentLoaded: false };
-            newMap.set(slug, partialCreator);
-            set({ creatorMap: newMap });
+        if (!creatorMap.has(slug)) {
+             const newMap = new Map(creatorMap);
+             newMap.set(slug, { username: slug, ...preloadedData, contentLoaded: false });
+             set({ creatorMap: newMap });
+        }
+    }
+    
+    // Seed Tag if not exists (we at least know the slug)
+    if (type === 'tags') {
+        const { tagMap } = currentState;
+        if (!tagMap.has(slug)) {
+            const newMap = new Map(tagMap);
+            // We use the slug as title temporarily until fetch completes
+            newMap.set(slug, { slug, title: slug, contentLoaded: false });
+            set({ tagMap: newMap });
         }
     }
 

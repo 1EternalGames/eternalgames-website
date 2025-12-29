@@ -531,7 +531,7 @@ const TimelineCardComponent = ({
                     <KineticLink 
                         href={targetUrl}
                         slug={effectiveSlug}
-                        type={kineticLinkType}
+                        type={kineticLinkType} // Pass correct type ('games' or 'releases')
                         layoutId={safeLayoutIdPrefix}
                         imageSrc={imageUrl}
                         className="no-underline block h-full"
