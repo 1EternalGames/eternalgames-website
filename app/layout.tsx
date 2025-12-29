@@ -22,7 +22,9 @@ import SkipLink from '@/components/ui/SkipLink';
 import CookieConsent from '@/components/CookieConsent';
 import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
+// IMPORT NEW LOADER
 import UniversalBaseLoader from '@/components/UniversalBaseLoader';
+// IMPORT PERFORMANCE HINT
 import PerformanceHint from '@/components/PerformanceHint';
 import ProgressBar from '@/components/ui/ProgressBar';
 // IMPORT VERCEL ANALYTICS
@@ -35,10 +37,11 @@ const cairo = Cairo({
   weight: ['400', '500', '700', '800'],
 });
 
+// UPDATE: Changed default domain to the new one
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(siteUrl), // CRITICAL for Open Graph images to work
   title: {
     default: 'EternalGames | حيث لا تُفنى الألعاب',
     template: '%s | EternalGames',
@@ -72,7 +75,7 @@ export const metadata: Metadata = {
     siteName: 'EternalGames',
     images: [
       {
-        url: `/og.png`, 
+        url: `/og.png`, // metadataBase will handle the domain prefix
         width: 1200,
         height: 630,
         alt: 'EternalGames Logo',
@@ -108,6 +111,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode; }) {
+  // OPTIMIZATION: Only fetch small dictionary. Heavy data is removed from here.
   const dictionary = await getCachedColorDictionary();
   const colors = dictionary?.autoColors || [];
 
@@ -128,6 +132,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <NextAuthProvider>
+          {/* User Store no longer receives universalData here */}
           <UserStoreHydration />
           
           {/* Vercel Analytics - Requires NO configuration, just this component */}
@@ -155,6 +160,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 
                 <main id="main-content" style={{ flexGrow: 1, position: 'relative', overflow: 'clip', display: 'block' }}>
                   <PageTransitionWrapper>
+                    {/* The Universal Loader decides when to fetch/render the heavy base */}
                     <UniversalBaseLoader />
                     
                     {children}

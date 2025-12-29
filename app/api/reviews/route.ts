@@ -6,7 +6,7 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 import { ScoreFilter } from '@/components/filters/ReviewFilters';
 import { enrichContentList } from '@/lib/enrichment';
-import { standardLimiter } from '@/lib/rate-limit'; // Import Limiter
+import { standardLimiter } from '@/lib/rate-limit'; 
 
 const getCachedPaginatedReviews = unstable_cache(
     async (
@@ -24,6 +24,7 @@ const getCachedPaginatedReviews = unstable_cache(
         return enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
     },
     ['paginated-reviews-list'], 
+    // OPTIMIZATION: Infinite cache
     { 
         revalidate: false, 
         tags: ['review', 'content'] 
@@ -32,13 +33,11 @@ const getCachedPaginatedReviews = unstable_cache(
 
 export async function GET(req: NextRequest) {
     try {
-        // --- RATE LIMITING ---
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const limitCheck = await standardLimiter.check(`api-reviews-${ip}`, 20);
         if (!limitCheck.success) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
-        // ---------------------
 
         const { searchParams } = new URL(req.url);
         

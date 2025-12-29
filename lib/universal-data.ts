@@ -15,13 +15,15 @@ import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import prisma from '@/lib/prisma';
 import { unstable_cache } from 'next/cache';
 
-// Reusable cached fetchers
-const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment'], { revalidate: 3600, tags: ['content', 'review'] });
-const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment'], { revalidate: 3600, tags: ['content', 'article'] });
-const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment'], { revalidate: 3600, tags: ['content', 'news'] });
-const getCachedReleases = unstable_cache(async () => client.fetch(homepageReleasesQuery), ['homepage-releases-fragment'], { revalidate: 3600, tags: ['content', 'gameRelease'] });
-const getCachedCredits = unstable_cache(async () => client.fetch(homepageCreditsQuery), ['homepage-credits-fragment'], { revalidate: 3600, tags: ['creators'] });
-const getCachedMetadata = unstable_cache(async () => client.fetch(homepageMetadataQuery), ['homepage-metadata-fragment'], { revalidate: 3600, tags: ['studio-metadata'] });
+// OPTIMIZATION: Infinite Cache (revalidate: false).
+// Updates are triggered ONLY by Sanity Webhook (Tag-based revalidation).
+// This eliminates "polling" bandwidth entirely.
+const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment'], { revalidate: false, tags: ['content', 'review'] });
+const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment'], { revalidate: false, tags: ['content', 'article'] });
+const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment'], { revalidate: false, tags: ['content', 'news'] });
+const getCachedReleases = unstable_cache(async () => client.fetch(homepageReleasesQuery), ['homepage-releases-fragment'], { revalidate: false, tags: ['content', 'gameRelease'] });
+const getCachedCredits = unstable_cache(async () => client.fetch(homepageCreditsQuery), ['homepage-credits-fragment'], { revalidate: false, tags: ['creators'] });
+const getCachedMetadata = unstable_cache(async () => client.fetch(homepageMetadataQuery), ['homepage-metadata-fragment'], { revalidate: false, tags: ['studio-metadata'] });
 
 export async function fetchUniversalData() {
     try {
@@ -39,7 +41,8 @@ export async function fetchUniversalData() {
         const creatorIds = new Set<string>();
 
         const collectIds = (items: any[]) => {
-            items.forEach(item => {
+            // Limit collection to first 5 items per category to reduce payload size
+            items.slice(0, 5).forEach(item => {
                 if (item.game?._id) gameIds.add(item.game._id);
                 if (item.tags) item.tags.forEach((t: any) => t._id && tagIds.add(t._id));
                 if (item.category?._id) tagIds.add(item.category._id);
@@ -59,9 +62,9 @@ export async function fetchUniversalData() {
         collectIds(releases || []);
         
         const [gameHubs, tagHubs, creatorHubs] = await Promise.all([
-            gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: 3600, tags: ['content', 'game'] } }) : [],
-            tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: 3600, tags: ['content', 'tag'] } }) : [],
-            creatorIds.size > 0 ? client.fetch(batchCreatorHubsQuery, { ids: Array.from(creatorIds) }, { next: { revalidate: 3600, tags: ['content', 'creators'] } }) : []
+            gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: false, tags: ['content', 'game'] } }) : [],
+            tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: false, tags: ['content', 'tag'] } }) : [],
+            creatorIds.size > 0 ? client.fetch(batchCreatorHubsQuery, { ids: Array.from(creatorIds) }, { next: { revalidate: false, tags: ['content', 'creators'] } }) : []
         ]);
 
         const allContentLists = [

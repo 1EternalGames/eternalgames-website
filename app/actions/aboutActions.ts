@@ -72,7 +72,8 @@ export const getAboutPageDataAction = unstable_cache(
         }
     },
     ['about-page-data'],
-    { revalidate: 3600, tags: ['about-page', 'studio-metadata'] }
+    // OPTIMIZATION: Infinite cache, relying on 'about-page' tag invalidation
+    { revalidate: false, tags: ['about-page', 'studio-metadata'] }
 );
 
 // Server Action to update the about page settings

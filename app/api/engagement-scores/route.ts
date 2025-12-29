@@ -41,7 +41,10 @@ const getCachedScores = unstable_cache(
         });
     },
     ['global-engagement-scores'], 
+    // OPTIMIZATION: Infinite cache.
+    // Invalidated ONLY by user interaction (Like/Share actions).
     { 
+        revalidate: false,
         tags: ['engagement-scores'] 
     } 
 );
@@ -55,5 +58,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch engagement metrics' }, { status: 500 });
   }
 }
-
-

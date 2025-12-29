@@ -5,7 +5,7 @@ import { paginatedNewsQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { unstable_cache } from 'next/cache';
 import { enrichContentList } from '@/lib/enrichment';
-import { standardLimiter } from '@/lib/rate-limit'; // Import Limiter
+import { standardLimiter } from '@/lib/rate-limit'; 
 
 const getCachedPaginatedNews = unstable_cache(
     async (
@@ -24,6 +24,7 @@ const getCachedPaginatedNews = unstable_cache(
         return data;
     },
     ['paginated-news-list'],
+    // OPTIMIZATION: Infinite cache
     { 
         revalidate: false, 
         tags: ['news', 'content'] 
@@ -32,13 +33,11 @@ const getCachedPaginatedNews = unstable_cache(
 
 export async function GET(req: NextRequest) {
     try {
-        // --- RATE LIMITING ---
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const limitCheck = await standardLimiter.check(`api-news-${ip}`, 20);
         if (!limitCheck.success) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
-        // ---------------------
 
         const { searchParams } = new URL(req.url);
         

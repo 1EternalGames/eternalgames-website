@@ -2,9 +2,10 @@
 import { NextResponse } from 'next/server';
 import { fetchUniversalData } from '@/lib/universal-data';
 
-// Force dynamic if needed, but since data is cached, we can allow caching here too
-// Actually, setting revalidate ensures the API response itself is cached on the Edge
-export const revalidate = 3600; 
+// OPTIMIZATION: Set to false (Infinite).
+// This route will now return the exact same JSON forever until 
+// the underlying 'fetchUniversalData' cache is invalidated by a Sanity Webhook.
+export const revalidate = false; 
 
 export async function GET() {
     try {

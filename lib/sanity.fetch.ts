@@ -8,21 +8,19 @@ import {
     tagPageDataQuery,
     gamePageDataQuery,
     colorDictionaryQuery,
-    minimalMetadataQuery // <-- IMPORT NEW QUERY
+    minimalMetadataQuery 
 } from './sanity.queries';
 import { groq } from 'next-sanity';
 
-// Map content types to their respective queries
 const queryMap: Record<string, string> = {
     review: reviewBySlugQuery,
     article: articleBySlugQuery,
     news: newsBySlugQuery,
 };
 
-// NEW: Lightweight Fetcher for Metadata
 export const getCachedMetadata = cache(async (slug: string) => {
     return await client.fetch(minimalMetadataQuery, { slug }, {
-        next: { tags: ['content', slug] } // Use consistent tag for invalidation
+        next: { tags: ['content', slug] }
     });
 });
 
@@ -33,8 +31,7 @@ export const getCachedDocument = cache(async (type: string, slug: string) => {
     return await client.fetch(query, { slug }, {
         next: { 
             tags: [type, 'content', slug],
-            // THE FIX: Removed 'revalidate: 60'. 
-            // Defaulting to infinite cache. Only updates via Webhook.
+            // Removed revalidate entirely to default to infinite
         } 
     });
 });
@@ -43,7 +40,6 @@ export const getCachedTagPageData = cache(async (slug: string) => {
     return await client.fetch(tagPageDataQuery, { slug }, {
         next: { 
             tags: ['tag', slug], 
-            // THE FIX: Removed 'revalidate: 60'.
         }
     });
 });
@@ -52,14 +48,12 @@ export const getCachedGamePageData = cache(async (slug: string) => {
     return await client.fetch(gamePageDataQuery, { slug }, {
         next: { 
             tags: ['game', slug], 
-            // THE FIX: Removed 'revalidate: 60'.
         }
     });
 });
 
 export const getCachedColorDictionary = cache(async () => {
     return await client.fetch(colorDictionaryQuery, {}, {
-        // Dictionary is rarely updated, infinite cache is perfect here.
         next: { tags: ['colorDictionary'] }
     });
 });
@@ -74,10 +68,6 @@ export const getCachedContentAndDictionary = cache(async (type: string, slug: st
     }`;
 
     return await client.fetch(combinedQuery, { slug }, {
-        // THE FIX: Removed 'revalidate: 60'. 
-        // Now this data is cached forever until you edit it in the Studio.
         next: { tags: [type, 'content', slug, 'colorDictionary'] }
     });
 });
-
-

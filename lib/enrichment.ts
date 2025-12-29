@@ -21,8 +21,10 @@ export const getCachedEnrichedCreators = unstable_cache(
             return [];
         }
     },
-    ['enriched-creators-batch'], // Key prefix
-    { tags: ['enriched-creators'] }
+    ['enriched-creators-batch'], 
+    // OPTIMIZATION: Infinite cache.
+    // This is only invalidated when a user updates their profile via 'updateUserProfile' action.
+    { revalidate: false, tags: ['enriched-creators'] }
 );
 
 function enrichItemCreators(creators: SanityAuthor[] | undefined, usernameMap: Map<string, string | null>): SanityAuthor[] {
@@ -64,12 +66,10 @@ export async function enrichContentList(items: any[]) {
         if (item.relatedNews) item.relatedNews.forEach((n: any) => collectUserIdsFromItem(n, allUserIds));
     });
 
-    // OPTIMIZATION: Skip cache call if no users found
     if (allUserIds.size === 0) {
         return items;
     }
 
-    // OPTIMIZATION: Sort IDs to ensure consistent Cache Keys.
     const uniqueIdsArray = Array.from(allUserIds).sort();
     
     const usernameEntries = await getCachedEnrichedCreators(uniqueIdsArray);
@@ -79,7 +79,6 @@ export async function enrichContentList(items: any[]) {
     return items.map(item => {
         let enrichedItem = applyEnrichmentToItem(item, usernameMap);
 
-        // Enrich nested related arrays if they exist
         if (enrichedItem.relatedReviews) {
             enrichedItem.relatedReviews = enrichedItem.relatedReviews.map((r: any) => applyEnrichmentToItem(r, usernameMap));
         }
@@ -105,5 +104,3 @@ export async function enrichCreators(creators: SanityAuthor[] | undefined): Prom
     const usernameMap = new Map(usernameArray);
     return enrichItemCreators(creators, usernameMap);
 }
-
-
