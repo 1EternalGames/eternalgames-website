@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { unstable_cache } from "next/cache";
 
+// --- CONFIGURATION ---
 const OWNER_EMAIL = "mhmfalsaadd@gmail.com"; 
 
 const PROTECTED_ROLES = ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'];
@@ -23,8 +24,6 @@ const getCachedBanStatus = unstable_cache(
         };
     },
     ['user-ban-status'], 
-    // OPTIMIZATION: Infinite cache.
-    // Only invalidates when an admin actually bans someone.
     { revalidate: false, tags: ['ban-status'] }
 );
 
@@ -96,8 +95,8 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
             }
         });
 
-        // Trigger invalidation of the infinite cache
-        revalidateTag('ban-status');
+        // THE FIX: Added 'max' profile argument
+        revalidateTag('ban-status', 'max');
         revalidatePath('/studio/director');
         
         return { success: true, message: shouldBan ? "تم حظر المستخدم." : "تم رفع الحظر." };
