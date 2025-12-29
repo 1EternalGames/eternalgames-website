@@ -2,12 +2,12 @@
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com https://img.youtube.com;
+    img-src 'self' blob: data: https://cdn.sanity.io https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://images.unsplash.com https://img.youtube.com https://www.googletagmanager.com;
     font-src 'self' https://fonts.gstatic.com;
     frame-src 'self' https://www.youtube.com https://youtube.com;
-    connect-src 'self' https://*.sanity.io https://api.sanity.io https://*.vercel-storage.com;
+    connect-src 'self' https://*.sanity.io https://api.sanity.io https://*.vercel-storage.com https://www.google-analytics.com https://analytics.google.com https://googletagmanager.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
