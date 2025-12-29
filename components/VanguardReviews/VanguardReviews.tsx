@@ -30,7 +30,7 @@ const CARD_SHAPE_PATH = `M 20,0 L 280,0 Q 300,0 300,20 L 300,146 Q 300,150 297,1
 
 const VanguardGlobalDefs = () => ( <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}> <defs> <filter id="vg-activeGlow" x="-50%" y="-50%" width="200%" height="200%"> <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur> <feMerge> <feMergeNode in="coloredBlur"></feMergeNode> <feMergeNode in="SourceGraphic"></feMergeNode> </feMerge> </filter> <clipPath id="vg-cardClip" clipPathUnits="objectBoundingBox"> <path d={CARD_SHAPE_PATH} transform="scale(0.00333333, 0.00263158)" /> </clipPath> </defs> </svg> );
 
-const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabled: boolean }) => { if (!isEnabled) return null; const defaultTopLength = 0.13; const defaultSideLength = 0.09; const defaultOpacity = 0.6; const activeTopLength = 0.66; const activeSideLength = 1.05; const topWingPath = `M 0,20 Q 0,0 20,0 L 280,0 Q 300,0 300,20 L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 L 300,335`; const leftWingPath = `M 0,20.1 L 0,146 Q 0,150 3,152 L 7,154 Q 10,156 10,160 L 10,220 Q 10,224 7,226 L 3,228 Q 0,230 0,234 L 0,335 Q 0,345 8,352 L 28,372 Q 35,380 45,380 L 150,380`; const bottomRightPath = `M 150,380 L 255,380 Q 265,380 272,372 L 292,352 Q 300,345 300,335 L 300,234 Q 300,230 297,228 L 293,226 Q 290,224 290,220 L 290,130`; const bottomLeftPath = `M 150,380 L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 L 10,130`; const activeStrokeThickness = "4"; const staticStrokeThickness = "2"; const activeTransition = { pathLength: { duration: 0.4, ease: "easeInOut" as const }, opacity: { duration: 0.05 }, filter: { duration: 0.05 } }; const bottomTransition = { duration: 0.4, ease: "easeInOut" as const }; return ( <div className={styles.frameSvgContainer}> <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none"> <path d={CARD_SHAPE_PATH} fill="var(--bg-secondary)" stroke="none" strokeWidth="0" vectorEffect="non-scaling-stroke" /> <motion.path d={bottomRightPath} fill="none" stroke="var(--accent)" strokeWidth={staticStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" filter="url(#vg-activeGlow)" initial={{ pathLength: 1, opacity: 1 }} animate={{ pathLength: isActive ? 0 : 1, opacity: isActive ? 0 : 1 }} transition={bottomTransition} /> <motion.path d={bottomLeftPath} fill="none" stroke="var(--accent)" strokeWidth={staticStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" filter="url(#vg-activeGlow)" initial={{ pathLength: 1, opacity: 1 }} animate={{ pathLength: isActive ? 0 : 1, opacity: isActive ? 0 : 1 }} transition={bottomTransition} /> {isEnabled && ( <> <motion.path d={topWingPath} fill="none" stroke="var(--accent)" strokeWidth={activeStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" initial={{ pathLength: defaultTopLength, opacity: defaultOpacity }} animate={{ pathLength: isActive ? activeTopLength : defaultTopLength, opacity: isActive ? 1 : defaultOpacity, filter: isActive ? "url(#vg-activeGlow)" : "none" }} transition={activeTransition} /> <motion.path d={leftWingPath} fill="none" stroke="var(--accent)" strokeWidth={activeStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" initial={{ pathLength: defaultSideLength, opacity: defaultOpacity }} animate={{ pathLength: isActive ? activeSideLength : defaultSideLength, opacity: isActive ? 1 : defaultOpacity, filter: isActive ? "url(#vg-activeGlow)" : "none" }} transition={activeTransition} /> </> )} </svg> </div> ); };
+const VanguardCardFrame = ({ isActive, isEnabled }: { isActive: boolean, isEnabled: boolean }) => { if (!isEnabled) return null; const defaultTopLength = 0.13; const defaultSideLength = 0.09; const defaultOpacity = 0.6; const activeTopLength = 0.66; const activeSideLength = 1.05; const topWingPath = `M 0,20 Q 0,0 20,0 L 280,0 Q 300,0 300,20 L 300,146 Q 300,150 297,152 L 293,154 Q 290,156 290,160 L 290,220 Q 290,224 293,226 L 297,228 Q 300,230 300,234 L 300,335`; const leftWingPath = `M 0,20.1 L 0,146 Q 0,150 3,152 L 7,154 Q 10,156 10,160 L 10,220 Q 10,224 7,226 L 3,228 Q 0,230 0,234 L 0,335 Q 0,345 8,352 L 28,372 Q 35,380 45,380 L 150,380`; const bottomRightPath = `M 150,380 L 255,380 Q 265,380 272,372 L 292,352 Q 300,345 300,335 L 300,234 Q 300,230 297,228 L 293,226 Q 290,224 290,220 L 290,130`; const bottomLeftPath = `M 150,380 L 45,380 Q 35,380 28,372 L 8,352 Q 0,345 0,335 L 0,234 Q 0,230 3,228 L 7,226 Q 10,224 10,220 L 10,130`; const activeStrokeThickness = "4"; const staticStrokeThickness = "2"; const activeTransition = { pathLength: { duration: 0.4, ease: "easeInOut" as const }, opacity: { duration: 0.05 }, filter: { duration: 0.05 } }; const bottomTransition = { duration: 0.4, ease: "easeInOut" as const }; return ( <div className={styles.frameSvgContainer}> <svg className={styles.frameSvg} viewBox="0 0 300 380" preserveAspectRatio="none"> {/* OPTIMIZATION: Only render complex animated paths on active/hovered cards. Static frames otherwise. */} {(isActive || isEnabled) && ( <> <motion.path d={bottomRightPath} fill="none" stroke="var(--accent)" strokeWidth={staticStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" filter={isActive ? "url(#vg-activeGlow)" : "none"} initial={{ pathLength: 1, opacity: 1 }} animate={{ pathLength: isActive ? 0 : 1, opacity: isActive ? 0 : 1 }} transition={bottomTransition} /> <motion.path d={bottomLeftPath} fill="none" stroke="var(--accent)" strokeWidth={staticStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" filter={isActive ? "url(#vg-activeGlow)" : "none"} initial={{ pathLength: 1, opacity: 1 }} animate={{ pathLength: isActive ? 0 : 1, opacity: isActive ? 0 : 1 }} transition={bottomTransition} /> </> )} {isEnabled && ( <> <motion.path d={topWingPath} fill="none" stroke="var(--accent)" strokeWidth={activeStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" initial={{ pathLength: defaultTopLength, opacity: defaultOpacity }} animate={{ pathLength: isActive ? activeTopLength : defaultTopLength, opacity: isActive ? 1 : defaultOpacity, filter: isActive ? "url(#vg-activeGlow)" : "none" }} transition={activeTransition} /> <motion.path d={leftWingPath} fill="none" stroke="var(--accent)" strokeWidth={activeStrokeThickness} vectorEffect="non-scaling-stroke" strokeLinecap="round" initial={{ pathLength: defaultSideLength, opacity: defaultOpacity }} animate={{ pathLength: isActive ? activeSideLength : defaultSideLength, opacity: isActive ? 1 : defaultOpacity, filter: isActive ? "url(#vg-activeGlow)" : "none" }} transition={activeTransition} /> </> )} </svg> </div> ); };
 
 // --- ANIMATION VARIANTS FOR HOVER ---
 const capsuleVariants: Variants = {
@@ -241,22 +241,59 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                 >
                     <div className={styles.hitArea} />
 
+                    {/* OPTIMIZATION: Condition Render - Only render dynamic frame if visible */}
                     {isVisible && <VanguardCardFrame isActive={isHovered} isEnabled={isCornerAnimationEnabled} />}
                     
-                    <div className={styles.effectLayer}>
-                        {isVisible && !isMobile && (
-                            <motion.div className={styles.holoSpotlight} style={{ x: smoothMouseX, y: smoothMouseY }} />
-                        )}
-                        {isVisible && <div className={styles.scanLine} />}
+                    {/* NEW: Clipped Inner Container for Content to Fix Bleed */}
+                    <div className={styles.clippedInnerContainer}>
+                        <div className={styles.effectLayer}>
+                            {isVisible && !isMobile && (
+                                <motion.div className={styles.holoSpotlight} style={{ x: smoothMouseX, y: smoothMouseY }} />
+                            )}
+                            {isVisible && <div className={styles.scanLine} />}
+                        </div>
+
+                        <motion.div 
+                            layoutId={!isMobile && imageLayoutId ? imageLayoutId : undefined} 
+                            className={styles.cardImageContainer}
+                        >
+                            <Image 
+                                loader={sanityLoader}
+                                src={imageUrl} 
+                                alt={review.title} 
+                                fill 
+                                sizes={isCenter ? "(max-width: 768px) 80vw, 400px" : "(max-width: 768px) 60vw, 280px"}
+                                className={styles.cardImage} 
+                                placeholder="blur" 
+                                blurDataURL={review.blurDataURL} 
+                                priority={isPriority}
+                            />
+                        </motion.div>
+                        
+                        <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
+                            <motion.h3 
+                                layoutId={!isMobile && titleLayoutId ? titleLayoutId : undefined}
+                            >
+                                {review.title}
+                            </motion.h3>
+                            
+                            <div className={styles.cardMetaRow}>
+                                {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
+                                <div className={styles.techDecoration}>
+                                    <div className={styles.techDot} />
+                                    <div className={styles.techDot} />
+                                    <div className={styles.techDot} />
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
 
-                    {/* MODIFIED: CREATOR CAPSULE CONTAINER */}
-                    {/* AnimatePresence Removed to stop mount/unmount thrashing */}
+                    {/* OVERHANGING ELEMENTS (OUTSIDE CLIP) */}
                     {isVisible && (
                         <motion.div
                             className={styles.creatorCapsuleContainer}
                             initial={{ opacity: 0 }}
-                            animate={{ opacity: showCredits ? 1 : 0 }} // Simple fade
+                            animate={{ opacity: showCredits ? 1 : 0 }} 
                             transition={{ duration: 0.3 }}
                             style={{ 
                                 pointerEvents: showCredits ? 'auto' : 'none', 
@@ -269,40 +306,6 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                     )}
 
                     {typeof review.score === 'number' && (<div className={styles.vanguardScoreBadge}><p ref={scoreRef} style={{ margin: 0 }}>0.0</p></div>)}
-                    
-                    <motion.div 
-                        layoutId={!isMobile && imageLayoutId ? imageLayoutId : undefined} 
-                        className={styles.cardImageContainer}
-                    >
-                        <Image 
-                            loader={sanityLoader}
-                            src={imageUrl} 
-                            alt={review.title} 
-                            fill 
-                            sizes={isCenter ? "(max-width: 768px) 80vw, 400px" : "(max-width: 768px) 60vw, 280px"}
-                            className={styles.cardImage} 
-                            placeholder="blur" 
-                            blurDataURL={review.blurDataURL} 
-                            priority={isPriority}
-                        />
-                    </motion.div>
-                    
-                    <motion.div className={styles.cardContent} animate={{ background: isCenter ? 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)' }} transition={{ duration: 0.5, ease: 'circOut' }}>
-                        <motion.h3 
-                            layoutId={!isMobile && titleLayoutId ? titleLayoutId : undefined}
-                        >
-                            {review.title}
-                        </motion.h3>
-                        
-                        <div className={styles.cardMetaRow}>
-                            {review.date && <p className={styles.cardDate}>{review.date.split(' - ')[0]}</p>}
-                            <div className={styles.techDecoration}>
-                                <div className={styles.techDot} />
-                                <div className={styles.techDot} />
-                                <div className={styles.techDot} />
-                            </div>
-                        </div>
-                    </motion.div>
                     
                     {isVisible && isFlyingTagsEnabled && (
                         <div className={styles.satelliteField} style={{ transform: 'translateZ(60px)' }}>
@@ -441,12 +444,11 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
 
     if (reviews.length === 0) return null;
 
-    const centerCardState = getCardState(currentIndex, reviews[currentIndex].id);
-    const centerStyle = centerCardState.style;
+    const { layout: centerLayout } = getCardState(currentIndex, reviews[currentIndex].id);
     const initialAnimationConfig = {
-        ...centerStyle,
+        ...centerLayout,
         opacity: 0,
-        transform: centerStyle.transform ? centerStyle.transform.replace(/scale\([0-9.]+\)/, 'scale(0.8)') : 'scale(0.8)',
+        scale: 0.8 // Force smaller start
     };
 
     return (
@@ -463,22 +465,36 @@ export default function VanguardReviews({ reviews }: { reviews: CardProps[] }) {
                 onTouchCancel={() => initialAnimHasRun && setHoveredId(null)}
             >
                 {reviews.map((review, reviewIndex) => {
-                    const { style, isCenter, isVisible } = getCardState(reviewIndex, review.id);
+                    const { layout, isCenter, isVisible } = getCardState(reviewIndex, review.id);
                     const isHovered = hoveredId === review.id;
-                    const currentStyle = { ...style };
-                    if (currentStyle.transform) {
-                        let yOffset = isMobile ? CARD_VERTICAL_OFFSET_MOBILE : CARD_VERTICAL_OFFSET_DESKTOP;
-                        if (isHovered && !isMobile) yOffset -= 15; 
-                        currentStyle.transform = currentStyle.transform.replace(/translateY\([^)]+\)/, `translateY(${yOffset}px)`);
-                    }
+                    
+                    // FIX: REMOVED MANUAL Y CALCULATION.
+                    // The hook now returns the correct Y value (80) directly in `layout.y`.
+
+                    // RESTORED: Standard smooth spring transition for all moves
+                    // Removed "isWrapping" instant logic.
+                    const transitionConfig = { ease: [0.4, 0, 0.2, 1], duration: 0.7, delay: !initialAnimHasRun ? (isCenter ? 0 : 0.2) : 0 };
 
                     return (
                         <motion.div 
                             key={review.id} 
                             className={`${styles.cardSlot} ${isHovered ? styles.activeState : ''}`} 
                             initial={!initialAnimHasRun ? initialAnimationConfig : false}
-                            animate={currentStyle}
-                            transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.7, delay: !initialAnimHasRun ? (isCenter ? 0 : 0.2) : 0 }}
+                            
+                            // Use individual transforms
+                            animate={{
+                                x: layout.x,
+                                y: layout.y, // Use the Y value directly from the hook
+                                scale: layout.scale,
+                                zIndex: layout.zIndex,
+                                opacity: layout.opacity,
+                                visibility: layout.visibility
+                            }}
+                            
+                            transition={transitionConfig}
+                            style={{ 
+                                pointerEvents: layout.pointerEvents 
+                            }}
                         >
                             <VanguardCard 
                                 review={review} isCenter={isCenter} isInView={hasAnimatedIn} isPriority={isCenter} isMobile={isMobile} isHovered={isHovered} isInteractive={initialAnimHasRun} isVisible={isVisible} onHoverChange={(val) => handleCardHoverChange(review.id, val)}

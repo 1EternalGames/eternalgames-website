@@ -5,6 +5,8 @@ export const runtime = 'edge';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '0zany1dm';
 const DATASET = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgamesweb.com';
+
 const QUERY = `*[_type in ["review", "article", "news"] && slug.current == $slug][0]{
     "imageUrl": mainImage.asset->url,
     score
@@ -15,32 +17,36 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
-    if (!slug) return new Response("Missing Slug", { status: 400 });
+    // Default to the site screenshot
+    let imageUrl = `${SITE_URL}/screenshot-wide.png`;
+    let score = null;
 
-    const url = `https://${PROJECT_ID}.api.sanity.io/v2021-10-21/data/query/${DATASET}?query=${encodeURIComponent(QUERY)}&%24slug="${slug}"`;
-    const sanityRes = await fetch(url);
-    
-    if (!sanityRes.ok) throw new Error("Sanity Fetch Failed");
-    
-    const json = await sanityRes.json();
-    const data = json.result;
+    // If a slug is provided, try to fetch specific content data
+    if (slug) {
+        try {
+            const url = `https://${PROJECT_ID}.api.sanity.io/v2021-10-21/data/query/${DATASET}?query=${encodeURIComponent(QUERY)}&%24slug="${slug}"`;
+            const sanityRes = await fetch(url);
+            
+            if (sanityRes.ok) {
+                const json = await sanityRes.json();
+                const data = json.result;
 
-    if (!data || !data.imageUrl) {
-        return new ImageResponse(
-            <div style={{ display: 'flex', width: '100%', height: '100%', background: '#050505' }} />,
-            { width: 1200, height: 630 }
-        );
+                if (data && data.imageUrl) {
+                    // Force Sanity CDN to deliver Max Quality (100) at exact Dimensions
+                    imageUrl = `${data.imageUrl}?w=1200&h=630&fit=crop&q=100&auto=format`;
+                    score = data.score;
+                }
+            }
+        } catch (e) {
+            console.error("Sanity fetch failed for OG, using default screenshot.", e);
+        }
     }
-
-    // Force Sanity CDN to deliver Max Quality (100) at exact Dimensions
-    const highResImage = `${data.imageUrl}?w=1200&h=630&fit=crop&q=100&auto=format`;
 
     const ACCENT = '#00FFF0';
 
     return new ImageResponse(
         (
             // 1. OUTER CONTAINER: Full square rectangle with dark background.
-            // This ensures the "corners" outside the border radius are #0A0B0F, not white/transparent.
             <div
                 style={{
                     display: 'flex',
@@ -62,11 +68,11 @@ export async function GET(request: Request) {
                         overflow: 'hidden',   // Clips the image
                     }}
                 >
-                    {/* 1. Background Image */}
+                    {/* 1. Background Image (Screenshot or Article Image) */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src={highResImage}
-                        alt=""
+                        src={imageUrl}
+                        alt="EternalGames Preview"
                         style={{
                             width: '100%',
                             height: '100%',
@@ -105,8 +111,8 @@ export async function GET(request: Request) {
                         }}
                     />
 
-                    {/* 4. Score Badge */}
-                    {data.score && (
+                    {/* 4. Score Badge (Only shows if content has a score) */}
+                    {score && (
                         <div style={{
                             position: 'absolute',
                             top: '40px',
@@ -129,7 +135,7 @@ export async function GET(request: Request) {
                                 fontFamily: 'sans-serif',
                                 marginTop: '-10px',
                             }}>
-                                {data.score}
+                                {score}
                             </div>
                         </div>
                     )}

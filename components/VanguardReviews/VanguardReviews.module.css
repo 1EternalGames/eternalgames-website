@@ -15,11 +15,11 @@
     width: calc(100% + 20rem);
     overflow-x: clip; 
     
-    /* 3D Context Setup */
+    /* 3D Context Setup - Optimized for Safari */
     transform-style: preserve-3d;
     perspective: 1200px;
     
-    /* OPTIMIZATION: Isolate this section so 3D calcs don't reflow the whole page */
+    /* OPTIMIZATION: Isolate layout to prevent page-wide reflows */
     contain: layout style;
     
     touch-action: pan-y;
@@ -40,6 +40,9 @@
     background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
+    
+    /* GPU Hint */
+    will-change: opacity;
 }
 
 .cardSlot {
@@ -47,13 +50,12 @@
     pointer-events: auto;
     transform-style: preserve-3d;
     
-    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease-out, left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
     width: var(--center-width);
     height: 500px;
     touch-action: pan-y;
     
-    /* OPTIMIZATION: Hardware Acceleration Hints */
-    will-change: transform, opacity;
+    /* GPU Hint: Only transform is animated heavily */
+    will-change: transform;
     
     /* OPTIMIZATION: Do not render back of card (Saves ~50% GPU fill rate) */
     backface-visibility: hidden;
@@ -65,6 +67,8 @@
     transform-style: preserve-3d;
     transition: filter 0.4s ease-out;
     position: relative;
+    /* Force GPU layer for the wrapper content */
+    transform: translateZ(0); 
 }
 
 .vanguardContainer.manual-hover .cardWrapper {
@@ -96,7 +100,21 @@
     -webkit-backface-visibility: hidden;
 }
 
-/* Hit Area for reliable interaction */
+/* FIX: New Clipping Container for Image and Effects */
+.clippedInnerContainer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    clip-path: url(#vg-cardClip);
+    background-color: var(--bg-secondary); 
+    overflow: hidden; 
+    transform: translateZ(0); 
+    border-radius: 20px; 
+    /* Safari Fix: Prevents bleeding during 3D transform */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
+
+/* Hit Area */
 .hitArea {
     position: absolute;
     inset: 0;
@@ -115,8 +133,8 @@
     width: calc(100% + 4px);
     height: calc(100% + 4px);
     pointer-events: none;
-    z-index: 0;
-    transform: translateZ(0);
+    z-index: 5;
+    transform: translateZ(1px);
 }
 .frameSvg {
     width: 100%;
@@ -128,15 +146,10 @@
 .cardImageContainer {
     position: absolute;
     inset: 0;
-    overflow: hidden;
-    clip-path: url(#vg-cardClip);
     z-index: 1;
     background-color: transparent; 
     pointer-events: none;
     transform: translateZ(0);
-    
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
 }
 
 .cardImage {
@@ -144,6 +157,8 @@
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    /* Optimization: Use low-quality interpolation during movement if needed, but 'auto' is usually fine */
+    image-rendering: -webkit-optimize-contrast;
 }
 
 .cardSlot.activeState .cardImage { transform: scale(1.05); }
@@ -155,7 +170,6 @@
     inset: 0;
     z-index: 10;
     pointer-events: none;
-    clip-path: url(#vg-cardClip);
     transform: translateZ(2px);
 }
 
@@ -169,12 +183,8 @@
     justify-content: flex-end;
     text-align: right;
     pointer-events: none;
-    z-index: 2;
-    clip-path: url(#vg-cardClip); 
+    z-index: 15;
     transform: translateZ(5px);
-    
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
 }
 
 .cardContent h3 { 
