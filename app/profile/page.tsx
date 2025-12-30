@@ -13,14 +13,33 @@ export default async function ProfilePage() {
     if (!session?.user?.id) { redirect('/api/auth/signin'); }
     
     // Fetch user and check if they have a password set (i.e., not an OAuth user)
+    // Also fetching roles to check for DIRECTOR privilege
     const user = await prisma.user.findUnique({ 
         where: { id: session.user.id }, 
-        select: { password: true, id: true, name: true, email: true, username: true, image: true, createdAt: true, bio: true, twitterHandle: true, instagramHandle: true, age: true, country: true, agePublic: true, countryPublic: true, emailVerified: true }
+        select: { 
+            password: true, 
+            id: true, 
+            name: true, 
+            email: true, 
+            username: true, 
+            image: true, 
+            createdAt: true, 
+            bio: true, 
+            twitterHandle: true, 
+            instagramHandle: true, 
+            age: true, 
+            country: true, 
+            agePublic: true, 
+            countryPublic: true, 
+            emailVerified: true,
+            roles: { select: { name: true } }
+        }
     });
 
     if (!user) { redirect('/api/auth/signin'); }
 
     const hasPasswordAuth = !!user.password;
+    const isDirector = user.roles.some((r: any) => r.name === 'DIRECTOR');
 
     return (
         <div className="container page-container">
@@ -31,14 +50,9 @@ export default async function ProfilePage() {
             
             {hasPasswordAuth && (
                 <ContentBlock title="تغيير كلمة السر">
-                    <PasswordChangeForm />
+                    <PasswordChangeForm canSkipCurrentPassword={isDirector} />
                 </ContentBlock>
             )}
         </div>
     );
 }
-
-
-
-
-

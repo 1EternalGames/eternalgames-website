@@ -200,13 +200,21 @@ export async function changePasswordAction(formData: FormData) {
         const newPassword = formData.get('newPassword') as string;
         const confirmPassword = formData.get('confirmPassword') as string;
         
-        if (!currentPassword || !newPassword || !confirmPassword) return { success: false, message: 'الحقولُ كلُّها لازمة.' };
+        // DIRECTOR Override check
+        const userRoles = session.user.roles || [];
+        const isDirector = userRoles.includes('DIRECTOR');
+
+        // Logic split: Director doesn't need currentPassword
+        if (!isDirector) {
+            if (!currentPassword) return { success: false, message: 'كلمة السر الحالية مطلوبة.' };
+            const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+            if (!isPasswordValid) return { success: false, message: 'كلمة السر الحالية خاطئة.' };
+        }
+
+        if (!newPassword || !confirmPassword) return { success: false, message: 'الكلمة الجديدة وتأكيدها مطلوبان.' };
         
         const pwVal = signUpSchema.shape.password.safeParse(newPassword);
         if (!pwVal.success) return { success: false, message: pwVal.error.issues[0].message };
-
-        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-        if (!isPasswordValid) return { success: false, message: 'كلمة السر الحالية خاطئة.' };
         
         if (newPassword !== confirmPassword) return { success: false, message: 'الكلمتان الجديدتان لا تتطابقان.' };
         

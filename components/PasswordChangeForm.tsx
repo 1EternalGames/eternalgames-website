@@ -7,11 +7,10 @@ import { useToast } from '@/lib/toastStore';
 import ButtonLoader from './ui/ButtonLoader';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function PasswordChangeForm() {
+export default function PasswordChangeForm({ canSkipCurrentPassword = false }: { canSkipCurrentPassword?: boolean }) {
     const [isPending, startTransition] = useTransition();
     const toast = useToast();
     
-    // --- DEFINITIVE FIX: Comment is now correctly formatted ---
     // State to manage form fields for floating labels
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -41,19 +40,28 @@ export default function PasswordChangeForm() {
 
     return (
         <form onSubmit={handleSubmit} style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div className={`profile-form-group ${hasContent(currentPassword)}`}>
-                <input 
-                    id="currentPassword" 
-                    name="currentPassword" 
-                    type="password" 
-                    required 
-                    className="profile-input" 
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder=" "
-                />
-                 <label className="profile-form-label" htmlFor="currentPassword">كلمة السر الحالية</label>
-            </div>
+            {!canSkipCurrentPassword && (
+                <div className={`profile-form-group ${hasContent(currentPassword)}`}>
+                    <input 
+                        id="currentPassword" 
+                        name="currentPassword" 
+                        type="password" 
+                        required 
+                        className="profile-input" 
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder=" "
+                    />
+                     <label className="profile-form-label" htmlFor="currentPassword">كلمة السر الحالية</label>
+                </div>
+            )}
+            
+            {canSkipCurrentPassword && (
+                 <p style={{ fontSize: '1.4rem', color: 'var(--accent)', margin: 0 }}>
+                    صلاحية المدير: لست بحاجة لإدخال كلمة السر القديمة.
+                 </p>
+            )}
+
             <div className={`profile-form-group ${hasContent(newPassword)}`}>
                 <input 
                     id="newPassword" 
@@ -102,14 +110,3 @@ export default function PasswordChangeForm() {
         </form>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
