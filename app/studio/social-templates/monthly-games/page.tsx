@@ -115,6 +115,15 @@ export default function MonthlyGamesEditor() {
                         NSW: platforms.some(p => p.includes('Switch')),
                         Cloud: false // Default off
                     },
+                    badges: {
+                        gamePass: release.onGamePass || false,
+                        psPlus: release.onPSPlus || false,
+                        exclusive: false, // Default false, requires manual set
+                        price: {
+                            active: !!release.price,
+                            text: release.price || '$70'
+                        }
+                    },
                     imageSettings: { x: 0, y: 0, scale: 1 }
                 };
             }
@@ -187,5 +196,3 @@ export default function MonthlyGamesEditor() {
         </div>
     );
 }
-
-

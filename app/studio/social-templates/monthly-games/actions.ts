@@ -10,6 +10,9 @@ export interface SmartFillRelease {
     releaseDate: string;
     platforms: string[];
     imageUrl: string;
+    price?: string;
+    onGamePass?: boolean;
+    onPSPlus?: boolean;
 }
 
 export async function getReleasesForMonthAction(dateString: string): Promise<SmartFillRelease[]> {
@@ -33,7 +36,10 @@ export async function getReleasesForMonthAction(dateString: string): Promise<Sma
             title,
             releaseDate,
             platforms,
-            "imageUrl": mainImage.asset->url
+            "imageUrl": mainImage.asset->url,
+            price,
+            "onGamePass": coalesce(onGamePass, false),
+            "onPSPlus": coalesce(onPSPlus, false)
         }
     `;
 
@@ -45,5 +51,3 @@ export async function getReleasesForMonthAction(dateString: string): Promise<Sma
         return [];
     }
 }
-
-
