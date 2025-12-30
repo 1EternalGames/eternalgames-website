@@ -16,9 +16,8 @@ import type {PortableTextBlock} from '@portabletext/types'
 import {useTheme} from 'next-themes'
 import {sanityLoader} from '@/lib/sanity.loader'
 import { generateId } from '@/lib/text-utils'
-import KineticLink from '@/components/kinetic/KineticLink' // IMPORT KINETIC LINK
+import KineticLink from '@/components/kinetic/KineticLink'
 
-// ... (Lazy Loaded Components remain same) ...
 const LoadingSpinner = () => (
   <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px'}}>
     <div className="spinner" />
@@ -51,6 +50,7 @@ type ColorMapping = {
   color: string
 }
 
+// NOTE: English Regex is now mostly handled server-side, but kept for legacy client rendering
 const ENGLISH_REGEX = /(\b[a-zA-Z]+(?:['’][a-zA-Z]+)?\b)/g
 
 const shouldIgnoreColor = (hex: string): boolean => {
@@ -140,6 +140,7 @@ const BlockquoteComponent = (props: PortableTextComponentProps<PortableTextBlock
   )
 }
 
+// MODIFIED: Accept `any[]` to handle mixed HTML strings and PortableTextBlock objects
 export default function PortableTextComponent({ content, colorDictionary }: { content: any[], colorDictionary?: ColorMapping[] }) {
   if (!content) return null
   const safeColorDictionary = Array.isArray(colorDictionary) ? colorDictionary : [];
@@ -203,8 +204,6 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
         link: ({value, children}) => {
           const href = value.href || '';
           
-          // INTELLIGENT KINETIC LINK REPLACEMENT
-          // Check if it's an internal Creator, Tag, or Game link
           const isCreatorLink = href.startsWith('/creators/');
           const isTagLink = href.startsWith('/tags/');
           const isGameLink = href.startsWith('/games/');
@@ -236,7 +235,6 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
                );
           }
 
-          // Default external/internal link
           const rel = !href.startsWith('/') ? 'noreferrer noopener' : undefined
           const isExternal = rel === 'noreferrer noopener'
           return <a href={href} rel={rel} target={isExternal ? '_blank' : '_self'}>{children}</a>
@@ -247,7 +245,15 @@ export default function PortableTextComponent({ content, colorDictionary }: { co
 
   return (
     <div className="portable-text-content" style={{fontSize: '1.8rem', lineHeight: 1.8}}>
-      <PortableText value={content} components={components} />
+        {content.map((item, index) => {
+            // Case 1: Pre-rendered HTML String (optimized block)
+            if (typeof item === 'string') {
+                return <div key={`html-${index}`} dangerouslySetInnerHTML={{ __html: item }} />;
+            }
+            
+            // Case 2: Custom Block (image, youtube, etc.) or Legacy Block
+            return <PortableText key={(item as any)._key || index} value={[item as any]} components={components} />;
+        })}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import {groq} from 'next-sanity'
 // EXPORT THIS FIELD
 export const mainImageFields = groq`asset, "url": asset->url, "blurDataURL": asset->metadata.lqip, alt`
 
-const creatorFields = groq`_id, name, prismaUserId, image, bio`
+const creatorFields = groq`_id, name, prismaUserId, image, bio, username`
 const gameFields = groq`_id, title, "slug": slug.current`
 const tagFields = groq`_id, title, "slug": slug.current`
 const publishedFilter = groq`defined(publishedAt) && publishedAt < now()`
@@ -31,6 +31,8 @@ score,
 "publishedAt": publishedAt, "game": game->{_id, title, "slug": slug.current}, "tags": tags[]->{${tagFields}}, "category": category->{title, "slug": slug.current}, newsType
 `
 
+// THE FIX: Use 'select' to strictly check for empty arrays before falling back
+// This prevents an empty manual selection [] from blocking the automatic fallback
 export const fullDocProjection = groq`
   _id, _type, legacyId, title, "slug": slug.current,
   "mainImage": mainImage{${mainImageFields}},
@@ -67,22 +69,22 @@ export const fullDocProjection = groq`
     _type == 'youtube' => { ... } 
   },
   
-  // CONDITIONAL RELATED CONTENT
+  // CONDITIONAL RELATED CONTENT (Updated with select/count check)
   _type == "review" => {
-    "relatedReviews": coalesce(
-      relatedReviews[]->{${cardListProjection}}, 
+    "relatedReviews": select(
+      defined(relatedReviews) && count(relatedReviews) > 0 => relatedReviews[]->{${cardListProjection}},
       *[_type == "review" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] {${cardListProjection}}
     )
   },
   _type == "article" => {
-    "relatedArticles": coalesce(
-      relatedArticles[]->{${cardListProjection}}, 
+    "relatedArticles": select(
+      defined(relatedArticles) && count(relatedArticles) > 0 => relatedArticles[]->{${cardListProjection}},
       *[_type == "article" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] {${cardListProjection}}
     )
   },
   _type == "news" => {
-    "relatedNews": coalesce(
-      relatedNews[]->{${cardListProjection}}, 
+    "relatedNews": select(
+      defined(relatedNews) && count(relatedNews) > 0 => relatedNews[]->{${cardListProjection}},
       *[_type == "news" && ${publishedFilter} && _id != ^._id] | order(publishedAt desc)[0...3] {${cardListProjection}}
     )
   }

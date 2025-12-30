@@ -1,52 +1,81 @@
-// app/api/revalidate-sanity/route.ts
-import { revalidateTag } from 'next/cache'
-import { type NextRequest, NextResponse } from 'next/server'
-import { parseBody } from 'next-sanity/webhook'
+import { revalidateTag } from 'next/cache';
+import { type NextRequest, NextResponse } from 'next/server';
+import { parseBody } from 'next-sanity/webhook';
 
 type WebhookPayload = {
-  _type: string
+  _type: string;
+  _id: string;
   slug?: {
-    current: string
-  }
-}
+    current: string;
+  };
+};
 
-// Sanity Webhook Handler (POST)
 export async function POST(req: NextRequest) {
   try {
     const { body, isValidSignature } = await parseBody<WebhookPayload>(
       req,
       process.env.REVALIDATION_SECRET_TOKEN,
-    )
+    );
 
     if (!isValidSignature) {
-      return new Response('Invalid signature', { status: 401 })
+      return new Response('Invalid signature', { status: 401 });
     }
 
-    if (!body?._type) {
-      return new Response('Bad Request: Missing _type', { status: 400 })
+    if (!body?._type || !body?._id) {
+      return new Response('Bad Request: Missing _type or _id', { status: 400 });
     }
 
-    // Revalidate the specific content type with 'max' profile
-    revalidateTag(body._type, 'max')
+    // 1. IGNORE DRAFTS
+    if (body._id.startsWith('drafts.')) {
+      return NextResponse.json({
+        status: 200,
+        revalidated: false,
+        message: 'Ignored draft document',
+        now: Date.now(),
+      });
+    }
+
+    // 2. IGNORE SYSTEM ASSETS (The "Asset Trap" Fix)
+    if (['sanity.imageAsset', 'sanity.fileAsset'].includes(body._type)) {
+       return NextResponse.json({
+        status: 200,
+        revalidated: false,
+        message: 'Ignored system asset',
+        now: Date.now(),
+      });
+    }
+
+    // 3. SURGICAL REVALIDATION
     
-    // Also revalidate the global 'content' tag
-    revalidateTag('content', 'max')
-    
-    console.log(`[REVALIDATE] Tag: ${body._type} & content`);
+    // A. Always invalidate the specific document by its SLUG
+    if (body.slug?.current) {
+        revalidateTag(body.slug.current, 'max');
+        console.log(`[REVALIDATE] Invalidated Slug: ${body.slug.current}`);
+    }
+
+    // B. Global Content (Menus, Lists, Feeds)
+    revalidateTag('content', 'max');
+
+    // C. Metadata Singletons
+    if (['tag', 'game', 'developer', 'publisher', 'author', 'reviewer', 'reporter', 'designer'].includes(body._type)) {
+        revalidateTag('studio-metadata', 'max');
+    }
 
     return NextResponse.json({
       status: 200,
       revalidated: true,
       now: Date.now(),
       type: body._type,
-    })
+      slug: body.slug?.current
+    });
+
   } catch (err: any) {
-    console.error(err)
-    return new Response(err.message, { status: 500 })
+    console.error('[REVALIDATE ERROR]', err);
+    return new Response(err.message, { status: 500 });
   }
 }
 
-// Manual/Cron Handler (GET)
+// Manual Handler
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const secret = searchParams.get('secret');
@@ -61,15 +90,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ revalidated: true, tag, now: Date.now() });
     }
     
-    // Fallback: Revalidate everything
     revalidateTag('content', 'max');
-    revalidateTag('review', 'max');
-    revalidateTag('article', 'max');
-    revalidateTag('news', 'max');
-    revalidateTag('gameRelease', 'max');
     revalidateTag('studio-metadata', 'max');
 
     return NextResponse.json({ revalidated: true, message: 'Global content tags revalidated', now: Date.now() });
 }
-
-

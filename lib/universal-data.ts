@@ -9,31 +9,38 @@ import {
     homepageNewsQuery,
     homepageReleasesQuery,
     homepageCreditsQuery,
-    homepageMetadataQuery
+    homepageMetadataQuery,
+    colorDictionaryQuery 
 } from '@/lib/sanity.queries';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import prisma from '@/lib/prisma';
 import { unstable_cache } from 'next/cache';
+import { convertContentToHybridHtml } from './server/html-converter';
 
 // OPTIMIZATION: Infinite Cache (revalidate: false).
 // Updates are triggered ONLY by Sanity Webhook (Tag-based revalidation).
-const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment'], { revalidate: false, tags: ['content', 'review'] });
-const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment'], { revalidate: false, tags: ['content', 'article'] });
-const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment'], { revalidate: false, tags: ['content', 'news'] });
-const getCachedReleases = unstable_cache(async () => client.fetch(homepageReleasesQuery), ['homepage-releases-fragment'], { revalidate: false, tags: ['content', 'gameRelease'] });
-const getCachedCredits = unstable_cache(async () => client.fetch(homepageCreditsQuery), ['homepage-credits-fragment'], { revalidate: false, tags: ['creators'] });
-const getCachedMetadata = unstable_cache(async () => client.fetch(homepageMetadataQuery), ['homepage-metadata-fragment'], { revalidate: false, tags: ['studio-metadata'] });
+// FIX: Versioned keys 'v2' to force fresh fetch and fix missing related content in overlay
+const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment-v2'], { revalidate: false, tags: ['content', 'review'] });
+const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment-v2'], { revalidate: false, tags: ['content', 'article'] });
+const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment-v2'], { revalidate: false, tags: ['content', 'news'] });
+const getCachedReleases = unstable_cache(async () => client.fetch(homepageReleasesQuery), ['homepage-releases-fragment-v2'], { revalidate: false, tags: ['content', 'gameRelease'] });
+const getCachedCredits = unstable_cache(async () => client.fetch(homepageCreditsQuery), ['homepage-credits-fragment-v2'], { revalidate: false, tags: ['creators'] });
+const getCachedMetadata = unstable_cache(async () => client.fetch(homepageMetadataQuery), ['homepage-metadata-fragment-v2'], { revalidate: false, tags: ['studio-metadata'] });
+const getCachedColors = unstable_cache(async () => client.fetch(colorDictionaryQuery), ['color-dictionary-fragment-v2'], { revalidate: false, tags: ['colorDictionary'] });
 
 export async function fetchUniversalData() {
     try {
-        const [reviews, articles, news, releases, credits, metadata] = await Promise.all([
+        const [reviews, articles, news, releases, credits, metadata, colorDict] = await Promise.all([
             getCachedReviews(),
             getCachedArticles(),
             getCachedNews(),
             getCachedReleases(),
             getCachedCredits(),
-            getCachedMetadata()
+            getCachedMetadata(),
+            getCachedColors()
         ]);
+        
+        const colorMappings = colorDict?.autoColors || [];
         
         const gameIds = new Set<string>();
         const tagIds = new Set<string>();
@@ -76,7 +83,6 @@ export async function fetchUniversalData() {
             });
         }
         
-        // OPTIMIZATION: Ensure these batch fetches also use infinite caching (revalidate: false)
         const [gameHubs, tagHubs, creatorHubs] = await Promise.all([
             gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: false, tags: ['content', 'game'] } }) : [],
             tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: false, tags: ['content', 'tag'] } }) : [],
@@ -95,7 +101,16 @@ export async function fetchUniversalData() {
         const flattenedContent = allContentLists.flat().filter(Boolean);
         const enrichedFlattened = await enrichContentList(flattenedContent);
         
-        const contentMap = new Map(enrichedFlattened.map((i: any) => [i._id, i]));
+        // Helper to optimize content by converting text blocks to HTML strings
+        const optimizeContent = (item: any) => {
+            if (item.content && Array.isArray(item.content) && item.content.length > 0) {
+                // Apply the Hybrid HTML Conversion
+                item.content = convertContentToHybridHtml(item.content, colorMappings);
+            }
+            return item;
+        };
+
+        const contentMap = new Map(enrichedFlattened.map((i: any) => [i._id, optimizeContent(i)]));
         
         const enrichArray = (arr: any[]) => arr.map(i => contentMap.get(i._id) || i);
         
