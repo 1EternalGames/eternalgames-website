@@ -2,7 +2,7 @@ import 'server-only';
 import { PortableTextBlock } from '@portabletext/types';
 import { generateId } from '@/lib/text-utils';
 
-// Regex to find English words
+// Regex to find English words (Latin alphabet sequences)
 const ENGLISH_REGEX = /(\b[a-zA-Z]+(?:['’][a-zA-Z]+)?\b)/g;
 
 type ColorMapping = {
@@ -21,6 +21,17 @@ const S = {
     english: "font-weight:700"
 };
 
+// Helper to decode existing entities to prevent double-escaping
+const unescapeHtml = (str: string): string => {
+    return str
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#039;/g, "'")
+        .replace(/&nbsp;/g, " ");
+};
+
 const escapeHtml = (unsafe: string): string => {
     return unsafe
         .replace(/&/g, "&amp;")
@@ -32,30 +43,47 @@ const escapeHtml = (unsafe: string): string => {
 
 /**
  * Applies automated text highlighting (English bolding + Color Dictionary)
+ * Uses a placeholder strategy to prevent Regex collisions.
  */
 const processTextContent = (text: string, colorMap: Map<string, string>, colorRegex: RegExp | null): string => {
     if (!text) return '';
 
-    let processed = escapeHtml(text);
+    // 1. Clean the text (Unescape first to handle DB entities, then Escape for safety)
+    let processed = escapeHtml(unescapeHtml(text));
+    
+    // Store HTML replacements temporarily to protect them from the English regex
+    const replacements: string[] = [];
+    const PLACEHOLDER_CHAR = '\uE000'; // Private Use Area character (Won't match English Regex)
 
-    // 1. Apply Color Dictionary
+    // 2. Apply Color Dictionary
     if (colorRegex) {
         processed = processed.replace(colorRegex, (match) => {
             const lower = match.toLowerCase();
             const color = colorMap.get(lower);
             if (color) {
-                return `<span style="color:${color};font-weight:700">${match}</span>`;
+                // Store the HTML tag in the array
+                replacements.push(`<span style="color:${color};font-weight:700">${match}</span>`);
+                // Return a safe placeholder (e.g., 0)
+                return `${PLACEHOLDER_CHAR}${replacements.length - 1}${PLACEHOLDER_CHAR}`;
             }
             return match;
         });
     }
 
-    // 2. Apply English Bolding
-    // We strictly match English words that are NOT inside HTML tags we just created
+    // 3. Apply English Bolding
+    // Since we replaced HTML tags with \uE000... , this regex will NOT match inside them.
     processed = processed.replace(ENGLISH_REGEX, (match) => {
-        // Simple heuristic: if we are inside a span tag from step 1, don't double wrap
+        // Double check we aren't inside a placeholder (unlikely given regex boundary \b)
+        if (match.includes(PLACEHOLDER_CHAR)) return match;
         return `<strong style="${S.english}">${match}</strong>`;
     });
+
+    // 4. Restore Replacements (Inject the HTML tags back)
+    if (replacements.length > 0) {
+        processed = processed.replace(new RegExp(`${PLACEHOLDER_CHAR}(\\d+)${PLACEHOLDER_CHAR}`, 'g'), (_, index) => {
+            return replacements[parseInt(index, 10)];
+        });
+    }
 
     return processed;
 };

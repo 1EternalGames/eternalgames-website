@@ -272,8 +272,8 @@
       display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; 
       background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent); 
       backdrop-filter: blur(10px); 
-      /* FIX: Must be higher than Navbar (2010) */
-      z-index: 2020; 
+      /* FIX: Must be higher than Overlay (2050) and Navbar (2060) to allow interaction */
+      z-index: 2100; 
   }
   
   :global(body.no-glass) .mobileNavOverlay {
