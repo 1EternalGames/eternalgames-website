@@ -10,7 +10,7 @@ import Lenis from 'lenis'; // Import Lenis class for manual instantiation
 import SpaceBackground from '@/components/ui/SpaceBackground';
 import { pageview } from '@/lib/gtm'; 
 import { useUIStore } from '@/lib/uiStore';
-import { usePerformanceStore } from '@/lib/performanceStore'; // Import Performance Store
+import { usePerformanceStore } from '@/lib/performanceStore';
 import styles from './KineticOverlayManager.module.css';
 import Footer from '@/components/Footer'; 
 import { usePathname } from 'next/navigation';
@@ -59,8 +59,10 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
     const setOverlayScrollRef = useUIStore((s) => s.setOverlayScrollRef);
-    const { isSmoothScrollingEnabled } = usePerformanceStore(); // Check user preference
+    const { isSmoothScrollingEnabled } = usePerformanceStore();
     const overlayRef = useRef<HTMLDivElement>(null);
+    // FIX: Ref to hold the local Lenis instance for the overlay
+    const overlayLenisRef = useRef<Lenis | null>(null); 
     const mainLenis = useLenis(); // The root Lenis instance
     
     const pathname = usePathname();
@@ -90,11 +92,8 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                 touchMultiplier: 2,
             });
 
-            // Sync: When Lenis scrolls, we can optionally dispatch events or rely on its internal handling.
-            // Note: Since 'wrapper' has overflow: auto (from CSS), Lenis might rely on native scroll or interfere.
-            // For standard Lenis behavior on custom wrapper, we usually set overflow: hidden, 
-            // but we want to keep native scrollbars visible for UX. 
-            // Lenis v1+ supports this by not preventing default if configured correctly, or we just let it run.
+            // FIX: Store instance in ref for access in other effects
+            overlayLenisRef.current = overlayLenis;
 
             function raf(time: number) {
                 overlayLenis.raf(time);
@@ -106,6 +105,8 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             return () => {
                 cancelAnimationFrame(rafId);
                 overlayLenis.destroy();
+                // FIX: Cleanup ref
+                overlayLenisRef.current = null;
             };
         }
     }, [isOverlayOpen, isSmoothScrollingEnabled]);
@@ -186,7 +187,6 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                 }
                 pageview(`/creators/${activeSlug}`);
             } else if (activeType === 'tags') {
-                // Always fetch to ensure items are up to date
                 fetchTagContent(activeSlug);
                 pageview(`/tags/${activeSlug}`);
             } else {
@@ -201,9 +201,16 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         }
     }, [isOverlayOpen, activeSlug, activeType, fetchLinkedContent, fetchCreatorContent, fetchTagContent, fetchFullContent, indexSection, creatorMap, tagMap, fetchCreatorByUsername]);
 
+    // FIX: Scroll Reset Effect (Compatible with Lenis)
     useLayoutEffect(() => {
-        if (isOverlayOpen && overlayRef.current) {
-            overlayRef.current.scrollTop = 0;
+        if (isOverlayOpen) {
+            if (overlayLenisRef.current) {
+                // If Lenis is active, use its API for instant reset
+                overlayLenisRef.current.scrollTo(0, { immediate: true });
+            } else if (overlayRef.current) {
+                // Fallback to native
+                overlayRef.current.scrollTop = 0;
+            }
         }
     }, [activeSlug, activeType, indexSection, isOverlayOpen]);
 
@@ -224,6 +231,7 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                 if (mainFooter) mainFooter.style.display = 'none';
                 if (overlayRef.current) {
                     setOverlayScrollRef(overlayRef.current);
+                    // Initial reset on open (native works here before lenis mounts)
                     overlayRef.current.scrollTop = 0;
                 }
             });
@@ -331,7 +339,7 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                     style={{ 
                         position: 'fixed', 
                         inset: 0, 
-                        /* FIX: Set z-index to 2050 to sit above Search (2040) but below Navbar (2100) */
+                        /* FIX: Set z-index to 2050 to sit above Search (2040) but below Navbar (2060) */
                         zIndex: 2050,
                         transform: 'translateZ(0)',
                         pointerEvents: 'auto'
