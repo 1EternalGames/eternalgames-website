@@ -8,7 +8,8 @@
   width: max-content;
   margin-right: auto;
   margin-left: auto;
-  z-index: 1080;
+  /* FIX: Increased z-index to 2015 to sit above Kinetic Overlay (2000) but below Search/MobileNav */
+  z-index: 2015;
   background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
   border: 1px solid var(--border-color);
   border-radius: 999px;

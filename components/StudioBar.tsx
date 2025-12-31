@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StudioIcon } from '@/components/icons/index';
 import { useState } from 'react';
 import styles from './StudioBar.module.css';
+import { useContentStore } from '@/lib/contentStore'; // IMPORTED
 
 const EditIcon = () => ( <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /> </svg> );
 const CloseIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"> <line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line> </svg> );
@@ -17,6 +18,9 @@ export default function StudioBar() {
     const pathname = usePathname();
     const [isVisible, setIsVisible] = useState(true);
     
+    // IMPORTED: Force close overlay on click
+    const { forceCloseOverlay } = useContentStore();
+
     const userRoles = (session?.user as any)?.roles || [];
     const isCreatorOrAdmin = userRoles.some((role: string) => ['DIRECTOR', 'ADMIN', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role));
     
@@ -40,7 +44,12 @@ export default function StudioBar() {
                     transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
                 >
                     <div className={styles.studioBarContent}>
-                        <Link href="/studio" className={`${styles.studioBarButton} ${styles.brand}`} prefetch={false}>
+                        <Link 
+                            href="/studio" 
+                            className={`${styles.studioBarButton} ${styles.brand}`} 
+                            prefetch={false}
+                            onClick={() => forceCloseOverlay()} // ADDED: Close overlay on click
+                        >
                             <StudioIcon height={20} width={20} />
                             <span>الديوان</span>
                         </Link>

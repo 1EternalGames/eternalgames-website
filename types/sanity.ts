@@ -126,16 +126,21 @@ export interface SanityGameRelease {
     trailer?: string;
 }
 
+// UPDATED SEARCH RESULT INTERFACE
 export interface SanitySearchResult {
     _id: string;
+    legacyId: number;
     _type: 'review' | 'article' | 'news';
     title: string;
     slug: string;
     imageUrl?: string;
+    blurDataURL?: string;
     publishedAt?: string;
-    authorName?: string;
-    gameTitle?: string;
+    authors?: SanityAuthor[];
+    reporters?: SanityAuthor[];
+    game?: string;
+    tags?: { title: string, slug: string }[];
     category?: string;
+    newsType?: 'official' | 'rumor' | 'leak';
+    score?: number;
 }
-
-

@@ -1,5 +1,5 @@
 // app/layout.tsx
-import { Cairo } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -30,11 +30,33 @@ import ProgressBar from '@/components/ui/ProgressBar';
 // IMPORT VERCEL ANALYTICS
 import { Analytics } from '@vercel/analytics/react';
 
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  display: 'swap',
+// Configure Local Font
+// We map the files located in public/fonts to the Next.js font system
+const cairo = localFont({
+  src: [
+    {
+      path: '../public/fonts/Cairo-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Cairo-Medium.ttf',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Cairo-Bold.ttf',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Cairo-Black.ttf',
+      weight: '800',
+      style: 'normal', // Cairo Black is often used as the "ExtraBold" or "Heavy" weight
+    },
+  ],
   variable: '--font-main',
-  weight: ['400', '500', '700', '800'],
+  display: 'swap',
 });
 
 // UPDATE: Changed default domain to the new one
@@ -118,17 +140,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
         <link
           rel="preconnect"
           href="https://cdn.sanity.io"
           crossOrigin="anonymous"
         />
+        {/* Removed Google Fonts Preconnect links as we are now local */}
       </head>
       <body>
         <NextAuthProvider>

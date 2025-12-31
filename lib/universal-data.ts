@@ -18,8 +18,6 @@ import { unstable_cache } from 'next/cache';
 import { convertContentToHybridHtml } from './server/html-converter';
 
 // OPTIMIZATION: Infinite Cache (revalidate: false).
-// Updates are triggered ONLY by Sanity Webhook (Tag-based revalidation).
-// FIX: Versioned keys 'v2' to force fresh fetch and fix missing related content in overlay
 const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment-v2'], { revalidate: false, tags: ['content', 'review'] });
 const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment-v2'], { revalidate: false, tags: ['content', 'article'] });
 const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment-v2'], { revalidate: false, tags: ['content', 'news'] });
@@ -27,6 +25,27 @@ const getCachedReleases = unstable_cache(async () => client.fetch(homepageReleas
 const getCachedCredits = unstable_cache(async () => client.fetch(homepageCreditsQuery), ['homepage-credits-fragment-v2'], { revalidate: false, tags: ['creators'] });
 const getCachedMetadata = unstable_cache(async () => client.fetch(homepageMetadataQuery), ['homepage-metadata-fragment-v2'], { revalidate: false, tags: ['studio-metadata'] });
 const getCachedColors = unstable_cache(async () => client.fetch(colorDictionaryQuery), ['color-dictionary-fragment-v2'], { revalidate: false, tags: ['colorDictionary'] });
+
+// Helper to strip heavy base64 strings from non-essential items
+const stripHeavyMetadata = (item: any, keepBlur: boolean) => {
+    if (!keepBlur) {
+        if (item.mainImage) {
+            delete item.mainImage.blurDataURL;
+            if (item.mainImage.asset && item.mainImage.asset.metadata) {
+                 delete item.mainImage.asset.metadata.lqip;
+                 delete item.mainImage.asset.lqip; // Handle flat projection
+            }
+        }
+        if (item.mainImageVertical) {
+             delete item.mainImageVertical.blurDataURL;
+             if (item.mainImageVertical.asset && item.mainImageVertical.asset.metadata) {
+                 delete item.mainImageVertical.asset.metadata.lqip;
+                 delete item.mainImageVertical.asset.lqip;
+            }
+        }
+    }
+    return item;
+};
 
 export async function fetchUniversalData() {
     try {
@@ -47,7 +66,7 @@ export async function fetchUniversalData() {
         const creatorIds = new Set<string>();
 
         const collectIds = (items: any[]) => {
-            // Limit collection to first 5 items per category to reduce payload size
+            // Limit collection to first 5 items to reduce payload
             items.slice(0, 5).forEach(item => {
                 if (item.game?._id) gameIds.add(item.game._id);
                 if (item.tags) item.tags.forEach((t: any) => t._id && tagIds.add(t._id));
@@ -66,18 +85,15 @@ export async function fetchUniversalData() {
         collectIds(articles || []);
         collectIds(news || []);
         
-        // Collect Game IDs from Releases (Current Month Only)
         if (releases && releases.length > 0) {
             const now = new Date();
             const currentMonth = now.getUTCMonth();
             const currentYear = now.getUTCFullYear();
-            
             const releasesThisMonth = releases.filter((r: any) => {
                 if (!r.releaseDate) return false;
                 const d = new Date(r.releaseDate);
                 return d.getUTCMonth() === currentMonth && d.getUTCFullYear() === currentYear;
             });
-            
             releasesThisMonth.forEach((r: any) => {
                 if (r.game?._id) gameIds.add(r.game._id);
             });
@@ -101,25 +117,30 @@ export async function fetchUniversalData() {
         const flattenedContent = allContentLists.flat().filter(Boolean);
         const enrichedFlattened = await enrichContentList(flattenedContent);
         
-        // Helper to optimize content by converting text blocks to HTML strings
-        const optimizeContent = (item: any) => {
+        // --- OPTIMIZATION PIPELINE ---
+        const optimizeItem = (item: any) => {
             if (item.content && Array.isArray(item.content) && item.content.length > 0) {
-                // Apply the Hybrid HTML Conversion
+                // 1. Hybrid HTML Conversion
                 item.content = convertContentToHybridHtml(item.content, colorMappings);
             }
             return item;
         };
 
-        const contentMap = new Map(enrichedFlattened.map((i: any) => [i._id, optimizeContent(i)]));
-        
+        const contentMap = new Map(enrichedFlattened.map((i: any) => [i._id, optimizeItem(i)]));
         const enrichArray = (arr: any[]) => arr.map(i => contentMap.get(i._id) || i);
         
-        const enrichedReviews = enrichArray(reviews || []);
-        const enrichedArticles = enrichArray(articles || []);
-        const enrichedNews = enrichArray(news || []);
+        // Strip BlurHash from non-hero items
+        const processList = (list: any[], keepCount: number) => {
+            const enriched = enrichArray(list || []);
+            return enriched.map((item, index) => stripHeavyMetadata(item, index < keepCount));
+        };
+
+        const enrichedReviews = processList(reviews, 5);
+        const enrichedArticles = processList(articles, 5);
+        const enrichedNews = processList(news, 5);
         
-        const enrichedGameHubs = gameHubs.map((g: any) => ({ ...g, linkedContent: enrichArray(g.linkedContent || []) }));
-        const enrichedTagHubs = tagHubs.map((t: any) => ({ ...t, items: enrichArray(t.items || []) }));
+        const enrichedGameHubs = gameHubs.map((g: any) => ({ ...g, linkedContent: processList(g.linkedContent, 0) })); // Hubs don't need blur
+        const enrichedTagHubs = tagHubs.map((t: any) => ({ ...t, items: processList(t.items, 0) }));
         const enrichedCreatorHubs = await Promise.all(creatorHubs.map(async (c: any) => {
             let username = c.username;
             let name = c.name;
@@ -129,16 +150,16 @@ export async function fetchUniversalData() {
                     const u = await prisma.user.findUnique({ where: { id: c.prismaUserId }, select: { username: true, name: true, image: true }});
                     if (u) { username = u.username; name = u.name; image = u.image; }
             }
-            
             return { 
                 ...c, 
                 username, name, image,
-                linkedContent: enrichArray(c.linkedContent || []) 
+                linkedContent: processList(c.linkedContent || [], 0) 
             };
         }));
         
         const enrichedCredits = await enrichCreators(credits || []);
 
+        // Featured Review Logic
         if (enrichedReviews.length > 0) {
             const topRatedIndex = enrichedReviews.reduce((topIndex: number, current: any, index: number) => {
                 return (current.score ?? 0) > (enrichedReviews[topIndex].score ?? 0) ? index : topIndex;

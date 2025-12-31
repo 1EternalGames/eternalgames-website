@@ -150,7 +150,17 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         <>
             <motion.div layoutId={`reviews-hero-card-container-${heroReview.legacyId}`} className={styles.reviewHero}>
                 <motion.div layoutId={`reviews-hero-card-image-${heroReview.legacyId}`} className={styles.heroBg}>
-                    <Image loader={sanityLoader} src={heroReview.mainImage.url} alt={`Background for ${heroReview.title}`} fill style={{ objectFit: 'cover' }} priority placeholder='blur' blurDataURL={heroReview.mainImage.blurDataURL} />
+                    <Image 
+                        loader={sanityLoader} 
+                        src={heroReview.mainImage.url} 
+                        alt={`Background for ${heroReview.title}`} 
+                        fill 
+                        style={{ objectFit: 'cover' }} 
+                        priority 
+                        // FIX: Conditional blur data
+                        placeholder={heroReview.mainImage.blurDataURL ? 'blur' : 'empty'} 
+                        blurDataURL={heroReview.mainImage.blurDataURL} 
+                    />
                 </motion.div>
                 <div className={styles.heroOverlay} />
                 <motion.div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', zIndex: 5, color: '#fff', textAlign: 'center' }} initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.2}}>

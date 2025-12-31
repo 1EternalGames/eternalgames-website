@@ -1,104 +1,105 @@
 // lib/image-export.ts
 
 /**
- * Fetches and embeds fonts to ensure the downloaded image looks exactly like the canvas.
- * specifically targets Cairo for Arabic support.
+ * Loads local font files, converts them to Base64, and generates the @font-face CSS.
+ * This ensures the exact font file (with all Arabic glyphs) is embedded in the SVG.
  */
 async function getFontStyles() {
-    try {
-        // Explicitly request specific weights for Cairo to ensure all bold/black variants render correctly
-        const cssUrl = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;900&family=Anton&family=Roboto:wght@400;700;900&display=swap';
-        const cssResponse = await fetch(cssUrl);
-        const cssText = await cssResponse.text();
+    // List of fonts to embed. 
+    // Ensure these files exist in your /public/fonts/ folder.
+    const fonts = [
+        { family: 'Cairo', weight: '400', src: '/fonts/Cairo-Regular.ttf' },
+        { family: 'Cairo', weight: '500', src: '/fonts/Cairo-Medium.ttf' },
+        { family: 'Cairo', weight: '700', src: '/fonts/Cairo-Bold.ttf' },
+        { family: 'Cairo', weight: '900', src: '/fonts/Cairo-Black.ttf' },
+    ];
 
-        // Regex to parse Google Fonts CSS
-        // This regex is robust enough to handle standard Google Fonts response format
-        const fontFaceRegex = /@font-face\s*{([^}]*)}/g;
-        let match;
-        let newCss = '';
+    let css = '';
 
-        const urlRegex = /url\(([^)]+)\)/;
-        const familyRegex = /font-family:\s*['"]?([^'";]+)['"]?/;
-        const weightRegex = /font-weight:\s*(\d+)/;
+    for (const font of fonts) {
+        try {
+            // Fetch the local file
+            // Note: In Next.js, fetching from the public folder via URL works relative to the domain
+            const response = await fetch(font.src);
+            if (!response.ok) throw new Error(`Failed to load ${font.src}`);
+            
+            const blob = await response.blob();
+            
+            // Convert to Base64
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
 
-        while ((match = fontFaceRegex.exec(cssText)) !== null) {
-            const block = match[1];
-            const urlMatch = urlRegex.exec(block);
-            const familyMatch = familyRegex.exec(block);
-            const weightMatch = weightRegex.exec(block);
-
-            if (urlMatch && familyMatch) {
-                const fontUrl = urlMatch[1].replace(/['"]/g, '');
-                const family = familyMatch[1];
-                const weight = weightMatch ? weightMatch[1] : '400';
-                
-                try {
-                    const fontResponse = await fetch(fontUrl);
-                    const blob = await fontResponse.blob();
-                    const base64 = await new Promise<string>((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.readAsDataURL(blob);
-                    });
-
-                    // 1. Add the actual font rule with Base64 data
-                    newCss += `
-                        @font-face {
-                            font-family: '${family}';
-                            font-style: normal;
-                            font-weight: ${weight};
-                            src: url(${base64}) format('woff2');
-                        }
-                    `;
-
-                    // 2. Create Aliases for fallback fonts to ensure design consistency
-                    // Map 'Impact' -> 'Anton'
-                    if (family === 'Anton') {
-                        newCss += `
-                            @font-face {
-                                font-family: 'Impact';
-                                font-style: normal;
-                                font-weight: 400;
-                                src: url(${base64}) format('woff2');
-                            }
-                        `;
-                    }
-                    // Map 'Arial' -> 'Roboto'
-                    if (family === 'Roboto') {
-                        newCss += `
-                            @font-face {
-                                font-family: 'Arial';
-                                font-style: normal;
-                                font-weight: ${weight};
-                                src: url(${base64}) format('woff2');
-                            }
-                        `;
-                    }
-
-                } catch (err) {
-                    console.warn(`Failed to fetch font ${family} weight ${weight}:`, err);
+            // Generate CSS Rule
+            // We map this font to 'Cairo'
+            css += `
+                @font-face {
+                    font-family: '${font.family}';
+                    font-style: normal;
+                    font-weight: ${font.weight};
+                    src: url(${base64}) format('truetype');
                 }
-            }
-        }
+            `;
 
-        return newCss;
-    } catch (e) {
-        console.warn('Failed to process fonts for export', e);
-        return null;
+            // --- ALIASING ---
+            // Map 'Anton' (Impact-style) to Cairo-Black for consistency if Arabic is used there
+            if (font.weight === '900') {
+                css += `
+                    @font-face {
+                        font-family: 'Anton';
+                        font-style: normal;
+                        font-weight: 400; 
+                        src: url(${base64}) format('truetype');
+                    }
+                    @font-face {
+                        font-family: 'Impact';
+                        font-style: normal;
+                        font-weight: 400; 
+                        src: url(${base64}) format('truetype');
+                    }
+                `;
+            }
+
+            // Map 'Roboto'/'Arial' to Cairo-Regular/Bold to ensure Arabic glyphs render 
+            // even if the template requested a Latin font
+            if (['400', '700'].includes(font.weight)) {
+                css += `
+                    @font-face {
+                        font-family: 'Arial';
+                        font-style: normal;
+                        font-weight: ${font.weight};
+                        src: url(${base64}) format('truetype');
+                    }
+                    @font-face {
+                        font-family: 'Roboto';
+                        font-style: normal;
+                        font-weight: ${font.weight};
+                        src: url(${base64}) format('truetype');
+                    }
+                `;
+            }
+
+        } catch (error) {
+            console.error(`Error embedding font ${font.src}:`, error);
+        }
     }
+
+    return css;
 }
 
 export async function downloadElementAsImage(
     elementId: string, 
     fileName: string, 
     format: 'png' | 'jpeg' = 'jpeg', 
-    scale: number = 2, // Default to 2x (4K)
-    quality: number = 0.9 // Default 90% quality for JPG
+    scale: number = 2, 
+    quality: number = 0.9 
 ) {
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    // Clone the element to manipulate it safely without affecting the DOM
+    // Clone the element to manipulate it safely
     const clone = element.cloneNode(true) as HTMLElement;
     const svg = clone.querySelector('svg');
     if (!svg) return;
@@ -109,7 +110,6 @@ export async function downloadElementAsImage(
         const href = img.getAttribute('href');
         if (href && !href.startsWith('data:')) {
             try {
-                // Fetch with no-cors if possible, or assume same-origin/CORS-enabled
                 const response = await fetch(href);
                 const blob = await response.blob();
                 const base64 = await new Promise<string>((resolve) => {
@@ -124,48 +124,19 @@ export async function downloadElementAsImage(
         }
     }
 
-    // 2. Inject Fonts & Styles
+    // 2. Inject Local Fonts
     const fontStyles = await getFontStyles();
     
-    // Define critical layout styles that might be missing in the serialized SVG context
-    // Specifically targeted for Tiptap paragraphs AND the Social News Variants
+    // Critical Styles to force Cairo
     const criticalStyles = `
+        text, input, div, span, p, foreignObject { 
+            font-family: 'Cairo', sans-serif !important; 
+        } 
         .social-editor-content p { margin: 0 !important; }
-        .ProseMirror p { margin: 0 !important; }
-        .social-editor-content { overflow: hidden; }
-        text, input, div, span, p { font-family: 'Cairo', sans-serif !important; } 
-
-        /* HERO VARIANT STYLES */
-        .variant-hero p {
-            margin: 0;
-            font-size: 0.55em !important; 
-            color: #00FFF0 !important;
-            line-height: 1.4 !important;
-            font-weight: 700;
-        }
-        .variant-hero p::first-line {
-            font-size: 1.81em !important; 
-            color: #FFFFFF !important;
-            line-height: 1.1 !important;
-            font-weight: 900;
-        }
-
-        /* CARD VARIANT STYLES */
-        .variant-card p {
-            margin: 0;
-            font-size: 0.85em !important;
-            color: #FFFFFF !important;
-            opacity: 0.9;
-            font-weight: 500;
-            line-height: 1.3 !important;
-        }
-        .variant-card p::first-line {
-            font-size: 1.17em !important; 
-            color: #FFFFFF !important;
-            opacity: 1;
-            font-weight: 700;
-            line-height: 1.2 !important;
-        }
+        .variant-hero p { margin: 0; font-size: 0.55em !important; color: #00FFF0 !important; line-height: 1.4 !important; font-weight: 700; }
+        .variant-hero p::first-line { font-size: 1.81em !important; color: #FFFFFF !important; line-height: 1.1 !important; font-weight: 900; }
+        .variant-card p { margin: 0; font-size: 0.85em !important; color: #FFFFFF !important; opacity: 0.9; font-weight: 500; line-height: 1.3 !important; }
+        .variant-card p::first-line { font-size: 1.17em !important; color: #FFFFFF !important; opacity: 1; font-weight: 700; line-height: 1.2 !important; }
     `;
     
     let styleTag = svg.querySelector('style');
@@ -173,18 +144,14 @@ export async function downloadElementAsImage(
         styleTag = document.createElement('style');
         svg.prepend(styleTag);
     }
-    // Append our specific font mappings and critical fixes
     styleTag.textContent = (styleTag.textContent || '') + criticalStyles + (fontStyles || '');
 
     // 3. Serialize and Draw
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
     
-    // Base dimensions for the template (Assuming Instagram Portrait 1080x1350 as base)
     const baseWidth = 1080; 
     const baseHeight = 1350;
-
-    // Calculate target dimensions
     const width = baseWidth * scale;
     const height = baseHeight * scale;
     
@@ -196,17 +163,15 @@ export async function downloadElementAsImage(
     if (!ctx) return;
 
     const img = new Image();
-    // Encoding optimization for UTF-8 characters (Arabic) in SVG data URI
     const svgBase64 = window.btoa(unescape(encodeURIComponent(svgString)));
     img.src = `data:image/svg+xml;base64,${svgBase64}`;
 
     return new Promise<void>((resolve, reject) => {
         img.onload = () => {
             if (format === 'jpeg') {
-                ctx.fillStyle = '#050505'; // Default dark background to prevent transparent artifacts
+                ctx.fillStyle = '#050505'; 
                 ctx.fillRect(0, 0, width, height);
             }
-            // Draw image scaled
             ctx.drawImage(img, 0, 0, width, height);
             
             canvas.toBlob((blob) => {
@@ -228,5 +193,3 @@ export async function downloadElementAsImage(
         img.onerror = (e) => reject(e);
     });
 }
-
-

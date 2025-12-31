@@ -23,6 +23,9 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
     const X_POS = [79, 413, 746];
     const Y_POS = [250, 613, 976];
 
+    // Default vibrance to 100 (1.0)
+    const vibranceValue = (data.vibrance ?? 100) / 100;
+
     return (
         <div 
             className="canvas-container"
@@ -42,11 +45,16 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                 height="100%" 
                 xmlns="http://www.w3.org/2000/svg" 
                 preserveAspectRatio="xMidYMid slice"
-                style={{ backgroundColor: '#050505', direction: 'rtl' }}
+                style={{ 
+                    backgroundColor: '#050505', 
+                    direction: 'rtl',
+                    // Apply Saturation Filter to the entire SVG
+                    filter: `saturate(${vibranceValue})` 
+                }}
             >
                 <MonthlyGamesDefs />
                 
-                {/* SHARED BACKGROUND */}
+                {/* SHARED BACKGROUND - Scanlines removed inside component */}
                 <SpaceBackground />
                 {/* REMOVED GRID OVERLAY */}
                 {/* <rect width="100%" height="100%" fill="url(#mg-techGrid)"></rect> */}
@@ -121,7 +129,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
 
                 {/* WATERMARK */}
                 <g transform="translate(540, 1345)">
-                    <text x="0" y="0" textAnchor="middle" fontWeight="bold" fontSize="12" fill="#556070" fontFamily="'Cairo', sans-serif">إيترنال جيمز // قاعدة البيانات متصلة</text>
+                    <text x="0" y="-12" textAnchor="middle" fontWeight="bold" fontSize="16" fill="#556070" fontFamily="'Cairo', sans-serif">MoVisionX@</text>
                 </g>
 
                 <rect width="100%" height="100%" filter="url(#mg-grain)" opacity="0.06" style={{ mixBlendMode: 'overlay' }} pointerEvents="none"></rect>
@@ -129,5 +137,3 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
         </div>
     );
 }
-
-

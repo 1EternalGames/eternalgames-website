@@ -17,6 +17,7 @@ import { uploadFile } from './RichTextEditor';
 import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import { useEditorStore } from '@/lib/editorStore';
+import { useContentStore } from '@/lib/contentStore'; // IMPORTED
 import styles from './Editor.module.css';
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import type { SaveStatus } from './SaveStatusIcons';
@@ -213,6 +214,9 @@ export function EditorClient({
     colorDictionary: ColorMapping[],
     studioMetadata: any 
 }) {
+    // IMPORTED: Access overlay state
+    const { isOverlayOpen } = useContentStore();
+
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
     const [state, dispatch] = useReducer(editorReducer, getInitialEditorState(initialDocument));
     const { title, slug, isSlugManual } = state;
@@ -502,6 +506,9 @@ export function EditorClient({
     
     const isRelease = initialDocument._type === 'gameRelease';
 
+    // CRITICAL FIX: Hide editor canvas if overlay is active
+    if (isOverlayOpen) return null;
+
     return (
         <div className={styles.sanctumContainer}>
             <div className={styles.sanctumMain}>
@@ -562,5 +569,3 @@ export function EditorClient({
         </div>
     );
 }
-
-

@@ -262,7 +262,6 @@ export const latestNewsQuery = groq`*[_type == "news" && ${publishedFilter} && d
 export const heroContentQuery = groq`{ "featuredReview": *[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(score desc, publishedAt desc)[0] { ${cardProjection}, synopsis }, "latestNews": *[_type == "news" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0] { ${cardProjection} }, "featuredArticle": *[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0] { ${cardProjection} } }`
 export const featuredReviewsQuery = groq`*[_type == "review" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
 export const featuredArticlesQuery = groq`*[_type == "article" && ${publishedFilter} && defined(mainImage.asset)] | order(publishedAt desc)[0...10] {${cardProjection}}`
-export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] { _id, _type, title, "slug": slug.current, "imageUrl": mainImage.asset->url + '?w=200&h=120&fit=crop&auto=format', publishedAt, "authors": authors[]->{name}, "reporters": reporters[]->{name}, "gameTitle": game->title, "tags": tags[]->{title} }`
 export const contentByIdsQuery = groq`*[_type in ["review", "article", "news"] && legacyId in $ids && ${publishedFilter}] { ${cardProjection} }`
 export const allReleasesQuery = groq`*[_type == "gameRelease" && (isTBA == true || (defined(releaseDate) && releaseDate >= "2023-01-01"))] | order(isTBA asc, releaseDate asc) { ${gameReleaseProjection} }`
 
@@ -302,6 +301,25 @@ export const articlesIndexQuery = groq`{
   "games": *[_type == "game"] | order(title asc) {_id, title, "slug": slug.current},
   "gameTags": *[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category},
   "typeTags": *[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}
+}`
+
+// UPDATED SEARCH QUERY to include legacyId and match CardProps structure
+export const searchQuery = groq`*[_type in ["review", "article", "news"] && ${publishedFilter} && defined(slug.current) && (title match $searchTerm + "*" || pt::text(content) match $searchTerm)] | order(publishedAt desc) [0...10] { 
+    _id, 
+    legacyId, 
+    _type, 
+    title, 
+    "slug": slug.current, 
+    "imageUrl": mainImage.asset->url, 
+    "blurDataURL": mainImage.asset->metadata.lqip,
+    publishedAt, 
+    "authors": authors[]->{${creatorFields}}, 
+    "reporters": reporters[]->{${creatorFields}}, 
+    "game": game->title, 
+    "tags": tags[]->{title, "slug": slug.current},
+    "category": category->title,
+    newsType,
+    score
 }`
 
 export const allGameTagsQuery = groq`*[_type == "tag" && category == "Game"] | order(title asc) {_id, title, "slug": slug.current, category}`

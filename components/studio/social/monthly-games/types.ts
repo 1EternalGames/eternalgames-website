@@ -10,7 +10,6 @@ export interface GameSlotData {
         PS5: boolean;
         XSX: boolean;
         NSW: boolean;
-        Cloud: boolean;
     };
     badges: {
         gamePass: boolean;
@@ -27,6 +26,8 @@ export interface GameSlotData {
 export interface MonthlyGamesTemplateData {
     month: string;
     slots: GameSlotData[];
+    // NEW: Vibrance level (0-200, default 100)
+    vibrance?: number;
 }
 
 export interface MonthlyGamesCanvasProps {
@@ -34,5 +35,3 @@ export interface MonthlyGamesCanvasProps {
     onDataChange: (newData: Partial<MonthlyGamesTemplateData>) => void;
     scale?: number;
 }
-
-

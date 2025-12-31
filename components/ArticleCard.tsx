@@ -246,7 +246,8 @@ const ArticleCardComponent = ({ article, layoutIdPrefix, isPriority = false, dis
                                         fill
                                         className={styles.cardImage}
                                         sizes="(max-width: 768px) 90vw, 500px"
-                                        placeholder="blur"
+                                        // FIX: Conditional blur to prevent crash if data is missing
+                                        placeholder={article.blurDataURL ? 'blur' : 'empty'}
                                         blurDataURL={article.blurDataURL}
                                         priority={isPriority}
                                     />

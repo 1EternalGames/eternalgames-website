@@ -375,10 +375,9 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                 <g transform="translate(13, 8)">
                     {[
                         { key: 'PC', x: 0 },
-                        { key: 'PS5', x: 52 },
-                        { key: 'XSX', x: 104 },
-                        { key: 'NSW', x: 156 },
-                        { key: 'Cloud', x: 208 },
+                        { key: 'PS5', x: 70 },
+                        { key: 'XSX', x: 140 },
+                        { key: 'NSW', x: 210 },
                     ].map((p) => {
                         const Icon = PLATFORM_ICONS[p.key];
                         const isActive = slot.platforms[p.key as keyof typeof slot.platforms];
@@ -409,5 +408,3 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
         </g>
     );
 }
-
-

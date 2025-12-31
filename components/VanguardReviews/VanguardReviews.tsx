@@ -264,8 +264,9 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                                 fill 
                                 sizes={isCenter ? "(max-width: 768px) 80vw, 400px" : "(max-width: 768px) 60vw, 280px"}
                                 className={styles.cardImage} 
-                                placeholder="blur" 
-                                blurDataURL={review.blurDataURL} 
+                                // FIX: Conditional blur data
+                                placeholder={review.blurDataURL ? 'blur' : 'empty'}
+                                blurDataURL={review.blurDataURL}
                                 priority={isPriority}
                             />
                         </motion.div>

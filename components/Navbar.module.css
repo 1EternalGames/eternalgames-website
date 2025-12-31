@@ -5,19 +5,19 @@
   top: 0;
   right: 0;
   width: 100%;
-  z-index: 1070;
+  /* FIX: Z-Index 2060 to sit ABOVE Kinetic Overlay (2050) but BELOW Search (3000) */
+  z-index: 2060;
   height: var(--nav-height);
   display: flex;
   align-items: center;
   
   /* OPTIMIZATION: Hint browser about expensive layout changes */
-  will-change: height, background-color, backdrop-filter, width;
+  will-change: height, background-color, backdrop-filter;
   
-  /* Added width to transition for smooth overlay adaptation */
+  /* FIX: Removed 'width' from transition to prevent layout jump on scrollbar removal */
   transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
               background-color 0.4s ease, 
-              backdrop-filter 0.4s ease,
-              width 0.3s ease; 
+              backdrop-filter 0.4s ease;
   border-bottom: 1px solid transparent;
 }
 
@@ -272,7 +272,8 @@
       display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; 
       background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent); 
       backdrop-filter: blur(10px); 
-      z-index: 1200; 
+      /* FIX: Must be higher than Navbar (2010) */
+      z-index: 2020; 
   }
   
   :global(body.no-glass) .mobileNavOverlay {

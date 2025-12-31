@@ -40,7 +40,7 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         contentMap, 
         creatorMap, 
         tagMap, 
-        pageMap,
+        pageMap, 
         indexSection,
         closeOverlay, 
         forceCloseOverlay,
@@ -61,6 +61,13 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
     const lenis = useLenis();
     
     const pathname = usePathname();
+
+    // Auto-close overlay if navigation moves to /studio
+    useEffect(() => {
+        if (pathname?.startsWith('/studio') && isOverlayOpen) {
+            forceCloseOverlay();
+        }
+    }, [pathname, isOverlayOpen, forceCloseOverlay]);
 
     useEffect(() => {
         if (typeof document === 'undefined') return;
@@ -227,20 +234,17 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                     paddingTop: '0'
                 };
             }
-            // Fallback skeleton if creator map empty but we have slug
             return { content: <CreatorHubClient creatorName={activeSlug!} username={activeSlug!} items={[]} scrollContainerRef={overlayRef} isLoading={true} />, paddingTop: '0' };
         } 
         
         if (activeType === 'tags') {
             if (activeTag) {
-                // Pass isLoading true if contentLoaded is false
                 const isLoading = !activeTag.contentLoaded;
                  return {
                     content: <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} isLoading={isLoading} />,
                     paddingTop: '0'
                  };
             }
-            // Fallback skeleton
              return {
                 content: <HubPageClient initialItems={[]} hubTitle={activeSlug || '...'} hubType="وسم" scrollContainerRef={overlayRef} isLoading={true} />,
                 paddingTop: '0'
@@ -250,7 +254,6 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         if (activeItem) {
              if (activeType === 'releases' || (activeType as string) === 'games') {
                 const layoutPrefix = sourceLayoutId || undefined;
-                // Game Hub loading state logic would live inside GameHubClient, similar to CreatorHubClient
                 return {
                     content: <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={layoutPrefix} scrollContainerRef={overlayRef} />,
                     paddingTop: '0'
@@ -284,7 +287,8 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
                     style={{ 
                         position: 'fixed', 
                         inset: 0, 
-                        zIndex: 1060, 
+                        /* FIX: Set z-index to 2050 to sit above Search (2040) but below Navbar (2100) */
+                        zIndex: 2050,
                         transform: 'translateZ(0)',
                         pointerEvents: 'auto'
                     }}

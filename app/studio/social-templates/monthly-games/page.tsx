@@ -21,7 +21,7 @@ const createEmptySlot = (id: number): GameSlotData => ({
     title: 'عنوان اللعبة',
     day: '01',
     image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop',
-    platforms: { PC: true, PS5: false, XSX: false, NSW: false, Cloud: false },
+    platforms: { PC: true, PS5: false, XSX: false, NSW: false },
     badges: { 
         gamePass: false, 
         psPlus: false, 
@@ -33,7 +33,8 @@ const createEmptySlot = (id: number): GameSlotData => ({
 
 const DEFAULT_DATA: MonthlyGamesTemplateData = {
     month: 'شهر نوفمبر',
-    slots: Array.from({ length: 9 }).map((_, i) => createEmptySlot(i))
+    slots: Array.from({ length: 9 }).map((_, i) => createEmptySlot(i)),
+    vibrance: 100 // Default to 100% (Normal)
 };
 
 export default function MonthlyGamesEditor() {
@@ -113,7 +114,6 @@ export default function MonthlyGamesEditor() {
                         PS5: platforms.some(p => p.includes('PlayStation')),
                         XSX: platforms.some(p => p.includes('Xbox')),
                         NSW: platforms.some(p => p.includes('Switch')),
-                        Cloud: false // Default off
                     },
                     badges: {
                         gamePass: release.onGamePass || false,
@@ -174,6 +174,25 @@ export default function MonthlyGamesEditor() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                    </div>
+
+                    <div className={styles.controlGroup}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label className={styles.label}>تشبع الألوان (Vibrance)</label>
+                            <span style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{data.vibrance}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="200"
+                            value={data.vibrance || 100}
+                            onChange={(e) => updateData({ vibrance: parseInt(e.target.value) })}
+                            style={{ 
+                                width: '100%', 
+                                cursor: 'pointer',
+                                accentColor: 'var(--accent)'
+                            }}
+                        />
                     </div>
                 </div>
 

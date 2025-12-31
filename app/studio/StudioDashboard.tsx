@@ -15,6 +15,7 @@ import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './StudioDashboard.module.css';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useContentStore } from '@/lib/contentStore'; // IMPORTED
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
@@ -100,6 +101,9 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     const toast = useToast();
     const [isPending, startTransition] = useTransition();
     
+    // IMPORTED: Check overlay state
+    const { isOverlayOpen } = useContentStore();
+
     const { data: session, update: updateSession } = useSession();
     
     useEffect(() => {
@@ -169,6 +173,9 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     };
 
     const isDirector = userRoles.includes('DIRECTOR');
+    
+    // CRITICAL FIX: Hide dashboard if overlay is active
+    if (isOverlayOpen) return null;
 
     return (
         <>

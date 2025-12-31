@@ -65,7 +65,8 @@ export default function SmartFillerMonthly({ isOpen, onClose, onApply }: SmartFi
         
         // Get Arabic month name
         const [year, month] = selectedMonth.split('-');
-        const monthName = `ألعاب ${arabicMonths[parseInt(month) - 1]}`; // e.g. "ألعاب نوفمبر"
+        // CHANGED: Replaced "ألعاب" with "شهر"
+        const monthName = `شهر ${arabicMonths[parseInt(month) - 1]}`; // e.g. "شهر نوفمبر"
 
         onApply(selectedReleases, monthName);
         onClose();
@@ -174,5 +175,3 @@ export default function SmartFillerMonthly({ isOpen, onClose, onApply }: SmartFi
         </Modal>
     );
 }
-
-

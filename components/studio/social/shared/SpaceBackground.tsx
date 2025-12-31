@@ -2,14 +2,13 @@
 import React from 'react';
 
 // Configuration
-// Slightly brighter than the UI background to ensure visibility in exported images
-const BACKGROUND_BRIGHTNESS = 1.1; 
+const BACKGROUND_BRIGHTNESS = 1.0; 
 
 export default function SpaceBackground() {
     return (
         <g style={{ filter: `brightness(${BACKGROUND_BRIGHTNESS})` }}>
             <defs>
-                {/* 1. FILTERS & GRADIENTS (Ported from components/ui/SpaceBackground.tsx) */}
+                {/* 1. FILTERS & GRADIENTS */}
                 <filter id="sb_stellarBloom">
                     <feGaussianBlur stdDeviation="2" result="blur"></feGaussianBlur>
                     <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
@@ -40,16 +39,13 @@ export default function SpaceBackground() {
                     <stop offset="100%" stopColor="#10121A" stopOpacity="0"></stop>
                 </radialGradient>
 
-                <pattern id="sb_scanlinePattern" x="0" y="0" width="10" height="4" patternUnits="userSpaceOnUse">
-                    <line x1="0" y1="3" x2="10" y2="3" stroke="#000" strokeWidth="1" opacity="0.4"></line>
-                </pattern>
+                {/* REMOVED: Scanline Pattern Definition */}
 
                 <pattern id="sb_scratchPattern" x="0" y="0" width="500" height="500" patternUnits="userSpaceOnUse">
                     <path d="M 50 50 L 80 80 M 200 100 L 220 90 M 350 300 L 360 320 M 100 300 L 80 320" stroke="#FFF" strokeWidth="0.5" opacity="0.15" strokeLinecap="square"></path>
                     <path d="M 400 50 L 420 80 M 10 400 L 30 380" stroke="#FFF" strokeWidth="0.5" opacity="0.1"></path>
                 </pattern>
 
-                {/* CONSTELLATION ASSETS (Exact copy from UI) */}
                 <g id="sb_star"><circle r="1.5" fill="#F0F0FF"></circle></g>
                 <g id="sb_c_A"><path d="M0,0 L30,40 L-20,30" stroke="#556070" strokeWidth="0.5" fill="none"></path><use href="#sb_star" x="0" y="0"></use><use href="#sb_star" x="30" y="40"></use><use href="#sb_star" x="-20" y="30"></use></g>
                 <g id="sb_c_B"><path d="M0,0 L40,0 L80,0" stroke="#556070" strokeWidth="0.5" fill="none"></path><use href="#sb_star" x="0" y="0"></use><use href="#sb_star" x="40" y="0"></use><use href="#sb_star" x="80" y="0"></use></g>
@@ -117,7 +113,7 @@ export default function SpaceBackground() {
                     <use href="#sb_c_K" x="650" y="450" opacity="0.3"></use>
                 </symbol>
 
-                {/* PATTERNS (Static for Export) */}
+                {/* PATTERNS */}
                 <pattern id="sb_pat_Layer1" x="0" y="0" width="800" height="800" patternUnits="userSpaceOnUse">
                     <use href="#sb_stars_Layer1"></use>
                 </pattern>
@@ -138,20 +134,20 @@ export default function SpaceBackground() {
             {/* 1. BASE BACKGROUND */}
             <rect width="100%" height="100%" fill="#10121A"></rect>
 
-            {/* 2. ATMOSPHERE */}
+            {/* 2. ATMOSPHERE (Static) */}
             <rect width="100%" height="100%" fill="url(#sb_nebulaTop)" style={{ mixBlendMode: 'screen' }}></rect>
             <rect width="100%" height="100%" fill="url(#sb_nebulaBottom)" style={{ mixBlendMode: 'screen' }}></rect>
             <rect width="100%" height="100%" fill="url(#sb_nebulaRight)" style={{ mixBlendMode: 'screen' }}></rect>
 
-            {/* 3. STAR LAYERS */}
-            <g transform="scale(0.5)">
-                <rect width="200%" height="200%" fill="url(#sb_pat_Layer3)" opacity="0.3"></rect>
+            {/* 3. STATIC STAR LAYERS (No Animation Classes) */}
+            <g>
+                <rect x="0" y="0" width="200%" height="200%" fill="url(#sb_pat_Layer3)" opacity="0.3"></rect>
             </g>
-            <g transform="translate(100, 50) scale(0.75)">
-                <rect width="200%" height="200%" fill="url(#sb_pat_Layer2)" opacity="0.4"></rect>
+            <g>
+                <rect x="0" y="0" width="200%" height="200%" fill="url(#sb_pat_Layer2)" opacity="0.4"></rect>
             </g>
-            <g transform="scale(1.0)">
-                <rect width="100%" height="100%" fill="url(#sb_pat_Layer1)" opacity="0.5"></rect>
+            <g>
+                <rect x="0" y="0" width="200%" height="200%" fill="url(#sb_pat_Layer1)" opacity="0.5"></rect>
             </g>
 
             {/* 4. STATIC SHARDS */}
@@ -180,7 +176,7 @@ export default function SpaceBackground() {
                 </g>
             </g>
 
-            {/* 5. STELLAR FLARES */}
+            {/* 5. STELLAR FLARES (Static) */}
             <g filter="url(#sb_stellarBloom)">
                 <circle cx="300" cy="300" r="3" fill="#FFF"></circle>
                 <circle cx="1200" cy="150" r="2.5" fill="#FFF"></circle>
@@ -201,12 +197,10 @@ export default function SpaceBackground() {
                 <circle cx="50" cy="50" r="3" fill="#00FFF0" opacity="0.9"></circle>
             </g>
 
-            {/* 6. OVERLAYS */}
+            {/* 6. OVERLAYS (Scanlines REMOVED) */}
             <rect width="110%" height="110%" fill="url(#sb_scratchPattern)" opacity="0.4"></rect>
-            <rect width="100%" height="120%" fill="url(#sb_scanlinePattern)" pointerEvents="none"></rect>
+            {/* REMOVED: Scanline overlay rect */}
             <rect width="100%" height="100%" fill="url(#sb_vignette)"></rect>
         </g>
     );
 }
-
-

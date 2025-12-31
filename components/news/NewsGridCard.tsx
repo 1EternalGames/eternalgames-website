@@ -3,7 +3,6 @@
 
 import React, { memo, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLivingCard } from '@/hooks/useLivingCard';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
@@ -24,6 +23,7 @@ type NewsGridCardProps = {
     isPriority?: boolean;
     layoutIdPrefix: string;
     variant?: 'default' | 'compact' | 'mini';
+    onClick?: (e: React.MouseEvent) => void; // Prop for handling click-to-close behavior
 };
 
 const typeLabelMap: Record<string, string> = {
@@ -38,7 +38,7 @@ const typeDisplayMap: Record<string, string> = {
     'review': 'مراجعة'
 };
 
-const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default' }: NewsGridCardProps) => {
+const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, variant = 'default', onClick }: NewsGridCardProps) => {
     const setPrefix = useLayoutIdStore((state) => state.setPrefix); 
     const isMobile = useIsMobile();
     
@@ -70,6 +70,9 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     const { type: kineticType, path: linkPath } = getLinkData();
     
     const handleClick = (e: React.MouseEvent) => {
+        // Trigger external click handler (e.g., closing Search)
+        if (onClick) onClick(e);
+
         if ((e.target as HTMLElement).closest('a[href^="/tags/"]')) return;
         if ((e.target as HTMLElement).closest('a[href^="/creators/"]')) return;
         if (!isMobile && isHeroTransitionEnabled) {
@@ -113,8 +116,8 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
     ];
 
     const mobileConfig = [
-        { hoverX: -90, hoverY: 20, rotate: -4 },
-        { hoverX: 70, hoverY: 40, rotate: 4 },
+        { hoverX: -150, hoverY: 35, rotate: -4 },
+        { hoverX: 160, hoverY: 40, rotate: 4 },
         { hoverX: 0, hoverY: -85, rotate: -2 } 
     ];
 
@@ -225,7 +228,8 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                 sizes="(max-width: 768px) 130px, 260px"
                                 className={styles.cardImage}
                                 style={{ objectFit: 'cover' }}
-                                placeholder="blur" 
+                                // FIX: Conditional blur data
+                                placeholder={item.blurDataURL ? 'blur' : 'empty'}
                                 blurDataURL={item.blurDataURL}
                                 priority={isPriority}
                             />
@@ -241,14 +245,17 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
                             <div className={styles.cardMetadata}>
                                 <div style={{display:'flex', alignItems:'center', gap:'0.8rem'}}>
-                                    {/* FIX: Use KineticLink for creator */}
+                                    {/* FIX: Propagate onClick to close search even when clicking creator */}
                                     {authorUsername ? (
                                         <KineticLink 
                                             href={`/creators/${authorUsername}`}
                                             slug={authorUsername}
                                             type="creators"
                                             className={`${styles.creatorCapsule} no-underline`}
-                                            onClick={(e) => e.stopPropagation()}
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                if (onClick) onClick(e); 
+                                            }}
                                             // PASS DATA
                                             preloadedData={creatorData}
                                         >
@@ -286,7 +293,10 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                  
                                  const config = satelliteConfig[i] || { hoverX: 0, hoverY: 0, rotate: 0 };
                                  const isLeft = config.hoverX < 0;
-                                 const positionStyle = isLeft 
+                                 
+                                 const anchorRight = isMobile ? !isLeft : isLeft;
+
+                                 const positionStyle = anchorRight 
                                     ? { right: '50%', left: 'auto', top: '50%', transformOrigin: 'center right' }
                                     : { left: '50%', right: 'auto', top: '50%', transformOrigin: 'center left' };
 
@@ -296,18 +306,24 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         className={styles.satelliteShard}
                                         initial={{ opacity: 0, scale: 0.4, x: 0, y: 50, z: 0 }}
                                         animate={{ opacity: 1, scale: 1.15, x: config.hoverX, y: config.hoverY, rotate: config.rotate, z: -30 }}
-                                        exit={{ opacity: 0, scale: 0.4, x: 0, y: 50, rotate: 0, z: 0 }}
+                                        exit={{ opacity: 0, scale: 0.4, x: 0, y: 0, rotate: 0, z: 0 }}
                                         transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
                                         style={{ position: 'absolute', ...positionStyle, transformStyle: 'preserve-3d' }}
-                                        onClick={(e) => e.stopPropagation()}
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            // FIX: Propagate onClick for tags too to close search
+                                            if (onClick) onClick(e);
+                                        }}
                                      >
                                          {sat.link ? (
-                                             // Use KineticLink for tags? Not strictly required but cleaner
                                              <KineticLink 
                                                 href={sat.link} 
-                                                slug={sat.link.split('/').pop() || ''} // Simple slug extraction
+                                                slug={sat.link.split('/').pop() || ''} 
                                                 type={sat.link.includes('/tags/') ? 'tags' : 'games'}
-                                                onClick={(e) => { e.stopPropagation(); }}
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    if(onClick) onClick(e); 
+                                                }}
                                                 className={`${styles.satelliteShardLink} ${styles.clickable} ${(variant === 'compact' || variant === 'mini') ? styles.small : ''} no-underline`}
                                              >
                                                  {sat.label}
