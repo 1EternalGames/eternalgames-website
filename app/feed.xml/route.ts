@@ -3,7 +3,8 @@ import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 import { urlFor } from '@/sanity/lib/image';
 
-// UPDATE: Changed base URL
+// OPTIMIZATION: Removed 'export const revalidate'.
+// We now rely on the 'content' tag below for infinite caching + on-demand purge.
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com';
 
 export async function GET() {
@@ -24,7 +25,10 @@ export async function GET() {
     }
   `;
 
-  const posts = await client.fetch(query);
+  // FIX: Tag-based caching
+  const posts = await client.fetch(query, {}, { 
+      next: { tags: ['content'] } 
+  });
 
   const itemsXml = posts.map((post: any) => {
     let section = 'news';
@@ -34,13 +38,11 @@ export async function GET() {
     const url = `${siteUrl}/${section}/${post.slug}`;
     const date = new Date(post.publishedAt || new Date()).toUTCString();
     
-    // Construct Media Enclosure
     let mediaXml = '';
     if (post.mainImage?.url) {
-        // We use Sanity image URL builder to get a fixed size optimized for feeds
         const imageUrl = urlFor(post.mainImage).width(1200).height(800).fit('crop').url();
         const mimeType = post.mainImage.mimeType || 'image/jpeg';
-        const size = post.mainImage.size || 0; // Length in bytes
+        const size = post.mainImage.size || 0;
         
         mediaXml = `
             <enclosure url="${imageUrl}" length="${size}" type="${mimeType}" />
@@ -83,7 +85,8 @@ export async function GET() {
   return new Response(rssFeed, {
     headers: {
       'Content-Type': 'text/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      // Browser Cache: 1 hour (Client side only), Server Cache is handled by tags
+      'Cache-Control': 'public, max-age=3600',
     },
   });
 }

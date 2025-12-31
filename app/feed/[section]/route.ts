@@ -5,7 +5,6 @@ import { urlFor } from '@/sanity/lib/image';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
 
-// Map URL path to Sanity _type
 const typeMap: Record<string, string> = {
     'reviews': 'review',
     'articles': 'article',
@@ -43,13 +42,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ sect
     }
   `;
 
-  const posts = await client.fetch(query, { type: sanityType });
+  // FIX: Tag-based caching
+  const posts = await client.fetch(query, { type: sanityType }, { 
+      next: { tags: ['content'] } 
+  });
 
   const itemsXml = posts.map((post: any) => {
     const url = `${siteUrl}/${section}/${post.slug}`;
     const date = new Date(post.publishedAt || new Date()).toUTCString();
     
-    // Construct Media Enclosure
     let mediaXml = '';
     if (post.mainImage?.url) {
         const imageUrl = urlFor(post.mainImage).width(1200).height(800).fit('crop').url();
@@ -97,7 +98,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sect
   return new Response(rssFeed, {
     headers: {
       'Content-Type': 'text/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'public, max-age=3600',
     },
   });
 }

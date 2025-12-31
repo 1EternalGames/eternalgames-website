@@ -9,16 +9,17 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: [
           '/', 
-          '/api/og/*' // Explicitly ALLOW OG image generation
+          '/api/og/*' 
       ],
       disallow: [
         '/studio/',
         '/admin/',
         '/private/',
         '/search',
-        // BLOCK ALL API ROUTES by default to save CPU/Bandwidth
-        // Bots do not need to consume your JSON endpoints directly
         '/api/', 
+        // SECURITY: Block all query parameters to prevent "Fast Origin Transfer" attacks / cache bust attempts.
+        // Canonical URLs on this site do not use query params for static content.
+        '/*?*', 
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

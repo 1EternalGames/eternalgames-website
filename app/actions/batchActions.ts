@@ -18,7 +18,8 @@ import {
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
-// ... (Other batch actions like batchFetchFullContentAction remain unchanged as they are specific ID lookups) ...
+// ... (Other batch actions remain unchanged) ...
+
 export async function batchFetchFullContentAction(ids: string[]) {
   if (!ids || ids.length === 0) return [];
   try {
@@ -77,8 +78,6 @@ export async function batchFetchCreatorsAction(creatorIds: string[]) {
     }
 }
 
-// CACHED: Fetch Creator Profile by Username
-// This is safe to keep cached as it's a specific single lookup
 export const fetchCreatorByUsernameAction = unstable_cache(
     async (username: string) => {
         if (!username) return null;
@@ -185,32 +184,53 @@ export async function fetchSingleContentAction(slug: string) {
     }
 }
 
-// MODIFIED: REMOVED CACHING for these infinite scrolling actions
+// FIX: Pass fullDocProjection to ensure items loaded via scrolling are clickable instantly
 export async function loadMoreReviews(params: { offset: number, limit: number, sort: 'latest' | 'score', scoreRange?: string, gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
-    const query = paginatedReviewsQuery(params.gameSlug, params.tagSlugs, params.searchTerm, params.scoreRange, params.offset, params.limit, params.sort, fullDocProjection);
+    const query = paginatedReviewsQuery(
+        params.gameSlug, 
+        params.tagSlugs, 
+        params.searchTerm, 
+        params.scoreRange, 
+        params.offset, 
+        params.limit, 
+        params.sort, 
+        fullDocProjection // <--- THE FIX
+    );
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
-// MODIFIED: REMOVED CACHING
 export async function loadMoreArticles(params: { offset: number, limit: number, sort: 'latest' | 'viral', gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
-    const query = paginatedArticlesQuery(params.gameSlug, params.tagSlugs, params.searchTerm, params.offset, params.limit, params.sort, fullDocProjection);
+    const query = paginatedArticlesQuery(
+        params.gameSlug, 
+        params.tagSlugs, 
+        params.searchTerm, 
+        params.offset, 
+        params.limit, 
+        params.sort, 
+        fullDocProjection // <--- THE FIX
+    );
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
-// MODIFIED: REMOVED CACHING
 export async function loadMoreNews(params: { offset: number, limit: number, sort: 'latest' | 'viral', gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
-    const query = paginatedNewsQuery(params.gameSlug, params.tagSlugs, params.searchTerm, params.offset, params.limit, params.sort, fullDocProjection);
+    const query = paginatedNewsQuery(
+        params.gameSlug, 
+        params.tagSlugs, 
+        params.searchTerm, 
+        params.offset, 
+        params.limit, 
+        params.sort, 
+        fullDocProjection // <--- THE FIX
+    );
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
 async function processUnifiedResponse(rawData: any[], limit: number, offset: number) {
-    // 1. Enrich main content (Authors, etc.)
     const enrichedData = await enrichContentList(rawData);
     
-    // 2. Extract Game IDs for Hub Fetching
     const gameIds = new Set<string>();
     rawData.forEach(item => {
         if (item.game && item.game._id) {
@@ -220,21 +240,17 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
 
     let enrichedHubs: any[] = [];
     
-    // 3. Fetch & Enrich Game Hubs if any games exist
     if (gameIds.size > 0) {
         try {
             const gameHubs = await client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) });
-            // Enrich the 'linkedContent' inside the game hubs
             enrichedHubs = await Promise.all(gameHubs.map(async (hub: any) => {
                 if (hub.linkedContent && hub.linkedContent.length > 0) {
                     hub.linkedContent = await enrichContentList(hub.linkedContent);
                 }
-                // Mark as fully loaded so store knows it's safe to use
                 return { ...hub, contentLoaded: true };
             }));
         } catch (error) {
             console.error("Failed to pre-fetch game hubs in loadMore:", error);
-            // Non-blocking failure, just continue without hubs
         }
     }
 
@@ -243,7 +259,11 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
         if (item._type === 'review' && item.verdict) {
             tocHeadings.push({ id: 'verdict-summary', text: 'الخلاصة', level: 2 });
         }
-        return { ...item, toc: tocHeadings };
+        return { 
+            ...item, 
+            toc: tocHeadings,
+            contentLoaded: true // Explicitly mark as loaded since we used fullDocProjection
+        };
     });
     
     const cards = fullContent.map((item: any) => adaptToCardProps(item, { width: 600 })).filter(Boolean) as CardProps[];

@@ -129,7 +129,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
 
                 {/* WATERMARK */}
                 <g transform="translate(540, 1345)">
-                    <text x="0" y="-12" textAnchor="middle" fontWeight="bold" fontSize="16" fill="#556070" fontFamily="'Cairo', sans-serif">MoVisionX@</text>
+                    <text x="0" y="-12" textAnchor="middle" fontWeight="bold" fontSize="16" fill="#00FFF0" fontFamily="'Cairo', sans-serif">1EternalGames // @MovisionX@</text>
                 </g>
 
                 <rect width="100%" height="100%" filter="url(#mg-grain)" opacity="0.06" style={{ mixBlendMode: 'overlay' }} pointerEvents="none"></rect>

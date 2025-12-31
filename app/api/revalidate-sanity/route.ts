@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. IGNORE SYSTEM ASSETS (The "Asset Trap" Fix)
+    // Uploading images/files triggers webhooks but shouldn't nuke the homepage cache
+    // until they are actually ATTACHED to a published document.
     if (['sanity.imageAsset', 'sanity.fileAsset'].includes(body._type)) {
        return NextResponse.json({
         status: 200,
@@ -54,6 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     // B. Global Content (Menus, Lists, Feeds)
+    // Only revalidate this heavy tag for actual content types
     revalidateTag('content', 'max');
 
     // C. Metadata Singletons

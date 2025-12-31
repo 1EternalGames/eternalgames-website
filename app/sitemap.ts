@@ -3,11 +3,12 @@ import { MetadataRoute } from 'next';
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 
-// UPDATE: Changed base URL
+// OPTIMIZATION: Removed time-based revalidation.
+// We now rely on On-Demand Revalidation via the 'content' tag.
+// This sitemap will stay cached forever until a Sanity Webhook fires.
+
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com'; 
 
-// 1. Fetch ALL dynamic routes. 
-// We explicitly exclude drafts and ensure slugs are defined.
 const sitemapQuery = groq`{
   "reviews": *[_type == "review" && defined(slug.current) && !(_id in path("drafts.**"))] { "slug": slug.current, _updatedAt },
   "articles": *[_type == "article" && defined(slug.current) && !(_id in path("drafts.**"))] { "slug": slug.current, _updatedAt },
@@ -18,25 +19,25 @@ const sitemapQuery = groq`{
   "publishers": *[_type == "publisher" && defined(slug.current)] { "slug": slug.current, _updatedAt }
 }`;
 
-// Helper to determine priority based on content freshness
 const getPriority = (dateStr: string, basePriority: number) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // If updated in last 30 days, boost priority
     if (diffDays <= 30) return Math.min(1.0, basePriority + 0.2);
-    // If older than a year, slightly lower priority (archive tier)
     if (diffDays > 365) return Math.max(0.1, basePriority - 0.2);
     
     return basePriority;
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const data = await client.fetch(sitemapQuery);
+  // FIX: Use 'next: { tags: ['content'] }'.
+  // This connects the sitemap to the global 'content' revalidation tag.
+  const data = await client.fetch(sitemapQuery, {}, { 
+      next: { tags: ['content'] } 
+  });
 
-  // 1. Static Core Routes
   const routes: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
     { url: `${baseUrl}/reviews`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
@@ -46,12 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/celestial-almanac`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/tools/upscaler`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 }, // ADDED
-    { url: `${baseUrl}/sitemap-html`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 }, // ADDED
+    { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/sitemap-html`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
   ];
 
-  // 2. Dynamic Content Routes
-  // Reviews: High priority, evergreen content
   (data.reviews || []).forEach((item: any) => {
     routes.push({
       url: `${baseUrl}/reviews/${item.slug}`,
@@ -61,7 +60,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  // Articles: Medium-High priority
   (data.articles || []).forEach((item: any) => {
     routes.push({
       url: `${baseUrl}/articles/${item.slug}`,
@@ -71,17 +69,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  // News: High freshness priority, but decays quickly
   (data.news || []).forEach((item: any) => {
     routes.push({
       url: `${baseUrl}/news/${item.slug}`,
       lastModified: new Date(item._updatedAt),
-      changeFrequency: 'never', // News rarely changes after publish
+      changeFrequency: 'never',
       priority: getPriority(item._updatedAt, 0.6), 
     });
   });
 
-  // 3. Entity Routes (Hubs)
   (data.games || []).forEach((item: any) => {
     routes.push({
       url: `${baseUrl}/games/${item.slug}`,
