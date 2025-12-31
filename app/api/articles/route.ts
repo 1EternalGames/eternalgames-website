@@ -3,34 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { client } from '@/lib/sanity.client';
 import { paginatedArticlesQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
-import { unstable_cache } from 'next/cache';
 import { enrichContentList } from '@/lib/enrichment';
 import { standardLimiter } from '@/lib/rate-limit'; 
 
-const getCachedPaginatedArticles = unstable_cache(
-    async (
-        gameSlug: string | undefined, 
-        tagSlugs: string[] | undefined, 
-        searchTerm: string | undefined, 
-        offset: number, 
-        limit: number,
-        sort: 'latest' | 'viral'
-    ) => {
-        const query = paginatedArticlesQuery(gameSlug, tagSlugs, searchTerm, offset, limit, sort);
-        const sanityData = await client.fetch(query);
-        const enrichedData = await enrichContentList(sanityData);
-        return enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
-    },
-    ['paginated-articles-list'],
-    // OPTIMIZATION: Infinite cache
-    { 
-        revalidate: false, 
-        tags: ['article', 'content'] 
-    }
-);
+export const dynamic = 'force-dynamic'; // Prevent Next.js from trying to statically cache this route
 
 export async function GET(req: NextRequest) {
     try {
+        // Rate limiting is good to keep
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const limitCheck = await standardLimiter.check(`api-articles-${ip}`, 20);
         if (!limitCheck.success) {
@@ -47,22 +27,20 @@ export async function GET(req: NextRequest) {
         const tagSlugs = tagSlugsString ? tagSlugsString.split(',') : undefined;
         const sort = (searchParams.get('sort') as 'latest' | 'viral') || 'latest';
 
-        const data = await getCachedPaginatedArticles(
-            gameSlug, 
-            tagSlugs, 
-            searchTerm, 
-            offset, 
-            limit,
-            sort
-        );
+        // REMOVED: unstable_cache. 
+        // We now fetch directly. client.fetch uses Sanity CDN (cached) because useCdn is true in lib/sanity.client.ts
+        const query = paginatedArticlesQuery(gameSlug, tagSlugs, searchTerm, offset, limit, sort);
+        const sanityData = await client.fetch(query);
+        const enrichedData = await enrichContentList(sanityData);
+        const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
 
         const response = NextResponse.json({
             data,
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        // CACHE CONTROL: Force browser caching, but revalidate at Edge
-        response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
+        // Browser Cache: Cache for 60 seconds locally, 1 hour on CDN/Edge
+        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=3600');
 
         return response;
 

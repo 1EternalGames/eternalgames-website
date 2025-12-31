@@ -13,13 +13,12 @@ import {
     paginatedArticlesQuery, 
     paginatedNewsQuery,
     cardListProjection,
-    batchGameHubsQuery // Ensure this is imported
+    batchGameHubsQuery 
 } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
-// ... (Other batch actions - keep existing) ...
-
+// ... (Other batch actions like batchFetchFullContentAction remain unchanged as they are specific ID lookups) ...
 export async function batchFetchFullContentAction(ids: string[]) {
   if (!ids || ids.length === 0) return [];
   try {
@@ -79,6 +78,7 @@ export async function batchFetchCreatorsAction(creatorIds: string[]) {
 }
 
 // CACHED: Fetch Creator Profile by Username
+// This is safe to keep cached as it's a specific single lookup
 export const fetchCreatorByUsernameAction = unstable_cache(
     async (username: string) => {
         if (!username) return null;
@@ -126,7 +126,6 @@ export const fetchCreatorByUsernameAction = unstable_cache(
     { tags: ['creator-profile'] }
 );
 
-// ... (Other fetch functions remain same) ...
 export async function fetchGameContentAction(slug: string) {
     if (!slug) return [];
     try {
@@ -186,25 +185,27 @@ export async function fetchSingleContentAction(slug: string) {
     }
 }
 
+// MODIFIED: REMOVED CACHING for these infinite scrolling actions
 export async function loadMoreReviews(params: { offset: number, limit: number, sort: 'latest' | 'score', scoreRange?: string, gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
     const query = paginatedReviewsQuery(params.gameSlug, params.tagSlugs, params.searchTerm, params.scoreRange, params.offset, params.limit, params.sort, fullDocProjection);
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
+// MODIFIED: REMOVED CACHING
 export async function loadMoreArticles(params: { offset: number, limit: number, sort: 'latest' | 'viral', gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
     const query = paginatedArticlesQuery(params.gameSlug, params.tagSlugs, params.searchTerm, params.offset, params.limit, params.sort, fullDocProjection);
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
+// MODIFIED: REMOVED CACHING
 export async function loadMoreNews(params: { offset: number, limit: number, sort: 'latest' | 'viral', gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
     const query = paginatedNewsQuery(params.gameSlug, params.tagSlugs, params.searchTerm, params.offset, params.limit, params.sort, fullDocProjection);
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
-// UPDATED: Fetches associated Game Hubs in parallel
 async function processUnifiedResponse(rawData: any[], limit: number, offset: number) {
     // 1. Enrich main content (Authors, etc.)
     const enrichedData = await enrichContentList(rawData);
@@ -251,7 +252,7 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
     return { 
         cards, 
         fullContent, 
-        hubs: enrichedHubs, // NEW: Return the hubs
+        hubs: enrichedHubs, 
         nextOffset 
     };
 }

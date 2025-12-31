@@ -11,11 +11,11 @@ import { deleteDocumentAction } from './actions';
 import { useToast } from '@/lib/toastStore';
 import { urlFor } from '@/sanity/lib/image';
 import Image from 'next/image';
-import { sanityLoader } from '@/lib/sanity.loader';
+import { sanityLoader } from '@/lib/sanity.loader'; // Ensure imported
 import styles from './StudioDashboard.module.css';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useContentStore } from '@/lib/contentStore'; // IMPORTED
+import { useContentStore } from '@/lib/contentStore'; 
 
 type ContentStatus = 'all' | 'draft' | 'published' | 'scheduled';
 type ContentCanvasItem = { _id: string; _type: 'review' | 'article' | 'news' | 'gameRelease'; _updatedAt: string; title: string; slug: string; status: ContentStatus; mainImage?: any; blurDataURL?: string; };
@@ -49,7 +49,6 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick }: {
         setIsHovered(false);
     };
 
-    // Drawer is visible if Active (Clicked) OR Hovered
     const isDrawerVisible = isActive || isHovered;
 
     const imageUrlWithBuster = useMemo(() => {
@@ -74,7 +73,7 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick }: {
             >
                 {imageUrlWithBuster ? (
                     <Image 
-                        loader={sanityLoader} // <-- LOADER ADDED
+                        loader={sanityLoader} // <-- ADDED: Bypass Vercel Image Optimization
                         src={imageUrlWithBuster} 
                         alt={item.title} 
                         fill
@@ -101,7 +100,6 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     const toast = useToast();
     const [isPending, startTransition] = useTransition();
     
-    // IMPORTED: Check overlay state
     const { isOverlayOpen } = useContentStore();
 
     const { data: session, update: updateSession } = useSession();
@@ -109,12 +107,10 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
     useEffect(() => {
         const clientRoles = (session?.user as any)?.roles || [];
         if (userRoles.length > 0) {
-            // FIX: Use spread syntax [...userRoles] to avoid mutating the original arrays with .sort()
             const sortedServerRoles = [...userRoles].sort();
             const sortedClientRoles = [...clientRoles].sort();
             
             if (JSON.stringify(sortedServerRoles) !== JSON.stringify(sortedClientRoles)) {
-                // console.log("Syncing session roles with server..."); // Removed log
                 updateSession(); 
             }
         }
@@ -174,7 +170,6 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
 
     const isDirector = userRoles.includes('DIRECTOR');
     
-    // CRITICAL FIX: Hide dashboard if overlay is active
     if (isOverlayOpen) return null;
 
     return (
@@ -186,7 +181,7 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                     <Link 
                         href="/studio/director" 
                         className={`${styles.directorGateButton} no-underline`}
-                        prefetch={false} // FIX: Disable prefetch to avoid double requests
+                        prefetch={false}
                     >
                          <span>بوابة الإدارة</span>
                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>

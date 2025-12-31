@@ -3,33 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { client } from '@/lib/sanity.client';
 import { paginatedNewsQuery } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
-import { unstable_cache } from 'next/cache';
 import { enrichContentList } from '@/lib/enrichment';
 import { standardLimiter } from '@/lib/rate-limit'; 
 
-const getCachedPaginatedNews = unstable_cache(
-    async (
-        gameSlug: string | undefined, 
-        tagSlugs: string[] | undefined, 
-        searchTerm: string | undefined, 
-        offset: number, 
-        limit: number,
-        sort: 'latest' | 'viral'
-    ) => {
-        const tags = tagSlugs?.length === 0 ? undefined : tagSlugs;
-        const query = paginatedNewsQuery(gameSlug, tags, searchTerm, offset, limit, sort);
-        const sanityData = await client.fetch(query);
-        const enrichedData = await enrichContentList(sanityData);
-        const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
-        return data;
-    },
-    ['paginated-news-list'],
-    // OPTIMIZATION: Infinite cache
-    { 
-        revalidate: false, 
-        tags: ['news', 'content'] 
-    }
-);
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     try {
@@ -49,21 +26,19 @@ export async function GET(req: NextRequest) {
         const tagSlugs = tagSlugsString ? tagSlugsString.split(',') : undefined;
         const sort = (searchParams.get('sort') as 'latest' | 'viral') || 'latest';
         
-        const data = await getCachedPaginatedNews(
-            gameSlug, 
-            tagSlugs, 
-            searchTerm, 
-            offset, 
-            limit,
-            sort
-        );
+        // Direct fetch using Sanity CDN
+        const tags = tagSlugs?.length === 0 ? undefined : tagSlugs;
+        const query = paginatedNewsQuery(gameSlug, tags, searchTerm, offset, limit, sort);
+        const sanityData = await client.fetch(query);
+        const enrichedData = await enrichContentList(sanityData);
+        const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
 
         const response = NextResponse.json({
             data,
             nextOffset: data.length === limit ? offset + limit : null,
         });
         
-        response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=31536000, must-revalidate');
+        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=3600');
 
         return response;
 

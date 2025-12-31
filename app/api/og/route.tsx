@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     if (slug) {
         try {
             const url = `https://${PROJECT_ID}.api.sanity.io/v2021-10-21/data/query/${DATASET}?query=${encodeURIComponent(QUERY)}&%24slug="${slug}"`;
-            const sanityRes = await fetch(url);
+            const sanityRes = await fetch(url, { next: { revalidate: 3600 } }); // Cache Sanity lookup
             
             if (sanityRes.ok) {
                 const json = await sanityRes.json();
@@ -145,6 +145,10 @@ export async function GET(request: Request) {
         {
             width: 1200,
             height: 630,
+            // ADDED: Cache-Control header to prevent excessive edge function execution
+            headers: {
+                'Cache-Control': 'public, max-age=604800, immutable', // Cache for 7 days
+            },
         }
     );
   } catch (e: any) {

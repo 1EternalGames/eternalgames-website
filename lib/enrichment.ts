@@ -1,31 +1,27 @@
 // lib/enrichment.ts
 import prisma from '@/lib/prisma';
 import { SanityAuthor } from '@/types/sanity';
-import { unstable_cache } from 'next/cache';
 
-// 1. Cache the Database Lookup
-export const getCachedEnrichedCreators = unstable_cache(
-    async (creatorIds: string[]): Promise<[string, string | null][]> => {
-        // OPTIMIZATION: Early exit before DB call if array is empty
-        if (!creatorIds || creatorIds.length === 0) return [];
+// REMOVED: unstable_cache.
+// Caching batch lookups created a unique cache entry for every permutation of creators
+// on a page, leading to massive cache write volume (ISR Writes).
+// A direct DB lookup for IDs is highly optimized and much cheaper than the cache overhead here.
+export async function getCachedEnrichedCreators(creatorIds: string[]): Promise<[string, string | null][]> {
+    // Optimization: Early exit
+    if (!creatorIds || creatorIds.length === 0) return [];
+    
+    try {
+        const users = await prisma.user.findMany({
+            where: { id: { in: creatorIds } },
+            select: { id: true, username: true },
+        });
         
-        try {
-            const users = await prisma.user.findMany({
-                where: { id: { in: creatorIds } },
-                select: { id: true, username: true },
-            });
-            
-            return users.map((u: any) => [u.id, u.username || null]);
-        } catch (error) {
-            console.warn(`[CACHE WARNING] Database connection failed during cached creator enrichment.`, error);
-            return [];
-        }
-    },
-    ['enriched-creators-batch'], 
-    // OPTIMIZATION: Infinite cache.
-    // This is only invalidated when a user updates their profile via 'updateUserProfile' action.
-    { revalidate: false, tags: ['enriched-creators'] }
-);
+        return users.map((u: any) => [u.id, u.username || null]);
+    } catch (error) {
+        console.warn(`[Enrichment] Database connection failed during creator lookup.`, error);
+        return [];
+    }
+}
 
 function enrichItemCreators(creators: SanityAuthor[] | undefined, usernameMap: Map<string, string | null>): SanityAuthor[] {
     if (!creators || creators.length === 0) return [];
@@ -72,6 +68,7 @@ export async function enrichContentList(items: any[]) {
 
     const uniqueIdsArray = Array.from(allUserIds).sort();
     
+    // Direct DB call now
     const usernameEntries = await getCachedEnrichedCreators(uniqueIdsArray);
     const usernameMap = new Map(usernameEntries);
 

@@ -51,7 +51,7 @@ export default async function HtmlSitemapPage() {
             }}>
                 {items.map((item: any) => (
                     <li key={item._id}>
-                        {/* FIX: Disable prefetching for ALL these links */}
+                        {/* FIX: Disable prefetching for ALL these links to prevent ISR explosion */}
                         <Link 
                             href={`${basePath}/${item.slug}`} 
                             className="no-underline"
