@@ -2,12 +2,10 @@
 import prisma from '@/lib/prisma';
 import { SanityAuthor } from '@/types/sanity';
 
-// REMOVED: unstable_cache.
-// Caching batch lookups created a unique cache entry for every permutation of creators
-// on a page, leading to massive cache write volume (ISR Writes).
-// A direct DB lookup for IDs is highly optimized and much cheaper than the cache overhead here.
+// REMOVED: unstable_cache entirely.
+// Direct DB lookup for IDs is highly optimized and prevents cache explosion
+// caused by storing every permutation of creator IDs.
 export async function getCachedEnrichedCreators(creatorIds: string[]): Promise<[string, string | null][]> {
-    // Optimization: Early exit
     if (!creatorIds || creatorIds.length === 0) return [];
     
     try {

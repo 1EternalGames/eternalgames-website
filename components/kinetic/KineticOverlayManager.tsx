@@ -6,9 +6,11 @@ import { useContentStore } from '@/lib/contentStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { useLenis } from 'lenis/react';
+import Lenis from 'lenis'; // Import Lenis class for manual instantiation
 import SpaceBackground from '@/components/ui/SpaceBackground';
 import { pageview } from '@/lib/gtm'; 
 import { useUIStore } from '@/lib/uiStore';
+import { usePerformanceStore } from '@/lib/performanceStore'; // Import Performance Store
 import styles from './KineticOverlayManager.module.css';
 import Footer from '@/components/Footer'; 
 import { usePathname } from 'next/navigation';
@@ -57,8 +59,9 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
     
     const setPrefix = useLayoutIdStore((s) => s.setPrefix);
     const setOverlayScrollRef = useUIStore((s) => s.setOverlayScrollRef);
+    const { isSmoothScrollingEnabled } = usePerformanceStore(); // Check user preference
     const overlayRef = useRef<HTMLDivElement>(null);
-    const lenis = useLenis();
+    const mainLenis = useLenis(); // The root Lenis instance
     
     const pathname = usePathname();
 
@@ -68,6 +71,44 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             forceCloseOverlay();
         }
     }, [pathname, isOverlayOpen, forceCloseOverlay]);
+
+    // Initialize scoped Lenis for the overlay
+    useEffect(() => {
+        if (isOverlayOpen && overlayRef.current && isSmoothScrollingEnabled) {
+            const container = overlayRef.current;
+            const content = container.firstElementChild as HTMLElement;
+
+            const overlayLenis = new Lenis({
+                wrapper: container,
+                content: content,
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                orientation: 'vertical',
+                gestureOrientation: 'vertical',
+                smoothWheel: true,
+                wheelMultiplier: 1,
+                touchMultiplier: 2,
+            });
+
+            // Sync: When Lenis scrolls, we can optionally dispatch events or rely on its internal handling.
+            // Note: Since 'wrapper' has overflow: auto (from CSS), Lenis might rely on native scroll or interfere.
+            // For standard Lenis behavior on custom wrapper, we usually set overflow: hidden, 
+            // but we want to keep native scrollbars visible for UX. 
+            // Lenis v1+ supports this by not preventing default if configured correctly, or we just let it run.
+
+            function raf(time: number) {
+                overlayLenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            
+            const rafId = requestAnimationFrame(raf);
+
+            return () => {
+                cancelAnimationFrame(rafId);
+                overlayLenis.destroy();
+            };
+        }
+    }, [isOverlayOpen, isSmoothScrollingEnabled]);
 
     useEffect(() => {
         if (typeof document === 'undefined') return;
@@ -174,7 +215,9 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         if (isOverlayOpen) {
             const rafId = requestAnimationFrame(() => {
                 const scrollbarWidth = window.innerWidth - html.clientWidth;
-                if (lenis) lenis.stop();
+                // STOP Main Lenis
+                if (mainLenis) mainLenis.stop();
+                
                 body.style.paddingRight = `${scrollbarWidth}px`; 
                 html.style.overflow = 'hidden';
                 body.style.overflow = 'hidden';
@@ -191,10 +234,11 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             body.style.overflow = '';
             if (mainFooter) mainFooter.style.display = '';
             requestAnimationFrame(() => {
-                if (lenis) {
-                    lenis.start();
+                // START Main Lenis
+                if (mainLenis) {
+                    mainLenis.start();
                     if (savedScrollPosition > 0) {
-                        lenis.scrollTo(savedScrollPosition, { immediate: true, force: true, lock: false });
+                        mainLenis.scrollTo(savedScrollPosition, { immediate: true, force: true, lock: false });
                     }
                 } else {
                     if (savedScrollPosition > 0) {
@@ -204,7 +248,7 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             });
             setOverlayScrollRef(null);
         }
-    }, [isOverlayOpen, savedScrollPosition, lenis, setOverlayScrollRef]);
+    }, [isOverlayOpen, savedScrollPosition, mainLenis, setOverlayScrollRef]);
 
     const renderContent = useMemo(() => {
         if (!isOverlayOpen) return null;

@@ -28,9 +28,12 @@ export async function GET(req: NextRequest) {
         const sort = (searchParams.get('sort') as 'latest' | 'score') || 'latest';
         const scoreRange = searchParams.get('score') as ScoreFilter || undefined;
 
-        // Direct fetch using Sanity CDN
         const query = paginatedReviewsQuery(gameSlug, tagSlugs, searchTerm, scoreRange, offset, limit, sort);
-        const sanityData = await client.fetch(query);
+        
+        // FIX: Disable Data Cache for pagination/filtering.
+        // We rely on Sanity's CDN (via client config) for speed, avoiding Vercel ISR writes for every filter combo.
+        const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
+        
         const enrichedData = await enrichContentList(sanityData);
         const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
 
@@ -39,7 +42,8 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=3600');
+        // Browser Cache: Cache for 60 seconds locally
+        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
         
         return response;
 

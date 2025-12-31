@@ -6,11 +6,10 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { enrichContentList } from '@/lib/enrichment';
 import { standardLimiter } from '@/lib/rate-limit'; 
 
-export const dynamic = 'force-dynamic'; // Prevent Next.js from trying to statically cache this route
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     try {
-        // Rate limiting is good to keep
         const ip = req.headers.get('x-forwarded-for') || 'unknown';
         const limitCheck = await standardLimiter.check(`api-articles-${ip}`, 20);
         if (!limitCheck.success) {
@@ -27,10 +26,11 @@ export async function GET(req: NextRequest) {
         const tagSlugs = tagSlugsString ? tagSlugsString.split(',') : undefined;
         const sort = (searchParams.get('sort') as 'latest' | 'viral') || 'latest';
 
-        // REMOVED: unstable_cache. 
-        // We now fetch directly. client.fetch uses Sanity CDN (cached) because useCdn is true in lib/sanity.client.ts
         const query = paginatedArticlesQuery(gameSlug, tagSlugs, searchTerm, offset, limit, sort);
-        const sanityData = await client.fetch(query);
+        
+        // FIX: Disable Data Cache
+        const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
+        
         const enrichedData = await enrichContentList(sanityData);
         const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
 
@@ -39,8 +39,7 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        // Browser Cache: Cache for 60 seconds locally, 1 hour on CDN/Edge
-        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=3600');
+        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
 
         return response;
 

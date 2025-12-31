@@ -4,6 +4,9 @@
     /* Firefox */
     scrollbar-width: thin;
     scrollbar-color: var(--accent) transparent;
+    
+    /* Native Smooth Scrolling for anchors */
+    scroll-behavior: smooth;
 }
 
 /* Chrome, Edge, Safari */

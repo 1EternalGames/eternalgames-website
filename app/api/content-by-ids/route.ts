@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { client } from '@/lib/sanity.client';
 import { contentByIdsQuery } from '@/lib/sanity.queries';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -12,7 +14,9 @@ export async function POST(request: Request) {
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json([]);
     }
-    const content = await client.fetch(contentByIdsQuery, { ids });
+
+    // FIX: Disable Data Cache for arbitrary ID combinations to prevent cache explosion.
+    const content = await client.fetch(contentByIdsQuery, { ids }, { cache: 'no-store' });
 
     return NextResponse.json(content);
 
@@ -24,5 +28,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-

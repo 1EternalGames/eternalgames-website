@@ -14,17 +14,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // REMOVED: { next: { revalidate: 300 } }
-    // We do NOT want to cache search results in Vercel's Data Cache.
-    // Unique queries (infinite possibilities) would fill the cache storage limit immediately.
-    // Sanity's CDN will handle repeated queries efficiently enough.
+    // FIX: cache: 'no-store' prevents Next.js from writing these infinite permutations to the Data Cache (ISR Writes).
+    // Sanity's CDN will still handle repeated requests efficiently if useCdn is true globally, 
+    // but here we want to avoid Vercel cache explosion.
     const results = await client.fetch<SanitySearchResult[]>(
       searchQuery, 
-      { searchTerm: query }
+      { searchTerm: query },
+      { cache: 'no-store' } 
     );
     
-    // Cache in the user's browser for a short time to make the UI snappy while typing,
-    // but don't store it on the server.
     return NextResponse.json(results, {
         headers: {
             'Cache-Control': 'public, max-age=60' 

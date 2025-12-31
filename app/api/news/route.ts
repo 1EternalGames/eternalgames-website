@@ -26,10 +26,12 @@ export async function GET(req: NextRequest) {
         const tagSlugs = tagSlugsString ? tagSlugsString.split(',') : undefined;
         const sort = (searchParams.get('sort') as 'latest' | 'viral') || 'latest';
         
-        // Direct fetch using Sanity CDN
         const tags = tagSlugs?.length === 0 ? undefined : tagSlugs;
         const query = paginatedNewsQuery(gameSlug, tags, searchTerm, offset, limit, sort);
-        const sanityData = await client.fetch(query);
+        
+        // FIX: Disable Data Cache
+        const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
+        
         const enrichedData = await enrichContentList(sanityData);
         const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
 
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
         
-        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=3600');
+        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
 
         return response;
 
