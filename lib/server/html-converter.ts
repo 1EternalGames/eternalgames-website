@@ -21,15 +21,37 @@ const S = {
     english: "font-weight:700"
 };
 
-// Helper to decode existing entities to prevent double-escaping
+// Helper to decode existing entities to prevent double-escaping.
+// Uses a loop to handle nested encoding (e.g. &amp;quot; -> &quot; -> ")
 const unescapeHtml = (str: string): string => {
-    return str
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&#039;/g, "'")
-        .replace(/&nbsp;/g, " ");
+    if (!str) return '';
+    
+    // Map of common entities to their characters
+    const entities: Record<string, string> = {
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&quot;': '"',
+        '&#34;': '"',
+        '&#039;': "'",
+        '&#39;': "'",
+        '&nbsp;': ' '
+    };
+
+    let current = str;
+    // Loop up to 3 times to unwrap double/triple encoding
+    for (let i = 0; i < 3; i++) {
+        const previous = current;
+        // Replace named and numeric entities
+        current = current.replace(/&amp;|&lt;|&gt;|&quot;|&#34;|&#039;|&#39;|&nbsp;/g, (match) => {
+            return entities[match] || match;
+        });
+        
+        // If nothing changed, we are done
+        if (current === previous) break;
+    }
+    
+    return current;
 };
 
 const escapeHtml = (unsafe: string): string => {
@@ -48,7 +70,7 @@ const escapeHtml = (unsafe: string): string => {
 const processTextContent = (text: string, colorMap: Map<string, string>, colorRegex: RegExp | null): string => {
     if (!text) return '';
 
-    // 1. Clean the text (Unescape first to handle DB entities, then Escape for safety)
+    // 1. Clean the text (Deep unescape first to handle DB entities, then Escape strictly)
     let processed = escapeHtml(unescapeHtml(text));
     
     // Store HTML replacements temporarily to protect them from the English regex
