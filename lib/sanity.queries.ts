@@ -30,6 +30,9 @@ export const lightCardProjection = groq`
   newsType,
   synopsis,
   
+  // NEW: Fetch the first actual text block for instant reading
+  "lead": content[_type == "block"][0],
+
   releaseDate, isTBA, platforms, price, 
   "developer": developer->{title, "slug": slug.current}, 
   "publisher": publisher->{title, "slug": slug.current}, 

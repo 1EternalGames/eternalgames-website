@@ -24,6 +24,10 @@
   z-index: -1;
 }
 
+:global([data-theme="light"]) .heroOverlay {
+    background: none !important;
+}
+
 .heroCategory {
     font-family: var(--font-ui);
     font-size: 1.6rem;
@@ -115,18 +119,15 @@
   position: relative;
   overflow: hidden;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .filterButton:hover  {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-}
-
+    border-color: var(--accent);
+    color: var(--accent);
+  }
   .filterButton:active  {
-  border-color: var(--accent);
-  color: var(--accent);
-}
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 .filterButton:active {
   border-color: var(--accent);
@@ -200,16 +201,13 @@
   font-family: var(--font-ui);
   transition: background-color 0.1s ease-out;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .popoverItemButton:hover  {
-  background-color: var(--bg-primary);
-}
-}
-
+    background-color: var(--bg-primary);
+  }
   .popoverItemButton:active  {
-  background-color: var(--bg-primary);
-}
+    background-color: var(--bg-primary);
+  }
 }
 .popoverItemButton:active {
   background-color: var(--bg-primary);
@@ -241,16 +239,13 @@
   align-items: center;
   justify-content: center;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .gameClearButton:hover  {
-  opacity: 1;
-}
-}
-
+    opacity: 1;
+  }
   .gameClearButton:active  {
-  opacity: 1;
-}
+    opacity: 1;
+  }
 }
 .gameClearButton:active {
   opacity: 1;
@@ -298,5 +293,3 @@
     display: none;
   }
 }
-
-

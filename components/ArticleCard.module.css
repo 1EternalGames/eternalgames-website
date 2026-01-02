@@ -240,6 +240,11 @@
     transform: translateZ(10px); 
 }
 
+/* Light Mode Override: Remove Shadow Gradient */
+:global([data-theme="light"]) .titleOverlay {
+    background: none !important;
+}
+
 .titleMaskWrapper {
     width: 100%;
     overflow: hidden; 

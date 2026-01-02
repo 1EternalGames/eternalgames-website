@@ -1,7 +1,7 @@
 // components/studio/social/review-card/ReviewCardScore.tsx
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import SocialNewsBodyEditor from '../SocialNewsBodyEditor';
 import { ReviewTemplateData } from './types';
 import { stripHtml } from '../shared/canvas-utils';
@@ -14,90 +14,192 @@ interface ReviewCardScoreProps {
 }
 
 export default function ReviewCardScore({ data, onDataChange, editingField, setEditingField }: ReviewCardScoreProps) {
-    // FIX: Strip HTML tags before parsing float to ensure correct calculation
+    // --- CONFIGURATION (Edit these numbers) ---
+    
+    // 1. POSITION ON CANVAS
+    const SCORE_GROUP_Y_POSITION = 110;
+    
+    // 2. PLANET (Center Shape) DIMENSIONS
+    const PLANET_WIDTH_MULTIPLIER = 1.7; 
+    const PLANET_HEIGHT_MULTIPLIER = 1.7;
+    
+    // 3. ORBIT (Star Ring) DIMENSIONS
+    const ORBIT_WIDTH_MULTIPLIER = 1.0;
+    const ORBIT_HEIGHT_MULTIPLIER = 1.0;
+
+    // 4. FONT SIZE
+    const FONT_SIZE_MULTIPLIER = 1.7;
+
+    // ------------------------------------------------
+
     const scoreNum = parseFloat(stripHtml(data.score)) || 0;
-    const perimeter = 480; 
-    const dashArray = `${(scoreNum / 10) * perimeter} ${perimeter}`;
+    
+    // Base Values
+    const BASE_RX = 220;
+    const BASE_RY = 60;
+    const BASE_PLANET_R = 55;
+    const BASE_FONT_SIZE = 60;
+
+    // Calculated Dimensions
+    const rx = BASE_RX * ORBIT_WIDTH_MULTIPLIER;
+    const ry = BASE_RY * ORBIT_HEIGHT_MULTIPLIER;
+    
+    const planetRx = BASE_PLANET_R * PLANET_WIDTH_MULTIPLIER;
+    const planetRy = BASE_PLANET_R * PLANET_HEIGHT_MULTIPLIER;
+    
+    const fontSize = BASE_FONT_SIZE * FONT_SIZE_MULTIPLIER;
+
+    // Text Box Layout
+    const boxWidth = 120 * PLANET_WIDTH_MULTIPLIER;
+    const boxHeight = 90 * PLANET_HEIGHT_MULTIPLIER;
+    const boxX = -boxWidth / 2;
+    const boxY = -boxHeight / 2;
+
+    // Orbital Configuration
+    const starCount = Math.floor(scoreNum * 2);
+    
+    const stars = useMemo(() => {
+        const generatedStars = [];
+        for (let i = 0; i < starCount; i++) {
+            const angle = (i / starCount) * Math.PI * 2;
+            const x = Math.cos(angle) * rx;
+            const y = Math.sin(angle) * ry;
+            generatedStars.push({ x, y });
+        }
+        return generatedStars;
+    }, [starCount, rx, ry]);
+
+    const starsBack = stars.filter(s => s.y < 0);
+    const starsFront = stars.filter(s => s.y >= 0);
+
+    // --- Dynamic Paths for "Hex-Shield" ---
+    // A vertical hexagon shape
+    const hexW = planetRx * 0.9;
+    const hexH = planetRy;
+    
+    // Points: Top, TopRight, BottomRight, Bottom, BottomLeft, TopLeft
+    const p0 = `0,${-hexH}`;
+    const p1 = `${hexW * 0.866},${-hexH * 0.5}`;
+    const p2 = `${hexW * 0.866},${hexH * 0.5}`;
+    const p3 = `0,${hexH}`;
+    const p4 = `${-hexW * 0.866},${hexH * 0.5}`;
+    const p5 = `${-hexW * 0.866},${-hexH * 0.5}`;
+    
+    // Full filled background
+    const hexPath = `M ${p0} L ${p1} L ${p2} L ${p3} L ${p4} L ${p5} Z`;
+    
+    // Upper Segment Line (Top Left -> Top -> Top Right)
+    const upperLinePath = `M ${-hexW * 0.866},${-hexH * 0.25} L ${p5} L ${p0} L ${p1} L ${hexW * 0.866},${-hexH * 0.25}`;
+    
+    // Lower Segment Line (Bottom Left -> Bottom -> Bottom Right)
+    const lowerLinePath = `M ${-hexW * 0.866},${hexH * 0.25} L ${p4} L ${p3} L ${p2} L ${hexW * 0.866},${hexH * 0.25}`;
 
     return (
-        <g transform="translate(580, 40)">
-            <path d="M 40,0 L 460,0 L 460,180 L 420,220 L 0,220 L 0,40 Z" fill="url(#review-glassGradient)" stroke="#00FFF0" strokeWidth="1" strokeOpacity="0.3"></path>
-            <rect x="0" y="0" width="460" height="220" fill="url(#review-hexTech)" clipPath="url(#review-prismClip)"></rect>
+        // Position: Centered in the right column (approx x=810)
+        <g transform={`translate(810, ${SCORE_GROUP_Y_POSITION})`}>
+            <defs>
+                <filter id="orbital-starGlow">
+                    <feGaussianBlur stdDeviation="1.5" result="blur"></feGaussianBlur>
+                    <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                </filter>
+                <filter id="orbital-neonBloom" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"></feMergeNode>
+                        <feMergeNode in="SourceGraphic"></feMergeNode>
+                    </feMerge>
+                </filter>
+            </defs>
 
-            {/* SCORE CIRCLE */}
-            <g transform="translate(350, 110)">
-                <path d="M 0,-80 L 70,-40 L 70,40 L 0,80 L -70,40 L -70,-40 Z" fill="#0B0D12" stroke="#1A202C" strokeWidth="2"></path>
-                <path d="M 0,-80 L 70,-40 L 70,40 L 0,80 L -70,40 L -70,-40 Z" fill="none" stroke="#00FFF0" strokeWidth="5" strokeDasharray={dashArray} strokeLinecap="round" filter="url(#review-cyanGlow)" transform="rotate(0)"></path>
-                <path d="M 0,-60 L 52,-30 L 52,30 L 0,60 L -52,30 L -52,-30 Z" fill="none" stroke="#556070" strokeWidth="1" opacity="0.5"></path>
+            {/* Static Rings */}
+            <ellipse cx="0" cy="0" rx={rx} ry={ry} fill="none" stroke="#556070" strokeWidth="1" opacity="0.2" />
+            <ellipse cx="0" cy="0" rx={rx} ry={ry} fill="none" stroke="#00FFF0" strokeWidth="1" strokeDasharray="10 60" opacity="0.4" />
 
-                <foreignObject x={-60} y={-35} width={120} height={80}>
-                     <SocialNewsBodyEditor 
+            {/* Layer Back (Behind Planet) */}
+            {starsBack.map((s, i) => (
+                <circle 
+                    key={`back-${i}`} 
+                    cx={s.x} cy={s.y} 
+                    r="1.5" 
+                    fill="#FFF" stroke="#00FFF0" strokeWidth="1" 
+                    filter="url(#orbital-starGlow)" 
+                    opacity="0.6" 
+                />
+            ))}
+
+            {/* The Hex-Shield Container */}
+            <g>
+                {/* 1. Background Field (Hexagon) */}
+                <path 
+                    d={hexPath} 
+                    fill="#000" 
+                    fillOpacity="0.85"
+                    stroke="none"
+                />
+
+                {/* 2. Top Tech Segment */}
+                <path 
+                    d={upperLinePath} 
+                    fill="none" 
+                    stroke="#00FFF0" 
+                    strokeWidth="3" 
+                    strokeLinecap="square"
+                    strokeLinejoin="round"
+                    filter="url(#orbital-neonBloom)" 
+                />
+                
+                {/* 3. Bottom Tech Segment */}
+                <path 
+                    d={lowerLinePath} 
+                    fill="none" 
+                    stroke="#00FFF0" 
+                    strokeWidth="3" 
+                    strokeLinecap="square"
+                    strokeLinejoin="round"
+                    filter="url(#orbital-neonBloom)" 
+                />
+
+                {/* 4. Decorative Side Nodes (Vertical Bars) */}
+                <rect x={-hexW - 2} y={-15} width="4" height="30" fill="#00FFF0" opacity="0.8" />
+                <rect x={hexW - 2} y={-15} width="4" height="30" fill="#00FFF0" opacity="0.8" />
+
+                {/* Editable Score Text */}
+                <foreignObject x={boxX} y={boxY} width={boxWidth} height={boxHeight}>
+                    <SocialNewsBodyEditor 
                         content={data.score} 
                         onChange={(val) => onDataChange({ score: val })}
                         isEditing={editingField === 'score'}
                         setEditing={(val) => setEditingField(val ? 'score' : null)}
-                        fontSize={70}
+                        fontSize={fontSize} 
                         textAlign="center"
                         customStyle={{ 
-                            fill: "#FFFFFF", 
-                            color: "#FFFFFF", 
-                            letterSpacing: "-2px",
+                            fill: "#00FFF0", 
+                            color: "#00FFF0", 
                             fontFamily: "Impact, sans-serif",
                             fontWeight: 400,
-                            lineHeight: 1.1
+                            lineHeight: 1.4,
+                            textShadow: "0 0 20px rgba(0,255,240,0.6)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%"
                         }}
                         disableAutoEnglish={true}
                     />
                 </foreignObject>
-                
-                <text x="0" y="55" textAnchor="middle" fontFamily="'Cairo', sans-serif" fontWeight="700" fontSize="12" fill="#00FFF0">التقييم</text>
             </g>
 
-            {/* Rank Info */}
-            <g transform="translate(220, 30)">
-                <path d="M 0,10 L 30,0 L 40,0" fill="none" stroke="#556070" strokeWidth="1" opacity="0.5"></path>
-                <text x="30" y="30" textAnchor="end" fontFamily="'Cairo', sans-serif" fontWeight="700" fontSize="14" fill="#556070">التصنيف</text>
-                
-                {/* RANK: Align End. x=30. Width extends left. */}
-                <foreignObject x={30 - 150} y={35} width={150} height={50}>
-                    <SocialNewsBodyEditor 
-                        content={data.rank} 
-                        onChange={(val) => onDataChange({ rank: val })}
-                        isEditing={editingField === 'rank'}
-                        setEditing={(val) => setEditingField(val ? 'rank' : null)}
-                        fontSize={45}
-                        textAlign="right"
-                        customStyle={{ 
-                            color: "#FFFFFF", 
-                            fontStyle: "italic",
-                            fontFamily: "Arial, sans-serif",
-                            fontWeight: 900,
-                            direction: 'ltr' // Rank often English
-                        }}
-                        disableAutoEnglish={true}
-                    />
-                </foreignObject>
-                
-                <g transform="translate(30, 120)">
-                    <rect x="0" y="0" width="2" height="40" fill="#556070"></rect>
-                    <text x="-15" y="15" textAnchor="end" fontFamily="monospace" fontSize="12" fill="#556070">:الحالة</text>
-                    
-                    <foreignObject x={-15 - 130} y={18} width={130} height={30}>
-                        <SocialNewsBodyEditor 
-                            content={data.status} 
-                            onChange={(val) => onDataChange({ status: val })}
-                            isEditing={editingField === 'status'}
-                            setEditing={(val) => setEditingField(val ? 'status' : null)}
-                            fontSize={18}
-                            textAlign="right"
-                            customStyle={{ color: "#00FFF0" }}
-                            disableAutoEnglish={true}
-                        />
-                    </foreignObject>
-                </g>
-            </g>
+            {/* Layer Front (In Front of Planet) */}
+            {starsFront.map((s, i) => (
+                <circle 
+                    key={`front-${i}`} 
+                    cx={s.x} cy={s.y} 
+                    r="2.5" 
+                    fill="#FFF" stroke="#00FFF0" strokeWidth="1" 
+                    filter="url(#orbital-starGlow)" 
+                    opacity="1" 
+                />
+            ))}
         </g>
     );
 }
-
-

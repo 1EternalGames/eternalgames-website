@@ -1,7 +1,7 @@
 // app/articles/ArticlesPageClient.tsx
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { SanityArticle, SanityGame, SanityTag } from '@/types/sanity';
 import HorizontalShowcase from '@/components/HorizontalShowcase';
@@ -79,16 +79,6 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     
     const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore();
 
-    // --- OPTIMIZATION: Deferred Rendering State ---
-    const [isGridReady, setIsGridReady] = useState(false);
-    useEffect(() => {
-        const t = requestAnimationFrame(() => {
-            startTransition(() => setIsGridReady(true));
-        });
-        return () => cancelAnimationFrame(t);
-    }, []);
-    // ----------------------------------------
-
     const storedData = pageMap.get('articles');
     const hasStoredData = storedData && storedData.grid && storedData.grid.length >= initialGridArticles.length;
     
@@ -99,18 +89,16 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
     const [allFetchedArticles, setAllFetchedArticles] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    useEffect(() => {
-        if (!hasStoredData) {
-            hydrateIndex('articles', {
-                featured: featuredArticles,
-                grid: initialGridArticles,
-                allGames: allGames,
-                allGameTags: allGameTags,
-                allArticleTypeTags: allArticleTypeTags,
-                nextOffset: initialGridArticles.length
-            });
-        }
-    }, [hasStoredData, hydrateIndex, featuredArticles, initialGridArticles, allGames, allGameTags, allArticleTypeTags]);
+    if (!hasStoredData) {
+        hydrateIndex('articles', {
+            featured: featuredArticles,
+            grid: initialGridArticles,
+            allGames: allGames,
+            allGameTags: allGameTags,
+            allArticleTypeTags: allArticleTypeTags,
+            nextOffset: initialGridArticles.length
+        });
+    }
 
     const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
     
@@ -135,7 +123,7 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
         return !!searchTerm || !!selectedGame || selectedGameTags.length > 0 || !!selectedArticleType || sortOrder !== 'latest';
     }, [searchTerm, selectedGame, selectedGameTags, selectedArticleType, sortOrder]);
     
-    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading && isGridReady;
+    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading;
 
     const handleLoadMore = useCallback(async () => {
         if (!canLoadMore) return;
@@ -152,7 +140,6 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
             
             if (newItems.length > 0) {
                 hydrateContent(result.fullContent);
-                // NEW: Hydrate pre-fetched Game Hubs
                 if (result.hubs) {
                     hydrateContent(result.hubs);
                 }
@@ -197,58 +184,53 @@ export default function ArticlesPageClient({ featuredArticles, initialGridArticl
                     <h1 className="page-title" style={{ color: '#fff', textShadow: '0 3px 15px rgba(0,0,0,0.5)', fontSize: '5rem', marginTop: '0.7rem', marginBottom: '4rem' }}>أحدث المقالات</h1>
                     <div className={styles.showcaseSection}>{isMobile ? (<MobileShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />) : (<HorizontalShowcase articles={featuredForShowcase} onActiveIndexChange={setActiveIndex} />)}</div>
                     
-                    {/* Render grid only if ready */}
-                    {isGridReady ? (
-                        <div className={styles.gridSection}>
-                            <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
-                            
-                            <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
-                                <motion.div layout className="content-grid gpu-cull">
-                                    <AnimatePresence mode="popLayout">
-                                        {gridArticles.map((article, index) => (
-                                            <motion.div
-                                                key={article.id}
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.9 }}
-                                                transition={{ duration: 0.3 }}
-                                            >
-                                                <ArticleCard 
-                                                    key={article.id} 
-                                                    article={article} 
-                                                    layoutIdPrefix="articles-grid" 
-                                                    isPriority={index < 3} 
-                                                />
-                                            </motion.div>
-                                        ))}
-                                        
-                                        {isLoading && (
-                                            <>
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ArticleCardSkeleton variant="no-score" /></motion.div>
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ArticleCardSkeleton variant="no-score" /></motion.div>
-                                            </>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-
-                                <InfiniteScrollSentinel onIntersect={handleLoadMore} />
-
-                                <AnimatePresence>
-                                    {(!isLoading && gridArticles.length > 0 && (nextOffset === null || hasActiveFilters)) && (
-                                        <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                            {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
-                                        </motion.p>
+                    <div className={styles.gridSection}>
+                        <ArticleFilters sortOrder={sortOrder} onSortChange={setSortOrder} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allGameTags={allGameTags} selectedGameTags={selectedGameTags} onGameTagToggle={handleGameTagToggle} allArticleTypeTags={allArticleTypeTags} selectedArticleType={selectedArticleType} onArticleTypeSelect={setSelectedArticleType} onClearAllFilters={handleClearAllFilters} />
+                        
+                        <ContentBlock title="كل المقالات" Icon={ArticleIcon}>
+                            {/* REMOVED gpu-cull for instant render */}
+                            <div className="content-grid">
+                                <AnimatePresence mode="popLayout">
+                                    {gridArticles.map((article, index) => (
+                                        <motion.div
+                                            key={article.id}
+                                            // OPTIMIZATION: initial={false} prevents entrance animation on mount
+                                            initial={false}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <ArticleCard 
+                                                key={article.id} 
+                                                article={article} 
+                                                layoutIdPrefix="articles-grid" 
+                                                isPriority={index < 3} 
+                                            />
+                                        </motion.div>
+                                    ))}
+                                    
+                                    {isLoading && (
+                                        <>
+                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ArticleCardSkeleton variant="no-score" /></motion.div>
+                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ArticleCardSkeleton variant="no-score" /></motion.div>
+                                        </>
                                     )}
                                 </AnimatePresence>
+                            </div>
 
-                                {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالاتٍ توافقُ مُرادك. </motion.p> )}
-                            </ContentBlock>
-                        </div>
-                    ) : (
-                         <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div className="spinner" />
-                        </div>
-                    )}
+                            <InfiniteScrollSentinel onIntersect={handleLoadMore} />
+
+                            <AnimatePresence>
+                                {(!isLoading && gridArticles.length > 0 && (nextOffset === null || hasActiveFilters)) && (
+                                    <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                        {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
+                                    </motion.p>
+                                )}
+                            </AnimatePresence>
+
+                            {gridArticles.length === 0 && !isLoading && ( <motion.p key="no-match" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '4rem 0'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}> لم نعثر على مقالاتٍ توافقُ مُرادك. </motion.p> )}
+                        </ContentBlock>
+                    </div>
                 </div>
             </div>
         </React.Fragment>

@@ -1,5 +1,5 @@
 // components/constellation/Scene.tsx
-import React, { useRef, useMemo, Suspense, useCallback, useState } from 'react';
+import React, { useRef, useMemo, Suspense, useCallback, useState, useEffect } from 'react';
 import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { Points, PointMaterial, OrbitControls, Tube, Line, Html } from '@react-three/drei';
 import { EffectComposer, Bloom, Selection, Select } from '@react-three/postprocessing';
@@ -190,7 +190,16 @@ const UserStarPoints = ({ stars, themeColors, hoveredStar, setHoveredStar, setAc
 };
 
 const ConstellationPath = ({ pathPoints, color, thickness }: { pathPoints: THREE.Vector3[], color: string, thickness: number }) => {
-    return <Line points={pathPoints} color={color} lineWidth={thickness} />;
+    return (
+        <Line 
+            points={pathPoints} 
+            color={color} 
+            lineWidth={thickness} 
+            transparent 
+            depthWrite={false} 
+            renderOrder={1} 
+        />
+    );
 };
 
 const HoverContext = ({ hoveredStar, alwaysShowOrbits }: { hoveredStar: StarData, alwaysShowOrbits: boolean }) => {
@@ -218,25 +227,55 @@ const HoverContext = ({ hoveredStar, alwaysShowOrbits }: { hoveredStar: StarData
     );
 };
 
-function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, settings, isMobile }: any) {
+function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, settings, isMobile, isPaused }: any) {
     const [hoveredStar, setHoveredStar] = useState<StarData | null>(null);
     const { bloomIntensity, alwaysShowOrbits, flawlessPathThickness } = settings;
     const isBloomEnabled = bloomIntensity > 0;
+    const { camera } = useThree();
 
     const controlsRef = useRef<any>(null);
+    
     useFrame(() => {
         if (controlsRef.current) {
-            controlsRef.current.autoRotate = !hoveredStar;
+            // STOP rotation if card is open (isPaused) OR if hovering a star
+            controlsRef.current.autoRotate = !hoveredStar && !isPaused;
             controlsRef.current.update();
         }
     });
+
+    useEffect(() => {
+        if (!chronologicalStars.length || !controlsRef.current) return;
+        let maxR = 0;
+        for (const s of chronologicalStars) {
+            const len = s.position.length();
+            if (len > maxR) maxR = len;
+        }
+        const fov = (camera as THREE.PerspectiveCamera).fov || 60;
+        const padding = 1.3; 
+        const targetDist = (maxR * padding) / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+        const minStartDist = isMobile ? 10 : 7;
+        const finalZ = Math.max(minStartDist, targetDist);
+        const startPos = camera.position.clone();
+        const endPos = new THREE.Vector3(0, 0, finalZ);
+        let t = 0;
+        const animateCamera = () => {
+            t += 0.02; 
+            if (t > 1) t = 1;
+            camera.position.lerpVectors(startPos, endPos, t);
+            if (controlsRef.current) {
+                controlsRef.current.update();
+            }
+            if (t < 1) requestAnimationFrame(animateCamera);
+        };
+        requestAnimationFrame(animateCamera);
+    }, [chronologicalStars, isMobile, camera]);
 
     return (
         <>
             <AnimatePresence>{hoveredStar && <HoverContext hoveredStar={hoveredStar} alwaysShowOrbits={alwaysShowOrbits} />}</AnimatePresence>
             {isBloomEnabled ? (
                 <Selection>
-                    <EffectComposer autoClear={false} frameBufferType={THREE.HalfFloatType} multisampling={0}>
+                    <EffectComposer autoClear={false} frameBufferType={THREE.HalfFloatType} multisampling={4}>
                         <Bloom intensity={bloomIntensity} luminanceThreshold={0.1} mipmapBlur luminanceSmoothing={0.2} radius={0.7} />
                     </EffectComposer>
                     {chronologicalStars.length > 0 && (
@@ -260,7 +299,7 @@ function InteractiveLayer({ chronologicalStars, themeColors, setActiveStar, sett
                 autoRotate={true}
                 autoRotateSpeed={0.15}
                 minDistance={2.5}
-                maxDistance={isMobile ? 20 : 15} // MODIFIED: Increased maxDistance for both views
+                maxDistance={isMobile ? 80 : 60}
                 zoomSpeed={0.5}
             />
         </>
@@ -273,9 +312,10 @@ interface SceneProps {
     setActiveStar: (star: StarData, position: ScreenPosition) => void;
     settings: ConstellationSettings;
     isMobile: boolean;
+    isPaused: boolean; // Added Prop
 }
 
-export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings, isMobile }: SceneProps) => {
+export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings, isMobile, isPaused }: SceneProps) => {
     return (
         <Suspense fallback={null}>
             <color attach="background" args={[themeColors.bgColor]} />
@@ -287,9 +327,8 @@ export const Scene = ({ chronologicalStars, themeColors, setActiveStar, settings
                 setActiveStar={setActiveStar}
                 settings={settings}
                 isMobile={isMobile}
+                isPaused={isPaused} // Passed Down
             />
         </Suspense>
     );
 };
-
-

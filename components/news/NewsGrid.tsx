@@ -12,27 +12,20 @@ export default function NewsGrid({ news }: { news: CardProps[] }) {
     const { activeCardId } = useActiveCardStore();
 
     return (
-        // OPTIMIZATION: Removed 'layout' prop.
-        // This prevents Framer Motion from calculating layout shifts for the entire grid
-        // whenever an item changes state. This massively improves scrolling performance.
         <div className={`${styles.newsGrid} gpu-cull`}>
             <AnimatePresence mode="popLayout">
                 {news.map((item, index) => (
                     <motion.div
                         key={item.legacyId}
-                        // OPTIMIZATION: Removed 'layout' prop here too.
-                        initial={{ opacity: 0 }}
+                        initial={false}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        exit={{ opacity: 0 }}
                         whileHover={{ zIndex: 50 }} 
                         transition={{ 
-                            type: 'spring' as const, 
-                            stiffness: 400, 
-                            damping: 30, 
+                            duration: 0.2
                         }}
                         style={{ 
                             height: '100%', 
-                            // Only use will-change for specific properties, not layout
                             willChange: 'transform, opacity',
                             zIndex: activeCardId === item.id ? 100 : 1
                         }}

@@ -20,9 +20,7 @@ import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
 import SwitchIcon from '@/components/icons/platforms/SwitchIcon';
 import KineticLink from '@/components/kinetic/KineticLink'; 
-import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton'; // IMPORTED
-
-// ... imports remain the same
+import ArticleCardSkeleton from '@/components/ui/ArticleCardSkeleton';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -52,7 +50,6 @@ const PlatformIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
 };
 
 const formatSynopsis = (text: string) => {
-    // ... logic unchanged
     const parts = text.split(/(\s+)/);
     return parts.map((part, i) => {
         if (/^[A-Za-z0-9]+$/.test(part.replace(/[^\w\s]/gi, ''))) {
@@ -73,15 +70,8 @@ export default function HubPageClient({
     isLoading = false 
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
-    const [isGridReady, setIsGridReady] = useState(false);
-
-    useEffect(() => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                setIsGridReady(true);
-            });
-        });
-    }, []);
+    
+    // Removed isGridReady logic
 
     useIsomorphicLayoutEffect(() => { 
         if (scrollContainerRef?.current) {
@@ -95,7 +85,6 @@ export default function HubPageClient({
         return () => setPrefix('default');
     }, [setPrefix]);
     
-    // ... filters state logic unchanged ...
     const [activeTypeFilter, setActiveTypeFilter] = useState<HubTypeFilter>('all');
     const [activeSort, setActiveSort] = useState<HubSortOrder>('latest');
     const [engagementScores, setEngagementScores] = useState<Map<number, number>>(new Map());
@@ -145,13 +134,11 @@ export default function HubPageClient({
 
     const latestItem = (initialItems && initialItems.length > 0) ? initialItems[0] : null;
     
-    // IMAGE HANDLING LOGIC
     let heroImageRef = latestItem?.mainImageRef || fallbackImage;
     if (hubType === 'اللعبة' && fallbackImage) {
         heroImageRef = fallbackImage;
     }
 
-    // FIX: Point to SVG fallback
     let heroImageUrl = '/placeholder.svg';
     let heroBlurDataURL = null;
     let isExternalImage = false;
@@ -168,7 +155,6 @@ export default function HubPageClient({
         }
     } catch (e) {
         console.warn("HubPageClient: Failed to resolve hero image", e);
-        // FIX: Point to SVG
         heroImageUrl = '/placeholder-game.svg';
     }
     
@@ -315,8 +301,7 @@ export default function HubPageClient({
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
                  
-                 {isGridReady ? (
-                     isLoading ? (
+                     {isLoading ? (
                          <div className="content-grid gpu-cull">
                              <ArticleCardSkeleton variant="default" />
                              <ArticleCardSkeleton variant="default" />
@@ -339,8 +324,8 @@ export default function HubPageClient({
                                     />
                                 </motion.div>
                                 
-                                <motion.div 
-                                    layout 
+                                {/* REMOVED: layout prop */}
+                                <div 
                                     className="content-grid gpu-cull"
                                     style={{ paddingBottom: '6rem' }}
                                 >
@@ -349,11 +334,11 @@ export default function HubPageClient({
                                             filteredAndSortedItems.map(item => (
                                                 <motion.div
                                                     key={item.id}
-                                                    layout
-                                                    initial={{ opacity: 0 }}
+                                                    // OPTIMIZATION: initial={false} to skip entrance animation
+                                                    initial={false}
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
-                                                    transition={{ type: 'spring' as const, stiffness: 250, damping: 25 }}
+                                                    transition={{ duration: 0.2 }}
                                                     style={{ height: '100%' }}
                                                 >
                                                     <ArticleCard
@@ -371,7 +356,7 @@ export default function HubPageClient({
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                </motion.div>
+                                </div>
                             </>
                          ) : (
                             <motion.div 
@@ -383,12 +368,7 @@ export default function HubPageClient({
                                 <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p>
                             </motion.div>
                          )
-                     )
-                 ) : (
-                     <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                         <div className="spinner" />
-                     </div>
-                 )}
+                     )}
             </div>
         </div>
     );

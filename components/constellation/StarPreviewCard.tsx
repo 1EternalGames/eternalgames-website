@@ -1,14 +1,17 @@
 // components/constellation/StarPreviewCard.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
 import { urlFor } from '@/sanity/lib/image';
-import { SanityContentObject, StarData, ScreenPosition } from './config';
+import { StarData, ScreenPosition, Placement } from './config';
 import { sanityLoader } from '@/lib/sanity.loader';
 import { useContentStore } from '@/lib/contentStore'; 
+import ArticleCard from '@/components/ArticleCard'; 
+import { adaptToCardProps } from '@/lib/adapters'; 
+import { CardProps } from '@/types';
 
 interface StarPreviewCardProps {
     starData: StarData;
@@ -22,13 +25,6 @@ const typeMap: Record<'review' | 'article' | 'news', string> = {
     news: 'خبر'
 }
 
-// Map content type to index section
-const indexSectionMap: Record<string, 'reviews' | 'articles' | 'news'> = {
-    review: 'reviews',
-    article: 'articles',
-    news: 'news'
-};
-
 const mapContentTypeToRouteType = (type: string): 'reviews' | 'articles' | 'news' => {
     switch (type) {
         case 'review': return 'reviews';
@@ -39,11 +35,22 @@ const mapContentTypeToRouteType = (type: string): 'reviews' | 'articles' | 'news
 };
 
 export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCardProps) => {
-    const router = useRouter();
-    const setPrefix = useLayoutIdStore((state) => state.setPrefix);
-    const { openIndexOverlay, openOverlay } = useContentStore(); // <--- USE STORE
-    const layoutIdPrefix = "constellation-preview";
     const [isMobile, setIsMobile] = useState(false);
+    const { hydrateContent, openOverlay } = useContentStore();
+    
+    const cardRef = useRef<HTMLDivElement>(null);
+    
+    const initialYAlign = position.placement === 'above' ? 'bottom' : 'top';
+    
+    const [layoutState, setLayoutState] = useState<{
+        xAlign: 'left' | 'right'; 
+        yAlign: 'top' | 'bottom'; 
+        isVisible: boolean;
+    }>({
+        xAlign: 'left',
+        yAlign: initialYAlign, 
+        isVisible: false 
+    });
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -51,98 +58,132 @@ export const StarPreviewCard = ({ starData, position, onClose }: StarPreviewCard
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
-    
-    const { content } = starData;
 
-    const imageUrl = content.mainImage?.asset ? urlFor(content.mainImage).width(600).height(338).fit('crop').auto('format').url() : null;
-    const blurDataURL = content.mainImage?.blurDataURL;
-    const contentType = typeMap[content._type] || 'محتوى';
-    const formattedDate = content.publishedAt 
-        ? new Date(content.publishedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
-        : '';
-
-    const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        // TRIGGER OVERLAY
-        openOverlay(
-            content.slug,
-            mapContentTypeToRouteType(content._type),
-            layoutIdPrefix,
-            imageUrl || undefined
-        );
-        onClose();
-    };
+    useLayoutEffect(() => {
+        if (!cardRef.current) return;
+        
+        const updatePosition = () => {
+             if (!cardRef.current) return;
+             
+             const width = cardRef.current.offsetWidth || (isMobile ? 260 : 300);
+             const height = cardRef.current.offsetHeight || 350; 
+             
+             const gap = 20; 
+             const VIEWPORT_MARGIN = 20;
     
-    const handleViewAll = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        const section = indexSectionMap[content._type];
-        if (section) {
-            openIndexOverlay(section);
-        }
-        onClose();
-    };
+             const { innerWidth: vw, innerHeight: vh } = window;
+             const { top, left } = position;
+    
+             let xAlign: 'left' | 'right' = 'left';
+             
+             const rightEdge = left + width + gap + VIEWPORT_MARGIN;
+             
+             if (rightEdge > vw) {
+                 const leftEdgeIfFlipped = left - width - gap - VIEWPORT_MARGIN;
+                 if (leftEdgeIfFlipped > 0) {
+                     xAlign = 'right';
+                 } else {
+                     const spaceRight = vw - left;
+                     const spaceLeft = left;
+                     xAlign = spaceRight > spaceLeft ? 'left' : 'right';
+                 }
+             }
+    
+             let yAlign: 'top' | 'bottom' = initialYAlign;
+    
+             const bottomEdgeIfTopAligned = top + height + gap + VIEWPORT_MARGIN;
+             const topEdgeIfBottomAligned = top - height - gap - VIEWPORT_MARGIN;
+    
+             if (yAlign === 'top') {
+                 if (bottomEdgeIfTopAligned > vh) {
+                     if (topEdgeIfBottomAligned > 0) {
+                         yAlign = 'bottom';
+                     }
+                 }
+             } else {
+                 if (topEdgeIfBottomAligned < 0) {
+                     if (bottomEdgeIfTopAligned < vh) {
+                         yAlign = 'top';
+                     }
+                 }
+             }
+    
+             setLayoutState({
+                 xAlign,
+                 yAlign,
+                 isVisible: true
+             });
+        };
+
+        updatePosition();
+        
+        const observer = new ResizeObserver(updatePosition);
+        observer.observe(cardRef.current);
+
+        return () => observer.disconnect();
+    }, [position, isMobile, initialYAlign]);
+
+    // ADAPT CONTENT
+    const cardProps: CardProps | null = adaptToCardProps(starData.content, { width: 600 });
+    
+    if (!cardProps) return null;
+
+    const GAP_PX = 20;
+    const tx = layoutState.xAlign === 'left' ? `${GAP_PX}px` : `calc(-100% - ${GAP_PX}px)`;
+    const ty = layoutState.yAlign === 'top' ? `${GAP_PX}px` : `calc(-100% - ${GAP_PX}px)`;
+    const transformStyle = `translate(${tx}, ${ty})`;
+    const originY = layoutState.yAlign === 'top' ? 'top' : 'bottom';
+    const originX = layoutState.xAlign === 'left' ? 'left' : 'right';
+    const originStyle = `${originY} ${originX}`;
 
     return (
         <motion.div
-            layoutId={`${layoutIdPrefix}-card-container-${content.legacyId}`}
-            onClick={handleClick}
-            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            ref={cardRef}
+            // FIX: Removed conflicting layoutId on wrapper
+            
+            initial={{ opacity: 0, scale: 0.8 }} 
+            animate={{ 
+                opacity: layoutState.isVisible ? 1 : 0, 
+                scale: layoutState.isVisible ? 1 : 0.8 
+            }} 
+            exit={{ opacity: 0, scale: 0.8 }}
+            
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            
             style={{
-                position: 'fixed', top: position.top, left: position.left,
+                position: 'fixed', 
+                top: position.top, 
+                left: position.left,
                 width: isMobile ? '260px' : '300px',
-                background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.3)', overflow: 'hidden', zIndex: 10001,
-                transform: position.placement === 'below'
-                ? 'translate(-50%, 0)'
-                : 'translate(-50%, calc(-100% - 20px))',
-                transformOrigin: position.placement === 'below' ? 'top center' : 'bottom center',
-                cursor: 'pointer',
+                // FIX: Lower Z-Index to stay under Overlay (2050)
+                zIndex: 2041, 
+                transform: transformStyle,
+                transformOrigin: originStyle,
+                cursor: 'default',
+                visibility: layoutState.isVisible ? 'visible' : 'hidden' 
             }}
         >
-            <motion.button
-                onClick={(e) => { e.stopPropagation(); onClose(); }} 
-                whileHover={{ scale: 1.2, rotate: 90 }} whileTap={{ scale: 0.9 }}
-                style={{
-                    position: 'absolute', top: '10px', right: '10px', zIndex: 2, width: '32px', height: '32px',
-                    borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.3)', color: 'white',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)'
-                }} aria-label="إغلاق"
-            >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </motion.button>
-
-            <motion.div layoutId={`${layoutIdPrefix}-card-image-${content.legacyId}`} style={{ position: 'relative', width: '100%', height: isMobile ? '130px' : '150px' }}>
-                {imageUrl ? ( 
-                    <Image 
-                        loader={sanityLoader}
-                        src={imageUrl} alt={content.title} fill sizes="300px"
-                        style={{ objectFit: 'cover' }} 
-                        placeholder={blurDataURL ? 'blur' : 'empty'}
-                        blurDataURL={blurDataURL || ''}
-                    /> 
-                ) : ( <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--border-color)' }} /> )}
-            </motion.div>
-
-            <div style={{ padding: isMobile ? '1rem' : '1.5rem', textAlign: 'right' }}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem'}}>
-                    <p style={{ textTransform: 'capitalize', color: 'var(--accent)', fontFamily: 'var(--font-main)', fontSize: isMobile ? '1.2rem' : '1.3rem', margin: 0 }}>{contentType}</p>
-                    {formattedDate && <p style={{color: 'var(--text-secondary)', fontSize: isMobile ? '1.1rem' : '1.2rem', margin: 0}}>{formattedDate}</p>}
-                </div>
-                <motion.h3 layoutId={`${layoutIdPrefix}-card-title-${content.legacyId}`} style={{ margin: '0 0 1.2rem 0', fontSize: isMobile ? '1.5rem' : '1.7rem' }}>{content.title}</motion.h3>
-                
-                <button 
-                    onClick={handleViewAll}
-                    className="primary-button no-underline" 
-                    style={{ 
-                        display: 'block', width: '100%', textAlign: 'center', 
-                        fontSize: isMobile ? '1.3rem' : 'inherit', 
-                        padding: isMobile ? '0.6rem 1rem' : '1rem 2.4rem',
-                        cursor: 'pointer' 
-                    }}
+            <div style={{ position: 'relative' }}>
+                <motion.button
+                    onClick={(e) => { e.stopPropagation(); onClose(); }} 
+                    whileHover={{ scale: 1.2, rotate: 90 }} whileTap={{ scale: 0.9 }}
+                    style={{
+                        position: 'absolute', top: '10px', right: '10px', zIndex: 100, width: '32px', height: '32px',
+                        borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)', color: 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)'
+                    }} aria-label="إغلاق"
                 >
-                    عرض كامل الـ{contentType}
-                </button>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </motion.button>
+
+                <ArticleCard 
+                    article={cardProps}
+                    // FIX: Unique prefix to prevent conflict
+                    layoutIdPrefix={`constellation-popup-${cardProps.legacyId}`}
+                    isPriority={true}
+                    disableLivingEffect={false} 
+                    smallTags={true} 
+                />
             </div>
         </motion.div>
     );

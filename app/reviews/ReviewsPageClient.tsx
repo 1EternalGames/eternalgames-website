@@ -1,7 +1,7 @@
 // app/reviews/ReviewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect, startTransition, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { SanityReview, SanityGame, SanityTag } from '@/types/sanity';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -11,7 +11,6 @@ import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 import styles from './ReviewsPage.module.css';
 import { useLayoutIdStore } from '@/lib/layoutIdStore';
-import { useRouter } from 'next/navigation';
 import { ContentBlock } from '@/components/ContentBlock';
 import { ReviewIcon } from '@/components/icons';
 import { sanityLoader } from '@/lib/sanity.loader';
@@ -33,29 +32,17 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
     const [allFetchedReviews, setAllFetchedReviews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    // --- OPTIMIZATION: Deferred Rendering ---
-    const [isGridReady, setIsGridReady] = useState(false);
-    useEffect(() => {
-        const t = requestAnimationFrame(() => {
-            startTransition(() => setIsGridReady(true));
-        });
-        return () => cancelAnimationFrame(t);
-    }, []);
-    // ----------------------------------------
-    
     const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
     
-    useEffect(() => {
-        if (!hasStoredData) {
-            hydrateIndex('reviews', {
-                hero: heroReview,
-                grid: initialGridReviews,
-                allGames: allGames,
-                allTags: allTags,
-                nextOffset: initialGridReviews.length
-            });
-        }
-    }, [hasStoredData, hydrateIndex, heroReview, initialGridReviews, allGames, allTags]);
+    if (!hasStoredData) {
+        hydrateIndex('reviews', {
+            hero: heroReview,
+            grid: initialGridReviews,
+            allGames: allGames,
+            allTags: allTags,
+            nextOffset: initialGridReviews.length
+        });
+    }
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSort, setActiveSort] = useState<'latest' | 'score'>('latest');
@@ -94,7 +81,7 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
         return !!searchTerm || selectedScoreRange !== 'All' || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
     }, [searchTerm, selectedScoreRange, selectedGame, selectedTags, activeSort]);
 
-    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading && isGridReady;
+    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading;
 
     const handleLoadMore = useCallback(async () => {
         if (!canLoadMore) return;
@@ -115,7 +102,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                 
                 if (newCards.length > 0) {
                     hydrateContent(result.fullContent);
-                    // NEW: Hydrate pre-fetched Game Hubs
                     if (result.hubs) {
                         hydrateContent(result.hubs);
                     }
@@ -157,7 +143,6 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
                         fill 
                         style={{ objectFit: 'cover' }} 
                         priority 
-                        // FIX: Conditional blur data
                         placeholder={heroReview.mainImage.blurDataURL ? 'blur' : 'empty'} 
                         blurDataURL={heroReview.mainImage.blurDataURL} 
                     />
@@ -177,53 +162,51 @@ export default function ReviewsPageClient({ heroReview, initialGridReviews, allG
             <div className="container" style={{paddingTop: '4rem'}}>
                 <ReviewFilters activeSort={activeSort} onSortChange={setActiveSort} selectedScoreRange={selectedScoreRange} onScoreSelect={setSelectedScoreRange} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
                 
-                {/* RENDER GRID ONLY AFTER FRAME DELAY */}
-                {isGridReady ? (
-                    <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
-                        <div className="content-grid gpu-cull">
-                            {gridReviews.map((review, index) => (
-                                <motion.div
+                <ContentBlock title="كل المراجعات" Icon={ReviewIcon}>
+                    {/* REMOVED gpu-cull for instant render */}
+                    <div className="content-grid">
+                        {gridReviews.map((review, index) => (
+                            <motion.div
+                                key={review.id}
+                                // OPTIMIZATION: initial={false} prevents entrance animation on mount
+                                initial={false}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <ArticleCard
                                     key={review.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.3, delay: index % 10 * 0.05 }} 
-                                >
-                                    <ArticleCard
-                                        key={review.id}
-                                        article={review}
-                                        layoutIdPrefix="reviews"
-                                        isPriority={index < 3}
-                                    />
-                                </motion.div>
-                            ))}
-                            
-                            {isLoading && (
-                                <>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}><ArticleCardSkeleton /></motion.div>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.1 }}><ArticleCardSkeleton /></motion.div>
-                                </>
-                            )}
-                        </div>
+                                    article={review}
+                                    layoutIdPrefix="reviews"
+                                    isPriority={index < 3}
+                                />
+                            </motion.div>
+                        ))}
                         
-                        <InfiniteScrollSentinel onIntersect={handleLoadMore} />
+                        {isLoading && (
+                            <>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}><ArticleCardSkeleton /></motion.div>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, delay: 0.1 }}><ArticleCardSkeleton /></motion.div>
+                            </>
+                        )}
+                    </div>
+                    
+                    <InfiniteScrollSentinel onIntersect={handleLoadMore} />
 
-                        <AnimatePresence>
-                            {(!isLoading && gridReviews.length > 0 && (nextOffset === null || hasActiveFilters)) && (
-                                <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
-                                </motion.p>
-                            )}
-                        </AnimatePresence>
-
-                        {gridReviews.length === 0 && !isLoading && (
-                            <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                لا مراجعات توافقُ ما اخترت.
+                    <AnimatePresence>
+                        {(!isLoading && gridReviews.length > 0 && (nextOffset === null || hasActiveFilters)) && (
+                            <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
                             </motion.p>
                         )}
-                    </ContentBlock>
-                ) : (
-                    <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
-                )}
+                    </AnimatePresence>
+
+                    {gridReviews.length === 0 && !isLoading && (
+                        <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            لا مراجعات توافقُ ما اخترت.
+                        </motion.p>
+                    )}
+                </ContentBlock>
             </div>
         </>
     );

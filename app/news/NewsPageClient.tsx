@@ -1,9 +1,9 @@
-// components/news/NewsPageClient.tsx
+// app/news/NewsPageClient.tsx
 'use client';
 
-import { useState, useMemo, useRef, useEffect, startTransition, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SanityNews, SanityGame, SanityTag } from '@/types/sanity';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import NewsHero from '@/components/news/NewsHero';
 import NewsFilters from '@/components/filters/NewsFilters';
 import NewsGrid from '@/components/news/NewsGrid';
@@ -20,16 +20,7 @@ import { loadMoreNews } from '@/app/actions/batchActions';
 export default function NewsPageClient({ heroArticles, initialGridArticles, allGames, allTags }: { heroArticles: SanityNews[]; initialGridArticles: SanityNews[]; allGames: SanityGame[]; allTags: SanityTag[]; }) {
     const { hydrateContent, pageMap, hydrateIndex, appendToSection } = useContentStore();
 
-    // --- OPTIMIZATION: Deferred Rendering State ---
-    const [isGridReady, setIsGridReady] = useState(false);
-    useEffect(() => {
-        const t = requestAnimationFrame(() => {
-            startTransition(() => setIsGridReady(true));
-        });
-        return () => cancelAnimationFrame(t);
-    }, []);
-    // ----------------------------------------
-
+    // Check store for data, otherwise use initial props
     const storedData = pageMap.get('news');
     const hasStoredData = storedData && storedData.grid && storedData.grid.length >= initialGridArticles.length;
     
@@ -42,17 +33,16 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
     const [allFetchedNews, setAllFetchedNews] = useState<CardProps[]>(initialCards);
     const [isLoading, setIsLoading] = useState(false);
     
-    useEffect(() => {
-        if (!hasStoredData) {
-            hydrateIndex('news', {
-                hero: heroArticles,
-                grid: initialGridArticles,
-                allGames: allGames,
-                allTags: allTags,
-                nextOffset: initialGridArticles.length
-            });
-        }
-    }, [hasStoredData, hydrateIndex, heroArticles, initialGridArticles, allGames, allTags]);
+    // Hydrate store on mount if needed
+    if (!hasStoredData) {
+        hydrateIndex('news', {
+            hero: heroArticles,
+            grid: initialGridArticles,
+            allGames: allGames,
+            allTags: allTags,
+            nextOffset: initialGridArticles.length
+        });
+    }
     
     const [nextOffset, setNextOffset] = useState<number | null>(initialOffset);
 
@@ -76,7 +66,7 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         return !!searchTerm || !!selectedGame || selectedTags.length > 0 || activeSort !== 'latest';
     }, [searchTerm, selectedGame, selectedTags, activeSort]);
 
-    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading && isGridReady;
+    const canLoadMore = nextOffset !== null && !hasActiveFilters && !isLoading;
 
     const handleLoadMore = useCallback(async () => {
         if (!canLoadMore) return;
@@ -93,7 +83,6 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
             
             if (newItems.length > 0) {
                  hydrateContent(result.fullContent);
-                 // NEW: Hydrate pre-fetched Game Hubs
                  if (result.hubs) {
                      hydrateContent(result.hubs);
                  }
@@ -125,44 +114,37 @@ export default function NewsPageClient({ heroArticles, initialGridArticles, allG
         <div style={{ paddingBottom: '6rem' }}>
             <NewsHero newsItems={adaptedHeroArticles} />
             
-            {/* Render grid only if ready */}
-            {isGridReady ? (
-                <div className="container">
-                    <NewsFilters activeSort={activeSort} onSortChange={setActiveSort} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} />
-                    <ContentBlock title="كل الأخبار" Icon={NewsIcon}>
-                        <NewsGrid news={newsItems} />
+            <div className="container">
+                <NewsFilters activeSort={activeSort} onSortChange={setActiveSort} searchTerm={searchTerm} onSearchChange={setSearchTerm} allGames={allGames} selectedGame={selectedGame} onGameSelect={setSelectedGame} allTags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} onClearAll={handleClearAll} />
+                <ContentBlock title="كل الأخبار" Icon={NewsIcon}>
+                    <NewsGrid news={newsItems} />
 
-                        <InfiniteScrollSentinel onIntersect={handleLoadMore} />
-                        
-                        <AnimatePresence>
-                            {isLoading && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '3rem' }}>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><NewsItemSkeleton /></motion.div>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><NewsItemSkeleton /></motion.div>
-                                </div>
-                            )}
-                        </AnimatePresence>
+                    <InfiniteScrollSentinel onIntersect={handleLoadMore} />
+                    
+                    <AnimatePresence>
+                        {isLoading && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '3rem' }}>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><NewsItemSkeleton /></motion.div>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><NewsItemSkeleton /></motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
 
-                        <AnimatePresence>
-                            {(!isLoading && newsItems.length > 0 && (nextOffset === null || hasActiveFilters)) && (
-                                <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
-                                </motion.p>
-                            )}
-                        </AnimatePresence>
-
-                        {newsItems.length === 0 && !isLoading && (
-                            <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                لا أنباءَ توافقُ ما اخترت.
+                    <AnimatePresence>
+                        {(!isLoading && newsItems.length > 0 && (nextOffset === null || hasActiveFilters)) && (
+                            <motion.p key="end" style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                {hasActiveFilters ? 'أزِل المرشحات للمزيد.' : 'بلغتَ المنتهى.'}
                             </motion.p>
                         )}
-                    </ContentBlock>
-                </div>
-            ) : (
-                 <div className="container" style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="spinner" />
-                </div>
-            )}
+                    </AnimatePresence>
+
+                    {newsItems.length === 0 && !isLoading && (
+                        <motion.p key="no-match" style={{textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            لا أنباءَ توافقُ ما اخترت.
+                        </motion.p>
+                    )}
+                </ContentBlock>
+            </div>
         </div>
     );
 }

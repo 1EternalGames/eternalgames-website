@@ -7,12 +7,8 @@ export default function ReviewCardFrame({ enChar }: { enChar: string }) {
 
     return (
         <>
-            {/* Removed the black background rect and hex grid, now handled by SpaceBackground in parent */}
+            {/* Background elements are handled by SpaceBackground in parent */}
             
-            <text x="810" y="700" textAnchor="middle" fontFamily="'Impact', sans-serif" fontWeight="900" fontSize="600" fill="#10121A" opacity="0.5">
-                {enChar || 'R'}
-            </text>
-
             <path 
                 d={framePathD} 
                 fill="none" 
@@ -40,5 +36,3 @@ export default function ReviewCardFrame({ enChar }: { enChar: string }) {
         </>
     );
 }
-
-

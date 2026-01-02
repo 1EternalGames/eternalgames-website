@@ -18,7 +18,6 @@ import KonamiCode from '@/components/effects/KonamiCode';
 import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
 import SmoothScrolling from '@/components/ui/SmoothScrolling';
 import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
-import SkipLink from '@/components/ui/SkipLink'; 
 import CookieConsent from '@/components/CookieConsent';
 import KineticOverlayManager from '@/components/kinetic/KineticOverlayManager'; 
 import { getCachedColorDictionary } from '@/lib/sanity.fetch';
@@ -162,7 +161,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <SmoothScrolling>
               <div style={{ position: 'relative', width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
                 <ProgressBar />
-                <SkipLink /> 
                 <FPSAutoTuner /> 
                 <KonamiCode />
                 <SpaceBackground />

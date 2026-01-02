@@ -13,7 +13,7 @@ import { StarPreviewCard } from './StarPreviewCard';
 import { Scene } from './Scene';
 import ConstellationControlPanel, { ConstellationSettings, Preset } from './ConstellationControlPanel';
 import { getCommentedContentIds } from '@/app/actions/userActions';
-import styles from './ConstellationControlPanel.module.css'; // This is correct, uses shared styles
+import styles from './ConstellationControlPanel.module.css';
 import { PerformanceMonitor } from '@react-three/drei'; 
 
 const CelestialGearIcon = () => (
@@ -56,8 +56,6 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
     const [activeStarPosition, setActiveStarPosition] = useState<ScreenPosition | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [commentedContentSlugs, setCommentedContentSlugs] = useState<string[]>(initialData?.commentedSlugs || []);
-
-    // REMOVED useBodyClass('editor-active', isPanelOpen); as panel is now self-contained popover
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -166,9 +164,13 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
         });
         
         const allUserStars: StarData[] = [];
+        
+        const starCount = starMap.size;
+        const scaleFactor = Math.max(1, Math.sqrt(starCount) * 0.25);
+
         starMap.forEach((data, id) => {
             const u=Math.random(), v=Math.random(), theta=2*Math.PI*u, phi=Math.acos(2*v-1);
-            const r = 1.8 + Math.random() * 0.6;
+            const r = (1.8 + Math.random() * 0.6) * scaleFactor;
             const position = new THREE.Vector3(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta), r*Math.cos(phi));
             allUserStars.push({ id, position, content: data.content, type: data.type, actions: data.actions });
         });
@@ -201,7 +203,8 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
     return (
         <>
             <AnimatePresence>
-                {activeStar && activeStarPosition && ( <motion.div style={{ position: 'fixed', inset: 0, zIndex: 10000 }} onClick={handleClosePreview} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <StarPreviewCard starData={activeStar} position={activeStarPosition} onClose={handleClosePreview} /> </motion.div> )}
+                {/* FIX: Lower zIndex to 2040 to stay under Overlay (2050) */}
+                {activeStar && activeStarPosition && ( <motion.div style={{ position: 'fixed', inset: 0, zIndex: 2040 }} onClick={handleClosePreview} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <StarPreviewCard starData={activeStar} position={activeStarPosition} onClose={handleClosePreview} /> </motion.div> )}
             </AnimatePresence>
             
             <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
@@ -211,7 +214,7 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
                     onPresetChange={handlePresetChange} 
                     isFullscreen={isFullscreen} 
                     onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
-                    onClose={() => setIsPanelOpen(false)} // Added onClose
+                    onClose={() => setIsPanelOpen(false)}
                 />
                 
                 <Canvas 
@@ -225,6 +228,7 @@ export default function Constellation({ initialData }: { initialData?: InitialDa
                         themeColors={themeColors} 
                         setActiveStar={handleSetActiveStar} 
                         isMobile={isMobile}
+                        isPaused={!!activeStar}
                     />
                 </Canvas>
                 

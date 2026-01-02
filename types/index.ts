@@ -28,6 +28,8 @@ export type CardProps = {
     pros?: any[];
     cons?: any[];
     content?: any[];
+    // NEW: The lead paragraph block for instant display
+    lead?: any;
     relatedReviewIds?: any[];
     synopsis?: string;
     
@@ -41,5 +43,3 @@ export type CardProps = {
 };
 
 export type EngagementScore = { id: number; engagementScore: number };
-
-
