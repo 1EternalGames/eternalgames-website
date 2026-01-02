@@ -116,9 +116,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         verdict: item.verdict || '',
         pros: item.pros || [],
         cons: item.cons || [],
-        content: contentBody, 
-        // NEW: Pass the pre-fetched lead block
-        lead: item.lead, 
+        content: contentBody, // Pass body
         relatedReviewIds: item.relatedReviewIds || [],
         synopsis: item.synopsis,
         onGamePass: item.onGamePass || false,

@@ -1,5 +1,5 @@
 // app/layout.tsx
-import localFont from 'next/font/local';
+import { Cairo } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -29,31 +29,11 @@ import ProgressBar from '@/components/ui/ProgressBar';
 // IMPORT VERCEL ANALYTICS
 import { Analytics } from '@vercel/analytics/react';
 
-// Configure Local Font
-// We map the files located in public/fonts to the Next.js font system
-const cairo = localFont({
-  src: [
-    {
-      path: '../public/fonts/Cairo-Regular.ttf',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../public/fonts/Cairo-Medium.ttf',
-      weight: '500',
-      style: 'normal',
-    },
-    {
-      path: '../public/fonts/Cairo-Bold.ttf',
-      weight: '700',
-      style: 'normal',
-    },
-    {
-      path: '../public/fonts/Cairo-Black.ttf',
-      weight: '800',
-      style: 'normal', // Cairo Black is often used as the "ExtraBold" or "Heavy" weight
-    },
-  ],
+// Configure Google Font (Cairo)
+// Next.js automatically optimizes this and serves it as WOFF2
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '700', '800', '900'], // Including all weights used in your design
   variable: '--font-main',
   display: 'swap',
 });
@@ -144,7 +124,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           href="https://cdn.sanity.io"
           crossOrigin="anonymous"
         />
-        {/* Removed Google Fonts Preconnect links as we are now local */}
       </head>
       <body>
         <NextAuthProvider>

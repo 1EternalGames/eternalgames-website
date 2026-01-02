@@ -5,7 +5,8 @@ import {
     fetchCreatorContentAction, 
     fetchTagContentAction,
     fetchSingleContentAction,
-    fetchCreatorByUsernameAction
+    fetchCreatorByUsernameAction,
+    fetchGameHubDataAction // IMPORTED
 } from '@/app/actions/batchActions';
 
 export interface KineticContentState {
@@ -15,6 +16,9 @@ export interface KineticContentState {
   creatorMap: Map<string, any>;
   tagMap: Map<string, any>;
   
+  // Fetch Lock to prevent duplicate requests
+  pendingFetches: Set<string>; 
+
   isOverlayOpen: boolean;
   activeSlug: string | null;
   activeType: 'reviews' | 'articles' | 'news' | 'releases' | 'index' | 'games' | 'creators' | 'tags' | null;
@@ -45,12 +49,16 @@ export interface KineticContentState {
   fetchCreatorByUsername: (username: string) => Promise<void>;
 }
 
+// Helper for consistent key generation
+const normalizeKey = (key: string) => key ? key.toLowerCase().trim() : '';
+
 export const useContentStore = create<KineticContentState>((set, get) => ({
   universalData: null, 
   contentMap: new Map(),
   pageMap: new Map(),
   creatorMap: new Map(),
   tagMap: new Map(),
+  pendingFetches: new Set(),
   
   isOverlayOpen: false,
   activeSlug: null,
@@ -62,7 +70,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   previousPath: null,
 
   hydrateUniversal: (data) => {
-      // 0. Store the raw data
       set({ universalData: data });
 
       const { hydrateContent, hydrateIndex, hydrateCreators, hydrateTags } = get();
@@ -87,7 +94,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           }
       }
 
-      // Collect ALL content items into a single array for one atomic update
       const allContent = [
           ...(data.reviews || []), 
           ...(data.articles || []), 
@@ -96,7 +102,6 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           ...hubContent
       ];
 
-      // Process content items (Body/Loaded checks)
       const processedContent = allContent.map(item => {
           const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
           const hasHub = item.linkedContent && Array.isArray(item.linkedContent);
@@ -107,24 +112,16 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           };
       });
 
-      // Add Game Hubs (loaded state)
       gameHubs.forEach(g => processedContent.push({ ...g, contentLoaded: true }));
       
-      // Add Metadata Games (unloaded state - for instant header resolution)
       if (data.metadata && data.metadata.games) {
           data.metadata.games.forEach((g: any) => {
-              // Only add if not already present from gameHubs (to avoid overwriting 'contentLoaded: true')
-              // But since this array is processed in order, we can just push it. 
-              // Actually, hydrateContent merges, so we should ensure loaded items take precedence.
-              // We'll rely on hydrateContent's merge logic to prefer existing data if available.
               processedContent.push({ ...g, contentLoaded: false });
           });
       }
 
-      // 1. ATOMIC HYDRATION: Hydrate all content and games in one go
       hydrateContent(processedContent);
       
-      // 2. Hydrate Indexes (These go to pageMap, independent of contentMap)
       if (data.reviews) {
           hydrateIndex('reviews', {
               hero: data.reviews[0],
@@ -162,14 +159,14 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           });
       }
       
-      // 3. Hydrate Creators (Atomic)
+      // Hydrate Creators
       const allCreators = [...(data.credits || []), ...creatorHubs.map((c: any) => ({ ...c, contentLoaded: true }))];
       if (data.metadata && data.metadata.creators) {
           allCreators.push(...data.metadata.creators.map((c: any) => ({ ...c, contentLoaded: false })));
       }
       hydrateCreators(allCreators);
 
-      // 4. Hydrate Tags (Atomic)
+      // Hydrate Tags
       const allTags = [...tagHubs.map((t: any) => ({ ...t, contentLoaded: true }))];
       if (data.metadata) {
           const metaTags = [
@@ -189,12 +186,11 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
       if (item && item.slug) {
         const slugStr = typeof item.slug === 'string' ? item.slug : item.slug.current;
         if (slugStr) {
-             const existing = newMap.get(slugStr);
+             const key = normalizeKey(slugStr);
+             const existing = newMap.get(key);
              let isLoaded = false;
              
-             // If incoming item says it's loaded, trust it.
              if (item.contentLoaded === true) { isLoaded = true; } 
-             // If existing item was loaded, keep it loaded.
              else if (existing?.contentLoaded) { isLoaded = true; }
              else {
                  const hasBody = item.content && Array.isArray(item.content) && item.content.length > 0;
@@ -215,7 +211,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
                  contentLoaded: isLoaded
              };
 
-             newMap.set(slugStr, newItem);
+             newMap.set(key, newItem);
         }
       }
     });
@@ -242,32 +238,57 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
 
   hydrateCreators: (creators) => {
       const newMap = new Map(get().creatorMap);
+      
       creators.forEach(c => {
           const keys = [];
-          if (c.username) keys.push(c.username);
-          if (c._id) keys.push(c._id);
+          if (c.username) keys.push(normalizeKey(c.username));
+          if (c._id) keys.push(c._id); // IDs are kept as is
           if (c.prismaUserId) keys.push(c.prismaUserId);
 
           let existing = null;
-          for (const key of keys) { if (newMap.has(key)) { existing = newMap.get(key); break; } }
+          for (const key of keys) { 
+              if (newMap.has(key)) { 
+                  existing = newMap.get(key); 
+                  break; 
+              } 
+          }
 
           let merged = { ...c };
-          
-          // Determine Loaded State
-          let isLoaded = false;
-          if (c.contentLoaded === true) isLoaded = true;
-          else if (existing?.contentLoaded) isLoaded = true;
-          else if (c.linkedContent !== undefined) isLoaded = true;
 
           if (existing) {
               merged = { ...existing, ...c };
-              if (c.linkedContent !== undefined) { 
-                  merged.linkedContent = c.linkedContent; 
+
+              if (c.linkedContent && c.linkedContent.length > 0) {
+                  const existingContent = existing.linkedContent || [];
+                  const newContent = c.linkedContent;
+                  
+                  const combinedMap = new Map();
+                  existingContent.forEach((item: any) => combinedMap.set(item._id, item));
+                  newContent.forEach((item: any) => combinedMap.set(item._id, item));
+                  
+                  const mergedContent = Array.from(combinedMap.values());
+                  
+                  mergedContent.sort((a: any, b: any) => 
+                      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+                  );
+                  
+                  merged.linkedContent = mergedContent;
+              } else if (existing.linkedContent) {
+                  merged.linkedContent = existing.linkedContent;
               }
+              
+              if (!merged.bio && existing.bio) merged.bio = existing.bio;
+              if (!merged.image && existing.image) merged.image = existing.image;
           }
+
+          let isLoaded = false;
+          if (c.contentLoaded === true) isLoaded = true;
+          else if (existing?.contentLoaded) isLoaded = true;
+          else if (merged.linkedContent && merged.linkedContent.length > 0) isLoaded = true; 
+          
           merged.contentLoaded = isLoaded;
           
-          if (merged.username) newMap.set(merged.username, merged);
+          if (merged.username) newMap.set(normalizeKey(merged.username), merged);
           if (merged._id) newMap.set(merged._id, merged);
           if (merged.prismaUserId) newMap.set(merged.prismaUserId, merged);
       });
@@ -280,7 +301,8 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
           if (t.slug) {
               const slugStr = typeof t.slug === 'string' ? t.slug : t.slug.current;
               if (slugStr) {
-                  const existing = newMap.get(slugStr);
+                  const key = normalizeKey(slugStr);
+                  const existing = newMap.get(key);
                   const merged = existing ? { ...t, ...existing } : { ...t };
                   
                   let isLoaded = false;
@@ -291,7 +313,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
                   if (t.items !== undefined) { merged.items = t.items; }
                   merged.contentLoaded = isLoaded;
                   
-                  newMap.set(slugStr, merged);
+                  newMap.set(key, merged);
               }
           }
       });
@@ -303,23 +325,24 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     const scrollY = !currentState.isOverlayOpen && typeof window !== 'undefined' ? window.scrollY : currentState.savedScrollPosition;
     
+    // Normalize slug for lookup
+    const lookupSlug = normalizeKey(slug);
+    
     // Optimistic Seeding
     if (type === 'creators' && preloadedData) {
         const { creatorMap } = currentState;
-        if (!creatorMap.has(slug)) {
+        if (!creatorMap.has(lookupSlug)) {
              const newMap = new Map(creatorMap);
-             newMap.set(slug, { username: slug, ...preloadedData, contentLoaded: false });
+             newMap.set(lookupSlug, { username: slug, ...preloadedData, contentLoaded: false });
              set({ creatorMap: newMap });
         }
     }
     
-    // Seed Tag if not exists (we at least know the slug)
     if (type === 'tags') {
         const { tagMap } = currentState;
-        if (!tagMap.has(slug)) {
+        if (!tagMap.has(lookupSlug)) {
             const newMap = new Map(tagMap);
-            // We use the slug as title temporarily until fetch completes
-            newMap.set(slug, { slug, title: slug, contentLoaded: false });
+            newMap.set(lookupSlug, { slug: slug, title: slug, contentLoaded: false });
             set({ tagMap: newMap });
         }
     }
@@ -334,8 +357,13 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
     if (typeof window !== 'undefined') window.history.pushState({ overlay: true, slug, type }, '', targetUrl);
 
     set({ 
-        isOverlayOpen: true, activeSlug: slug, activeType: type, indexSection: null,
-        sourceLayoutId: layoutId || null, activeImageSrc: imageSrc || null, savedScrollPosition: scrollY,
+        isOverlayOpen: true, 
+        activeSlug: lookupSlug, // Store normalized key
+        activeType: type, 
+        indexSection: null,
+        sourceLayoutId: layoutId || null, 
+        activeImageSrc: imageSrc || null, 
+        savedScrollPosition: scrollY,
         previousPath: currentState.isOverlayOpen ? currentState.previousPath : currentPath
     });
   },
@@ -354,7 +382,7 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
 
   navigateInternal: (slug, type) => {
       set({
-          isOverlayOpen: true, activeSlug: slug, activeType: type as any,
+          isOverlayOpen: true, activeSlug: normalizeKey(slug), activeType: type as any,
           indexSection: type === 'index' ? slug as any : null,
           sourceLayoutId: null, activeImageSrc: null
       });
@@ -373,70 +401,156 @@ export const useContentStore = create<KineticContentState>((set, get) => ({
   },
 
   fetchLinkedContent: async (slug: string) => {
-      const { contentMap } = get();
-      const item = contentMap.get(slug);
+      const key = normalizeKey(slug);
+      const { contentMap, pendingFetches } = get();
+      
+      if (pendingFetches.has(key)) return; // Lock check
+      
+      const item = contentMap.get(key);
       if (item && item.contentLoaded) return;
+      
+      set(state => ({ pendingFetches: new Set(state.pendingFetches).add(key) }));
+      
       try {
-          const linkedContent = await fetchGameContentAction(slug);
-          const updatedItem = { ...item, linkedContent, contentLoaded: true };
-          const newMap = new Map(contentMap);
-          newMap.set(slug, updatedItem);
-          set({ contentMap: newMap });
-      } catch (e) { console.error("Failed to fetch linked content", e); }
+          const fullGameData = await fetchGameHubDataAction(slug); // Original slug for API
+          if (fullGameData) {
+              const newMap = new Map(get().contentMap);
+              const updatedItem = {
+                  ...item,
+                  ...fullGameData,
+                  linkedContent: fullGameData.items, 
+                  contentLoaded: true
+              };
+              newMap.set(key, updatedItem);
+              set({ contentMap: newMap });
+          }
+      } catch (e) { 
+          console.error("Failed to fetch linked content", e); 
+      } finally {
+          set(state => {
+              const next = new Set(state.pendingFetches);
+              next.delete(key);
+              return { pendingFetches: next };
+          });
+      }
   },
 
   fetchCreatorContent: async (slug: string, creatorId: string) => {
-      const { creatorMap } = get();
-      const creator = creatorMap.get(slug);
+      const key = normalizeKey(slug);
+      const { creatorMap, pendingFetches } = get();
+      
+      if (pendingFetches.has(key)) return;
+
+      const creator = creatorMap.get(key);
       if (creator && creator.contentLoaded) return;
+      
+      set(state => ({ pendingFetches: new Set(state.pendingFetches).add(key) }));
+      
       try {
            const enrichedContent = await fetchCreatorContentAction(creatorId);
-           const updatedCreator = { ...creator, linkedContent: enrichedContent, contentLoaded: true };
-           const newMap = new Map(creatorMap);
-           const primaryKey = updatedCreator.username || updatedCreator._id;
-           if (primaryKey) newMap.set(primaryKey, updatedCreator);
-           if (updatedCreator.username) newMap.set(updatedCreator.username, updatedCreator);
+           const existingContent = creator?.linkedContent || [];
+           const newContent = [...existingContent, ...enrichedContent];
+           const uniqueContent = Array.from(new Map(newContent.map((i: any) => [i._id, i])).values());
+           uniqueContent.sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+           const updatedCreator = { ...creator, linkedContent: uniqueContent, contentLoaded: true };
+           const newMap = new Map(get().creatorMap);
+           
+           if (updatedCreator.username) newMap.set(normalizeKey(updatedCreator.username), updatedCreator);
+           if (updatedCreator._id) newMap.set(updatedCreator._id, updatedCreator);
+           if (updatedCreator.prismaUserId) newMap.set(updatedCreator.prismaUserId, updatedCreator);
+           
            set({ creatorMap: newMap });
-      } catch (e) { console.error("Failed to fetch creator content", e); }
+      } catch (e) { 
+          console.error("Failed to fetch creator content", e); 
+      } finally {
+          set(state => {
+              const next = new Set(state.pendingFetches);
+              next.delete(key);
+              return { pendingFetches: next };
+          });
+      }
   },
 
   fetchTagContent: async (slug: string) => {
-      const { tagMap } = get();
-      const tag = tagMap.get(slug);
+      const key = normalizeKey(slug);
+      const { tagMap, pendingFetches } = get();
+      
+      if (pendingFetches.has(key)) return;
+
+      const tag = tagMap.get(key);
       if (tag && tag.contentLoaded) return;
+
+      set(state => ({ pendingFetches: new Set(state.pendingFetches).add(key) }));
+
       try {
           const updatedTagData = await fetchTagContentAction(slug);
           if (updatedTagData) {
-              const newMap = new Map(tagMap);
+              const newMap = new Map(get().tagMap);
               const merged = tag ? { ...tag, ...updatedTagData, contentLoaded: true } : { ...updatedTagData, contentLoaded: true };
-              newMap.set(slug, merged);
+              newMap.set(key, merged);
               set({ tagMap: newMap });
           }
-      } catch (e) { console.error("Failed to fetch tag content", e); }
+      } catch (e) { 
+          console.error("Failed to fetch tag content", e); 
+      } finally {
+          set(state => {
+              const next = new Set(state.pendingFetches);
+              next.delete(key);
+              return { pendingFetches: next };
+          });
+      }
   },
 
   fetchFullContent: async (slug: string) => {
-      const { contentMap } = get();
-      const item = contentMap.get(slug);
+      const key = normalizeKey(slug);
+      const { contentMap, pendingFetches } = get();
+      
+      if (pendingFetches.has(key)) return;
+
+      const item = contentMap.get(key);
       if (item && item.contentLoaded) return; 
+      
+      set(state => ({ pendingFetches: new Set(state.pendingFetches).add(key) }));
       
       try {
           const fullItem = await fetchSingleContentAction(slug);
           if (fullItem) {
-               const newMap = new Map(contentMap);
-               // IMPORTANT: Mark as contentLoaded here too
-               newMap.set(slug, { ...item, ...fullItem, contentLoaded: true });
+               const newMap = new Map(get().contentMap);
+               newMap.set(key, { ...item, ...fullItem, contentLoaded: true });
                set({ contentMap: newMap });
           }
-      } catch (e) { console.error("Failed to fetch full content", e); }
+      } catch (e) { 
+          console.error("Failed to fetch full content", e); 
+      } finally {
+          set(state => {
+              const next = new Set(state.pendingFetches);
+              next.delete(key);
+              return { pendingFetches: next };
+          });
+      }
   },
 
   fetchCreatorByUsername: async (username: string) => {
-      const { creatorMap, hydrateCreators } = get();
-      if (creatorMap.has(username) && creatorMap.get(username).contentLoaded) return;
+      const key = normalizeKey(username);
+      const { creatorMap, hydrateCreators, pendingFetches } = get();
+      
+      if (pendingFetches.has(key)) return;
+      if (creatorMap.has(key) && creatorMap.get(key).contentLoaded) return;
+      
+      set(state => ({ pendingFetches: new Set(state.pendingFetches).add(key) }));
+      
       try {
           const creatorData = await fetchCreatorByUsernameAction(username);
           if (creatorData) { hydrateCreators([creatorData]); }
-      } catch (e) { console.error("Failed to fetch creator by username", e); }
+      } catch (e) { 
+          console.error("Failed to fetch creator by username", e); 
+      } finally {
+          set(state => {
+              const next = new Set(state.pendingFetches);
+              next.delete(key);
+              return { pendingFetches: next };
+          });
+      }
   },
 }));

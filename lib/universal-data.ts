@@ -3,24 +3,55 @@ import { client } from '@/lib/sanity.client';
 import { 
     batchGameHubsQuery, 
     batchTagHubsQuery, 
-    batchCreatorHubsQuery,
-    homepageReviewsQuery,
-    homepageArticlesQuery,
-    homepageNewsQuery,
     homepageReleasesQuery,
     homepageCreditsQuery,
     homepageMetadataQuery,
-    colorDictionaryQuery 
+    colorDictionaryQuery,
+    fullDocProjection, 
+    lightCardProjection,
+    allCreatorsHubQuery // IMPORTED
 } from '@/lib/sanity.queries';
 import { enrichContentList, enrichCreators } from '@/lib/enrichment';
 import prisma from '@/lib/prisma';
 import { unstable_cache } from 'next/cache';
 import { convertContentToHybridHtml } from './server/html-converter';
+import { groq } from 'next-sanity';
 
-// OPTIMIZATION: Infinite Cache (revalidate: false).
-const getCachedReviews = unstable_cache(async () => client.fetch(homepageReviewsQuery), ['homepage-reviews-fragment-v2'], { revalidate: false, tags: ['content', 'review'] });
-const getCachedArticles = unstable_cache(async () => client.fetch(homepageArticlesQuery), ['homepage-articles-fragment-v2'], { revalidate: false, tags: ['content', 'article'] });
-const getCachedNews = unstable_cache(async () => client.fetch(homepageNewsQuery), ['homepage-news-fragment-v2'], { revalidate: false, tags: ['content', 'news'] });
+// --- MODIFIED QUERIES FOR DEEP PRE-FETCHING ---
+// Fetch first N items with full content, the rest with light content.
+
+const getCachedReviews = unstable_cache(async () => {
+    const query = groq`{
+        "full": *[_type == "review" && defined(publishedAt) && publishedAt < now() && defined(mainImage.asset)] | order(publishedAt desc)[0...10] { ${fullDocProjection} },
+        "light": *[_type == "review" && defined(publishedAt) && publishedAt < now() && defined(mainImage.asset)] | order(publishedAt desc)[10...20] { ${lightCardProjection} }
+    }`;
+    const { full, light } = await client.fetch(query);
+    return [...(full || []), ...(light || [])];
+}, ['homepage-reviews-fragment-v3'], { revalidate: false, tags: ['content', 'review'] });
+
+const getCachedArticles = unstable_cache(async () => {
+    const query = groq`{
+        "full": *[_type == "article" && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...12] { ${fullDocProjection} },
+        "light": *[_type == "article" && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[12...20] { ${lightCardProjection} }
+    }`;
+    const { full, light } = await client.fetch(query);
+    return [...(full || []), ...(light || [])];
+}, ['homepage-articles-fragment-v3'], { revalidate: false, tags: ['content', 'article'] });
+
+const getCachedNews = unstable_cache(async () => {
+    const query = groq`{
+        "full": *[_type == "news" && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...18] { ${fullDocProjection} },
+        "light": *[_type == "news" && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[18...30] { ${lightCardProjection} }
+    }`;
+    const { full, light } = await client.fetch(query);
+    return [...(full || []), ...(light || [])];
+}, ['homepage-news-fragment-v3'], { revalidate: false, tags: ['content', 'news'] });
+
+// NEW: Cache all creators with content
+const getCachedAllCreators = unstable_cache(async () => {
+    return await client.fetch(allCreatorsHubQuery);
+}, ['all-creators-hubs-fragment-v1'], { revalidate: false, tags: ['creators', 'content'] });
+
 const getCachedReleases = unstable_cache(async () => client.fetch(homepageReleasesQuery), ['homepage-releases-fragment-v2'], { revalidate: false, tags: ['content', 'gameRelease'] });
 const getCachedCredits = unstable_cache(async () => client.fetch(homepageCreditsQuery), ['homepage-credits-fragment-v2'], { revalidate: false, tags: ['creators'] });
 const getCachedMetadata = unstable_cache(async () => client.fetch(homepageMetadataQuery), ['homepage-metadata-fragment-v2'], { revalidate: false, tags: ['studio-metadata'] });
@@ -49,42 +80,37 @@ const stripHeavyMetadata = (item: any, keepBlur: boolean) => {
 
 export async function fetchUniversalData() {
     try {
-        const [reviews, articles, news, releases, credits, metadata, colorDict] = await Promise.all([
+        const [reviews, articles, news, releases, credits, metadata, colorDict, allCreatorsHubs] = await Promise.all([
             getCachedReviews(),
             getCachedArticles(),
             getCachedNews(),
             getCachedReleases(),
             getCachedCredits(),
             getCachedMetadata(),
-            getCachedColors()
+            getCachedColors(),
+            getCachedAllCreators()
         ]);
         
         const colorMappings = colorDict?.autoColors || [];
         
         const gameIds = new Set<string>();
         const tagIds = new Set<string>();
-        const creatorIds = new Set<string>();
 
-        const collectIds = (items: any[]) => {
-            // Limit collection to first 5 items to reduce payload
-            items.slice(0, 5).forEach(item => {
+        const collectIds = (items: any[], limit: number) => {
+            // Collect IDs from the specific requested range (10 reviews, 12 articles, 18 news)
+            items.slice(0, limit).forEach(item => {
                 if (item.game?._id) gameIds.add(item.game._id);
                 if (item.tags) item.tags.forEach((t: any) => t._id && tagIds.add(t._id));
                 if (item.category?._id) tagIds.add(item.category._id);
-                
-                const creators = [...(item.authors || []), ...(item.reporters || []), ...(item.designers || [])];
-                creators.forEach((c: any) => {
-                    const id = c.prismaUserId || c._id;
-                    if(id) creatorIds.add(id); 
-                    if(c._id) creatorIds.add(c._id); 
-                });
+                // Creators are now fetched globally, no need to collect here
             });
         };
 
-        collectIds(reviews || []);
-        collectIds(articles || []);
-        collectIds(news || []);
+        collectIds(reviews || [], 10);
+        collectIds(articles || [], 12);
+        collectIds(news || [], 18);
         
+        // Also check releases for this month
         if (releases && releases.length > 0) {
             const now = new Date();
             const currentMonth = now.getUTCMonth();
@@ -99,16 +125,15 @@ export async function fetchUniversalData() {
             });
         }
         
-        const [gameHubs, tagHubs, creatorHubs] = await Promise.all([
+        const [gameHubs, tagHubs] = await Promise.all([
             gameIds.size > 0 ? client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { revalidate: false, tags: ['content', 'game'] } }) : [],
             tagIds.size > 0 ? client.fetch(batchTagHubsQuery, { ids: Array.from(tagIds) }, { next: { revalidate: false, tags: ['content', 'tag'] } }) : [],
-            creatorIds.size > 0 ? client.fetch(batchCreatorHubsQuery, { ids: Array.from(creatorIds) }, { next: { revalidate: false, tags: ['content', 'creators'] } }) : []
         ]);
 
         const allContentLists = [
             ...(gameHubs.map((g: any) => g.linkedContent)),
             ...(tagHubs.map((t: any) => t.items)),
-            ...(creatorHubs.map((c: any) => c.linkedContent)),
+            ...(allCreatorsHubs.map((c: any) => c.linkedContent)), // Flatten linked content from creators
             reviews, 
             articles, 
             news,
@@ -139,9 +164,11 @@ export async function fetchUniversalData() {
         const enrichedArticles = processList(articles, 5);
         const enrichedNews = processList(news, 5);
         
-        const enrichedGameHubs = gameHubs.map((g: any) => ({ ...g, linkedContent: processList(g.linkedContent, 0) })); // Hubs don't need blur
+        const enrichedGameHubs = gameHubs.map((g: any) => ({ ...g, linkedContent: processList(g.linkedContent, 0) })); 
         const enrichedTagHubs = tagHubs.map((t: any) => ({ ...t, items: processList(t.items, 0) }));
-        const enrichedCreatorHubs = await Promise.all(creatorHubs.map(async (c: any) => {
+        
+        // Enrich Creators (Prisma Lookup for name/username/image)
+        const enrichedCreatorHubs = await Promise.all(allCreatorsHubs.map(async (c: any) => {
             let username = c.username;
             let name = c.name;
             let image = c.image;

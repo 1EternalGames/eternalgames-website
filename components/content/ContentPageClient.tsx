@@ -41,8 +41,6 @@ type ContentItem = Omit<SanityReview | SanityArticle | SanityNews, 'slug'> & {
     readingTime?: number; 
     toc?: { id: string; text: string; level: number }[]; 
     contentLoaded?: boolean;
-    // NEW: Lead block property
-    lead?: any;
 };
 
 type ContentType = 'reviews' | 'articles' | 'news';
@@ -113,12 +111,9 @@ export default function ContentPageClient({
     const [isLayoutStable, setIsLayoutStable] = useState(false); 
     
     const slugString = item?.slug ? (typeof item.slug === 'string' ? item.slug : item.slug.current) : '';
-    
-    // Check if full content is loaded, OR if we have a lead block to show
-    const hasContent = (item.content && Array.isArray(item.content) && item.content.length > 0);
-    const hasLead = !!item.lead;
-    const isLoaded = (item as any).contentLoaded === true || hasContent;
+    const isLoaded = (item as any).contentLoaded === true || (item.content && Array.isArray(item.content) && item.content.length > 0);
 
+    // FIXED: Removed isHeroVisible dependency. The ID now remains constant.
     const layoutIdPrefix = (forcedLayoutIdPrefix || storePrefix);
     const isSharedTransitionActive = isHeroTransitionEnabled && layoutIdPrefix && layoutIdPrefix !== 'default';
 
@@ -218,13 +213,13 @@ export default function ContentPageClient({
     }, [scrollContainerRef]);
 
     useEffect(() => { 
-        if (!isBodyReady) return; 
+        if (!isLoaded || !isBodyReady) return; 
         const timeout = setTimeout(() => {
              setIsLayoutStable(true);
              measureHeadings();
         }, 500); 
         return () => clearTimeout(timeout); 
-    }, [item, isBodyReady, measureHeadings]);
+    }, [item, isLoaded, isBodyReady, measureHeadings]);
 
     if (!item) return null;
 
@@ -268,10 +263,6 @@ export default function ContentPageClient({
 
     const gameObj = (item as any).game;
     const gameSlug = gameObj ? (typeof gameObj.slug === 'string' ? gameObj.slug : gameObj.slug?.current) : null;
-
-    // --- CONTENT RENDER LOGIC ---
-    // If loaded, use full content. If not, use lead + loading.
-    const contentToRender = isLoaded ? (item.content || []) : (hasLead ? [item.lead] : []);
 
     return (
         <>
@@ -347,8 +338,7 @@ export default function ContentPageClient({
                                 </motion.h1>
                             </div>
                             
-                            {/* RENDER IF LOADED OR HAS LEAD */}
-                            {(isLoaded || hasLead) && isBodyReady ? (
+                            {isLoaded && isBodyReady ? (
                                 <motion.div
                                     variants={bodyFadeVariants}
                                     initial="hidden"
@@ -387,29 +377,20 @@ export default function ContentPageClient({
                                         </div>
                                     </div>
                                     
-                                    {isLoaded && <TableOfContents headings={tocItems} scrollContainerRef={scrollContainerRef} />}
+                                    <TableOfContents 
+                                        headings={tocItems} 
+                                        scrollContainerRef={scrollContainerRef} 
+                                    />
 
                                     <div ref={articleBodyRef} className="article-body">
-                                        <PortableTextComponent content={contentToRender} colorDictionary={colorDictionary} />
-                                        
-                                        {/* LOADING SPINNER BELOW LEAD */}
-                                        {!isLoaded && (
-                                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem', marginBottom: '10rem' }}>
-                                                <div className="spinner" />
-                                            </div>
-                                        )}
-                                        
-                                        {isLoaded && isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
+                                        <PortableTextComponent content={item.content || []} colorDictionary={colorDictionary} />
+                                        {isReview && <ScoreBox review={adaptReviewForScoreBox(item)} className="score-box-container" />}
                                     </div>
-                                    
-                                    {isLoaded && (
-                                        <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                                            <TagLinks tags={safeTags.map((t: any) => t.title)} />
-                                        </div>
-                                    )}
+                                    <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                                        <TagLinks tags={safeTags.map((t: any) => t.title)} />
+                                    </div>
                                 </motion.div>
                             ) : (
-                                // Fallback if no lead and not loaded
                                 <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <div className="spinner" />
                                 </div>

@@ -293,12 +293,19 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
             if (activeTag) {
                 const isLoading = !activeTag.contentLoaded;
                  return {
-                    content: <HubPageClient initialItems={activeTag.items || []} hubTitle={activeTag.title} hubType="وسم" scrollContainerRef={overlayRef} isLoading={isLoading} />,
+                    content: <HubPageClient 
+                        initialItems={activeTag.items || []} 
+                        hubTitle={activeTag.title} 
+                        hubType="وسم" 
+                        scrollContainerRef={overlayRef} 
+                        isLoading={isLoading} 
+                        fallbackImage={activeImageSrc} // Pass fallback image for tags too
+                    />,
                     paddingTop: '0'
                  };
             }
              return {
-                content: <HubPageClient initialItems={[]} hubTitle={activeSlug || '...'} hubType="وسم" scrollContainerRef={overlayRef} isLoading={true} />,
+                content: <HubPageClient initialItems={[]} hubTitle={activeSlug || '...'} hubType="وسم" scrollContainerRef={overlayRef} isLoading={true} fallbackImage={activeImageSrc} />,
                 paddingTop: '0'
              };
         } 
@@ -306,8 +313,25 @@ function KineticOverlayManagerContent({ colorDictionary }: { colorDictionary: an
         if (activeItem) {
              if (activeType === 'releases' || (activeType as string) === 'games') {
                 const layoutPrefix = sourceLayoutId || undefined;
+                // FIX: Use activeImageSrc if mainImage is missing (fallback for smooth transition)
+                const imageToUse = activeItem.mainImage || activeImageSrc;
+
                 return {
-                    content: <GameHubClient gameTitle={activeItem.title} items={activeItem.linkedContent || []} synopsis={activeItem.synopsis} releaseTags={activeItem.tags || []} mainImage={activeItem.mainImage} price={activeItem.price} developer={activeItem.developer?.title} publisher={activeItem.publisher?.title} platforms={activeItem.platforms} onGamePass={activeItem.onGamePass} onPSPlus={activeItem.onPSPlus} forcedLayoutIdPrefix={layoutPrefix} scrollContainerRef={overlayRef} />,
+                    content: <GameHubClient 
+                        gameTitle={activeItem.title} 
+                        items={activeItem.linkedContent || []} 
+                        synopsis={activeItem.synopsis} 
+                        releaseTags={activeItem.tags || []} 
+                        mainImage={imageToUse} // Updated Prop
+                        price={activeItem.price} 
+                        developer={activeItem.developer?.title} 
+                        publisher={activeItem.publisher?.title} 
+                        platforms={activeItem.platforms} 
+                        onGamePass={activeItem.onGamePass} 
+                        onPSPlus={activeItem.onPSPlus} 
+                        forcedLayoutIdPrefix={layoutPrefix} 
+                        scrollContainerRef={overlayRef} 
+                    />,
                     paddingTop: '0'
                 };
              } else {

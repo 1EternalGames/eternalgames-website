@@ -2,22 +2,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import localFont from 'next/font/local';
+import { Cairo } from 'next/font/google';
 
-// Use local font for error page consistency
-const cairo = localFont({
-  src: [
-    {
-      path: '../public/fonts/Cairo-Regular.ttf',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../public/fonts/Cairo-Bold.ttf',
-      weight: '700',
-      style: 'normal',
-    },
-  ],
+// Use Google Font for error page consistency
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '700'],
   variable: '--font-main',
   display: 'swap',
 });

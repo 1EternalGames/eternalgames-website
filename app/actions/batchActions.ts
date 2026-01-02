@@ -13,7 +13,8 @@ import {
     paginatedArticlesQuery, 
     paginatedNewsQuery,
     cardListProjection,
-    batchGameHubsQuery 
+    batchGameHubsQuery,
+    gamePageDataQuery // IMPORTED
 } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
@@ -90,17 +91,23 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             
             if (!user) return null;
 
-            const creatorDocs = await client.fetch<{ _id: string }[]>(
-                `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id}`,
+            // FIX: Fetch bio from Sanity as well
+            const creatorDocs = await client.fetch<{ _id: string, bio?: string }[]>(
+                `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id, bio}`,
                 { prismaUserId: user.id }
             );
             
             const creatorIds = creatorDocs.map(d => d._id);
             
+            // FIX: Use Sanity bio if Prisma bio is missing
+            const sanityBio = creatorDocs.find(d => d.bio)?.bio;
+            const finalBio = user.bio || sanityBio || null;
+            
             let enrichedContent: any[] = [];
             
             if (creatorIds.length > 0) {
-                const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc)[0...12] { ${cardListProjection} }`;
+                // Fetch content referencing ANY of the creator's documents
+                const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc)[0...24] { ${cardListProjection} }`;
                 const rawContent = await client.fetch(query, { creatorIds });
                 enrichedContent = await enrichContentList(rawContent);
             }
@@ -111,7 +118,7 @@ export const fetchCreatorByUsernameAction = unstable_cache(
                 name: user.name,
                 username: user.username,
                 image: user.image, 
-                bio: user.bio,
+                bio: finalBio, // Use resolved bio
                 linkedContent: enrichedContent,
                 contentLoaded: true
             };
@@ -121,8 +128,9 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             return null;
         }
     },
-    ['creator-profile-by-username-v2'],
-    { tags: ['creator-profile'] }
+    ['creator-profile-by-username-v3'], // Bump cache key
+    // FIX: Added 'content' tag so this cache invalidates when new content is published
+    { tags: ['creator-profile', 'content'] }
 );
 
 export async function fetchGameContentAction(slug: string) {
@@ -137,6 +145,41 @@ export async function fetchGameContentAction(slug: string) {
         return [];
     }
 }
+
+// NEW ACTION: Fetch Full Game Hub Data (Metadata + Items)
+export async function fetchGameHubDataAction(slug: string) {
+    if (!slug) return null;
+    try {
+        const data = await client.fetch(gamePageDataQuery, { slug });
+        if (!data) return null;
+
+        // Enrich the items
+        const enrichedItems = await enrichContentList(data.items || []);
+        
+        const releaseData = data.release || {};
+        
+        // Flatten structure for the store, matching the Page component's shape
+        return {
+            ...data,
+            items: enrichedItems.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean),
+            tags: releaseData.releaseTags || [],
+            synopsis: releaseData.synopsis || null,
+            releaseDate: releaseData.releaseDate,
+            price: releaseData.price,
+            developer: releaseData.developer,
+            publisher: releaseData.publisher,
+            platforms: releaseData.platforms,
+            onGamePass: releaseData.onGamePass,
+            onPSPlus: releaseData.onPSPlus,
+            mainImage: data.mainImage || releaseData.releaseImage,
+            contentLoaded: true // Flag for store
+        };
+    } catch (error) {
+        console.error("fetchGameHubDataAction failed", error);
+        return null;
+    }
+}
+
 
 export async function fetchCreatorContentAction(creatorId: string) {
     if (!creatorId) return [];
@@ -184,7 +227,6 @@ export async function fetchSingleContentAction(slug: string) {
     }
 }
 
-// FIX: Pass fullDocProjection to ensure items loaded via scrolling are clickable instantly
 export async function loadMoreReviews(params: { offset: number, limit: number, sort: 'latest' | 'score', scoreRange?: string, gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
     const query = paginatedReviewsQuery(
         params.gameSlug, 
@@ -194,7 +236,7 @@ export async function loadMoreReviews(params: { offset: number, limit: number, s
         params.offset, 
         params.limit, 
         params.sort, 
-        fullDocProjection // <--- THE FIX
+        fullDocProjection
     );
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
@@ -208,7 +250,7 @@ export async function loadMoreArticles(params: { offset: number, limit: number, 
         params.offset, 
         params.limit, 
         params.sort, 
-        fullDocProjection // <--- THE FIX
+        fullDocProjection
     );
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
@@ -222,7 +264,7 @@ export async function loadMoreNews(params: { offset: number, limit: number, sort
         params.offset, 
         params.limit, 
         params.sort, 
-        fullDocProjection // <--- THE FIX
+        fullDocProjection
     );
     const rawData = await client.fetch(query);
     return await processUnifiedResponse(rawData, params.limit, params.offset);
@@ -262,7 +304,7 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
         return { 
             ...item, 
             toc: tocHeadings,
-            contentLoaded: true // Explicitly mark as loaded since we used fullDocProjection
+            contentLoaded: true
         };
     });
     

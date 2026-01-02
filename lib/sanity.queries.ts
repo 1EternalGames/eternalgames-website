@@ -30,9 +30,6 @@ export const lightCardProjection = groq`
   newsType,
   synopsis,
   
-  // NEW: Fetch the first actual text block for instant reading
-  "lead": content[_type == "block"][0],
-
   releaseDate, isTBA, platforms, price, 
   "developer": developer->{title, "slug": slug.current}, 
   "publisher": publisher->{title, "slug": slug.current}, 
@@ -142,8 +139,21 @@ export const tagPageDataQuery = groq`
 
 export const gamePageDataQuery = groq`
   *[_type == "game" && slug.current == $slug][0] {
-    _id, title, "mainImage": mainImage{${mainImageFields}},
-    "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && game._ref == ^._id] | order(publishedAt desc)[0...24] { ${lightCardProjection} }
+    _id, title, 
+    "mainImage": mainImage{${mainImageFields}},
+    "items": *[_type in ["review", "article", "news"] && ${publishedFilter} && game._ref == ^._id] | order(publishedAt desc)[0...24] { ${lightCardProjection} },
+    
+    // THE FIX: Directly fetch linked gameRelease data here
+    "release": *[_type == "gameRelease" && game._ref == ^._id][0] {
+        synopsis, price, releaseDate,
+        "developer": developer->title,
+        "publisher": publisher->title,
+        platforms,
+        "onGamePass": coalesce(onGamePass, false),
+        "onPSPlus": coalesce(onPSPlus, false),
+        "releaseTags": tags[]->{${tagFields}},
+        "releaseImage": mainImage{${mainImageFields}}
+    }
   }
 `
 
@@ -167,6 +177,14 @@ export const batchTagHubsQuery = groq`
 
 export const batchCreatorHubsQuery = groq`
   *[_type in ["reviewer", "author", "reporter", "designer"] && _id in $ids] {
+     _id, name, prismaUserId, image, bio, username,
+     "linkedContent": *[_type in ["review", "article", "news"] && ${publishedFilter} && references(^._id)] | order(publishedAt desc)[0...24] { ${lightCardProjection} }
+  }
+`
+
+// NEW: Query to fetch ALL creators and their content
+export const allCreatorsHubQuery = groq`
+  *[_type in ["reviewer", "author", "reporter", "designer"]] {
      _id, name, prismaUserId, image, bio, username,
      "linkedContent": *[_type in ["review", "article", "news"] && ${publishedFilter} && references(^._id)] | order(publishedAt desc)[0...24] { ${lightCardProjection} }
   }
@@ -217,7 +235,6 @@ export const homepageMetadataQuery = groq`{
     "articleTags": *[_type == "tag" && category == "Article"] | order(title asc) {_id, title, "slug": slug.current, category}
 }`
 
-// FIX: Added 'projection' parameter with default
 export const paginatedNewsQuery = (gameSlug?: string, tagSlugs?: string[], searchTerm?: string, offset: number = 0, limit: number = 20, sort: 'latest' | 'viral' = 'latest', projection: string = lightCardProjection) => {
   let filter = `_type == "news" && ${publishedFilter} && defined(mainImage.asset)`
   if (gameSlug) filter += ` && game->slug.current == "${gameSlug}"`

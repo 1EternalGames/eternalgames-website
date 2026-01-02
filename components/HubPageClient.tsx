@@ -33,8 +33,8 @@ interface HubPageClientProps {
     tags?: { title: string, slug?: string }[];    
     fallbackImage?: any; 
     price?: string;
-    developer?: string;
-    publisher?: string;
+    developer?: any; // Can be string or object
+    publisher?: any; // Can be string or object
     platforms?: string[];
     onGamePass?: boolean;
     onPSPlus?: boolean;
@@ -71,8 +71,6 @@ export default function HubPageClient({
 }: HubPageClientProps) {
     const { prefix: layoutIdPrefix, setPrefix } = useLayoutIdStore();
     
-    // Removed isGridReady logic
-
     useIsomorphicLayoutEffect(() => { 
         if (scrollContainerRef?.current) {
             scrollContainerRef.current.scrollTop = 0;
@@ -175,6 +173,16 @@ export default function HubPageClient({
         );
     }, [synopsis]);
 
+    // THE FIX: Robustly get name and slug
+    const getDevPubInfo = (data: any) => {
+        if (!data) return null;
+        if (typeof data === 'string') return { name: data, slug: data.toLowerCase().replace(/\s+/g, '-') };
+        return { name: data.title, slug: data.slug };
+    };
+
+    const devInfo = getDevPubInfo(developer);
+    const pubInfo = getDevPubInfo(publisher);
+
     const heroContent = (
         <motion.div 
             className={styles.hubHero} 
@@ -183,19 +191,21 @@ export default function HubPageClient({
             <motion.div 
                 className={styles.heroBg}
                 layoutId={heroLayoutId}
-                style={{ position: 'absolute', inset: 0, zIndex: -2 }}
+                style={{ position: 'absolute', inset: 0, zIndex: -2, backgroundColor: 'var(--border-color)' }}
             >
-                <Image 
-                    loader={sanityLoader}
-                    src={heroImageUrl} 
-                    alt={`Background for ${hubTitle}`} 
-                    fill 
-                    style={{ objectFit: 'cover' }} 
-                    priority 
-                    placeholder={heroBlurDataURL ? 'blur' : 'empty'}
-                    blurDataURL={heroBlurDataURL || ''}
-                    unoptimized={isExternalImage} 
-                />
+                {!isLoading && (
+                    <Image 
+                        loader={sanityLoader} 
+                        src={heroImageUrl} 
+                        alt={`Background for ${hubTitle}`} 
+                        fill 
+                        style={{ objectFit: 'cover' }} 
+                        priority 
+                        placeholder={heroBlurDataURL ? 'blur' : 'empty'}
+                        blurDataURL={heroBlurDataURL || ''}
+                        unoptimized={isExternalImage} 
+                    />
+                )}
             </motion.div>
             <div className={styles.heroOverlay} />
             
@@ -226,69 +236,25 @@ export default function HubPageClient({
                 >
                     {price && <div className={`${styles.hubPill} ${styles.price}`}>{price}</div>}
                     
-                    {onGamePass && (
-                        <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#10B981', color: '#10B981' }}>
-                            <XboxIcon style={{ width: 14, height: 14 }} />
-                            <span>Game Pass</span>
-                        </div>
-                    )}
+                    {onGamePass && ( <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#10B981', color: '#10B981' }}> <XboxIcon style={{ width: 14, height: 14 }} /> <span>Game Pass</span> </div> )}
+                    {onPSPlus && ( <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#3B82F6', color: '#3B82F6' }}> <PS5Icon style={{ width: 16, height: 16 }} /> <span>PS Plus</span> </div> )}
                     
-                    {onPSPlus && (
-                        <div className={`${styles.hubPill} ${styles.platform}`} style={{ borderColor: '#3B82F6', color: '#3B82F6' }}>
-                            <PS5Icon style={{ width: 16, height: 16 }} />
-                            <span>PS Plus</span>
-                        </div>
-                    )}
-                    
-                    {price && (developer || publisher) && <MetadataDivider />}
+                    {price && (devInfo || pubInfo) && <MetadataDivider />}
 
-                    {developer && (
-                        <Link 
-                            href={`/developers/${developer.toLowerCase().replace(/\s+/g, '-')}`} 
-                            className={`${styles.hubPill} ${styles.dev} ${styles.interactive}`}
-                            prefetch={false}
-                        >
-                            {developer}
-                        </Link>
-                    )}
-                    
-                    {publisher && publisher !== developer && (
-                        <Link 
-                            href={`/publishers/${publisher.toLowerCase().replace(/\s+/g, '-')}`} 
-                            className={`${styles.hubPill} ${styles.dev} ${styles.interactive}`}
-                            prefetch={false}
-                        >
-                            {publisher}
-                        </Link>
-                    )}
+                    {devInfo && ( <Link href={`/developers/${devInfo.slug}`} className={`${styles.hubPill} ${styles.dev} ${styles.interactive}`} prefetch={false}> {devInfo.name} </Link> )}
+                    {pubInfo && pubInfo.name !== devInfo?.name && ( <Link href={`/publishers/${pubInfo.slug}`} className={`${styles.hubPill} ${styles.dev} ${styles.interactive}`} prefetch={false}> {pubInfo.name} </Link> )}
 
-                    {(developer || publisher) && platforms && platforms.length > 0 && <MetadataDivider />}
+                    {(devInfo || pubInfo) && platforms && platforms.length > 0 && <MetadataDivider />}
 
                     {platforms && platforms.map(p => {
                         const Icon = PlatformIcons[p];
                         if (!Icon) return null;
-                        return (
-                            <div key={p} className={`${styles.hubPill} ${styles.platform}`}>
-                                <Icon style={{ width: 16, height: 16 }} />
-                                <span>{p === 'PlayStation' || p === 'PlayStation 5' ? 'PS5' : p}</span>
-                            </div>
-                        );
+                        return ( <div key={p} className={`${styles.hubPill} ${styles.platform}`}> <Icon style={{ width: 16, height: 16 }} /> <span>{p === 'PlayStation' || p === 'PlayStation 5' ? 'PS5' : p}</span> </div> );
                     })}
 
                     {platforms && platforms.length > 0 && tags && tags.length > 0 && <MetadataDivider />}
 
-                     {tags && tags.map(t => (
-                        <KineticLink 
-                            key={t.title} 
-                            href={t.slug ? `/tags/${t.slug}` : '#'}
-                            slug={t.slug || ''}
-                            type="tags"
-                            className={`${styles.hubPill} ${styles.genre} ${styles.interactive}`}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {translateTag(t.title)}
-                        </KineticLink>
-                    ))}
+                     {tags && tags.map(t => ( <KineticLink key={t.title} href={t.slug ? `/tags/${t.slug}` : '#'} slug={t.slug || ''} type="tags" className={`${styles.hubPill} ${styles.genre} ${styles.interactive}`} onClick={(e) => e.stopPropagation()}> {translateTag(t.title)} </KineticLink> ))}
                 </motion.div>
             </motion.div>
         </motion.div>
@@ -300,74 +266,26 @@ export default function HubPageClient({
         <div className={styles.hubPageContainer}>
             {heroContent}
             <div ref={contentRef} className="container" style={{paddingTop: '4rem'}}>
-                 
-                     {isLoading ? (
-                         <div className="content-grid gpu-cull">
-                             <ArticleCardSkeleton variant="default" />
-                             <ArticleCardSkeleton variant="default" />
-                             <ArticleCardSkeleton variant="default" />
-                             <ArticleCardSkeleton variant="default" />
-                         </div>
+                     {isLoading ? ( <div className="content-grid gpu-cull"> <ArticleCardSkeleton variant="default" /> <ArticleCardSkeleton variant="default" /> <ArticleCardSkeleton variant="default" /> <ArticleCardSkeleton variant="default" /> </div>
                      ) : (
                          initialItems && initialItems.length > 0 ? (
                             <>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 50 }}
-                                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                                    transition={{ duration: 0.7, ease: "easeOut" as const }}
-                                >
-                                    <HubFilters
-                                        activeTypeFilter={activeTypeFilter}
-                                        onTypeFilterChange={setActiveTypeFilter}
-                                        activeSort={activeSort}
-                                        onSortChange={setActiveSort}
-                                    />
+                                <motion.div initial={{ opacity: 0, y: 50 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: "easeOut" as const }} >
+                                    <HubFilters activeTypeFilter={activeTypeFilter} onTypeFilterChange={setActiveTypeFilter} activeSort={activeSort} onSortChange={setActiveSort} />
                                 </motion.div>
-                                
-                                {/* REMOVED: layout prop */}
-                                <div 
-                                    className="content-grid gpu-cull"
-                                    style={{ paddingBottom: '6rem' }}
-                                >
+                                <div className="content-grid" style={{ paddingBottom: '6rem' }}>
                                     <AnimatePresence>
                                         {filteredAndSortedItems.length > 0 ? (
                                             filteredAndSortedItems.map(item => (
-                                                <motion.div
-                                                    key={item.id}
-                                                    // OPTIMIZATION: initial={false} to skip entrance animation
-                                                    initial={false}
-                                                    animate={{ opacity: 1 }}
-                                                    exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    style={{ height: '100%' }}
-                                                >
-                                                    <ArticleCard
-                                                        article={item}
-                                                        layoutIdPrefix={listLayoutIdPrefix}
-                                                    />
+                                                <motion.div key={item.id} initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ height: '100%' }}>
+                                                    <ArticleCard article={item} layoutIdPrefix={listLayoutIdPrefix} />
                                                 </motion.div>
                                             ))
-                                        ) : (
-                                                <motion.div 
-                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                                style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}}
-                                            >
-                                                لا يوجد محتوى يطابق بحثك.
-                                            </motion.div>
-                                        )}
+                                        ) : ( <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)'}} > لا يوجد محتوى يطابق بحثك. </motion.div> )}
                                     </AnimatePresence>
                                 </div>
                             </>
-                         ) : (
-                            <motion.div 
-                                initial={{ opacity: 0 }} 
-                                animate={{ opacity: 1 }} 
-                                transition={{ delay: 0.5 }}
-                                style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }}
-                            >
-                                <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p>
-                            </motion.div>
-                         )
+                         ) : ( <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-secondary)' }} > <p style={{ fontSize: '1.8rem' }}>لم يُنشر أي محتوى (مراجعات، أخبار، مقالات) هنا بعد.</p> </motion.div> )
                      )}
             </div>
         </div>
