@@ -101,7 +101,6 @@ export default function SocialNewsBodyEditor({
 
     // --- FORCE COLOR UPDATE ---
     // This effect manually reapplies the first-word coloring when the color prop changes.
-    // This fixes the issue where clicking the number (changing type) didn't update the text color immediately.
     useEffect(() => {
         if (!editor || !enableFirstWordColor || !firstWordColor || editor.isDestroyed) return;
 
@@ -158,7 +157,7 @@ export default function SocialNewsBodyEditor({
         textAlign: textAlign,
         textAlignLast: textAlign === 'justify' ? 'right' : undefined,
         direction: 'rtl',
-        fontFamily: "'Cairo', sans-serif",
+        fontFamily: "'Dystopian', 'Cairo', sans-serif",
         color: '#A0AEC0', 
         ...customStyle
     };
@@ -244,5 +243,3 @@ export default function SocialNewsBodyEditor({
         </div>
     );
 }
-
-

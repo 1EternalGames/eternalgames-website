@@ -5,10 +5,10 @@ import React, { useState, useRef, useEffect } from 'react';
 
 export default function EditableText({ 
     x, y, text, fontSize, align, style, onChange, isEditing, setEditing, width = 400,
-    fontFamily = "'Cairo', sans-serif", fontWeight = 700, lineHeight = 1.2,
+    fontFamily = "'Dystopian', 'Cairo', sans-serif", fontWeight = 700, lineHeight = 1.2,
     strokeWidth = 0, strokeColor = 'transparent', shadowStyle = {},
     inputStyle = {},
-    inputDy = 0 // NEW: Vertical offset adjustment for the input field
+    inputDy = 0 
 }: { 
     x: number, y: number, text: string, fontSize: number, align: 'start' | 'middle' | 'end', 
     style?: React.CSSProperties, onChange: (val: string) => void,
@@ -28,10 +28,6 @@ export default function EditableText({
     }, [isEditing]);
 
     let foreignX = x;
-    // Default text alignment logic (assuming RTL context primarily)
-    // align='middle' -> center
-    // align='start' -> right (for RTL)
-    // align='end' -> left (for RTL)
     const textAlign = align === 'middle' ? 'center' : (align === 'start' ? 'right' : 'left'); 
 
     if (align === 'middle') foreignX = x - (width / 2);
@@ -121,5 +117,3 @@ export default function EditableText({
         </g>
     );
 }
-
-

@@ -16,7 +16,8 @@ interface ReviewCardProsConsProps {
 export default function ReviewCardProsCons({ data, onDataChange, editingField, setEditingField }: ReviewCardProsConsProps) {
     const prosConsFontSize = 18;
     const prosConsLineHeight = 32;
-    const prosConsWidth = 455; 
+    // Reduced width from 455 to 445 to create space between text and the vertical line (at x=457)
+    const prosConsWidth = 445; 
     
     // Recalculate layout to determine startY positions
     const verdictFontSize = 20;
@@ -24,8 +25,10 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
     const verdictLines = useMemo(() => calculateWrappedLines(data.verdict, verdictFontSize, verdictWidth, 600), [data.verdict]);
     const verdictHeight = verdictLines.length * 35;
 
-    const GAP = 100;
-    const startY_Verdict = 320;
+    // Tightened GAP from 100 to 80
+    const GAP = 80;
+    // Lifted startY from 320 to 290 to match Verdict
+    const startY_Verdict = 250;
     const startY_Pros = startY_Verdict + verdictHeight + GAP; 
 
     const prosLayout = useMemo(() => {
@@ -57,10 +60,11 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
         <>
             {/* PROS */}
             <g transform={`translate(580, ${startY_Pros})`}>
-                <text x="460" y="-10" textAnchor="end" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="16" fill="#00FFF0">الإيجابيات</text>
+                <text x="460" y="-13" textAnchor="end" fontFamily="'Dystopian', 'Cairo', sans-serif" fontWeight="900" fontSize="22" fill="#00FFF0">الإيجابيات</text>
                 {prosLayout.map((item, index) => (
                     <g key={`pro-${index}`} transform={`translate(0, ${item.y})`}>
-                        <path d={`M 0,0 L 450,0 L 460,10 L 460,${item.height} L 0,${item.height} Z`} fill="url(#review-proGradient)"></path>
+                        {/* Modified path: Full rectangular block */}
+                        <path d={`M 0,0 L 460,0 L 460,${item.height} L 0,${item.height} Z`} fill="url(#review-proGradient)"></path>
                         <rect x="457" y="0" width="3" height={item.height} fill="#00FFF0" filter="url(#review-cyanGlow)"></rect>
                         
                         <foreignObject x="0" y="0" width={prosConsWidth} height={item.height + 10}>
@@ -78,8 +82,11 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
                                 customStyle={{
                                     lineHeight: `${prosConsLineHeight}px`,
                                     color: '#FFFFFF',
-                                    paddingTop: '2px'
+                                    paddingTop: '2px',
+                                    fontFamily: "'Dystopian', 'Cairo', sans-serif"
                                 }}
+                                enableFirstWordColor={true}
+                                firstWordColor="#00FFF0"
                             />
                         </foreignObject>
                     </g>
@@ -88,10 +95,11 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
 
             {/* CONS */}
             <g transform={`translate(580, ${startY_Cons})`}>
-                <text x="460" y="-10" textAnchor="end" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="16" fill="#FF0055">السلبيات</text>
+                <text x="460" y="-13" textAnchor="end" fontFamily="'Dystopian', 'Cairo', sans-serif" fontWeight="900" fontSize="22" fill="#FF0055">السلبيات</text>
                 {consLayout.map((item, index) => (
                     <g key={`con-${index}`} transform={`translate(0, ${item.y})`}>
-                        <path d={`M 0,0 L 450,0 L 460,10 L 460,${item.height} L 0,${item.height} Z`} fill="url(#review-conGradient)"></path>
+                        {/* Modified path: Full rectangular block */}
+                        <path d={`M 0,0 L 460,0 L 460,${item.height} L 0,${item.height} Z`} fill="url(#review-conGradient)"></path>
                         <rect x="457" y="0" width="3" height={item.height} fill="#FF0055" filter="url(#review-redGlow)"></rect>
                         
                         <foreignObject x="0" y="0" width={prosConsWidth} height={item.height + 10}>
@@ -109,8 +117,11 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
                                 customStyle={{
                                     lineHeight: `${prosConsLineHeight}px`,
                                     color: '#FFFFFF',
-                                    paddingTop: '2px'
+                                    paddingTop: '2px',
+                                    fontFamily: "'Dystopian', 'Cairo', sans-serif"
                                 }}
+                                enableFirstWordColor={true}
+                                firstWordColor="#FF0055"
                             />
                         </foreignObject>
                     </g>
@@ -119,5 +130,3 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
         </>
     );
 }
-
-

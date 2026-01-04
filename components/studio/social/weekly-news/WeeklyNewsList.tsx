@@ -37,12 +37,12 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
     };
 
     const renderColumn = (startIndex: number, xOffset: number) => {
-        const items = data.newsList.slice(startIndex, startIndex + 5);
+        const items = data.newsList.slice(startIndex, startIndex + 6);
         return (
             <g transform={`translate(${xOffset}, 70)`}>
                 {items.map((item, localIndex) => {
                     const globalIndex = startIndex + localIndex;
-                    const yPos = localIndex * 85;
+                    const yPos = localIndex * 75;
                     
                     const isImportant = !!item.isImportant;
                     const typeColor = TYPE_COLORS[item.type || 'official'];
@@ -96,7 +96,8 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                                     customStyle={{
                                         color: "#FFFFFF",
                                         fontWeight: 700,
-                                        lineHeight: 1.4
+                                        lineHeight: 1.4,
+                                        fontFamily: "'Dystopian', 'Cairo', sans-serif"
                                     }}
                                     enableFirstWordColor={true}
                                     firstWordColor={typeColor}
@@ -116,7 +117,7 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
              <g transform="translate(0, 5)">
                 <rect x="0" y="-15" width="1000" height="1" fill="#333"></rect>
                 <rect x="800" y="-17" width="200" height="4" fill="#00FFF0" filter="url(#wn-neonGlow)"></rect>
-                <text x="1000" y="30" direction="rtl" textAnchor="start" fontWeight="900" fontSize="28" fill="#FFF">بقية الأخبار</text>
+                <text x="1000" y="30" direction="rtl" textAnchor="start" fontWeight="900" fontSize="28" fill="#FFF" fontFamily="'Dystopian', 'Cairo', sans-serif">بقية الأخبار</text>
             </g>
 
             {/* Content Group (Shifted down to avoid overlap) */}
@@ -136,10 +137,8 @@ export default function WeeklyNewsList({ data, onChange }: Props) {
                 <path d="M 40,520 L 20,520 L 0,500 L 0,480" fill="none" stroke="#00FFF0" strokeWidth="2" filter="url(#wn-neonGlow)" />
 
                 {renderColumn(0, 520)}
-                {renderColumn(5, 20)}
+                {renderColumn(6, 20)}
             </g>
         </g>
     );
 }
-
-

@@ -8,6 +8,13 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     if (!item || (!item._id && !item.id)) {
         return null;
     }
+    
+    // THE FIX: Ensure slug is a valid string or null, never an empty string.
+    const slug = item.slug?.current ?? item.slug ?? null;
+    if (!slug) {
+        // If there's no slug, we can't link to it, so discard the item.
+        return null;
+    }
 
     // Defensive Image Extraction
     let imageAsset = item.mainImage?.asset || item.mainImageRef;
@@ -86,7 +93,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         primaryCreators = item.authors || item.reporters || [];
     }
 
-    const gameTitle = item.game?.title;
+    const gameTitle = item.game?.title || item.game; // Handle both object and string
     const gameSlug = item.game?.slug;
 
     // IMPORTANT: Pass through the raw content array so the store can use it
@@ -96,7 +103,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         type: item._type,
         id: item._id, 
         legacyId: item.legacyId || 0,
-        slug: item.slug?.current ?? item.slug ?? '',
+        slug: slug,
         game: gameTitle,
         gameSlug: gameSlug,
         title: item.title,

@@ -95,15 +95,24 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
 
     const flyingItems = useMemo(() => {
         const satellites = [];
-        if (item.game && item.gameSlug) {
+        if (item.game && typeof item.game === 'string' && item.gameSlug) {
             satellites.push({ label: item.game, link: `/games/${item.gameSlug}`, isKinetic: false });
         } else { satellites.push(null); }
 
-        if (item.category) {
+        // THE DEFINITIVE FIX: Handle all possible shapes for category and tags.
+        if (item.category && typeof item.category === 'string') {
             satellites.push({ label: translateTag(item.category), link: undefined, isKinetic: false });
-        } else if (item.tags && item.tags.length > 0) {
-             satellites.push({ label: translateTag(item.tags[0].title), link: `/tags/${item.tags[0].slug}`, isKinetic: false });
-        } else { satellites.push(null); }
+        } else if (Array.isArray(item.tags) && item.tags.length > 0) {
+            const firstTag = item.tags[0];
+            // Check if the first tag is an object with title and slug properties
+            if (firstTag && typeof firstTag === 'object' && firstTag.title && firstTag.slug) {
+                satellites.push({ label: translateTag(firstTag.title), link: `/tags/${firstTag.slug}`, isKinetic: false });
+            } else {
+                satellites.push(null);
+            }
+        } else {
+            satellites.push(null);
+        }
 
         satellites.push({ label: typeDisplayMap[item.type] || 'محتوى', link: undefined, isKinetic: false });
         return satellites;
@@ -309,11 +318,7 @@ const NewsGridCardComponent = ({ item, isPriority = false, layoutIdPrefix, varia
                                         exit={{ opacity: 0, scale: 0.4, x: 0, y: 0, rotate: 0, z: 0 }}
                                         transition={{ type: "spring", stiffness: 180, damping: 20, delay: i * 0.05 }}
                                         style={{ position: 'absolute', ...positionStyle, transformStyle: 'preserve-3d' }}
-                                        onClick={(e) => { 
-                                            e.stopPropagation(); 
-                                            // FIX: Propagate onClick for tags too to close search
-                                            if (onClick) onClick(e);
-                                        }}
+                                        onClick={(e) => e.stopPropagation()}
                                      >
                                          {sat.link ? (
                                              <KineticLink 

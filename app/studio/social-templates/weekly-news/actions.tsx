@@ -4,12 +4,24 @@
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 
+export interface SmartFillRelease {
+    _id: string;
+    title: string;
+    releaseDate: string;
+    platforms: string[];
+    imageUrl: string;
+    price?: string;
+    onGamePass?: boolean;
+    onPSPlus?: boolean;
+}
+
 export interface WeeklyNewsItem {
     _id: string;
     title: string;
     publishedAt: string;
     imageUrl: string;
     category?: string;
+    newsType?: 'official' | 'rumor' | 'leak'; // ADDED THIS
 }
 
 export interface WeekOption {
@@ -61,7 +73,8 @@ export async function getNewsForWeekAction(startDate: string, endDate: string): 
             title,
             publishedAt,
             "imageUrl": mainImage.asset->url,
-            "category": category->title
+            "category": category->title,
+            newsType // ADDED THIS
         }
     `;
 
@@ -76,5 +89,3 @@ export async function getNewsForWeekAction(startDate: string, endDate: string): 
         return [];
     }
 }
-
-

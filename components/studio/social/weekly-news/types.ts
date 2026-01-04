@@ -49,6 +49,5 @@ export interface WeeklyNewsTemplateData {
     hero: WeeklyHeroData;
     cards: WeeklyCardData[];
     newsList: WeeklyListItem[];
+    vibrance?: number; // ADDED
 }
-
-

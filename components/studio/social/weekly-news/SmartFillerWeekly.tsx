@@ -23,6 +23,10 @@ const ArrowUpIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 const ArrowDownIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 
 export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentData }: SmartFillerWeeklyProps) {
+    // Default to current month
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
     const [weeks, setWeeks] = useState<WeekOption[]>([]);
     const [selectedWeek, setSelectedWeek] = useState<WeekOption | null>(null);
     const [newsItems, setNewsItems] = useState<WeeklyNewsItem[]>([]);
@@ -49,7 +53,8 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
                     title: currentData.hero.title.replace(/<\/?[^>]+(>|$)/g, ""), // Strip HTML for list view
                     imageUrl: currentData.hero.image,
                     publishedAt: '', // Unknown
-                    category: currentData.hero.tag
+                    category: currentData.hero.tag,
+                    newsType: currentData.hero.badges.type, // HYDRATE TYPE
                 });
             }
 
@@ -60,7 +65,8 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
                     _id: c.sourceId || `manual-card-${c.id}`,
                     title: c.title.replace(/<\/?[^>]+(>|$)/g, ""),
                     imageUrl: c.image,
-                    publishedAt: ''
+                    publishedAt: '',
+                    newsType: c.badges.type // HYDRATE TYPE
                 } as WeeklyNewsItem;
             });
             setAssignedCards(newCards);
@@ -71,7 +77,8 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
                     _id: l.sourceId || `manual-list-${l.id}`,
                     title: l.text.replace(/<\/?[^>]+(>|$)/g, ""),
                     imageUrl: '', // List items usually don't show image in template, but we can't recover it if lost
-                    publishedAt: ''
+                    publishedAt: '',
+                    newsType: l.type // HYDRATE TYPE
                 },
                 isImportant: l.isImportant
             }));
@@ -126,7 +133,7 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
         if (exists) {
             setAssignedList(prev => prev.filter(l => l.item._id !== item._id));
         } else {
-            if (assignedList.length >= 10) return;
+            if (assignedList.length >= 12) return;
             setAssignedList([...assignedList, { item, isImportant: false }]);
         }
     };
@@ -177,19 +184,23 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
                 image: assignedHero.imageUrl || '',
                 tag: 'خبر عاجل',
                 imageSettings: { x: 0, y: 0, scale: 1 },
-                // Preserve badges if not fully replacing logic, but for simplicity we reset badges on new assignment
-                badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
+                // THE FIX: Apply the newsType from the fetched item
+                badges: { ...currentData.hero.badges, type: assignedHero.newsType || 'official' }
             };
         }
 
-        const validCards = assignedCards.map((c, i) => c ? ({
-            sourceId: c._id,
-            id: i + 1,
-            title: c.title,
-            image: c.imageUrl || '',
-            imageSettings: { x: 0, y: 0, scale: 1 },
-            badges: { type: 'official', xbox: false, playstation: false, nintendo: false, pc: false }
-        }) : null).filter(Boolean);
+        const validCards = assignedCards.map((c, i) => {
+            if (!c) return null;
+            return {
+                sourceId: c._id,
+                id: i + 1,
+                title: c.title,
+                image: c.imageUrl || '',
+                imageSettings: { x: 0, y: 0, scale: 1 },
+                // THE FIX: Apply the newsType from the fetched item
+                badges: { ...(currentData.cards[i]?.badges || {}), type: c.newsType || 'official' }
+            };
+        }).filter(Boolean);
         
         if (validCards.length > 0) {
             newData.cards = validCards;
@@ -202,13 +213,17 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
                 number: (i + 5).toString().padStart(2, '0'),
                 text: item.item.title,
                 isImportant: item.isImportant,
-                type: 'official' // Reset type on smart fill apply
+                // THE FIX: Apply the newsType from the fetched item
+                type: item.item.newsType || 'official'
             }));
         }
 
         onApply(newData);
         onClose();
     };
+    
+    // THE FIX: No longer need selectedIds. We count from the assigned lists directly.
+    const totalSelected = (assignedHero ? 1 : 0) + assignedCards.filter(Boolean).length + assignedList.length;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} style={{ maxWidth: '95vw', width: '1200px', height: '85vh', display: 'flex', flexDirection: 'column', padding: '0' }}>
@@ -289,12 +304,17 @@ export default function SmartFillerWeekly({ isOpen, onClose, onApply, currentDat
                 </div>
             </div>
             
-            <div className={modalStyles.modalActions} style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)', justifyContent: 'flex-end', gap: '1rem' }}>
-                <button onClick={onClose} className="outline-button">إلغاء</button>
-                <button onClick={handleFinalApply} className="primary-button">تطبيق التغييرات</button>
+            <div className={modalStyles.modalActions} style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: totalSelected >= 16 ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 'bold' }}>
+                    تم تحديد {totalSelected} / 16
+                </span>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button onClick={onClose} className="outline-button">إلغاء</button>
+                    <button onClick={handleFinalApply} className="primary-button" disabled={totalSelected === 0}>
+                        تطبيق ({totalSelected})
+                    </button>
+                </div>
             </div>
         </Modal>
     );
 }
-
-

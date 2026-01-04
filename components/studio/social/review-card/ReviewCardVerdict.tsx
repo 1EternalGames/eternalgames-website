@@ -20,12 +20,13 @@ export default function ReviewCardVerdict({ data, onDataChange, editingField, se
     
     const verdictLines = useMemo(() => calculateWrappedLines(data.verdict, verdictFontSize, verdictWidth, 600), [data.verdict]);
     const verdictHeight = verdictLines.length * verdictLineHeight;
-    const startY_Verdict = 320;
+    // Lifted from 320 to 290
+    const startY_Verdict = 250;
 
     return (
         <g transform={`translate(580, ${startY_Verdict})`}>
             <rect x="456" y="0" width="4" height={verdictHeight} fill="#00FFF0" filter="url(#review-cyanGlow)"></rect>
-            <text x="445" y="-10" textAnchor="end" fontFamily="'Cairo', sans-serif" fontWeight="900" fontSize="16" fill="#00FFF0">الملخص</text>
+            <text x="445" y="-10" textAnchor="end" fontFamily="'Dystopian', 'Cairo', sans-serif" fontWeight="900" fontSize="22" fill="#00FFF0">الملخص</text>
             
             <foreignObject x="20" y="0" width={420} height={verdictHeight + 50}>
                 <SocialNewsBodyEditor
@@ -38,13 +39,11 @@ export default function ReviewCardVerdict({ data, onDataChange, editingField, se
                     customStyle={{
                         lineHeight: `${verdictLineHeight}px`,
                         color: '#A0AEC0',
-                        fontWeight: 700
+                        fontWeight: 700,
+                        fontFamily: "'Dystopian', 'Cairo', sans-serif"
                     }}
-                    // Disable auto-english colors for verdict if desired, or keep it. Keeping it as it matches "text body" logic.
                 />
             </foreignObject>
         </g>
     );
 }
-
-

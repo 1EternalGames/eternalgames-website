@@ -242,8 +242,8 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                     fontSize={30}
                     align="middle"
                     style={{ fill: "#050505" }}
-                    inputStyle={{ direction: 'ltr', fontFamily: "'Cairo', sans-serif" }}
-                    fontFamily="'Cairo', sans-serif"
+                    inputStyle={{ direction: 'ltr', fontFamily: "'Dystopian', 'Cairo', sans-serif" }}
+                    fontFamily="'Dystopian', 'Cairo', sans-serif"
                     fontWeight={900}
                     onChange={(val) => onChange({ day: val })}
                     isEditing={editingField === 'day'}
@@ -290,7 +290,7 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                                     text={badge.text}
                                     fontSize={16}
                                     align="middle"
-                                    style={{ fill: badge.color, fontFamily: "'Cairo', sans-serif", fontWeight: 'bold' }}
+                                    style={{ fill: badge.color, fontFamily: "'Dystopian', 'Cairo', sans-serif", fontWeight: 'bold' }}
                                     inputStyle={{ direction: 'ltr' }}
                                     onChange={updatePriceText}
                                     isEditing={editingField === 'price'}
@@ -304,7 +304,7 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                                     fontWeight="bold" 
                                     fontSize="12" 
                                     fill={textColor}
-                                    fontFamily="'Cairo', sans-serif" 
+                                    fontFamily="'Dystopian', 'Cairo', sans-serif" 
                                     pointerEvents="none"
                                 >
                                     {badge.text}
@@ -351,7 +351,7 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                     textAlign="center"
                     customStyle={{ 
                         color: "#FFFFFF", 
-                        fontFamily: "'Cairo', sans-serif",
+                        fontFamily: "'Dystopian', 'Cairo', sans-serif",
                         fontWeight: 900,
                         textTransform: "none",
                         filter: "drop-shadow(0 2px 4px #000)",

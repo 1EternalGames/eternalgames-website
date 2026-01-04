@@ -28,7 +28,17 @@ const DEFAULT_DATA: ReviewTemplateData = {
     platforms: { PC: true, PS5: false, XSX: false, NSW: false },
     techSpecs: { res: 'RES: 4K', fps: 'FPS: 60', hdr: 'HDR: ON' },
     image: 'https://images.unsplash.com/photo-1614145121029-83a9f7cafd8e?q=80&w=1080&auto=format&fit=crop',
-    imageSettings: { x: 0, y: 0, scale: 1 }
+    imageSettings: { x: 0, y: 0, scale: 1 },
+    vibrance: 100,
+    tintStrength: 20,
+    creditsOpacity: 100, // Default Full Opacity
+    gradientSettings: {
+        active: true,
+        x: 0,
+        y: 0,
+        opacity: 50,
+        scale: 1.5
+    }
 };
 
 const ChevronDownIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>;
@@ -37,6 +47,8 @@ const CanvasIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="n
 const DownloadIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 const TrashIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+const MoveIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M9 19l3 3 3-3"/><path d="M2 12h20M12 2v20"/></svg>;
+const ImageIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
 
 export default function ReviewCardEditor() {
     useBodyClass('editor-active');
@@ -48,6 +60,9 @@ export default function ReviewCardEditor() {
     const [isExporting, startExport] = useTransition();
     const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const toast = useToast();
+    
+    // NEW: Editing Mode State (Image or Gradient)
+    const [editMode, setEditMode] = useState<'image' | 'gradient'>('image');
     
     const [activeTab, setActiveTab] = useState<'sidebar' | 'canvas'>('canvas');
     const [isMobile, setIsMobile] = useState(false);
@@ -172,6 +187,109 @@ export default function ReviewCardEditor() {
                             </AnimatePresence>
                         </div>
 
+                        {/* VISUAL SETTINGS */}
+                        <div className={styles.controlGroup}>
+                            <label className={styles.label}>تحسين الصورة (Visuals)</label>
+                            
+                            {/* VIBRANCE */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <span style={{fontSize: '1.2rem', color: '#ccc'}}>التشبع (Vibrance)</span>
+                                <span style={{ fontSize: '1.2rem', color: 'var(--accent)', fontFamily: 'monospace' }}>{data.vibrance ?? 100}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="200"
+                                value={data.vibrance ?? 100}
+                                onChange={(e) => updateData({ vibrance: parseInt(e.target.value) })}
+                                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                            />
+
+                            {/* TINT (Global) */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', marginBottom: '0.5rem' }}>
+                                <span style={{fontSize: '1.2rem', color: '#ccc'}}>تشبع السيان (Global Tint)</span>
+                                <span style={{ fontSize: '1.2rem', color: 'var(--accent)', fontFamily: 'monospace' }}>{data.tintStrength ?? 0}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={data.tintStrength ?? 0}
+                                onChange={(e) => updateData({ tintStrength: parseInt(e.target.value) })}
+                                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                            />
+                            
+                             {/* CREDITS OPACITY (NEW) */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', marginBottom: '0.5rem' }}>
+                                <span style={{fontSize: '1.2rem', color: '#ccc'}}>شفافية الحقوق (Credits)</span>
+                                <span style={{ fontSize: '1.2rem', color: 'var(--accent)', fontFamily: 'monospace' }}>{data.creditsOpacity ?? 100}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={data.creditsOpacity ?? 100}
+                                onChange={(e) => updateData({ creditsOpacity: parseInt(e.target.value) })}
+                                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                            />
+                            
+                            {/* NEW: GRADIENT SETTINGS */}
+                            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                    <label className={styles.label} style={{ margin: 0 }}>إضاءة السيان (Spotlight)</label>
+                                    <div className={styles.typeGrid} style={{ gridTemplateColumns: '1fr 1fr', width: 'auto' }}>
+                                         <button 
+                                            className={`${styles.typeButton} ${editMode === 'image' ? styles.active : ''}`}
+                                            onClick={() => setEditMode('image')}
+                                            title="تحريك الصورة"
+                                            style={{ padding: '0.5rem', display: 'flex', justifyContent: 'center' }}
+                                        >
+                                            <ImageIcon />
+                                        </button>
+                                        <button 
+                                            className={`${styles.typeButton} ${editMode === 'gradient' ? styles.active : ''}`}
+                                            onClick={() => setEditMode('gradient')}
+                                            title="تحريك الإضاءة"
+                                            style={{ padding: '0.5rem', display: 'flex', justifyContent: 'center' }}
+                                        >
+                                            <MoveIcon />
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <span style={{fontSize: '1.2rem', color: '#ccc'}}>كثافة الإضاءة</span>
+                                    <span style={{ fontSize: '1.2rem', color: 'var(--accent)', fontFamily: 'monospace' }}>{data.gradientSettings?.opacity ?? 50}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={data.gradientSettings?.opacity ?? 50}
+                                    onChange={(e) => updateData({ 
+                                        gradientSettings: { ...data.gradientSettings!, opacity: parseInt(e.target.value) } 
+                                    })}
+                                    style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                                />
+                                
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem', marginBottom: '0.5rem' }}>
+                                    <span style={{fontSize: '1.2rem', color: '#ccc'}}>حجم الإضاءة</span>
+                                    <span style={{ fontSize: '1.2rem', color: 'var(--accent)', fontFamily: 'monospace' }}>{data.gradientSettings?.scale ?? 1.5}x</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0.5"
+                                    max="3"
+                                    step="0.1"
+                                    value={data.gradientSettings?.scale ?? 1.5}
+                                    onChange={(e) => updateData({ 
+                                        gradientSettings: { ...data.gradientSettings!, scale: parseFloat(e.target.value) } 
+                                    })}
+                                    style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                                />
+                            </div>
+                        </div>
+
                         <div className={styles.controlGroup}>
                             <label className={styles.label}>العناوين</label>
                             <input className={styles.input} value={stripHtml(data.gameTitleAr)} onChange={e => updateData({ gameTitleAr: e.target.value })} placeholder="الاسم بالعربية" />
@@ -237,6 +355,7 @@ export default function ReviewCardEditor() {
                                 data={data} 
                                 onDataChange={updateData} 
                                 scale={scale}
+                                editMode={editMode}
                             />
                         </div>
                     </div>
@@ -262,5 +381,3 @@ export default function ReviewCardEditor() {
         </div>
     );
 }
-
-

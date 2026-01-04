@@ -24,12 +24,26 @@ export interface ReviewTemplateData {
     };
     image: string;
     imageSettings: { x: number; y: number; scale: number };
+    
+    // VISUAL SETTINGS
+    vibrance?: number; // 0-200
+    tintStrength?: number; // 0-100 (Global Wash)
+    creditsOpacity?: number; // 0-100 (New)
+    
+    // NEW: Movable Gradient Settings
+    gradientSettings?: {
+        active: boolean;
+        x: number;
+        y: number;
+        opacity: number;
+        scale: number;
+    };
 }
 
 export interface ReviewCardCanvasProps {
     data: ReviewTemplateData;
     onDataChange: (newData: Partial<ReviewTemplateData>) => void;
     scale?: number;
+    // New prop to control what is being dragged
+    editMode?: 'image' | 'gradient'; 
 }
-
-

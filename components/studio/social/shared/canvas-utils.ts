@@ -7,7 +7,7 @@ export const stripHtml = (html: string) => {
     return tmp.textContent || tmp.innerText || "";
 };
 
-export const calculateWrappedLines = (text: string, fontSize: number, maxWidth: number, fontWeight: number | string = 700, fontFamily: string = "'Cairo', sans-serif") => {
+export const calculateWrappedLines = (text: string, fontSize: number, maxWidth: number, fontWeight: number | string = 700, fontFamily: string = "'Dystopian', 'Cairo', sans-serif") => {
     if (typeof document === 'undefined') return [text];
     
     // STRIP HTML TAGS
@@ -36,5 +36,3 @@ export const calculateWrappedLines = (text: string, fontSize: number, maxWidth: 
     lines.push(currentLine);
     return lines;
 };
-
-

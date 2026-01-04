@@ -12,6 +12,8 @@ async function getFontStyles() {
         { family: 'Cairo', weight: '500', src: '/fonts/Cairo-Medium.ttf' },
         { family: 'Cairo', weight: '700', src: '/fonts/Cairo-Bold.ttf' },
         { family: 'Cairo', weight: '900', src: '/fonts/Cairo-Black.ttf' },
+        // Add Dystopian with unicode range logic in CSS below
+        { family: 'Dystopian', weight: '400', src: '/fonts/SDDystopianFull.ttf' },
     ];
 
     let css = '';
@@ -33,15 +35,28 @@ async function getFontStyles() {
             });
 
             // Generate CSS Rule
-            // We map this font to 'Cairo'
-            css += `
-                @font-face {
-                    font-family: '${font.family}';
-                    font-style: normal;
-                    font-weight: ${font.weight};
-                    src: url(${base64}) format('truetype');
-                }
-            `;
+            if (font.family === 'Dystopian') {
+                 // Special handling for Dystopian with Unicode Range
+                 css += `
+                    @font-face {
+                        font-family: '${font.family}';
+                        font-style: normal;
+                        font-weight: ${font.weight};
+                        src: url(${base64}) format('truetype');
+                        unicode-range: U+002E, U+0030-003A, U+0041-005A, U+0061-007A;
+                    }
+                `;
+            } else {
+                // Default handling for Cairo
+                css += `
+                    @font-face {
+                        font-family: '${font.family}';
+                        font-style: normal;
+                        font-weight: ${font.weight};
+                        src: url(${base64}) format('truetype');
+                    }
+                `;
+            }
 
             // --- ALIASING ---
             // Map 'Anton' (Impact-style) to Cairo-Black for consistency if Arabic is used there
@@ -127,10 +142,11 @@ export async function downloadElementAsImage(
     // 2. Inject Local Fonts
     const fontStyles = await getFontStyles();
     
-    // Critical Styles to force Cairo
+    // Critical Styles to force Font Stack
+    // Uses the new Dystopian -> Cairo cascade
     const criticalStyles = `
         text, input, div, span, p, foreignObject { 
-            font-family: 'Cairo', sans-serif !important; 
+            font-family: 'Dystopian', 'Cairo', sans-serif !important; 
         } 
         .social-editor-content p { margin: 0 !important; }
         .variant-hero p { margin: 0; font-size: 0.55em !important; color: #00FFF0 !important; line-height: 1.4 !important; font-weight: 700; }

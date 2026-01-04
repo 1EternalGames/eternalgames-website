@@ -156,7 +156,7 @@ const SingleCard = ({
                     <g key={i} onClick={(e) => { e.stopPropagation(); if (badge.type === 'type') toggleBadgeType(); }} style={{ cursor: 'pointer' }}>
                         <path d={badge.shape} fill={badge.color} stroke="none" />
                         {badge.type === 'type' ? (
-                            <text x={badge.cx} y={badge.y + 18} textAnchor="middle" fill="#000" fontWeight="900" fontSize="12" fontFamily="'Cairo', sans-serif">
+                            <text x={badge.cx} y={badge.y + 18} textAnchor="middle" fill="#000" fontWeight="900" fontSize="12" fontFamily="'Dystopian', 'Cairo', sans-serif">
                                 {badge.label}
                             </text>
                         ) : (
@@ -195,7 +195,8 @@ const SingleCard = ({
                     customStyle={{
                         color: "#FFFFFF",
                         fontWeight: 700,
-                        textShadow: "0 2px 4px #000"
+                        textShadow: "0 2px 4px #000",
+                        fontFamily: "'Dystopian', 'Cairo', sans-serif"
                     }}
                     stylingVariant="card"
                     disableAutoEnglish
@@ -226,5 +227,3 @@ export default function WeeklyNewsMainCards({ data, onChange, scale }: Props) {
         </g>
     );
 }
-
-

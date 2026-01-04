@@ -91,7 +91,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                         onChange={() => {}}
                         isEditing={false}
                         setEditing={() => {}}
-                        style={{ fill: "#FFFFFF", letterSpacing: '2px', filter: "drop-shadow(0 0 10px rgba(255,255,255,0.4))" }}
+                        style={{ fill: "#FFFFFF", letterSpacing: '2px', filter: "drop-shadow(0 0 10px rgba(255,255,255,0.4))", fontFamily: "'Dystopian', 'Cairo', sans-serif" }}
                         width={400}
                     />
                     
@@ -103,7 +103,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
                         onChange={(val) => onDataChange({ month: val })}
                         isEditing={editingField === 'month'}
                         setEditing={(val) => setEditingField(val ? 'month' : null)}
-                        style={{ fill: "url(#titleGradient)", textTransform: 'uppercase', filter: "url(#neonGlow)" }}
+                        style={{ fill: "url(#titleGradient)", textTransform: 'uppercase', filter: "url(#neonGlow)", fontFamily: "'Dystopian', 'Cairo', sans-serif" }}
                         width={600}
                     />
     
@@ -129,7 +129,7 @@ export default function MonthlyGamesCanvas({ data, onDataChange, scale = 1 }: Mo
 
                 {/* WATERMARK */}
                 <g transform="translate(540, 1345)">
-                    <text x="0" y="-12" textAnchor="middle" fontWeight="bold" fontSize="16" fill="#00FFF0" fontFamily="'Cairo', sans-serif">1EternalGames // @MovisionX@</text>
+                    <text x="0" y="-12" textAnchor="middle" fontWeight="bold" fontSize="16" fill="#00FFF0" fontFamily="'Dystopian', 'Cairo', sans-serif">1EternalGames // @MovisionX@</text>
                 </g>
 
                 <rect width="100%" height="100%" filter="url(#mg-grain)" opacity="0.06" style={{ mixBlendMode: 'overlay' }} pointerEvents="none"></rect>

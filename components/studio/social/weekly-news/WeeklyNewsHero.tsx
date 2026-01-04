@@ -96,6 +96,7 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
         const DIAGONAL_OFFSET = 15;
         let currentY = 0;
         let prevBottomWidth = 0;
+        
         const RIGHT_EDGE = 1080; 
 
         return list.map((b, i) => {
@@ -160,7 +161,7 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                     <g key={i} onClick={(e) => { e.stopPropagation(); if (badge.type === 'type') toggleBadgeType(); }} style={{ cursor: 'pointer' }}>
                         <path d={badge.shape} fill={badge.color} stroke="none" />
                         {badge.type === 'type' ? (
-                            <text x={badge.cx} y={badge.y + 20} textAnchor="middle" fill="#000" fontWeight="900" fontSize="14" fontFamily="'Cairo', sans-serif">
+                            <text x={badge.cx} y={badge.y + 20} textAnchor="middle" fill="#000" fontWeight="900" fontSize="14" fontFamily="'Dystopian', 'Cairo', sans-serif">
                                 {badge.label}
                             </text>
                         ) : (
@@ -200,7 +201,8 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
                             color: "#FFFFFF",
                             fontWeight: 900,
                             textShadow: "0 2px 10px rgba(0,0,0,0.5)",
-                            lineHeight: 1.1
+                            lineHeight: 1.1,
+                            fontFamily: "'Dystopian', 'Cairo', sans-serif"
                         }}
                         autoHeight
                         stylingVariant="hero"
@@ -211,5 +213,3 @@ export default function WeeklyNewsHero({ data, onChange, scale }: Props) {
         </g>
     );
 }
-
-
