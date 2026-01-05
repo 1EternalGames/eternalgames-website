@@ -33,6 +33,13 @@ export default function ReviewCardCanvas({ data, onDataChange, scale = 1, editMo
     // Default Opacity: 100 (1.0)
     const creditsOpacityValue = (data.creditsOpacity ?? 100) / 100;
 
+    // Diamond Path Helper
+    // Draws a diamond shape centered at cx, cy with size s
+    const drawDiamond = (cx: number, cy: number, s: number) => {
+        const h = s / 2;
+        return `M ${cx},${cy - h} L ${cx + h},${cy} L ${cx},${cy + h} L ${cx - h},${cy} Z`;
+    };
+
     return (
         <div 
             className="canvas-container"
@@ -111,16 +118,25 @@ export default function ReviewCardCanvas({ data, onDataChange, scale = 1, editMo
                 />
                 
                 {/* --- CREDITS FOOTER (Option 1: Cyber Diamonds) --- */}
+                {/* FIXED: Removed rotation transforms. Used explicit diamond paths. */}
                 <g transform="translate(45, 1295)" style={{ opacity: creditsOpacityValue }}>
-                    {/* Left Diamond */}
-                    <rect x="27" y="-4" width="6" height="6" fill="#00FFF0" transform="rotate(45 3 27)" filter="url(#review-cyanGlow)" />
+                    {/* Left Diamond: Positioned relative to text start */}
+                    <path 
+                        d={drawDiamond(35, 25, 12)} 
+                        fill="#00FFF0" 
+                        filter="url(#review-cyanGlow)" 
+                    />
                     
-                    {/* Right Diamond (Faded) */}
-                    <rect x="352" y="-40" width="6" height="6" fill="#00FFF0" transform="rotate(45 293 27)" opacity="1" />
+                    {/* Right Diamond: Positioned relative to text end */}
+                    <path 
+                        d={drawDiamond(385, 25, 12)} 
+                        fill="#00FFF0" 
+                    />
 
                     <text 
-                        x="55" 
+                        x="210" 
                         y="30" 
+                        textAnchor="middle"
                         fill="#00FFF0" 
                         fontSize="16" 
                         fontFamily="'Cairo', sans-serif" 

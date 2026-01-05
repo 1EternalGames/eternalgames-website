@@ -13,7 +13,7 @@ export default function ReviewCardFrame({ enChar }: { enChar: string }) {
                 d={framePathD} 
                 fill="none" 
                 stroke="#00FFF0" 
-                strokeWidth="4" 
+                strokeWidth="9" 
                 filter="url(#review-cyanGlow)"
                 pointerEvents="none"
             />
@@ -28,11 +28,11 @@ export default function ReviewCardFrame({ enChar }: { enChar: string }) {
             />
             
             <g stroke="#556070" strokeWidth="1">
-                <line x1="500" y1="440" x2="580" y2="440"></line> <rect x="520" y="435" width="10" height="10" fill="#00FFF0"></rect>
-                <line x1="500" y1="900" x2="580" y2="900"></line> <rect x="550" y="895" width="10" height="10" fill="#00FFF0"></rect>
+                <line x1="500" y1="440" x2="580" y2="440"></line> <rect x="530" y="435" width="10" height="10" fill="#00FFF0"></rect>
+                <line x1="500" y1="900" x2="580" y2="900"></line> <rect x="530" y="895" width="10" height="10" fill="#00FFF0"></rect>
             </g>
 
-            <rect width="100%" height="100%" filter="url(#review-grain)" opacity="0.08" pointerEvents="none" style={{ mixBlendMode: 'overlay' }}></rect>
+            <rect width="100%" height="100%" filter="url(#review-grain)" opacity="0.2" pointerEvents="none" style={{ mixBlendMode: 'overlay' }}></rect>
         </>
     );
 }

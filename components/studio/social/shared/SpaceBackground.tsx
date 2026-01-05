@@ -188,16 +188,19 @@ export default function SpaceBackground() {
                 <circle cx="500" cy="950" r="2.5" fill="#FFF" opacity="0.7"></circle>
                 
                 <circle cx="500" cy="200" r="3" fill="#00FFF0" opacity="0.8"></circle>
-                <circle cx="1000" cy="500" r="4" fill="#00FFF0" opacity="0.6"></circle>
+                {/* REMOVED: Overlapping Cyan stars that interfere with text visibility */}
+                {/* <circle cx="1000" cy="500" r="4" fill="#00FFF0" opacity="0.6"></circle> */}
                 <circle cx="1700" cy="900" r="3.5" fill="#00FFF0" opacity="0.8"></circle>
                 <circle cx="1400" cy="300" r="2" fill="#00FFF0" opacity="0.9"></circle>
-                <circle cx="600" cy="600" r="3.2" fill="#00FFF0" opacity="0.8"></circle>
+                {/* REMOVED: Overlapping Cyan star */}
+                {/* <circle cx="600" cy="600" r="3.2" fill="#00FFF0" opacity="0.8"></circle> */}
                 <circle cx="1850" cy="500" r="3" fill="#00FFF0" opacity="0.9"></circle>
-                <circle cx="900" cy="900" r="3.5" fill="#00FFF0" opacity="0.8"></circle>
+                {/* REMOVED: Overlapping Cyan star */}
+                {/* <circle cx="900" cy="900" r="3.5" fill="#00FFF0" opacity="0.8"></circle> */}
                 <circle cx="50" cy="50" r="3" fill="#00FFF0" opacity="0.9"></circle>
             </g>
 
-            {/* 6. OVERLAYS (Scanlines REMOVED) */}
+            {/* 6. OVERLAYS */}
             <rect width="110%" height="110%" fill="url(#sb_scratchPattern)" opacity="0.4"></rect>
             {/* REMOVED: Scanline overlay rect */}
             <rect width="100%" height="100%" fill="url(#sb_vignette)"></rect>

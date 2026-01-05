@@ -32,7 +32,8 @@ export default function ReviewCardScore({ data, onDataChange, editingField, setE
 
     // ------------------------------------------------
 
-    const scoreNum = parseFloat(stripHtml(data.score)) || 0;
+    const rawScoreText = stripHtml(data.score).trim();
+    const scoreNum = parseFloat(rawScoreText) || 0;
     
     // Base Values
     const BASE_RX = 220;
@@ -69,18 +70,27 @@ export default function ReviewCardScore({ data, onDataChange, editingField, setE
     const starsFront = stars.filter(s => s.y >= 0);
 
     // --- NEW DESIGN: Minimalist HUD Frame (Sharpened) ---
-    const frameSize = 65 * PLANET_WIDTH_MULTIPLIER; 
+    
+    // [CONTROL] DYNAMIC WIDTH LOGIC
+    // If text length > 1 (e.g. "10" or "9.5"), use wide width (85).
+    // If text length <= 1 (e.g. "9"), use narrow width (65).
+    const isWideScore = rawScoreText.length > 1;
+    const BASE_FRAME_WIDTH = isWideScore ? 85 : 65; 
+    
+    const BASE_FRAME_HEIGHT = 65; // Distance from center to top/bottom
+
+    const frameX = BASE_FRAME_WIDTH * PLANET_WIDTH_MULTIPLIER; 
+    const frameY = BASE_FRAME_HEIGHT; 
+
     const chamfer = 12; // Tighter, sharper cut 
 
     // Leg lengths
     const bigLeg = 22;   
 
     // 1. Neon Accents (Top-Left & Bottom-Right Only) - Standard Brackets
-    const accentTL = `M ${-frameSize},${-frameSize + chamfer + bigLeg} L ${-frameSize},${-frameSize + chamfer} L ${-frameSize + chamfer},${-frameSize} L ${-frameSize + chamfer + bigLeg},${-frameSize}`;
-    const accentBR = `M ${frameSize},${frameSize - chamfer - bigLeg} L ${frameSize},${frameSize - chamfer} L ${frameSize - chamfer},${frameSize} L ${frameSize - chamfer - bigLeg},${frameSize}`;
+    const accentTL = `M ${-frameX},${-frameY + chamfer + bigLeg} L ${-frameX},${-frameY + chamfer} L ${-frameX + chamfer},${-frameY} L ${-frameX + chamfer + bigLeg},${-frameY}`;
+    const accentBR = `M ${frameX},${frameY - chamfer - bigLeg} L ${frameX},${frameY - chamfer} L ${frameX - chamfer},${frameY} L ${frameX - chamfer - bigLeg},${frameY}`;
     
-    const fontStack = data.font === 'cairo' ? "'Cairo', sans-serif" : "'Dystopian', 'Cairo', sans-serif";
-
     return (
         // Position: Centered in the right column (approx x=810)
         <g transform={`translate(810, ${SCORE_GROUP_Y_POSITION})`}>
@@ -114,10 +124,9 @@ export default function ReviewCardScore({ data, onDataChange, editingField, setE
                 />
             ))}
 
-            {/* The Main Score Container - FRAME REMOVED */}
+            {/* The Main Score Container */}
             <g>
                 {/* 1. Neon Corner Accents (Big - TL/BR Only) */}
-                {/* strokeLinejoin="miter" creates sharp corners */}
                 <path 
                     d={accentTL} 
                     fill="none" 

@@ -14,18 +14,23 @@ import {
     paginatedNewsQuery,
     cardListProjection,
     batchGameHubsQuery,
-    gamePageDataQuery // IMPORTED
+    gamePageDataQuery 
 } from '@/lib/sanity.queries';
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
-// ... (Other batch actions remain unchanged) ...
+// OPTIMIZATION NOTE: 
+// For batch fetching and pagination, we explicitly set { cache: 'no-store' }.
+// This prevents Next.js from creating a persistent Data Cache entry for every single
+// offset/limit combination (which causes the 5k+ writes/day issue).
+// We rely on Sanity's Edge CDN (configured in client) for speed.
 
 export async function batchFetchFullContentAction(ids: string[]) {
   if (!ids || ids.length === 0) return [];
   try {
     const query = groq`*[_id in $ids] { ${fullDocProjection} }`;
-    const rawData = await client.fetch(query, { ids });
+    // FIX: Disable Data Cache writes for arbitrary ID sets
+    const rawData = await client.fetch(query, { ids }, { cache: 'no-store' });
     const enrichedData = await enrichContentList(rawData);
     const dataWithToc = enrichedData.map((item: any) => {
         const tocHeadings = extractHeadingsFromContent(item.content);
@@ -48,7 +53,8 @@ export async function batchFetchTagsAction(slugs: string[]) {
             _id, title, "slug": slug.current,
             "items": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && (references(^._id) || category._ref == ^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
         }`;
-        const rawTags = await client.fetch(query, { slugs });
+        // FIX: Disable Data Cache
+        const rawTags = await client.fetch(query, { slugs }, { cache: 'no-store' });
         const enrichedTags = await Promise.all(rawTags.map(async (tag: any) => {
             const items = await enrichContentList(tag.items || []);
             return { ...tag, items };
@@ -67,7 +73,8 @@ export async function batchFetchCreatorsAction(creatorIds: string[]) {
             _id, name, prismaUserId, username, image, bio,
             "linkedContent": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references(^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
         }`;
-        const rawCreators = await client.fetch(query, { ids: creatorIds });
+        // FIX: Disable Data Cache
+        const rawCreators = await client.fetch(query, { ids: creatorIds }, { cache: 'no-store' });
         const enrichedCreators = await Promise.all(rawCreators.map(async (c: any) => {
             const items = await enrichContentList(c.linkedContent || []);
             return { ...c, linkedContent: items };
@@ -91,23 +98,20 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             
             if (!user) return null;
 
-            // FIX: Fetch bio from Sanity as well
             const creatorDocs = await client.fetch<{ _id: string, bio?: string }[]>(
                 `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id, bio}`,
                 { prismaUserId: user.id }
             );
             
             const creatorIds = creatorDocs.map(d => d._id);
-            
-            // FIX: Use Sanity bio if Prisma bio is missing
             const sanityBio = creatorDocs.find(d => d.bio)?.bio;
             const finalBio = user.bio || sanityBio || null;
             
             let enrichedContent: any[] = [];
             
             if (creatorIds.length > 0) {
-                // Fetch content referencing ANY of the creator's documents
                 const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc)[0...24] { ${cardListProjection} }`;
+                // Keep this cached via unstable_cache wrapper, but internal fetch doesn't need double caching
                 const rawContent = await client.fetch(query, { creatorIds });
                 enrichedContent = await enrichContentList(rawContent);
             }
@@ -118,7 +122,7 @@ export const fetchCreatorByUsernameAction = unstable_cache(
                 name: user.name,
                 username: user.username,
                 image: user.image, 
-                bio: finalBio, // Use resolved bio
+                bio: finalBio,
                 linkedContent: enrichedContent,
                 contentLoaded: true
             };
@@ -128,8 +132,7 @@ export const fetchCreatorByUsernameAction = unstable_cache(
             return null;
         }
     },
-    ['creator-profile-by-username-v3'], // Bump cache key
-    // FIX: Added 'content' tag so this cache invalidates when new content is published
+    ['creator-profile-by-username-v3'],
     { tags: ['creator-profile', 'content'] }
 );
 
@@ -137,7 +140,8 @@ export async function fetchGameContentAction(slug: string) {
     if (!slug) return [];
     try {
         const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`;
-        const raw = await client.fetch(query, { slug });
+        // FIX: Disable Data Cache
+        const raw = await client.fetch(query, { slug }, { cache: 'no-store' });
         const enriched = await enrichContentList(raw);
         return enriched.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean);
     } catch (e) {
@@ -146,19 +150,17 @@ export async function fetchGameContentAction(slug: string) {
     }
 }
 
-// NEW ACTION: Fetch Full Game Hub Data (Metadata + Items)
 export async function fetchGameHubDataAction(slug: string) {
     if (!slug) return null;
     try {
-        const data = await client.fetch(gamePageDataQuery, { slug });
+        // FIX: Disable Data Cache
+        const data = await client.fetch(gamePageDataQuery, { slug }, { cache: 'no-store' });
         if (!data) return null;
 
-        // Enrich the items
         const enrichedItems = await enrichContentList(data.items || []);
         
         const releaseData = data.release || {};
         
-        // Flatten structure for the store, matching the Page component's shape
         return {
             ...data,
             items: enrichedItems.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean),
@@ -172,7 +174,7 @@ export async function fetchGameHubDataAction(slug: string) {
             onGamePass: releaseData.onGamePass,
             onPSPlus: releaseData.onPSPlus,
             mainImage: data.mainImage || releaseData.releaseImage,
-            contentLoaded: true // Flag for store
+            contentLoaded: true
         };
     } catch (error) {
         console.error("fetchGameHubDataAction failed", error);
@@ -185,7 +187,8 @@ export async function fetchCreatorContentAction(creatorId: string) {
     if (!creatorId) return [];
     try {
         const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`;
-        const raw = await client.fetch(query, { creatorIds: [creatorId] });
+        // FIX: Disable Data Cache
+        const raw = await client.fetch(query, { creatorIds: [creatorId] }, { cache: 'no-store' });
         const enriched = await enrichContentList(raw);
         return enriched.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean);
     } catch (e) {
@@ -209,7 +212,8 @@ export async function fetchSingleContentAction(slug: string) {
     if (!slug) return null;
     try {
         const query = groq`*[_type in ["review", "article", "news"] && slug.current == $slug][0] { ${fullDocProjection} }`;
-        const rawData = await client.fetch(query, { slug });
+        // FIX: Disable Data Cache for individual fetch in overlay to ensure freshness and avoid key explosion
+        const rawData = await client.fetch(query, { slug }, { cache: 'no-store' });
         if (!rawData) return null;
         const enrichedList = await enrichContentList([rawData]);
         const item = enrichedList[0];
@@ -238,7 +242,8 @@ export async function loadMoreReviews(params: { offset: number, limit: number, s
         params.sort, 
         fullDocProjection
     );
-    const rawData = await client.fetch(query);
+    // CRITICAL FIX: Disable Data Cache for infinite scroll pagination
+    const rawData = await client.fetch(query, {}, { cache: 'no-store' });
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
@@ -252,7 +257,8 @@ export async function loadMoreArticles(params: { offset: number, limit: number, 
         params.sort, 
         fullDocProjection
     );
-    const rawData = await client.fetch(query);
+    // CRITICAL FIX: Disable Data Cache for infinite scroll pagination
+    const rawData = await client.fetch(query, {}, { cache: 'no-store' });
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
@@ -266,7 +272,8 @@ export async function loadMoreNews(params: { offset: number, limit: number, sort
         params.sort, 
         fullDocProjection
     );
-    const rawData = await client.fetch(query);
+    // CRITICAL FIX: Disable Data Cache for infinite scroll pagination
+    const rawData = await client.fetch(query, {}, { cache: 'no-store' });
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
@@ -284,7 +291,8 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
     
     if (gameIds.size > 0) {
         try {
-            const gameHubs = await client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) });
+            // Also disable cache for this side-load
+            const gameHubs = await client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { cache: 'no-store' });
             enrichedHubs = await Promise.all(gameHubs.map(async (hub: any) => {
                 if (hub.linkedContent && hub.linkedContent.length > 0) {
                     hub.linkedContent = await enrichContentList(hub.linkedContent);

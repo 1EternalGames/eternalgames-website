@@ -97,7 +97,8 @@ export default function ReviewCardTitle({ data, onDataChange, editingField, setE
                         textAlign="left"
                         customStyle={{ 
                             color: "#FFFFFF", 
-                            letterSpacing: "-1px", 
+                            letterSpacing: "0px", // FIXED: Increased letter spacing
+                            wordSpacing: "-10px",  // FIXED: Decreased word spacing
                             fontFamily: "'Dystopian', 'Cairo', sans-serif",
                             fontWeight: 900,
                             direction: 'ltr',
@@ -118,7 +119,9 @@ export default function ReviewCardTitle({ data, onDataChange, editingField, setE
                         textAlign="left"
                         customStyle={{ 
                             color: "#00FFF0", 
-                            filter: "drop-shadow(0 0 15px rgba(0,255,240,0.7))",
+                            letterSpacing: "2px", // FIXED: Increased letter spacing
+                            wordSpacing: "-12px",   // FIXED: Decreased word spacing
+                            filter: "drop-shadow(0 0 15px rgba(0,255,240,0.6))",
                             fontFamily: "'Dystopian', 'Cairo', sans-serif",
                             fontWeight: 900,
                             direction: 'ltr'

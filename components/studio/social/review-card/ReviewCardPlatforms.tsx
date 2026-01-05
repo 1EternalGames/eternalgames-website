@@ -43,7 +43,9 @@ export default function ReviewCardPlatforms({ data, onDataChange }: ReviewCardPl
                     const isActive = data.platforms[key];
                     const Icon = PLATFORM_ICONS[key];
                     const opacity = isActive ? 1 : 0.3;
-                    const fillColor = isActive ? "#00FFF0" : "#556070";
+                    
+                    // FIXED: Icons should be White when active, Grey when inactive
+                    const fillColor = isActive ? "#FFFFFF" : "#556070";
                     
                     // Calculate X position based on spacing
                     const x = index * ITEM_SPACING;
@@ -67,7 +69,7 @@ export default function ReviewCardPlatforms({ data, onDataChange }: ReviewCardPl
                             {/* Glowing Lens Center */}
                             <ellipse 
                                 cx="0" cy="10" rx="15" ry="3" 
-                                fill={fillColor} 
+                                fill={isActive ? "#00FFF0" : "#556070"} 
                                 opacity={isActive ? 1 : 0.2}
                                 filter={isActive ? "url(#review-cyanGlow)" : "none"}
                             />
@@ -94,27 +96,30 @@ export default function ReviewCardPlatforms({ data, onDataChange }: ReviewCardPl
                             <g 
                                 transform={`translate(${ICON_X_OFFSET}, -${LIGHT_FARNESS}) scale(1.6)`} 
                                 opacity={opacity}
-                                filter={isActive ? "drop-shadow(0 0 5px rgba(0,255,240,0.5))" : "none"}
+                                // FIXED: Apply Cyan Drop Shadow for Hologram Effect
+                                filter={isActive ? "drop-shadow(0 0 8px rgba(0,255,240,0.8))" : "none"}
+                                // FIXED: Explicitly set color style to ensure export picks up the fill correctly
+                                style={{ color: fillColor }}
                             >
                                 <g fill={fillColor}>
                                     <Icon width="24" height="24" />
                                 </g>
 
-                                {/* Brackets (Active Only) */}
+                                {/* Brackets (Active Only - Cyan) */}
                                 {isActive && (
                                     <g>
-                                        {/* Top Left Bracket */}
+                                        {/* Top Left Bracket - Expanded & Refined */}
                                         <path 
-                                            d="M -4,10 L -4,2 L 2,-4 L 10,-4" 
+                                            d="M -7,5 L -7,-1 L -1,-7 L 5,-7" 
                                             fill="none" 
                                             stroke="#00FFF0" 
                                             strokeWidth="2" 
                                             strokeLinecap="square" 
                                             strokeLinejoin="miter"
                                         />
-                                        {/* Bottom Right Bracket */}
+                                        {/* Bottom Right Bracket - Expanded & Refined */}
                                         <path 
-                                            d="M 28,14 L 28,22 L 22,28 L 14,28" 
+                                            d="M 31,19 L 31,25 L 25,31 L 19,31" 
                                             fill="none" 
                                             stroke="#00FFF0" 
                                             strokeWidth="2" 
