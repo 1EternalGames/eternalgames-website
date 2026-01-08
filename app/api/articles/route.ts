@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
 
         const query = paginatedArticlesQuery(gameSlug, tagSlugs, searchTerm, offset, limit, sort);
         
-        // FIX: Disable Data Cache
         const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
         
         const enrichedData = await enrichContentList(sanityData);

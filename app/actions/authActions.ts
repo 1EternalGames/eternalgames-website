@@ -2,7 +2,8 @@
 'use server';
 
 import prisma from '@/lib/prisma';
-import crypto from 'crypto';
+// FIX: Removed 'crypto' import to avoid Edge Runtime error
+// import crypto from 'crypto'; 
 import bcrypt from 'bcryptjs';
 import { sensitiveLimiter } from '@/lib/rate-limit'; // Rate Limiter
 import { passwordResetSchema } from '@/lib/validations'; // Zod Schema
@@ -13,14 +14,10 @@ import { z } from 'zod';
 async function sendPasswordResetEmail(email: string, token: string) {
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
     
-    // --- SECURITY FIX: REMOVED CONSOLE.LOG OF SECRETS ---
-    // Only log that an email *attempt* was made, never the token itself in production.
     if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV ONLY] Reset Link: ${resetLink}`);
     } else {
         console.log(`[Email Service] Sending password reset to ${email}`);
-        // TODO: Integrate real email provider here (e.g., Resend, SendGrid)
-        // await resend.emails.send({ ... })
     }
 }
 
@@ -37,13 +34,16 @@ export async function requestPasswordReset(email: string) {
         const user = await prisma.user.findUnique({ where: { email: lowercasedEmail } });
         
         if (!user || !user.password) {
-            // Security: Always return success to prevent Email Enumeration
             return { success: true, message: 'إن صَحَّ بريدُك، أتاك الرابط.' };
         }
 
         await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
 
-        const token = crypto.randomBytes(32).toString('hex');
+        // FIX: Use Web Crypto API for Edge compatibility
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        const token = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+        
         const expires = new Date(new Date().getTime() + 60 * 60 * 1000); 
 
         await prisma.passwordResetToken.create({

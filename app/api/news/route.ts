@@ -29,7 +29,6 @@ export async function GET(req: NextRequest) {
         const tags = tagSlugs?.length === 0 ? undefined : tagSlugs;
         const query = paginatedNewsQuery(gameSlug, tags, searchTerm, offset, limit, sort);
         
-        // FIX: Disable Data Cache
         const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
         
         const enrichedData = await enrichContentList(sanityData);
