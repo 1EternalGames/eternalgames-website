@@ -23,10 +23,10 @@ export default function ReviewCardProsCons({ data, onDataChange, editingField, s
     const verdictFontSize = 20;
     const verdictWidth = 420;
     const verdictLines = useMemo(() => calculateWrappedLines(data.verdict, verdictFontSize, verdictWidth, 600), [data.verdict]);
-    const verdictHeight = verdictLines.length * 35;
+    const verdictHeight = verdictLines.length * 26;
 
     // Tightened GAP from 100 to 80
-    const GAP = 80;
+    const GAP = 50;
     // Lifted startY from 320 to 290 to match Verdict
     const startY_Verdict = 250;
     const startY_Pros = startY_Verdict + verdictHeight + GAP; 

@@ -15,20 +15,20 @@ interface ReviewCardVerdictProps {
 
 export default function ReviewCardVerdict({ data, onDataChange, editingField, setEditingField }: ReviewCardVerdictProps) {
     const verdictFontSize = 20;
-    const verdictLineHeight = 35; // px
-    const verdictWidth = 420;
+    const verdictLineHeight = 30; // px
+    const verdictWidth = 450;
     
     const verdictLines = useMemo(() => calculateWrappedLines(data.verdict, verdictFontSize, verdictWidth, 600), [data.verdict]);
     const verdictHeight = verdictLines.length * verdictLineHeight;
     // Lifted from 320 to 290
-    const startY_Verdict = 250;
+    const startY_Verdict = 205;
 
     return (
         <g transform={`translate(580, ${startY_Verdict})`}>
             <rect x="456" y="0" width="4" height={verdictHeight} fill="#00FFF0" filter="url(#review-cyanGlow)"></rect>
             <text x="445" y="-10" textAnchor="end" fontFamily="'Dystopian', 'Cairo', sans-serif" fontWeight="900" fontSize="22" fill="#00FFF0">الملخص</text>
             
-            <foreignObject x="20" y="0" width={420} height={verdictHeight + 50}>
+            <foreignObject x="-5" y="0" width={verdictWidth} height={verdictHeight + 50}>
                 <SocialNewsBodyEditor
                     content={data.verdict}
                     onChange={(html) => onDataChange({ verdict: html })}
