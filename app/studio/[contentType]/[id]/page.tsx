@@ -4,24 +4,32 @@ import { editorDataQuery } from '@/lib/sanity.queries';
 import { EditorClient } from "./EditorClient";
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import { notFound } from 'next/navigation';
-import { unstable_noStore as noStore } from 'next/cache';
-import { getStudioMetadataAction } from '../../actions'; // We'll use the action if needed, but the direct query is cleaner here
 
-export const runtime = 'nodejs';
+// FORCE DYNAMIC: Ensure this page never statically generates
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function EditorPage({ params: paramsPromise }: { params: Promise<{ contentType: string; id: string }> }) {
-    noStore();
     const params = await paramsPromise;
     
     if (!params || !params.id) {
         notFound();
     }
     
+    // We strip 'drafts.' to ensure we have the base ID, but the query handles looking up the draft.
     const publicId = params.id.replace('drafts.', '');
     
     try {
-        // OPTIMIZATION: Single batched request for document, dictionary AND studio metadata
-        const { document, dictionary, metadata } = await sanityWriteClient.fetch(editorDataQuery, { id: publicId });
+        // CRITICAL FIX: Added 'perspective' and 'cache: no-store'
+        const { document, dictionary, metadata } = await sanityWriteClient.fetch(
+            editorDataQuery, 
+            { id: publicId },
+            { 
+                cache: 'no-store',
+                perspective: 'previewDrafts', // Explicitly request drafts
+                next: { revalidate: 0 } 
+            }
+        );
         
         if (!document) {
             notFound();
@@ -38,7 +46,7 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
             <EditorClient 
                 document={documentWithTiptapContent} 
                 colorDictionary={dictionary?.autoColors || []}
-                studioMetadata={metadata} // Pass down the cached metadata
+                studioMetadata={metadata} 
             />
         );
     } catch (err: any) {
@@ -51,5 +59,3 @@ export default async function EditorPage({ params: paramsPromise }: { params: Pr
         );
     }
 }
-
-

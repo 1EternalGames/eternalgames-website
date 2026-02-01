@@ -36,7 +36,8 @@ export async function getReleasesForMonthAction(dateString: string): Promise<Sma
             title,
             releaseDate,
             platforms,
-            "imageUrl": mainImage.asset->url,
+            // UPDATED: Prioritize vertical image, fallback to standard mainImage
+            "imageUrl": coalesce(mainImageVertical.asset->url, mainImage.asset->url),
             price,
             "onGamePass": coalesce(onGamePass, false),
             "onPSPlus": coalesce(onPSPlus, false)

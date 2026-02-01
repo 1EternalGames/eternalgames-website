@@ -3,13 +3,14 @@
 import { groq } from 'next-sanity';
 import { StudioDashboard } from './StudioDashboard';
 import { sanityWriteClient } from '@/lib/sanity.server';
-import { unstable_noStore as noStore } from 'next/cache';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/authOptions';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 
-export const runtime = 'nodejs';
+// FORCE DYNAMIC: Ensure the dashboard list is always fresh
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const allEditableContentQuery = groq`
 *[_type in $allowedTypes] | order(_updatedAt desc) {
@@ -31,11 +32,8 @@ const allEditableContentQuery = groq`
 `;
 
 export default async function StudioPage() {
-    noStore();
-    
     const session = await getServerSession(authOptions);
     
-    // THE DEFINITIVE FIX: Fetch fresh roles from DB
     let userRoles: string[] = [];
     if (session?.user?.id) {
         const user = await prisma.user.findUnique({ 
@@ -62,11 +60,14 @@ export default async function StudioPage() {
         redirect('/');
     }
 
+    // CRITICAL FIX: Added no-store cache option to dashboard list fetch
     const content =
         allowedContentTypes.length > 0
-            ? await sanityWriteClient.fetch(allEditableContentQuery, {
-                  allowedTypes: allowedContentTypes,
-              })
+            ? await sanityWriteClient.fetch(
+                  allEditableContentQuery, 
+                  { allowedTypes: allowedContentTypes },
+                  { cache: 'no-store', next: { revalidate: 0 } }
+              )
             : [];
 
     return (
@@ -78,5 +79,3 @@ export default async function StudioPage() {
         </div>
     );
 }
-
-

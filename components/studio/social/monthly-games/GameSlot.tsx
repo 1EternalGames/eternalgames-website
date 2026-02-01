@@ -181,7 +181,6 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
 
     // Badge Geometry Constants
     const BADGE_HEIGHT = 30; 
-    const DIAGONAL_WIDTH = 20; // Width of the sloped part
 
     return (
         <g 
@@ -237,14 +236,16 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                 </g>
                 <EditableText
                     x={30} 
-                    y={36} 
+                    y={35} 
                     text={slot.day}
-                    fontSize={30}
+                    // --- ADJUST FONT HERE (DATE) ---
+                    fontSize={36}
+                    fontWeight={900}
+                    fontFamily="'Dystopian', 'Cairo', sans-serif"
+                    // ------------------------------
                     align="middle"
                     style={{ fill: "#050505" }}
                     inputStyle={{ direction: 'ltr', fontFamily: "'Dystopian', 'Cairo', sans-serif" }}
-                    fontFamily="'Dystopian', 'Cairo', sans-serif"
-                    fontWeight={900}
                     onChange={(val) => onChange({ day: val })}
                     isEditing={editingField === 'day'}
                     setEditing={(val) => setEditingField(val ? 'day' : null)}
@@ -288,9 +289,13 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                                 <EditableText
                                     x={centerX} y={centerY}
                                     text={badge.text}
-                                    fontSize={16}
+                                    // --- ADJUST FONT HERE (PRICE BADGE) ---
+                                    fontSize={19}
+                                    fontWeight={700}
+                                    fontFamily="'Dystopian', 'Cairo', sans-serif"
+                                    // -------------------------------------
                                     align="middle"
-                                    style={{ fill: badge.color, fontFamily: "'Dystopian', 'Cairo', sans-serif", fontWeight: 'bold' }}
+                                    style={{ fill: badge.color }}
                                     inputStyle={{ direction: 'ltr' }}
                                     onChange={updatePriceText}
                                     isEditing={editingField === 'price'}
@@ -301,10 +306,12 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                                 <text 
                                     x={centerX} y={centerY} 
                                     textAnchor="middle" 
+                                    // --- ADJUST FONT HERE (STATIC BADGES) ---
                                     fontWeight="bold" 
-                                    fontSize="12" 
-                                    fill={textColor}
+                                    fontSize="16" 
                                     fontFamily="'Dystopian', 'Cairo', sans-serif" 
+                                    // ----------------------------------------
+                                    fill={textColor}
                                     pointerEvents="none"
                                 >
                                     {badge.text}
@@ -347,7 +354,9 @@ export default function GameSlot({ slot, onChange, x, y, scale, sizeScale = 1 }:
                     onChange={(val) => onChange({ title: val })}
                     isEditing={editingField === 'title'}
                     setEditing={(val) => setEditingField(val ? 'title' : null)}
-                    fontSize={24}
+                    // --- ADJUST FONT HERE (GAME TITLE) ---
+                    fontSize={30}
+                    // -------------------------------------
                     textAlign="center"
                     customStyle={{ 
                         color: "#FFFFFF", 

@@ -90,7 +90,6 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
     if (node.type === 'table') {
       const tableRows: any[] = []
       // Tiptap's table content is an array of 'tableRow' nodes.
-      // The previous implementation had an extra incorrect level of nesting.
       ;(node.content || []).forEach((rowNode: TiptapNode) => {
         const tableCells: any[] = []
         ;(rowNode.content || []).forEach((cellNode: TiptapNode) => {
@@ -118,6 +117,8 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
           asset: {_type: 'reference', _ref: assetId},
         })
       } else if (node.attrs?.src) {
+        // [FIX] Handle pure src without assetId (e.g. pasted from external source if we supported it, or old content)
+        // Extract ID from Sanity URL if possible
         const matches = node.attrs.src.match(/image-([a-fA-F0-9]+-[0-9]+x[0-9]+-[a-z]+)/)
         if (matches && matches[1]) {
           const parsedId = `image-${matches[1]}`
@@ -127,6 +128,8 @@ export function tiptapToPortableText(tiptapJSON: TiptapNode): any[] {
             asset: {_type: 'reference', _ref: parsedId},
           })
         }
+        // If we can't resolve an ID, we SKIP the image block to prevent broken references in Sanity.
+        // This is safer than creating a broken block.
       }
       return
     }
@@ -171,50 +174,68 @@ function processTextBlock(node: TiptapNode): any | null {
       block.style = `h${node.attrs?.level || 2}`
       break
     case 'blockquote':
+      // [FIX] Handle blockquote content. Tiptap blockquote contains paragraphs. Sanity blockquote is a style.
+      // We extract text from the first paragraph child.
       if (node.content && node.content.length > 0) {
-        const blockquoteParagraph = processTextBlock({type: 'paragraph', content: node.content})
+        const blockquoteParagraph = processTextBlock({type: 'paragraph', content: node.content[0].content}) // Use inner content
         if (blockquoteParagraph) {
           blockquoteParagraph.style = 'blockquote'
           return blockquoteParagraph
         }
       }
-      return null
+      // If empty or complex, fallback to standard paragraph logic below (which returns null if empty)
+      // Actually, if it's empty, we might want to skip it.
+      if (!node.content || node.content.length === 0) return null;
+      // Fallthrough to standard processing if structure is weird, but usually blockquotes in Tiptap wrap paragraphs.
+      // The recursive call above handles the common case.
+      break; 
     default:
       block.style = 'normal'
   }
+  
+  // Ensure we processed the right node for blockquotes (we did via recursion above).
+  // For standard nodes:
 
-  ;(node.content || []).forEach((span) => {
-    if (span.type !== 'text' || typeof span.text === 'undefined') return
+  if (node.type !== 'blockquote') {
+      ;(node.content || []).forEach((span) => {
+        if (span.type !== 'text' || typeof span.text === 'undefined') return
 
-    const spanMarks: string[] = []
-    span.marks?.forEach((mark) => {
-      if (mark.type === 'bold') spanMarks.push('strong')
-      if (mark.type === 'italic') spanMarks.push('em')
-      if (mark.type === 'link') {
-        const markDef = {_key: uuidv4(), _type: 'link', href: mark.attrs?.href}
-        block.markDefs.push(markDef)
-        spanMarks.push(markDef._key)
-      }
-      if (mark.type === 'textStyle' && mark.attrs?.color) {
-        const markDef = {_key: uuidv4(), _type: 'color', hex: mark.attrs.color}
-        block.markDefs.push(markDef)
-        spanMarks.push(markDef._key)
-      }
-    })
+        const spanMarks: string[] = []
+        span.marks?.forEach((mark) => {
+          if (mark.type === 'bold') spanMarks.push('strong')
+          if (mark.type === 'italic') spanMarks.push('em')
+          if (mark.type === 'link') {
+            const markDef = {_key: uuidv4(), _type: 'link', href: mark.attrs?.href}
+            block.markDefs.push(markDef)
+            spanMarks.push(markDef._key)
+          }
+          if (mark.type === 'textStyle' && mark.attrs?.color) {
+            const markDef = {_key: uuidv4(), _type: 'color', hex: mark.attrs.color}
+            block.markDefs.push(markDef)
+            spanMarks.push(markDef._key)
+          }
+        })
 
-    block.children.push({
-      _type: 'span',
-      _key: uuidv4(),
-      text: span.text,
-      marks: spanMarks,
-    })
-  })
-
-  if (block.children.length === 0) {
-    block.children.push({_type: 'span', _key: uuidv4(), text: '', marks: []})
+        block.children.push({
+          _type: 'span',
+          _key: uuidv4(),
+          text: span.text,
+          marks: spanMarks,
+        })
+      })
   }
+
+  // If block has no children (empty paragraph), add empty span to make it valid Sanity block
+  if (block.children.length === 0) {
+      // Only for non-blockquote types (blockquote handled above)
+      if (node.type !== 'blockquote') {
+         block.children.push({_type: 'span', _key: uuidv4(), text: '', marks: []})
+      }
+  }
+
+  // [FIX] Don't return blocks with 0 children unless they are empty paragraphs meant to be breaks.
+  // But Sanity usually cleans empty blocks. Tiptap uses <p></p> for newlines.
+  // We keep them.
 
   return block
 }
-
-

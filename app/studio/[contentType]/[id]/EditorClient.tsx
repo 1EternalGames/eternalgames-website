@@ -17,17 +17,29 @@ import { uploadFile } from './RichTextEditor';
 import { UploadQuality } from '@/lib/image-optimizer';
 import { tiptapToPortableText } from '../../utils/tiptapToPortableText';
 import { useEditorStore } from '@/lib/editorStore';
-import { useContentStore } from '@/lib/contentStore'; // IMPORTED
+import { useContentStore } from '@/lib/contentStore'; 
 import styles from './Editor.module.css';
 import { portableTextToTiptap } from '../../utils/portableTextToTiptap';
 import type { SaveStatus } from './SaveStatusIcons';
 
-// Updated type definition to include mainImageVertical
 type EditorDocument = {
-    _id: string; _type: string; _updatedAt: string; title: string; slug?: { current: string }; score?: number; verdict?: string; pros?: string[]; cons?: string[]; game?: { _id: string; title: string } | null; publishedAt?: string | null; 
-    mainImage?: { _ref: string | null; url: string | null; metadata?: any }; 
-    mainImageVertical?: { _ref: string | null; url: string | null; metadata?: any }; // Added
-    authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; releaseDate?: string; platforms?: string[]; synopsis?: string; tiptapContent?: any; content?: any; category?: { _id: string; title: string } | null;
+    _id: string; 
+    _type: string; 
+    _updatedAt: string; 
+    title: string; 
+    slug?: string | { current: string } | null;
+    score?: number; 
+    verdict?: string; 
+    pros?: string[]; 
+    cons?: string[]; 
+    game?: { _id: string; title: string } | null; 
+    publishedAt?: string | null; 
+    mainImage?: { asset?: { _ref?: string }; _ref?: string; url?: string | null; metadata?: any }; 
+    mainImageVertical?: { asset?: { _ref?: string }; _ref?: string; url?: string | null; metadata?: any }; 
+    authors?: any[]; reporters?: any[]; designers?: any[]; tags?: any[]; 
+    releaseDate?: string; platforms?: string[]; synopsis?: string; 
+    tiptapContent?: any; content?: any; 
+    category?: { _id: string; title: string } | null;
     newsType?: 'official' | 'rumor' | 'leak';
     price?: string; 
     developer?: { _id: string, title: string } | null; 
@@ -48,8 +60,75 @@ type ColorMapping = {
 
 const clientSlugify = (text: string): string => { if (!text) return ''; return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-'); };
 
+const getId = (item: any): string | null => {
+    if (!item) return null;
+    if (typeof item === 'string') return item;
+    return item._id || item._ref || null;
+};
+
+const getSlugString = (slug: any): string => {
+    if (!slug) return '';
+    if (typeof slug === 'string') return slug;
+    if (typeof slug === 'object' && slug.current) return slug.current;
+    return '';
+};
+
+const cleanForComparison = (val: any): any => {
+    if (val === null || val === undefined) return undefined;
+    if (val === '') return undefined;
+    if (val === false) return undefined; 
+    if (Array.isArray(val) && val.length === 0) return undefined;
+    
+    if (typeof val === 'number') return val;
+    if (val === true) return true;
+    if (typeof val === 'string') return val;
+
+    if (Array.isArray(val)) {
+        const cleaned = val.map(item => {
+            const id = getId(item);
+            if (id) return id; 
+            return cleanForComparison(item);
+        }).filter(v => v !== undefined);
+        return cleaned.length > 0 ? cleaned : undefined;
+    }
+
+    if (typeof val === 'object') {
+        if (val._type === 'image' || (val.asset && (val.asset._ref || val.asset._id))) {
+            return val.asset?._ref || val.asset?._id || val._ref || undefined;
+        }
+        if (val._type === 'slug' && val.current) return val.current;
+        if (val._type === 'reference' && val._ref) return val._ref;
+
+        const newObj: any = {};
+        const keys = Object.keys(val).sort();
+        
+        for (const key of keys) {
+            if (['_key', '_type', '_weak', '_strengthenOnPublish', '_createdAt', '_updatedAt', '_rev', 'markDefs', 'asset'].includes(key)) continue;
+            const cleanedVal = cleanForComparison(val[key]);
+            if (cleanedVal !== undefined) {
+                newObj[key] = cleanedVal;
+            }
+        }
+        
+        if (Object.keys(newObj).length === 0) return undefined;
+        return newObj;
+    }
+
+    return val;
+};
+
+const isEquivalent = (a: any, b: any) => {
+    const cleanA = JSON.stringify(cleanForComparison(a));
+    const cleanB = JSON.stringify(cleanForComparison(b));
+    return cleanA === cleanB;
+};
+
 const getInitialEditorState = (doc: EditorDocument) => {
-    const currentSlug = doc.slug?.current ?? '';
+    const currentSlug = getSlugString(doc.slug);
+    
+    const getMainImageRef = (img: any) => img?.asset?._ref || img?._ref || null;
+    const getMainImageUrl = (img: any) => img?.url || (img?.asset?.url) || null;
+
     return {
         _id: doc._id,
         _type: doc._type,
@@ -64,13 +143,12 @@ const getInitialEditorState = (doc: EditorDocument) => {
         game: doc.game || null,
         publishedAt: doc.publishedAt || null,
         mainImage: {
-            assetId: doc.mainImage?._ref || null,
-            assetUrl: doc.mainImage?.url || null
+            assetId: getMainImageRef(doc.mainImage),
+            assetUrl: getMainImageUrl(doc.mainImage)
         },
-        // Initialize Vertical Image State
         mainImageVertical: {
-            assetId: doc.mainImageVertical?._ref || null,
-            assetUrl: doc.mainImageVertical?.url || null
+            assetId: getMainImageRef(doc.mainImageVertical),
+            assetUrl: getMainImageUrl(doc.mainImageVertical)
         },
         authors: (doc.authors || []).filter(Boolean),
         reporters: (doc.reporters || []).filter(Boolean),
@@ -102,103 +180,74 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
     }
 }
 
-const stripKeysAndNormalize = (obj: any): any => {
-    if (Array.isArray(obj)) {
-        return obj.map(stripKeysAndNormalize);
-    } else if (obj !== null && typeof obj === 'object') {
-        const newObj: any = {};
-        for (const key in obj) {
-            if (key !== '_key' && key !== '_type' && key !== 'markDefs') {
-                const val = stripKeysAndNormalize(obj[key]);
-                if (val !== undefined && val !== null) {
-                    newObj[key] = val;
-                }
-            }
-            if (key === 'marks' && Array.isArray(obj[key])) {
-                newObj[key] = [...obj[key]].sort();
-            }
-            if (key === '_type') {
-                newObj[key] = obj[key];
-            }
-        }
-        return newObj;
-    }
-    return obj;
-};
-
 const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJson: string) => {
     const patch: Record<string, any> = {};
-    const normalize = (val: any, defaultVal: any) => val ?? defaultVal;
-    
-    const compareIds = (arr1: any[], arr2: any[]) => {
-        const set1 = new Set(normalize(arr1, []).map((i: any) => i._id));
-        const set2 = new Set(normalize(arr2, []).map((i: any) => i._id));
-        if (set1.size !== set2.size) return false;
-        for (let a of set1) if (!set2.has(a)) return false;
-        return true;
+
+    const check = (key: string, stateVal: any, sotVal: any) => {
+        if (!isEquivalent(stateVal, sotVal)) {
+            if (key === 'slug' && stateVal) patch[key] = { _type: 'slug', current: stateVal };
+            else if (key === 'category' && stateVal) patch[key] = { _type: 'reference', _ref: getId(stateVal) };
+            else if (['game', 'developer', 'publisher'].includes(key) && stateVal) patch[key] = { _type: 'reference', _ref: getId(stateVal) };
+            else if (['tags', 'authors', 'reporters', 'designers'].includes(key)) {
+                patch[key] = (stateVal || []).map((i: any) => ({ _type: 'reference', _ref: getId(i), _key: getId(i) }));
+            }
+            else if (['mainImage', 'mainImageVertical'].includes(key)) {
+                if (stateVal?.assetId) patch[key] = { _type: 'image', asset: { _type: 'reference', _ref: stateVal.assetId } };
+                else patch[key] = undefined; 
+            }
+            else {
+                patch[key] = stateVal;
+            }
+        }
     };
 
-    if (normalize(currentState.title, '') !== normalize(sourceOfTruth.title, '')) patch.title = currentState.title;
-    if (sourceOfTruth._type !== 'gameRelease' && normalize(currentState.slug, '') !== normalize(sourceOfTruth.slug?.current, '')) patch.slug = { _type: 'slug', current: currentState.slug };
-    if (normalize(currentState.score, 0) !== normalize(sourceOfTruth.score, 0)) patch.score = currentState.score;
-    if (normalize(currentState.verdict, '') !== normalize(sourceOfTruth.verdict, '')) patch.verdict = currentState.verdict;
-    
-    // Release Fields
-    if (normalize(currentState.releaseDate, '') !== normalize(sourceOfTruth.releaseDate, '')) patch.releaseDate = currentState.releaseDate;
-    if (normalize(currentState.datePrecision, 'day') !== normalize(sourceOfTruth.datePrecision, 'day')) patch.datePrecision = currentState.datePrecision;
-    
-    if (normalize(currentState.synopsis, '') !== normalize(sourceOfTruth.synopsis, '')) patch.synopsis = currentState.synopsis;
-    if (normalize(currentState.category?._id, null) !== normalize(sourceOfTruth.category?._id, null)) {
-        patch.category = currentState.category ? { _type: 'reference', _ref: currentState.category._id } : undefined;
-    }
-    if (sourceOfTruth._type === 'news' && normalize(currentState.newsType, 'official') !== normalize(sourceOfTruth.newsType, 'official')) {
-        patch.newsType = currentState.newsType;
-    }
-    
-    if (normalize(currentState.price, '') !== normalize(sourceOfTruth.price, '')) patch.price = currentState.price;
-    if (normalize(currentState.developer?._id, null) !== normalize(sourceOfTruth.developer?._id, null)) {
-        patch.developer = currentState.developer ? { _type: 'reference', _ref: currentState.developer._id } : undefined;
-    }
-    if (normalize(currentState.publisher?._id, null) !== normalize(sourceOfTruth.publisher?._id, null)) {
-        patch.publisher = currentState.publisher ? { _type: 'reference', _ref: currentState.publisher._id } : undefined;
-    }
-    if (normalize(currentState.trailer, '') !== normalize(sourceOfTruth.trailer, '')) patch.trailer = currentState.trailer;
-    if (normalize(currentState.isPinned, false) !== normalize(sourceOfTruth.isPinned, false)) patch.isPinned = currentState.isPinned;
-    if (normalize(currentState.onGamePass, false) !== normalize(sourceOfTruth.onGamePass, false)) patch.onGamePass = currentState.onGamePass;
-    if (normalize(currentState.onPSPlus, false) !== normalize(sourceOfTruth.onPSPlus, false)) patch.onPSPlus = currentState.onPSPlus;
-    
-    if (normalize(currentState.isTBA, false) !== normalize(sourceOfTruth.isTBA, false)) patch.isTBA = currentState.isTBA;
-
-    if (JSON.stringify(normalize(currentState.pros, [])) !== JSON.stringify(normalize(sourceOfTruth.pros, []))) patch.pros = currentState.pros;
-    if (JSON.stringify(normalize(currentState.cons, [])) !== JSON.stringify(normalize(sourceOfTruth.cons, []))) patch.cons = currentState.cons;
-    if (JSON.stringify(normalize(currentState.platforms, [])) !== JSON.stringify(normalize(sourceOfTruth.platforms, []))) patch.platforms = currentState.platforms;
-    
-    if (normalize(currentState.game?._id, null) !== normalize(sourceOfTruth.game?._id, null)) patch.game = currentState.game ? { _type: 'reference', _ref: currentState.game._id } : undefined;
-    
-    // Main Image
-    if (normalize(currentState.mainImage.assetId, null) !== normalize(sourceOfTruth.mainImage?._ref, null)) {
-        patch.mainImage = currentState.mainImage.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImage.assetId } } : undefined;
-    }
-
-    // Vertical Image
-    if (normalize(currentState.mainImageVertical.assetId, null) !== normalize(sourceOfTruth.mainImageVertical?._ref, null)) {
-        patch.mainImageVertical = currentState.mainImageVertical.assetId ? { _type: 'image', asset: { _type: 'reference', _ref: currentState.mainImageVertical.assetId } } : undefined;
-    }
-
-    if (!compareIds(currentState.tags, sourceOfTruth.tags)) patch.tags = normalize(currentState.tags, []).map((t: any) => ({ _type: 'reference', _ref: t._id, _key: t._id }));
-    if (!compareIds(currentState.authors, sourceOfTruth.authors)) patch.authors = normalize(currentState.authors, []).map((a: any) => ({ _type: 'reference', _ref: a._id, _key: a._id }));
-    if (!compareIds(currentState.reporters, sourceOfTruth.reporters)) patch.reporters = normalize(currentState.reporters, []).map((r: any) => ({ _type: 'reference', _ref: r._id, _key: r._id }));
-    if (!compareIds(currentState.designers, sourceOfTruth.designers)) patch.designers = normalize(currentState.designers, []).map((d: any) => ({ _type: 'reference', _ref: d._id, _key: d._id }));
+    check('title', currentState.title, sourceOfTruth.title);
     
     if (sourceOfTruth._type !== 'gameRelease') {
-        const sourceContentSanity = sourceOfTruth.content || []; 
-        const currentContentSanity = tiptapToPortableText(JSON.parse(editorContentJson));
-        
-        const cleanSource = JSON.stringify(stripKeysAndNormalize(sourceContentSanity));
-        const cleanCurrent = JSON.stringify(stripKeysAndNormalize(currentContentSanity));
-        
-        if (cleanSource !== cleanCurrent) {
-            patch.content = currentContentSanity;
+        check('slug', currentState.slug, getSlugString(sourceOfTruth.slug));
+    }
+    
+    check('score', currentState.score, sourceOfTruth.score);
+    check('verdict', currentState.verdict, sourceOfTruth.verdict);
+    check('pros', currentState.pros, sourceOfTruth.pros);
+    check('cons', currentState.cons, sourceOfTruth.cons);
+    
+    check('releaseDate', currentState.releaseDate, sourceOfTruth.releaseDate);
+    check('datePrecision', currentState.datePrecision, sourceOfTruth.datePrecision);
+    check('synopsis', currentState.synopsis, sourceOfTruth.synopsis);
+    check('newsType', currentState.newsType, sourceOfTruth.newsType);
+    check('price', currentState.price, sourceOfTruth.price);
+    check('trailer', currentState.trailer, sourceOfTruth.trailer);
+    check('isTBA', currentState.isTBA, sourceOfTruth.isTBA);
+    check('isPinned', currentState.isPinned, sourceOfTruth.isPinned);
+    check('onGamePass', currentState.onGamePass, sourceOfTruth.onGamePass);
+    check('onPSPlus', currentState.onPSPlus, sourceOfTruth.onPSPlus);
+    check('platforms', currentState.platforms, sourceOfTruth.platforms);
+
+    check('category', currentState.category, sourceOfTruth.category);
+    check('game', currentState.game, sourceOfTruth.game);
+    check('developer', currentState.developer, sourceOfTruth.developer);
+    check('publisher', currentState.publisher, sourceOfTruth.publisher);
+    
+    check('tags', currentState.tags, sourceOfTruth.tags);
+    check('authors', currentState.authors, sourceOfTruth.authors);
+    check('reporters', currentState.reporters, sourceOfTruth.reporters);
+    check('designers', currentState.designers, sourceOfTruth.designers);
+
+    const sotMainImageState = { assetId: getId(sourceOfTruth.mainImage?.asset || sourceOfTruth.mainImage) };
+    const sotVertImageState = { assetId: getId(sourceOfTruth.mainImageVertical?.asset || sourceOfTruth.mainImageVertical) };
+    
+    if (currentState.mainImage.assetId !== sotMainImageState.assetId) {
+        check('mainImage', currentState.mainImage, null); 
+    }
+    if (currentState.mainImageVertical.assetId !== sotVertImageState.assetId) {
+        check('mainImageVertical', currentState.mainImageVertical, null);
+    }
+
+    if (sourceOfTruth._type !== 'gameRelease') {
+        const currentContentPortableText = tiptapToPortableText(JSON.parse(editorContentJson));
+        if (!isEquivalent(currentContentPortableText, sourceOfTruth.content)) {
+            patch.content = currentContentPortableText;
         }
     }
 
@@ -214,7 +263,6 @@ export function EditorClient({
     colorDictionary: ColorMapping[],
     studioMetadata: any 
 }) {
-    // IMPORTED: Access overlay state
     const { isOverlayOpen } = useContentStore();
 
     const [sourceOfTruth, setSourceOfTruth] = useState<EditorDocument>(initialDocument);
@@ -227,11 +275,12 @@ export function EditorClient({
     const [mainImageUploadQuality, setMainImageUploadQuality] = useState<UploadQuality>('1080p');
     const { blockUploadQuality, setBlockUploadQuality, setEditorActive, setLiveUrl } = useEditorStore();
 
+    const initialSlug = getSlugString(initialDocument.slug);
     const [slugValidationStatus, setSlugValidationStatus] = useState<'pending' | 'valid' | 'invalid'>(
-        initialDocument.slug?.current ? 'valid' : 'pending'
+        initialSlug ? 'valid' : 'pending'
     );
     const [slugValidationMessage, setSlugValidationMessage] = useState(
-        initialDocument.slug?.current ? 'المُعرِّفُ صالح.' : 'جارٍ التحقق...'
+        initialSlug ? 'المُعرِّفُ صالح.' : 'جارٍ التحقق...'
     );
 
     const debouncedSlug = useDebounce(slug, 500);
@@ -242,7 +291,6 @@ export function EditorClient({
     const [serverSaveStatus, setServerSaveStatus] = useState<SaveStatus>('saved');
     const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
-    
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
 
     const stateRef = useRef(state);
@@ -265,11 +313,13 @@ export function EditorClient({
     }, [setEditorActive, setLiveUrl]);
 
     useEffect(() => {
-        const { _type, slug: docSlug, publishedAt } = sourceOfTruth;
+        const docSlug = getSlugString(sourceOfTruth.slug);
+        const { _type, publishedAt } = sourceOfTruth;
         const isPublished = publishedAt && new Date(publishedAt) <= new Date();
-        if (isPublished && docSlug?.current && _type !== 'gameRelease') {
+        
+        if (isPublished && docSlug && _type !== 'gameRelease') {
             const contentTypePlural = _type === 'review' ? 'reviews' : _type === 'article' ? 'articles' : 'news';
-            const url = `/${contentTypePlural}/${docSlug.current}`;
+            const url = `/${contentTypePlural}/${docSlug}`;
             setLiveUrl(url);
         } else {
             setLiveUrl(null);
@@ -287,6 +337,7 @@ export function EditorClient({
 
     useEffect(() => { const handleResize = () => { const mobile = window.innerWidth <= 1024; setIsMobile(mobile); if (!mobile) setIsSidebarOpen(true); }; handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize); }, []);
     
+    // --- SAFE HYDRATION ---
     useEffect(() => {
         if (!editorInstance || hasHydratedFromLocal) return;
 
@@ -296,22 +347,29 @@ export function EditorClient({
         if (saved) {
             try {
                 const localData = JSON.parse(saved);
-                if (localData.state && localData.contentJson) {
-                    console.log("[Hydration] Found local draft, restoring...");
-                    dispatch({ type: 'INITIALIZE_STATE', payload: localData.state });
-                    setEditorContentJson(localData.contentJson);
-                    const contentObj = JSON.parse(localData.contentJson);
-                    editorInstance.commands.setContent(contentObj, false); 
-                    toast.info('تم استعادة مسودة غير محفوظة من جهازك.', 'left');
+                
+                // SAFETY CHECK: Only hydrate if local data is NEWER than server data
+                const serverTime = new Date(initialDocument._updatedAt).getTime();
+                const localTime = localData.updatedAt ? new Date(localData.updatedAt).getTime() : 0;
+                
+                if (localTime > serverTime) {
+                    if (localData.state && localData.contentJson) {
+                        dispatch({ type: 'INITIALIZE_STATE', payload: localData.state });
+                        setEditorContentJson(localData.contentJson);
+                        const contentObj = JSON.parse(localData.contentJson);
+                        editorInstance.commands.setContent(contentObj, false); 
+                        toast.info('تم استعادة مسودة غير محفوظة من جهازك.', 'left');
+                    }
+                } else {
+                    // Local storage is stale, clear it
+                    localStorage.removeItem(key);
                 }
             } catch (e) {
-                console.error("Failed to parse local draft:", e);
                 localStorage.removeItem(key);
             }
         }
         setHasHydratedFromLocal(true);
-    }, [editorInstance, initialDocument._id, hasHydratedFromLocal, toast]);
-
+    }, [editorInstance, initialDocument._id, initialDocument._updatedAt, hasHydratedFromLocal, toast]);
 
     const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
@@ -341,7 +399,6 @@ export function EditorClient({
                     updatedAt: new Date().toISOString()
                 };
                 localStorage.setItem(key, JSON.stringify(payload));
-                
                 needsClientSaveRef.current = false;
                 setClientSaveStatus('saved');
             }
@@ -353,26 +410,28 @@ export function EditorClient({
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
     useEffect(() => { 
-        if (sourceOfTruth._id !== state._id || sourceOfTruth._updatedAt !== state._updatedAt) {
+        // If SOT updates (after save), refresh state
+        if (sourceOfTruth._updatedAt !== state._updatedAt) {
             const newState = getInitialEditorState(sourceOfTruth);
             dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
             
-            const imageWidth = sourceOfTruth?.mainImage?.metadata?.dimensions?.width; 
-            if (imageWidth && imageWidth >= 3840) { setMainImageUploadQuality('4k'); } else { setMainImageUploadQuality('1080p'); } 
-            
             if (editorInstance) { 
                 const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
-                const editorJSON = JSON.stringify(editorInstance.getJSON()); 
-                const sourceJSON = JSON.stringify(freshTiptapContent); 
-                if (editorJSON !== sourceJSON && !hasChanges) { 
+                // Only reset editor content if we don't have pending local changes
+                if (!hasChanges) { 
                     editorInstance.commands.setContent(freshTiptapContent, false); 
                 } 
             }
         }
-    }, [sourceOfTruth, editorInstance, state._id, state._updatedAt, hasChanges]);
+    }, [sourceOfTruth._updatedAt, editorInstance]); // Removed sourceOfTruth to avoid loop
 
     useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
-    useEffect(() => { if (!isSlugManual && title !== sourceOfTruth.title) { dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); } }, [title, isSlugManual, sourceOfTruth.title]);
+    
+    useEffect(() => { 
+        if (!isSlugManual && title !== sourceOfTruth.title) { 
+            dispatch({ type: 'UPDATE_SLUG', payload: { slug: clientSlugify(title), isManual: false } }); 
+        } 
+    }, [title, isSlugManual, sourceOfTruth.title]);
     
     useEffect(() => {
         if (state._type === 'gameRelease') { setSlugValidationStatus('valid'); setSlugValidationMessage(''); return; }
@@ -383,11 +442,14 @@ export function EditorClient({
              }
              return; 
         } 
-        if (debouncedSlug === sourceOfTruth.slug?.current) {
+        
+        const sotSlugStr = getSlugString(sourceOfTruth.slug);
+        if (debouncedSlug === sotSlugStr) {
             setSlugValidationStatus('valid');
             setSlugValidationMessage('المُعرِّفُ صالح.');
             return;
         }
+        
         setSlugValidationStatus('pending'); 
         setSlugValidationMessage('جارٍ التحقق...'); 
         const checkSlug = async () => { 
@@ -396,7 +458,7 @@ export function EditorClient({
             setSlugValidationMessage(result.message); 
         }; 
         checkSlug();
-    }, [debouncedSlug, state._id, state._type, sourceOfTruth.slug?.current]);
+    }, [debouncedSlug, state._id, state._type, sourceOfTruth.slug]);
 
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category, isTBA } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && (isTBA || releaseDate.trim()) && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
@@ -404,60 +466,26 @@ export function EditorClient({
         const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
         const currentHasChanges = Object.keys(currentPatch).length > 0;
 
-        if (!currentHasChanges) return true; 
+        if (!currentHasChanges) {
+             needsClientSaveRef.current = false;
+             setClientSaveStatus('saved');
+             return true; 
+        }
+
         if (sourceOfTruth._type !== 'gameRelease' && slugValidationStatus !== 'valid') { 
             toast.error('لا يمكن الحفظ بمُعرِّف غير صالح.', 'left'); 
             return false; 
         } 
 
-        const optimisticSOT: EditorDocument = {
-            ...sourceOfTruth,
-            title: state.title,
-            slug: { current: state.slug },
-            score: state.score,
-            verdict: state.verdict,
-            pros: state.pros,
-            cons: state.cons,
-            game: state.game,
-            tags: state.tags,
-            mainImage: state.mainImage.assetId ? { _ref: state.mainImage.assetId, url: state.mainImage.assetUrl } : undefined,
-            mainImageVertical: state.mainImageVertical.assetId ? { _ref: state.mainImageVertical.assetId, url: state.mainImageVertical.assetUrl } : undefined, // Added
-            authors: state.authors,
-            reporters: state.reporters,
-            designers: state.designers,
-            releaseDate: state.releaseDate,
-            platforms: state.platforms,
-            synopsis: state.synopsis,
-            category: state.category,
-            newsType: state.newsType,
-            price: state.price, 
-            developer: state.developer,
-            publisher: state.publisher, 
-            isTBA: state.isTBA,
-            trailer: state.trailer,
-            isPinned: state.isPinned,
-            onGamePass: state.onGamePass,
-            onPSPlus: state.onPSPlus,
-            datePrecision: state.datePrecision,
-            content: tiptapToPortableText(JSON.parse(editorContentJson)),
-            _updatedAt: new Date().toISOString(),
-        };
-        
         const result = await updateDocumentAction(sourceOfTruth._id, currentPatch); 
         
         if (result.success && result.updatedDocument) { 
-            setSourceOfTruth({ 
-                ...optimisticSOT, 
-                _updatedAt: result.updatedDocument._updatedAt 
-            });
+            setSourceOfTruth(result.updatedDocument);
             
+            // CRITICAL: Clear local storage immediately after successful server save
             const key = `eternal-draft-${sourceOfTruth._id}`;
-            localStorage.setItem(key, JSON.stringify({
-                state,
-                contentJson: editorContentJson,
-                updatedAt: new Date().toISOString()
-            }));
-
+            localStorage.removeItem(key);
+            
             return true; 
         } else { 
             toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); 
@@ -468,25 +496,22 @@ export function EditorClient({
     useEffect(() => {
         if (hasChanges && isAutoSaveEnabled) {
             if (serverSaveTimeoutRef.current) clearTimeout(serverSaveTimeoutRef.current);
-
             serverSaveTimeoutRef.current = setTimeout(async () => {
                 setServerSaveStatus('saving');
-                const success = await saveWorkingCopy();
-                if (success) {
-                    setServerSaveStatus('saved');
-                } else {
-                    setServerSaveStatus('saved'); 
-                }
-            }, 30000); 
+                await saveWorkingCopy();
+                setServerSaveStatus('saved'); 
+            }, 10000); 
         }
     }, [hasChanges, saveWorkingCopy, isAutoSaveEnabled]); 
 
     const handlePublish = async (publishTime?: string | null): Promise<boolean> => { 
+        if (!isDocumentValid) {
+            toast.error('يرجى ملء الحقول الإلزامية قبل النشر.', 'left');
+            return false;
+        }
         const didSave = await saveWorkingCopy(); 
-        if (!didSave) { 
-            if (hasChanges) toast.error('احفظ التغييرات أولاً.', 'left'); 
-            return false; 
-        } 
+        if (!didSave) return false; 
+        
         const result = await publishDocumentAction(sourceOfTruth._id, publishTime); 
         if (result.success && result.updatedDocument) { 
             setSourceOfTruth(prev => ({
@@ -505,8 +530,6 @@ export function EditorClient({
     useEffect(() => { if (hasChanges) { document.title = `*لم يُحفظ* ${title || 'بلا عنوان'}`; window.onbeforeunload = () => "أَتَغادرُ وما كتبت لم يُحفظ؟"; } else { document.title = title || "EternalGames الديوان"; window.onbeforeunload = null; } return () => { window.onbeforeunload = null; }; }, [hasChanges, title]);
     
     const isRelease = initialDocument._type === 'gameRelease';
-
-    // CRITICAL FIX: Hide editor canvas if overlay is active
     if (isOverlayOpen) return null;
 
     return (

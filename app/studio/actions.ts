@@ -93,33 +93,91 @@ export async function createDraftAction(contentType: 'review' | 'article' | 'new
 export async function updateDocumentAction(docId: string, patchData: Record<string, any>): Promise<{ success: boolean; message?: string; updatedDocument?: any }> {
     const session = await getAuthenticatedSession();
     if (!session) return { success: false, message: 'غير مُخَوَّل.' };
+    
+    // Ensure we handle both draft and public IDs correctly
     const publicId = docId.replace('drafts.', '');
     const draftId = `drafts.${publicId}`;
+    
     try {
         const tx = sanityWriteClient.transaction();
-        const existingDraft = await sanityWriteClient.getDocument(draftId);
-        if (existingDraft) { tx.patch(draftId, (p) => p.set(patchData)); } else {
-            const originalDoc = await sanityWriteClient.getDocument(publicId);
-            if (!originalDoc) {
-                const docTypeQuery = groq`*[_id == $id][0]._type`;
-                const docType = await sanityWriteClient.fetch(docTypeQuery, { id: publicId });
-                if (!docType) throw new Error("لم يُعثر على نوع الوثيقة لإنشائها.");
-                const newDoc = { _id: draftId, _type: docType, ...patchData };
-                tx.create(newDoc);
+        
+        // 1. Fetch current state to determine if we need to initialize a draft
+        // We assume drafts exist if we are editing, but we must handle the case where it's a new draft from a published doc
+        const [existingDraft, originalDoc] = await Promise.all([
+            sanityWriteClient.getDocument(draftId),
+            sanityWriteClient.getDocument(publicId)
+        ]);
+
+        // Capture previous update time for read-your-writes check
+        let previousUpdatedAt = existingDraft?._updatedAt || originalDoc?._updatedAt;
+
+        // 2. Prepare Transaction
+        // Strategy: 
+        // If draft exists? Just Patch.
+        // If draft missing? CreateIfNotExists (Base on Original or New) + Patch.
+        // Using CreateIfNotExists prevents "Document already exists" race conditions.
+
+        if (!existingDraft) {
+            let initialDoc: any;
+
+            if (originalDoc) {
+                // Clone published to draft
+                // Exclude system fields that shouldn't be copied to new draft
+                const { _rev, _updatedAt, _createdAt, ...rest } = originalDoc;
+                initialDoc = { ...rest, _id: draftId };
             } else {
-                const { _rev, _updatedAt, _createdAt, ...restOfOriginalDoc } = originalDoc;
-                const newDraftPayload = { ...restOfOriginalDoc, ...patchData, _id: draftId };
-                tx.create(newDraftPayload);
+                // Rare case: Editing a document that doesn't exist yet in either state.
+                // We attempt to fetch type, or rely on patch to create it if possible (though createIfNotExists needs _type)
+                const docType = await sanityWriteClient.fetch(`*[_id == $id][0]._type`, { id: publicId });
+                if (docType) {
+                    initialDoc = { _id: draftId, _type: docType };
+                }
+            }
+
+            if (initialDoc) {
+                // ATOMIC OPERATION: Create if missing, ignore if someone else created it 1ms ago
+                tx.createIfNotExists(initialDoc);
             }
         }
+
+        // 3. Always Apply Patch
+        // If createIfNotExists ran, this patches the new doc.
+        // If it didn't run (doc existed), this patches the existing doc.
+        tx.patch(draftId, (p) => p.set(patchData));
+
+        // 4. Commit
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
         
-        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
-        if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها.");
+        // --- Read-Your-Writes Consistency Check ---
+        let finalDoc = null;
+        let attempts = 0;
+        const maxAttempts = 10; // Max 2 seconds
+        
+        while (attempts < maxAttempts) {
+            // Force no-store to bypass Next.js Data Cache
+            finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }, { cache: 'no-store' });
+            
+            if (finalDoc) {
+                // If it's a new doc (no previous timestamp) or updated (newer timestamp), we are good.
+                if (!previousUpdatedAt || finalDoc._updatedAt > previousUpdatedAt) {
+                    break;
+                }
+            }
+            
+            // Wait 200ms before retrying
+            await new Promise(r => setTimeout(r, 200));
+            attempts++;
+        }
+
+        if (!finalDoc) throw new Error("الوثيقةُ مفقودةٌ بعد تحديثها (timeout).");
         
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         return { success: true, updatedDocument: docWithTiptap };
-    } catch (error: any) { console.error("Error during document update:", error); return { success: false, message: error.message || "أصابنا خطبٌ أثناء الحفظ." }; }
+
+    } catch (error: any) { 
+        console.error("Error during document update:", error); 
+        return { success: false, message: error.message || "أصابنا خطبٌ أثناء الحفظ." }; 
+    }
 }
 
 export async function deleteDocumentAction(docId: string): Promise<{ success: boolean; message?: string }> {
@@ -186,7 +244,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
             
             revalidateContentPaths(docType, doc.slug);
             
-            const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+            const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }, { cache: 'no-store' });
              const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
             return { success: true, updatedDocument: docWithTiptap, message: 'أُلغيَ نشرُ الوثيقة.' };
         }
@@ -210,7 +268,7 @@ export async function publishDocumentAction(docId: string, publishTime?: string 
         revalidateContentPaths(docType, doc.slug);
         
         if (docType === 'gameRelease') { revalidatePath('/celestial-almanac'); }
-        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId });
+        const finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }, { cache: 'no-store' });
         const docWithTiptap = { ...finalDoc, tiptapContent: portableTextToTiptap(finalDoc.content ?? []) };
         const message = docType === 'gameRelease' ? 'نُشِرَ الإصدار.' : (publishTime ? 'جُدولت الوثيقة.' : 'نُشِرت الوثيقة.');
         return { success: true, updatedDocument: docWithTiptap, message: message };
