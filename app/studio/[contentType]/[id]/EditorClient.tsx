@@ -180,7 +180,8 @@ function editorReducer(state: any, action: { type: string; payload: any }) {
     }
 }
 
-const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJson: string) => {
+// Updated Diff Generator: Handles null initialContentJson
+const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJson: string, initialContentJson: string | null) => {
     const patch: Record<string, any> = {};
 
     const check = (key: string, stateVal: any, sotVal: any) => {
@@ -244,9 +245,11 @@ const generateDiffPatch = (currentState: any, sourceOfTruth: any, editorContentJ
         check('mainImageVertical', currentState.mainImageVertical, null);
     }
 
+    // CONTENT CHECK: Compare Tiptap JSON Strings
     if (sourceOfTruth._type !== 'gameRelease') {
-        const currentContentPortableText = tiptapToPortableText(JSON.parse(editorContentJson));
-        if (!isEquivalent(currentContentPortableText, sourceOfTruth.content)) {
+        // FIX: If initialContentJson is null, we assume the editor is initializing, so no changes yet.
+        if (initialContentJson !== null && editorContentJson !== initialContentJson) {
+            const currentContentPortableText = tiptapToPortableText(JSON.parse(editorContentJson));
             patch.content = currentContentPortableText;
         }
     }
@@ -284,7 +287,12 @@ export function EditorClient({
     );
 
     const debouncedSlug = useDebounce(slug, 500);
-    const [editorContentJson, setEditorContentJson] = useState(JSON.stringify(initialDocument.tiptapContent || {}));
+    
+    // CONTENT STATE
+    // FIX: Initialize to null to indicate "not yet synchronized with Tiptap"
+    const [initialContentJson, setInitialContentJson] = useState<string | null>(null);
+    const [editorContentJson, setEditorContentJson] = useState<string>('');
+    
     const [colorDictionary, setColorDictionary] = useState<ColorMapping[]>(initialColorDictionary);
     
     const [clientSaveStatus, setClientSaveStatus] = useState<SaveStatus>('saved');
@@ -292,6 +300,8 @@ export function EditorClient({
     const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [hasHydratedFromLocal, setHasHydratedFromLocal] = useState(false);
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
+    
+    const justSavedRef = useRef(false);
 
     const stateRef = useRef(state);
     const contentJsonRef = useRef(editorContentJson);
@@ -348,7 +358,6 @@ export function EditorClient({
             try {
                 const localData = JSON.parse(saved);
                 
-                // SAFETY CHECK: Only hydrate if local data is NEWER than server data
                 const serverTime = new Date(initialDocument._updatedAt).getTime();
                 const localTime = localData.updatedAt ? new Date(localData.updatedAt).getTime() : 0;
                 
@@ -356,12 +365,14 @@ export function EditorClient({
                     if (localData.state && localData.contentJson) {
                         dispatch({ type: 'INITIALIZE_STATE', payload: localData.state });
                         setEditorContentJson(localData.contentJson);
+                        // Force editor update
                         const contentObj = JSON.parse(localData.contentJson);
                         editorInstance.commands.setContent(contentObj, false); 
+                        // Set initial to match local so no immediate diff
+                        setInitialContentJson(localData.contentJson);
                         toast.info('تم استعادة مسودة غير محفوظة من جهازك.', 'left');
                     }
                 } else {
-                    // Local storage is stale, clear it
                     localStorage.removeItem(key);
                 }
             } catch (e) {
@@ -371,7 +382,7 @@ export function EditorClient({
         setHasHydratedFromLocal(true);
     }, [editorInstance, initialDocument._id, initialDocument._updatedAt, hasHydratedFromLocal, toast]);
 
-    const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson), [state, sourceOfTruth, editorContentJson]);
+    const patch = useMemo(() => generateDiffPatch(state, sourceOfTruth, editorContentJson, initialContentJson), [state, sourceOfTruth, editorContentJson, initialContentJson]);
     const hasChanges = Object.keys(patch).length > 0;
 
     useEffect(() => {
@@ -409,23 +420,51 @@ export function EditorClient({
 
     useEffect(() => { if (editorInstance) editorInstance.storage.uploadQuality = blockUploadQuality; }, [blockUploadQuality, editorInstance]);
     
+    // --- SOURCE OF TRUTH UPDATES ---
     useEffect(() => { 
-        // If SOT updates (after save), refresh state
         if (sourceOfTruth._updatedAt !== state._updatedAt) {
+            // If we just saved locally, we TRUST our local state.
+            if (justSavedRef.current) {
+                dispatch({ type: 'UPDATE_FIELD', payload: { field: '_updatedAt', value: sourceOfTruth._updatedAt } });
+                justSavedRef.current = false;
+                return;
+            }
+
             const newState = getInitialEditorState(sourceOfTruth);
             dispatch({ type: 'INITIALIZE_STATE', payload: newState }); 
             
+            // Sync content from SOT
+            const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
+            const freshJsonStr = JSON.stringify(freshTiptapContent);
+            
+            setInitialContentJson(freshJsonStr);
+            
             if (editorInstance) { 
-                const freshTiptapContent = portableTextToTiptap(sourceOfTruth.content || []);
-                // Only reset editor content if we don't have pending local changes
-                if (!hasChanges) { 
+                 if (!hasChanges) { 
                     editorInstance.commands.setContent(freshTiptapContent, false); 
-                } 
+                    setEditorContentJson(freshJsonStr);
+                 } 
             }
         }
-    }, [sourceOfTruth._updatedAt, editorInstance]); // Removed sourceOfTruth to avoid loop
+    }, [sourceOfTruth._updatedAt, editorInstance]); 
 
-    useEffect(() => { if (editorInstance) { const updateJson = () => setEditorContentJson(JSON.stringify(editorInstance.getJSON())); editorInstance.on('update', updateJson); return () => { editorInstance.off('update', updateJson); }; } }, [editorInstance]);
+    // --- TIPTAP UPDATE HANDLER ---
+    useEffect(() => { 
+        if (editorInstance) { 
+            const updateJson = () => {
+                const json = JSON.stringify(editorInstance.getJSON());
+                setEditorContentJson(json);
+                // FIX: On first valid update (mount/normalization), set initial if null
+                setInitialContentJson((prev) => prev === null ? json : prev);
+            };
+            
+            // Initial call to set state immediately on mount
+            updateJson();
+            
+            editorInstance.on('update', updateJson); 
+            return () => { editorInstance.off('update', updateJson); }; 
+        } 
+    }, [editorInstance]);
     
     useEffect(() => { 
         if (!isSlugManual && title !== sourceOfTruth.title) { 
@@ -463,7 +502,7 @@ export function EditorClient({
     const isDocumentValid = useMemo(() => { const { title, slug, mainImage, game, score, verdict, authors, reporters, releaseDate, platforms, synopsis, category, isTBA } = state; const type = sourceOfTruth._type; const baseValid = title.trim() && mainImage.assetId; if (!baseValid) return false; if (type !== 'gameRelease' && !slug.trim()) return false; if (type === 'review') return game?._id && (authors || []).length > 0 && score > 0 && verdict.trim(); if (type === 'article') return game?._id && (authors || []).length > 0; if (type === 'news') return (reporters || []).length > 0 && category; if (type === 'gameRelease') return game?._id && (isTBA || releaseDate.trim()) && synopsis.trim() && (platforms || []).length > 0; return false; }, [state, sourceOfTruth._type]);
     
     const saveWorkingCopy = useCallback(async (): Promise<boolean> => { 
-        const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson);
+        const currentPatch = generateDiffPatch(state, sourceOfTruth, editorContentJson, initialContentJson);
         const currentHasChanges = Object.keys(currentPatch).length > 0;
 
         if (!currentHasChanges) {
@@ -480,9 +519,15 @@ export function EditorClient({
         const result = await updateDocumentAction(sourceOfTruth._id, currentPatch); 
         
         if (result.success && result.updatedDocument) { 
+            justSavedRef.current = true;
+            
+            // FIX: Force synchronization of initial content state with current state
+            setInitialContentJson(editorContentJson);
+            
+            dispatch({ type: 'UPDATE_FIELD', payload: { field: '_updatedAt', value: result.updatedDocument._updatedAt } });
+
             setSourceOfTruth(result.updatedDocument);
             
-            // CRITICAL: Clear local storage immediately after successful server save
             const key = `eternal-draft-${sourceOfTruth._id}`;
             localStorage.removeItem(key);
             
@@ -491,7 +536,7 @@ export function EditorClient({
             toast.error(result.message || 'أخفق حفظ التغييرات.', 'left'); 
             return false; 
         } 
-    }, [state, sourceOfTruth, editorContentJson, slugValidationStatus, toast]);
+    }, [state, sourceOfTruth, editorContentJson, initialContentJson, slugValidationStatus, toast]);
     
     useEffect(() => {
         if (hasChanges && isAutoSaveEnabled) {
@@ -514,11 +559,14 @@ export function EditorClient({
         
         const result = await publishDocumentAction(sourceOfTruth._id, publishTime); 
         if (result.success && result.updatedDocument) { 
+            justSavedRef.current = true;
+            
             setSourceOfTruth(prev => ({
                 ...result.updatedDocument,
                 content: prev.content, 
                 tiptapContent: prev.tiptapContent
             })); 
+            
             toast.success(result.message || 'تجددت حالة النشر!', 'left'); 
             return true; 
         } else { 

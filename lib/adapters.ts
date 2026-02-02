@@ -24,7 +24,8 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     }
 
     let imageUrl = null;
-    let blurDataURL: string = '';
+    // FIX: Initialize with the GROQ-fetched LQIP (Base64) if available
+    let blurDataURL: string = item.blurDataURL || item.mainImage?.blurDataURL || '';
     
     const targetWidth = options.width || 1200;
     const targetHeight = Math.round(targetWidth * 0.5625);
@@ -33,7 +34,16 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
     if (imageAsset && (imageAsset._ref || imageAsset._id || imageAsset.url)) {
         try {
             imageUrl = urlFor(imageAsset).width(targetWidth).height(targetHeight).fit('crop').auto('format').url();
-            blurDataURL = urlFor(imageAsset).width(20).blur(10).auto('format').url(); 
+            
+            // FIX: Only generate a URL-based blur fallback if we DON'T have a base64 string.
+            // Note: Next.js <Image> really prefers Base64 for 'blurDataURL'. 
+            // Passing a CDN URL here usually won't work for the 'blur' placeholder effect unless configured specifically.
+            // So we primarily rely on the incoming `blurDataURL`.
+            if (!blurDataURL) {
+                 // Fallback: If no LQIP, we can't easily sync-generate one. 
+                 // We leave it empty to avoid broken image icons.
+                 blurDataURL = '';
+            }
         } catch (e) {
             console.warn("Image URL generation failed", e);
             imageUrl = '/placeholder-game.jpg';
@@ -117,7 +127,7 @@ export const adaptToCardProps = (item: any, options: { width?: number } = {}): C
         mainImageVerticalRef: verticalImageAsset, 
         score: item.score,
         tags: (item.tags || []).map((t: any) => ({ title: t.title, slug: t.slug })).filter(Boolean),
-        blurDataURL: blurDataURL,
+        blurDataURL: blurDataURL, // Now correctly using the Base64 string
         category: item.category?.title,
         newsType: item.newsType || 'official', 
         verdict: item.verdict || '',

@@ -170,10 +170,24 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
         e.stopPropagation();
     };
     
-    const imageRef = review.mainImageVerticalRef || review.mainImageRef;
-    const imageUrl = imageRef 
-        ? urlFor(imageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
+    // 1. Image for the CARD DISPLAY (Vertical preferred)
+    const cardImageRef = review.mainImageVerticalRef || review.mainImageRef;
+    const cardImageUrl = cardImageRef 
+        ? urlFor(cardImageRef).width(isCenter ? 800 : 560).height(isCenter ? 1000 : 700).fit('crop').auto('format').url()
         : review.imageUrl;
+
+    // 2. Image for the OVERLAY HERO (Horizontal preferred)
+    const overlayImageRef = review.mainImageRef;
+    const overlayImageUrl = overlayImageRef
+        ? urlFor(overlayImageRef).width(1920).height(1080).fit('crop').auto('format').url()
+        : review.imageUrl;
+    
+    // 3. LOW RES (Pre-load) Image for Horizontal Overlay
+    // We fetch a small version (e.g., width 480) to ensure the browser caches the horizontal asset
+    // before the transition happens. This prevents "blank" or "white" flashes.
+    const preLoadOverlayUrl = overlayImageRef
+        ? urlFor(overlayImageRef).width(480).auto('format').url()
+        : null;
 
     // MODIFIED: Credits show logic
     // They are always rendered but opacity controlled to prevent mount flicker
@@ -216,12 +230,22 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
 
     return (
         <div className={styles.cardWrapper}>
+            {/* FIX: Pre-load the horizontal image invisibly so it's cached for the transition */}
+            {preLoadOverlayUrl && (
+                <img 
+                    src={preLoadOverlayUrl} 
+                    alt="" 
+                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }} 
+                    aria-hidden="true"
+                />
+            )}
+
             <KineticLink 
                 href={linkPath}
                 slug={review.slug}
                 type="reviews"
                 layoutId={layoutId} 
-                imageSrc={imageUrl}
+                imageSrc={overlayImageUrl} // Pass HORIZONTAL image for overlay
                 onClick={handleClick}
                 className="no-underline"
                 style={{ display: 'block', height: '100%', cursor: 'pointer' }}
@@ -259,7 +283,7 @@ const VanguardCard = memo(({ review, isCenter, isInView, isPriority, isMobile, i
                         >
                             <Image 
                                 loader={sanityLoader}
-                                src={imageUrl} 
+                                src={cardImageUrl} // Use VERTICAL image for card display
                                 alt={review.title} 
                                 fill 
                                 sizes={isCenter ? "(max-width: 768px) 80vw, 400px" : "(max-width: 768px) 60vw, 280px"}
