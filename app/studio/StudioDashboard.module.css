@@ -26,71 +26,88 @@
     max-width: 500px;
 }
 
-/* --- NEW: Director Gate Button Styles --- */
-.directorGateButton {
+/* --- Director Gate Buttons --- */
+.directorActions {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
     margin-top: 2.5rem;
+    flex-wrap: wrap;
+}
+
+.directorGateButton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 1.2rem;
-    padding: 1.2rem 3.5rem;
+    padding: 1.2rem 3rem;
     border: 2px solid #FFD700; /* Gold Border */
     border-radius: 999px;
     color: #FFD700;
     background-color: transparent;
     font-family: var(--font-main);
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 800;
     transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
-    text-decoration: none; /* Failsafe against global link styles */
+    text-decoration: none;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
+@media (hover: hover) {
   .directorGateButton:hover  {
     background-color: #FFD700;
-    color: #121212; /* Dark text for contrast against gold */
+    color: #121212;
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
     border-color: #FFD700;
-}
-}
-
+  }
   .directorGateButton:active  {
     background-color: #FFD700;
-    color: #121212; /* Dark text for contrast against gold */
+    color: #121212;
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
     border-color: #FFD700;
-}
+  }
 }
 .directorGateButton:active {
     background-color: #FFD700;
-    color: #121212; /* Dark text for contrast against gold */
+    color: #121212;
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
     border-color: #FFD700;
 }
 
-
 .directorGateButton svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     transition: transform 0.3s ease;
 }
-@media (hover: hover) {@media (hover: hover) {
-  
-  .directorGateButton:hover svg  {
-    transform: rotate(-15deg) scale(1.1);
-}
+
+/* Analytics Button Variant (Cyan/Tech) */
+.analyticsButton {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-  .directorGateButton:active svg  {
-    transform: rotate(-15deg) scale(1.1);
+@media (hover: hover) {
+  .analyticsButton:hover  {
+    background-color: var(--accent);
+    color: #050505;
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  .analyticsButton:active  {
+    background-color: var(--accent);
+    color: #050505;
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
 }
-}
-.directorGateButton:active svg {
-    transform: rotate(-15deg) scale(1.1);
+.analyticsButton:active {
+    background-color: var(--accent);
+    color: #050505;
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 
@@ -116,9 +133,8 @@
         max-width: 100%;
     }
     .directorGateButton {
-        padding: 1rem 2.5rem;
-        font-size: 1.6rem;
+        padding: 1rem 2rem;
+        font-size: 1.4rem;
+        width: 100%;
     }
 }
-
-

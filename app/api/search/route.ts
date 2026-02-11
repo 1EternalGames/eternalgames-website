@@ -1,3 +1,4 @@
+// app/api/search/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { client } from '@/lib/sanity.client';
 import { searchQuery } from '@/lib/sanity.queries';
@@ -14,18 +15,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // FIX: cache: 'no-store' prevents Next.js from writing these infinite permutations to the Data Cache (ISR Writes).
-    // Sanity's CDN will still handle repeated requests efficiently if useCdn is true globally, 
-    // but here we want to avoid Vercel cache explosion.
+    // CACHE FIX: 'universal-base' updates whenever ANY content is published.
+    // This allows search results to be cached "forever" until content actually changes.
     const results = await client.fetch<SanitySearchResult[]>(
       searchQuery, 
       { searchTerm: query },
-      { cache: 'no-store' } 
+      { 
+        next: { tags: ['universal-base'] } 
+      } 
     );
     
     return NextResponse.json(results, {
         headers: {
-            'Cache-Control': 'public, max-age=60' 
+            // Browser cache for 2 minutes to prevent keystroke thrashing
+            'Cache-Control': 'public, max-age=120' 
         }
     });
   } catch (error) {

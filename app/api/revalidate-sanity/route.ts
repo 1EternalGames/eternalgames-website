@@ -1,3 +1,5 @@
+// app/api/revalidate-sanity/route.ts
+
 import { revalidateTag } from 'next/cache';
 import { type NextRequest, NextResponse } from 'next/server';
 import { parseBody } from 'next-sanity/webhook';
@@ -22,79 +24,76 @@ export async function POST(req: NextRequest) {
     }
 
     if (!body?._type || !body?._id) {
-      return new Response('Bad Request: Missing _type or _id', { status: 400 });
+      return new Response('Bad Request', { status: 400 });
     }
 
-    // 1. IGNORE DRAFTS
+    // 1. STRICT FILTER: Ignore Drafts
+    // If the ID starts with 'drafts.', it's an autosave. Do nothing.
     if (body._id.startsWith('drafts.')) {
       return NextResponse.json({
         status: 200,
         revalidated: false,
-        message: 'Ignored draft document',
+        message: 'Ignored draft',
         now: Date.now(),
       });
     }
 
-    // 2. IGNORE SYSTEM ASSETS (The "Asset Trap" Fix)
-    // Uploading images/files triggers webhooks but shouldn't nuke the homepage cache
-    // until they are actually ATTACHED to a published document.
+    // 2. STRICT FILTER: Ignore Assets
+    // Uploading images shouldn't trigger a rebuild until they are attached to a doc.
     if (['sanity.imageAsset', 'sanity.fileAsset'].includes(body._type)) {
        return NextResponse.json({
         status: 200,
         revalidated: false,
-        message: 'Ignored system asset',
+        message: 'Ignored asset',
         now: Date.now(),
       });
     }
 
-    // 3. SURGICAL REVALIDATION
+    // 3. GRANULAR REVALIDATION
+    // Instead of one big 'content' tag, we hit specific targets.
     
-    // A. Always invalidate the specific document by its SLUG
+    const tagsToInvalidate = new Set<string>();
+
+    // A. Always invalidate the specific document
     if (body.slug?.current) {
-        revalidateTag(body.slug.current, 'max');
-        console.log(`[REVALIDATE] Invalidated Slug: ${body.slug.current}`);
+        tagsToInvalidate.add(body.slug.current);
     }
 
-    // B. Global Content (Menus, Lists, Feeds)
-    // Only revalidate this heavy tag for actual content types
-    revalidateTag('content', 'max');
+    // B. Invalidate the Type Collection
+    // e.g. Publishing a 'review' invalidates the 'review' tag (refreshing /reviews and API)
+    // It does NOT invalidate 'news' or 'articles'.
+    tagsToInvalidate.add(body._type);
 
-    // C. Metadata Singletons
-    if (['tag', 'game', 'developer', 'publisher', 'author', 'reviewer', 'reporter', 'designer'].includes(body._type)) {
-        revalidateTag('studio-metadata', 'max');
+    // C. The Universal Base (Homepage)
+    // The homepage relies on reviews, articles, news, and releases.
+    // If any of these change, we must update the homepage.
+    if (['review', 'article', 'news', 'gameRelease', 'homepageSettings'].includes(body._type)) {
+        tagsToInvalidate.add('universal-base');
     }
+
+    // D. Metadata/Global Lists
+    // If a tag, game, or creator changes, we might need to refresh global lists
+    if (['tag', 'game', 'developer', 'publisher', 'author', 'reviewer', 'reporter', 'designer', 'colorDictionary'].includes(body._type)) {
+        tagsToInvalidate.add('studio-metadata');
+        // Metadata changes might affect homepage too
+        tagsToInvalidate.add('universal-base');
+    }
+
+    // Execute Revalidations
+    tagsToInvalidate.forEach(tag => {
+        revalidateTag(tag);
+        console.log(`[REVALIDATE] Triggered tag: ${tag}`);
+    });
 
     return NextResponse.json({
       status: 200,
       revalidated: true,
+      tags: Array.from(tagsToInvalidate),
       now: Date.now(),
-      type: body._type,
-      slug: body.slug?.current
     });
 
   } catch (err: any) {
     console.error('[REVALIDATE ERROR]', err);
     return new Response(err.message, { status: 500 });
   }
-}
-
-// Manual Handler
-export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const secret = searchParams.get('secret');
-    const tag = searchParams.get('tag');
-
-    if (secret !== process.env.REVALIDATION_SECRET_TOKEN) {
-        return new Response('Invalid token', { status: 401 });
-    }
-
-    if (tag) {
-        revalidateTag(tag, 'max');
-        return NextResponse.json({ revalidated: true, tag, now: Date.now() });
-    }
-    
-    revalidateTag('content', 'max');
-    revalidateTag('studio-metadata', 'max');
-
-    return NextResponse.json({ revalidated: true, message: 'Global content tags revalidated', now: Date.now() });
 }

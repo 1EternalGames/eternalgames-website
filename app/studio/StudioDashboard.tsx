@@ -11,7 +11,7 @@ import { deleteDocumentAction } from './actions';
 import { useToast } from '@/lib/toastStore';
 import { urlFor } from '@/sanity/lib/image';
 import Image from 'next/image';
-import { sanityLoader } from '@/lib/sanity.loader'; // Ensure imported
+import { sanityLoader } from '@/lib/sanity.loader';
 import styles from './StudioDashboard.module.css';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -73,7 +73,7 @@ const ContentCanvas = ({ item, onDelete, isActive, onCardClick }: {
             >
                 {imageUrlWithBuster ? (
                     <Image 
-                        loader={sanityLoader} // <-- ADDED: Bypass Vercel Image Optimization
+                        loader={sanityLoader} 
                         src={imageUrlWithBuster} 
                         alt={item.title} 
                         fill
@@ -178,14 +178,25 @@ export function StudioDashboard({ initialContent, userRoles }: { initialContent:
                 <h1 className={`${styles.studioTitle} page-title`}>ديوان الصنعة</h1>
                 <p className={styles.studioSubtitle}>قُد دفّة محتواك في رحاب EternalGames.</p>
                 {isDirector && (
-                    <Link 
-                        href="/studio/director" 
-                        className={`${styles.directorGateButton} no-underline`}
-                        prefetch={false}
-                    >
-                         <span>بوابة الإدارة</span>
-                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
-                    </Link>
+                    <div className={styles.directorActions}>
+                        <Link 
+                            href="/studio/director" 
+                            className={`${styles.directorGateButton} no-underline`}
+                            prefetch={false}
+                        >
+                            <span>بوابة الإدارة</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
+                        </Link>
+                        
+                        <Link 
+                            href="/studio/analytics" 
+                            className={`${styles.directorGateButton} ${styles.analyticsButton} no-underline`}
+                            prefetch={false}
+                        >
+                             <span>التحليلات</span>
+                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                        </Link>
+                    </div>
                 )}
             </header>
 

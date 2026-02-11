@@ -19,18 +19,15 @@ import {
 import { adaptToCardProps } from '@/lib/adapters';
 import { CardProps } from '@/types';
 
-// OPTIMIZATION NOTE: 
-// For batch fetching and pagination, we explicitly set { cache: 'no-store' }.
-// This prevents Next.js from creating a persistent Data Cache entry for every single
-// offset/limit combination (which causes the 5k+ writes/day issue).
-// We rely on Sanity's Edge CDN (configured in client) for speed.
-
+// Batch fetch by IDs - Caches based on the specific IDs requested
+// If any of these specific docs update, this cache invalidates
 export async function batchFetchFullContentAction(ids: string[]) {
   if (!ids || ids.length === 0) return [];
   try {
     const query = groq`*[_id in $ids] { ${fullDocProjection} }`;
-    // FIX: Disable Data Cache writes for arbitrary ID sets
-    const rawData = await client.fetch(query, { ids }, { cache: 'no-store' });
+    const rawData = await client.fetch(query, { ids }, { 
+        next: { tags: ids } // Granular: Invalidates only if THESE docs change
+    });
     const enrichedData = await enrichContentList(rawData);
     const dataWithToc = enrichedData.map((item: any) => {
         const tocHeadings = extractHeadingsFromContent(item.content);
@@ -53,8 +50,10 @@ export async function batchFetchTagsAction(slugs: string[]) {
             _id, title, "slug": slug.current,
             "items": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && (references(^._id) || category._ref == ^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
         }`;
-        // FIX: Disable Data Cache
-        const rawTags = await client.fetch(query, { slugs }, { cache: 'no-store' });
+        // Tag pages depend on the 'tag' itself and any 'content' that might reference it
+        const rawTags = await client.fetch(query, { slugs }, { 
+            next: { tags: ['tag', 'universal-base'] } 
+        });
         const enrichedTags = await Promise.all(rawTags.map(async (tag: any) => {
             const items = await enrichContentList(tag.items || []);
             return { ...tag, items };
@@ -73,8 +72,9 @@ export async function batchFetchCreatorsAction(creatorIds: string[]) {
             _id, name, prismaUserId, username, image, bio,
             "linkedContent": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references(^._id)] | order(publishedAt desc)[0...12] { ${cardListProjection} }
         }`;
-        // FIX: Disable Data Cache
-        const rawCreators = await client.fetch(query, { ids: creatorIds }, { cache: 'no-store' });
+        const rawCreators = await client.fetch(query, { ids: creatorIds }, {
+            next: { tags: ['creators', 'universal-base'] }
+        });
         const enrichedCreators = await Promise.all(rawCreators.map(async (c: any) => {
             const items = await enrichContentList(c.linkedContent || []);
             return { ...c, linkedContent: items };
@@ -86,36 +86,29 @@ export async function batchFetchCreatorsAction(creatorIds: string[]) {
     }
 }
 
+// ... (fetchCreatorByUsernameAction remains as is, it uses unstable_cache correctly) ...
 export const fetchCreatorByUsernameAction = unstable_cache(
     async (username: string) => {
         if (!username) return null;
-        
         try {
             const user = await prisma.user.findUnique({
                 where: { username },
                 select: { id: true, name: true, username: true, image: true, bio: true }
             });
-            
             if (!user) return null;
-
             const creatorDocs = await client.fetch<{ _id: string, bio?: string }[]>(
                 `*[_type in ["author", "reviewer", "reporter", "designer"] && prismaUserId == $prismaUserId]{_id, bio}`,
                 { prismaUserId: user.id }
             );
-            
             const creatorIds = creatorDocs.map(d => d._id);
             const sanityBio = creatorDocs.find(d => d.bio)?.bio;
             const finalBio = user.bio || sanityBio || null;
-            
             let enrichedContent: any[] = [];
-            
             if (creatorIds.length > 0) {
                 const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc)[0...24] { ${cardListProjection} }`;
-                // Keep this cached via unstable_cache wrapper, but internal fetch doesn't need double caching
                 const rawContent = await client.fetch(query, { creatorIds });
                 enrichedContent = await enrichContentList(rawContent);
             }
-
             return {
                 _id: creatorIds[0] || `prisma-${user.id}`,
                 prismaUserId: user.id,
@@ -126,22 +119,22 @@ export const fetchCreatorByUsernameAction = unstable_cache(
                 linkedContent: enrichedContent,
                 contentLoaded: true
             };
-
         } catch (error) {
             console.error("fetchCreatorByUsernameAction failed", error);
             return null;
         }
     },
-    ['creator-profile-by-username-v3'],
-    { tags: ['creator-profile', 'content'] }
+    ['creator-profile-by-username-v4'],
+    { tags: ['creators', 'universal-base'] }
 );
 
 export async function fetchGameContentAction(slug: string) {
     if (!slug) return [];
     try {
         const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && game->slug.current == $slug] | order(publishedAt desc) { ${cardListProjection} }`;
-        // FIX: Disable Data Cache
-        const raw = await client.fetch(query, { slug }, { cache: 'no-store' });
+        const raw = await client.fetch(query, { slug }, { 
+            next: { tags: ['game', 'universal-base'] }
+        });
         const enriched = await enrichContentList(raw);
         return enriched.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean);
     } catch (e) {
@@ -153,14 +146,12 @@ export async function fetchGameContentAction(slug: string) {
 export async function fetchGameHubDataAction(slug: string) {
     if (!slug) return null;
     try {
-        // FIX: Disable Data Cache
-        const data = await client.fetch(gamePageDataQuery, { slug }, { cache: 'no-store' });
+        const data = await client.fetch(gamePageDataQuery, { slug }, { 
+            next: { tags: ['game', slug, 'universal-base'] }
+        });
         if (!data) return null;
-
         const enrichedItems = await enrichContentList(data.items || []);
-        
         const releaseData = data.release || {};
-        
         return {
             ...data,
             items: enrichedItems.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean),
@@ -182,13 +173,13 @@ export async function fetchGameHubDataAction(slug: string) {
     }
 }
 
+// ... (fetchCreatorContentAction, fetchTagContentAction - Use similar 'universal-base' or specific tags)
 
 export async function fetchCreatorContentAction(creatorId: string) {
     if (!creatorId) return [];
     try {
         const query = groq`*[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && references($creatorIds)] | order(publishedAt desc) { ${cardListProjection} }`;
-        // FIX: Disable Data Cache
-        const raw = await client.fetch(query, { creatorIds: [creatorId] }, { cache: 'no-store' });
+        const raw = await client.fetch(query, { creatorIds: [creatorId] }, { next: { tags: ['creators', 'universal-base'] } });
         const enriched = await enrichContentList(raw);
         return enriched.map((i: any) => adaptToCardProps(i, { width: 600 })).filter(Boolean);
     } catch (e) {
@@ -212,8 +203,10 @@ export async function fetchSingleContentAction(slug: string) {
     if (!slug) return null;
     try {
         const query = groq`*[_type in ["review", "article", "news"] && slug.current == $slug][0] { ${fullDocProjection} }`;
-        // FIX: Disable Data Cache for individual fetch in overlay to ensure freshness and avoid key explosion
-        const rawData = await client.fetch(query, { slug }, { cache: 'no-store' });
+        // SINGLE CONTENT: Cache on the SLUG itself.
+        const rawData = await client.fetch(query, { slug }, { 
+            next: { tags: [slug] }
+        });
         if (!rawData) return null;
         const enrichedList = await enrichContentList([rawData]);
         const item = enrichedList[0];
@@ -231,6 +224,9 @@ export async function fetchSingleContentAction(slug: string) {
     }
 }
 
+// --- PAGINATION ACTIONS: KEY FIX ---
+// These are used for "Load More". We tag them by type so they cache until that type is published.
+
 export async function loadMoreReviews(params: { offset: number, limit: number, sort: 'latest' | 'score', scoreRange?: string, gameSlug?: string, tagSlugs?: string[], searchTerm?: string }) {
     const query = paginatedReviewsQuery(
         params.gameSlug, 
@@ -242,8 +238,10 @@ export async function loadMoreReviews(params: { offset: number, limit: number, s
         params.sort, 
         fullDocProjection
     );
-    // CRITICAL FIX: Disable Data Cache for infinite scroll pagination
-    const rawData = await client.fetch(query, {}, { cache: 'no-store' });
+    // CACHE: Cache until a 'review' is published.
+    const rawData = await client.fetch(query, {}, { 
+        next: { tags: ['review'] } 
+    });
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
@@ -257,8 +255,10 @@ export async function loadMoreArticles(params: { offset: number, limit: number, 
         params.sort, 
         fullDocProjection
     );
-    // CRITICAL FIX: Disable Data Cache for infinite scroll pagination
-    const rawData = await client.fetch(query, {}, { cache: 'no-store' });
+    // CACHE: Cache until an 'article' is published.
+    const rawData = await client.fetch(query, {}, { 
+        next: { tags: ['article'] } 
+    });
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
@@ -272,8 +272,10 @@ export async function loadMoreNews(params: { offset: number, limit: number, sort
         params.sort, 
         fullDocProjection
     );
-    // CRITICAL FIX: Disable Data Cache for infinite scroll pagination
-    const rawData = await client.fetch(query, {}, { cache: 'no-store' });
+    // CACHE: Cache until a 'news' item is published.
+    const rawData = await client.fetch(query, {}, { 
+        next: { tags: ['news'] } 
+    });
     return await processUnifiedResponse(rawData, params.limit, params.offset);
 }
 
@@ -291,8 +293,8 @@ async function processUnifiedResponse(rawData: any[], limit: number, offset: num
     
     if (gameIds.size > 0) {
         try {
-            // Also disable cache for this side-load
-            const gameHubs = await client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { cache: 'no-store' });
+            // Also cache side-loaded hubs by the generic 'game' tag
+            const gameHubs = await client.fetch(batchGameHubsQuery, { ids: Array.from(gameIds) }, { next: { tags: ['game'] } });
             enrichedHubs = await Promise.all(gameHubs.map(async (hub: any) => {
                 if (hub.linkedContent && hub.linkedContent.length > 0) {
                     hub.linkedContent = await enrichContentList(hub.linkedContent);

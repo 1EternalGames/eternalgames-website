@@ -28,7 +28,10 @@ export async function GET(req: NextRequest) {
 
         const query = paginatedArticlesQuery(gameSlug, tagSlugs, searchTerm, offset, limit, sort);
         
-        const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
+        // CACHE FIX: Cache specifically for 'article' tag
+        const sanityData = await client.fetch(query, {}, { 
+            next: { tags: ['article'] } 
+        });
         
         const enrichedData = await enrichContentList(sanityData);
         const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+        response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300');
 
         return response;
 

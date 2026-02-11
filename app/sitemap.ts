@@ -3,10 +3,6 @@ import { MetadataRoute } from 'next';
 import { client } from '@/lib/sanity.client';
 import { groq } from 'next-sanity';
 
-// OPTIMIZATION: Removed time-based revalidation.
-// We now rely on On-Demand Revalidation via the 'content' tag.
-// This sitemap will stay cached forever until a Sanity Webhook fires.
-
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.EternalGamesWeb.com'; 
 
 const sitemapQuery = groq`{
@@ -32,10 +28,9 @@ const getPriority = (dateStr: string, basePriority: number) => {
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // FIX: Use 'next: { tags: ['content'] }'.
-  // This connects the sitemap to the global 'content' revalidation tag.
+  // FIX: Cache indefinitely until 'universal-base' (any content) or 'studio-metadata' changes.
   const data = await client.fetch(sitemapQuery, {}, { 
-      next: { tags: ['content'] } 
+      next: { tags: ['universal-base', 'studio-metadata'] } 
   });
 
   const routes: MetadataRoute.Sitemap = [

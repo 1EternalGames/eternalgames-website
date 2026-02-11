@@ -7,6 +7,7 @@ import { ScoreFilter } from '@/components/filters/ReviewFilters';
 import { enrichContentList } from '@/lib/enrichment';
 import { standardLimiter } from '@/lib/rate-limit'; 
 
+// Force dynamic because we read searchParams, BUT we use 'fetch' caching below
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
@@ -30,7 +31,12 @@ export async function GET(req: NextRequest) {
 
         const query = paginatedReviewsQuery(gameSlug, tagSlugs, searchTerm, scoreRange, offset, limit, sort);
         
-        const sanityData = await client.fetch(query, {}, { cache: 'no-store' });
+        // CACHE FIX: Removed { cache: 'no-store' }
+        // Replaced with tag-based revalidation.
+        // This combination of query params will be cached indefinitely until 'review' tag is purged.
+        const sanityData = await client.fetch(query, {}, { 
+            next: { tags: ['review'] } 
+        });
         
         const enrichedData = await enrichContentList(sanityData);
         const data = enrichedData.map(item => adaptToCardProps(item, { width: 600 })).filter(Boolean);
@@ -40,7 +46,8 @@ export async function GET(req: NextRequest) {
             nextOffset: data.length === limit ? offset + limit : null,
         });
 
-        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+        // Set browser cache headers to reduce hits to the Edge
+        response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300'); // 5 minutes browser cache
         
         return response;
 
