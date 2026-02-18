@@ -110,7 +110,7 @@ export async function updateAboutPageAction(data: Record<string, string | string
             .set(patchData)
             .commit();
 
-        revalidateTag('about-page', 'max');
+        revalidateTag('about-page');
 
         return { success: true, message: 'تم تحديث صفحة "من نحن".' };
     } catch (error) {

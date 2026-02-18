@@ -1,4 +1,4 @@
-// app/api/engagement-scores/route.ts
+// api/engagement-scores/route.ts
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
@@ -7,7 +7,6 @@ const getCachedScores = unstable_cache(
     async () => {
         const contentTypes = ['review', 'article', 'news'];
         
-        // OPTIMIZATION: Minimal selection to reduce DB load
         const contentIdsQuery = await prisma.engagement.findMany({
             where: { contentType: { in: contentTypes }, type: 'LIKE' },
             select: { contentId: true },
@@ -17,7 +16,6 @@ const getCachedScores = unstable_cache(
 
         if (ids.length === 0) return [];
 
-        // OPTIMIZATION: Run groupBys in parallel
         const [likes, shares] = await Promise.all([
             prisma.engagement.groupBy({
                 by: ['contentId'],
@@ -41,8 +39,6 @@ const getCachedScores = unstable_cache(
         });
     },
     ['global-engagement-scores'], 
-    // OPTIMIZATION: Infinite cache.
-    // Invalidated ONLY by user interaction (Like/Share actions).
     { 
         revalidate: false,
         tags: ['engagement-scores'] 

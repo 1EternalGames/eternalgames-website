@@ -30,7 +30,6 @@ export async function setBookmarkAction(contentId: number, contentType: string, 
     try {
         const session = await getAuthenticatedSession();
         
-        // Rate Limit (10 requests per 10s is generous enough for clicking, but stops scripts)
         const ip = (await headers()).get('x-forwarded-for') || 'unknown';
         const limitCheck = await standardLimiter.check(`bookmark-${session.user.id}-${ip}`, 10);
         if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
@@ -47,13 +46,12 @@ export async function setLikeAction(contentId: number, contentType: string, cont
     try {
         const session = await getAuthenticatedSession();
 
-        // Rate Limit
         const ip = (await headers()).get('x-forwarded-for') || 'unknown';
-        const limitCheck = await standardLimiter.check(`like-${session.user.id}-${ip}`, 20); // Higher limit for rapid liking
+        const limitCheck = await standardLimiter.check(`like-${session.user.id}-${ip}`, 20);
         if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
 
         await setEngagement(session.user.id, contentId, contentType, 'LIKE', isLiked);
-        revalidateTag('engagement-scores', 'max');
+        revalidateTag('engagement-scores');
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setLikeAction failed:", error);
@@ -66,7 +64,6 @@ export async function recordShareAction(contentId: number, contentType: string, 
         const session = await getAuthenticatedSession();
         const userId = session.user.id;
 
-        // Rate Limit (Strict - sharing is heavy)
         const ip = (await headers()).get('x-forwarded-for') || 'unknown';
         const limitCheck = await standardLimiter.check(`share-${userId}-${ip}`, 5);
         if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
@@ -74,7 +71,7 @@ export async function recordShareAction(contentId: number, contentType: string, 
         await prisma.share.create({
             data: { userId, contentId, contentType },
         });
-        revalidateTag('engagement-scores', 'max');
+        revalidateTag('engagement-scores');
         
         const updatedShares = await prisma.share.findMany({
             where: { userId },

@@ -15,15 +15,13 @@ export async function toggleReleasePin(releaseId: string, currentPinStatus: bool
             return { success: false, message: 'غير مصرح لك.' };
         }
 
-        // Toggle the isPinned field
         await sanityWriteClient
             .patch(releaseId)
             .set({ isPinned: !currentPinStatus })
             .commit();
 
-        // THE FIX: Added 'max' profile argument
-        revalidateTag('gameRelease', 'max');
-        revalidateTag('content', 'max');
+        revalidateTag('gameRelease');
+        revalidateTag('content');
 
         return { success: true, message: !currentPinStatus ? 'تم تثبيت الإصدار.' : 'أزيل التثبيت.' };
     } catch (error) {
@@ -31,5 +29,3 @@ export async function toggleReleasePin(releaseId: string, currentPinStatus: bool
         return { success: false, message: 'حدث خطأ.' };
     }
 }
-
-
