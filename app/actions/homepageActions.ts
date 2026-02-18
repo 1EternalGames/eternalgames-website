@@ -129,7 +129,7 @@ export const getAllStaffAction = unstable_cache(
     },
     ['all-staff-full-data-v4'], 
     { 
-        revalidate: 3600, 
+        revalidate: false, 
         tags: ['creators', 'content', 'enriched-creators'] 
     }
 );
@@ -163,7 +163,7 @@ export const getAllTagsAction = unstable_cache(
     },
     ['all-tags-full-data'], 
     { 
-        revalidate: 3600, 
+        revalidate: false, 
         tags: ['tag', 'content'] 
     }
 );
@@ -233,7 +233,7 @@ export const getRecentGamesAction = unstable_cache(
     },
     ['recent-games-hubs-targeted-v7'], // Key updated
     { 
-        revalidate: 3600, 
+        revalidate: false, 
         tags: ['game', 'content'] 
     }
 );

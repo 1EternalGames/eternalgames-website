@@ -111,7 +111,7 @@ export default function AnalyticsClient({ data, vercelConfig }: { data: Analytic
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <motion.h1 className={styles.title} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>ديوان البيانات</motion.h1>
+                <motion.h1 className={styles.title} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>البيانات</motion.h1>
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
                     {[
                         { k: '7d', l: '7 أيام' },
