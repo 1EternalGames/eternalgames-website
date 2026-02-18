@@ -11,8 +11,9 @@ import { groq } from 'next-sanity';
 import { profileSchema, signUpSchema } from '@/lib/validations';
 import { sensitiveLimiter } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
-import { validateImageFile } from '@/lib/security'; 
+import { validateImageFile } from '@/lib/security'; // SECURITY IMPORT
 
+// ... (Keep existing syncUserToSanity function as is) ...
 async function syncUserToSanity(userId: string) {
     try {
         const user = await prisma.user.findUnique({
@@ -132,9 +133,9 @@ export async function updateUserProfile(formData: FormData) {
         
         await syncUserToSanity(session.user.id);
 
-        revalidateTag(`user-session-${session.user.id}`);
-        revalidateTag('enriched-creators');
-        revalidateTag('enriched-creator-details');
+        revalidateTag(`user-session-${session.user.id}`, 'max');
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
         revalidatePath(`/profile/${session.user.id}`);
         if (data.username) revalidatePath(`/creators/${data.username}`);
@@ -175,9 +176,9 @@ export async function completeOnboardingAction(formData: FormData) {
             data: { name: fullName, username: username, age: ageStr ? parseInt(ageStr, 10) : null, country: country || null },
         });
 
-        revalidateTag(`user-session-${session.user.id}`);
-        revalidateTag('enriched-creators');
-        revalidateTag('enriched-creator-details');
+        revalidateTag(`user-session-${session.user.id}`, 'max');
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('enriched-creator-details', 'max');
         revalidatePath('/profile');
         if (username) revalidatePath(`/profile/${username}`);
         return { success: true };
@@ -199,9 +200,11 @@ export async function changePasswordAction(formData: FormData) {
         const newPassword = formData.get('newPassword') as string;
         const confirmPassword = formData.get('confirmPassword') as string;
         
+        // DIRECTOR Override check
         const userRoles = session.user.roles || [];
         const isDirector = userRoles.includes('DIRECTOR');
 
+        // Logic split: Director doesn't need currentPassword
         if (!isDirector) {
             if (!currentPassword) return { success: false, message: 'كلمة السر الحالية مطلوبة.' };
             const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
@@ -273,7 +276,7 @@ export async function setUsernameAction(username: string) {
         
         await prisma.user.update({ where: { id: session.user.id }, data: { username: cleanUsername } });
         revalidatePath('/profile');
-        revalidateTag(`user-session-${session.user.id}`);
+        revalidateTag(`user-session-${session.user.id}`, 'max');
         return { success: true };
     } catch (error: any) { return { success: false, message: error.message || 'أخفق تحديث الاسم.' }; }
 }
@@ -282,6 +285,7 @@ export async function updateUserAvatar(formData: FormData) {
     try {
         const session = await getAuthenticatedSession();
         
+        // Rate limit for uploads (heavy operation)
         const ip = (await headers()).get('x-forwarded-for') || 'unknown';
         const limitCheck = await sensitiveLimiter.check(`avatar-upload-${session.user.id}-${ip}`, 3); 
         if (!limitCheck.success) throw new Error("محاولات رفع كثيرة جداً.");
@@ -289,8 +293,10 @@ export async function updateUserAvatar(formData: FormData) {
         const avatarFile = formData.get('avatar') as File | null;
         if (!avatarFile || avatarFile.size === 0) return { success: true, message: 'لا صورة جديدة.' };
         
+        // SECURITY: Strict File Validation
         if (avatarFile.size > 5 * 1024 * 1024) throw new Error('حجم الصورة كبير جدًا (أقصى حد 5 ميجابايت).');
         
+        // SECURITY: Verify Magic Bytes
         const validation = await validateImageFile(avatarFile);
         if (!validation.isValid) throw new Error(validation.error);
 
@@ -301,9 +307,9 @@ export async function updateUserAvatar(formData: FormData) {
         await syncUserToSanity(session.user.id);
         
         revalidatePath('/profile');
-        revalidateTag('enriched-creators');
-        revalidateTag('enriched-creator-details');
-        revalidateTag(`user-session-${session.user.id}`);
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('enriched-creator-details', 'max');
+        revalidateTag(`user-session-${session.user.id}`, 'max');
         
         return { success: true, message: 'تجدَّدت الصورة الرمزية.' };
     } catch (error: any) { return { success: false, message: error.message || 'أخفق الرفع.' }; }

@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateImageFile } from '@/lib/security'; 
 
 function revalidateContentPaths(docType: string, slug?: string) {
-    revalidateTag(docType); 
+    revalidateTag(docType, 'max'); 
     revalidatePath('/'); 
     let sectionPath = '';
     switch (docType) {
@@ -38,7 +38,7 @@ export const getStudioMetadataAction = unstable_cache(
     return await client.fetch(studioMetadataQuery);
   },
   ['studio-metadata-full'],
-  { tags: ['studio-metadata'], revalidate: false } 
+  { tags: ['studio-metadata'], revalidate: 3600 } 
 );
 
 export async function translateTitleToAction(title: string): Promise<string> {
@@ -94,26 +94,40 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
     const session = await getAuthenticatedSession();
     if (!session) return { success: false, message: 'غير مُخَوَّل.' };
     
+    // Ensure we handle both draft and public IDs correctly
     const publicId = docId.replace('drafts.', '');
     const draftId = `drafts.${publicId}`;
     
     try {
         const tx = sanityWriteClient.transaction();
         
+        // 1. Fetch current state to determine if we need to initialize a draft
+        // We assume drafts exist if we are editing, but we must handle the case where it's a new draft from a published doc
         const [existingDraft, originalDoc] = await Promise.all([
             sanityWriteClient.getDocument(draftId),
             sanityWriteClient.getDocument(publicId)
         ]);
 
+        // Capture previous update time for read-your-writes check
         let previousUpdatedAt = existingDraft?._updatedAt || originalDoc?._updatedAt;
+
+        // 2. Prepare Transaction
+        // Strategy: 
+        // If draft exists? Just Patch.
+        // If draft missing? CreateIfNotExists (Base on Original or New) + Patch.
+        // Using CreateIfNotExists prevents "Document already exists" race conditions.
 
         if (!existingDraft) {
             let initialDoc: any;
 
             if (originalDoc) {
+                // Clone published to draft
+                // Exclude system fields that shouldn't be copied to new draft
                 const { _rev, _updatedAt, _createdAt, ...rest } = originalDoc;
                 initialDoc = { ...rest, _id: draftId };
             } else {
+                // Rare case: Editing a document that doesn't exist yet in either state.
+                // We attempt to fetch type, or rely on patch to create it if possible (though createIfNotExists needs _type)
                 const docType = await sanityWriteClient.fetch(`*[_id == $id][0]._type`, { id: publicId });
                 if (docType) {
                     initialDoc = { _id: draftId, _type: docType };
@@ -121,26 +135,36 @@ export async function updateDocumentAction(docId: string, patchData: Record<stri
             }
 
             if (initialDoc) {
+                // ATOMIC OPERATION: Create if missing, ignore if someone else created it 1ms ago
                 tx.createIfNotExists(initialDoc);
             }
         }
 
+        // 3. Always Apply Patch
+        // If createIfNotExists ran, this patches the new doc.
+        // If it didn't run (doc existed), this patches the existing doc.
         tx.patch(draftId, (p) => p.set(patchData));
+
+        // 4. Commit
         await tx.commit({ autoGenerateArrayKeys: true, returnDocuments: false });
         
+        // --- Read-Your-Writes Consistency Check ---
         let finalDoc = null;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 10; // Max 2 seconds
         
         while (attempts < maxAttempts) {
+            // Force no-store to bypass Next.js Data Cache
             finalDoc = await sanityWriteClient.fetch(editorDocumentQuery, { id: publicId }, { cache: 'no-store' });
             
             if (finalDoc) {
+                // If it's a new doc (no previous timestamp) or updated (newer timestamp), we are good.
                 if (!previousUpdatedAt || finalDoc._updatedAt > previousUpdatedAt) {
                     break;
                 }
             }
             
+            // Wait 200ms before retrying
             await new Promise(r => setTimeout(r, 200));
             attempts++;
         }
@@ -190,7 +214,7 @@ export async function deleteMetadataAction(id: string): Promise<{ success: boole
     
     try {
         await sanityWriteClient.delete(id);
-        revalidateTag('studio-metadata');
+        revalidateTag('studio-metadata', 'max');
         return { success: true };
     } catch (error) {
         console.error("Failed to delete metadata:", error);
@@ -267,7 +291,7 @@ export async function createGameAction(title: string): Promise<{_id: string, tit
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try { 
         const newGame = await sanityWriteClient.create({ _type: 'game', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
-        revalidateTag('studio-metadata'); 
+        revalidateTag('studio-metadata', 'max'); 
         return { _id: newGame._id, title: newGame.title }; 
     } catch (error) { console.error("أخفق إنشاء اللعبة:", error); return null; }
 }
@@ -278,7 +302,7 @@ export async function createTagAction(title: string, category: 'Game' | 'Article
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR', 'REVIEWER', 'AUTHOR', 'REPORTER', 'DESIGNER'].includes(role))) { return null; }
     try { 
         const newTag = await sanityWriteClient.create({ _type: 'tag', title, category, slug: { _type: 'slug', current: slugify(title.toLowerCase()) } }); 
-        revalidateTag('studio-metadata');
+        revalidateTag('studio-metadata', 'max');
         return { _id: newTag._id, title: newTag.title }; 
     } catch (error) { console.error("أخفق إنشاء الوسم:", error); return null; }
 }
@@ -289,7 +313,7 @@ export async function createDeveloperAction(title: string): Promise<{_id: string
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR'].includes(role))) return null;
     try { 
         const newDev = await sanityWriteClient.create({ _type: 'developer', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
-        revalidateTag('studio-metadata');
+        revalidateTag('studio-metadata', 'max');
         return { _id: newDev._id, title: newDev.title }; 
     } catch (error) { console.error("Failed to create developer:", error); return null; }
 }
@@ -300,7 +324,7 @@ export async function createPublisherAction(title: string): Promise<{_id: string
     if (!userRoles.some((role: string) => ['ADMIN', 'DIRECTOR'].includes(role))) return null;
     try { 
         const newPub = await sanityWriteClient.create({ _type: 'publisher', title, slug: { _type: 'slug', current: slugify(title.toLowerCase(), { separator: '-' }) } }); 
-        revalidateTag('studio-metadata');
+        revalidateTag('studio-metadata', 'max');
         return { _id: newPub._id, title: newPub.title }; 
     } catch (error) { console.error("Failed to create publisher:", error); return null; }
 }
@@ -329,18 +353,24 @@ export async function uploadSanityAssetAction(formData: FormData): Promise<{ suc
     const file = formData.get('file') as File | null;
     if (!file) return { success: false, error: 'لم يُقدَّم ملف.' };
 
+    // SECURITY: Size Limit (5MB)
     if (file.size > 5 * 1024 * 1024) {
         return { success: false, error: 'حجم الملف يتجاوز الحد الأقصى (5MB).' };
     }
     
+    // SECURITY: Magic Byte Validation
     const validation = await validateImageFile(file);
     if (!validation.isValid) {
         return { success: false, error: validation.error || 'نوع الملف غير مدعوم.' };
     }
     
+    // SEO: Filename Sanitization (Slugify)
+    // Instead of just removing non-alphanumeric, we slugify the name to be SEO friendly
+    // e.g. "My Game Screenshot.jpg" -> "my-game-screenshot.jpg"
     const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
     const extension = file.name.substring(file.name.lastIndexOf('.'));
     
+    // Fallback if name is empty after processing
     const safeBaseName = slugify(originalName, { lowercase: true, separator: '-', allowedChars: 'a-zA-Z0-9' }) || `image-${Date.now()}`;
     const safeFilename = `${safeBaseName}${extension}`;
     

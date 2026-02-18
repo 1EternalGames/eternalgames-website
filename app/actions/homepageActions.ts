@@ -37,8 +37,8 @@ export async function updateReleasesCreditsAction(creatorIds: string[]) {
             .set({ releasesCredits: references })
             .commit();
 
-        revalidateTag('content');
-        revalidateTag('homepage-content-consolidated-v2');
+        revalidateTag('content', 'max');
+        revalidateTag('homepage-content-consolidated-v2', 'max');
 
         return { success: true, message: 'تم تحديث القائمة.' };
     } catch (error) {
@@ -47,6 +47,7 @@ export async function updateReleasesCreditsAction(creatorIds: string[]) {
     }
 }
 
+// CACHED ACTION: Fetches all staff members and their recent content
 export const getAllStaffAction = unstable_cache(
     async () => {
         try {
@@ -128,11 +129,12 @@ export const getAllStaffAction = unstable_cache(
     },
     ['all-staff-full-data-v4'], 
     { 
-        revalidate: false, 
+        revalidate: 3600, 
         tags: ['creators', 'content', 'enriched-creators'] 
     }
 );
 
+// CACHED ACTION: Fetches all tags and their recent items
 export const getAllTagsAction = unstable_cache(
     async () => {
         try {
@@ -161,14 +163,24 @@ export const getAllTagsAction = unstable_cache(
     },
     ['all-tags-full-data'], 
     { 
-        revalidate: false, 
+        revalidate: 3600, 
         tags: ['tag', 'content'] 
     }
 );
 
+// NEW: CACHED ACTION for RECENT GAMES
+// Strictly targeted pre-fetching for:
+// 1. Top 10 Reviews
+// 2. Top 12 Articles
+// 3. Top 18 News
+// 4. ALL Releases visible in the system (TBA + Any Date)
 export const getRecentGamesAction = unstable_cache(
     async () => {
         try {
+            // FIX: Removed date restrictions to fetch ALL relevant game hubs for releases.
+            // We fetch slugs for:
+            // 1. Recent content (Review/Article/News)
+            // 2. ALL Game Releases that have a linked game
             const slugQuery = groq`{
                 "reviews": *[_type == "review" && defined(game) && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...10].game->slug.current,
                 "articles": *[_type == "article" && defined(game) && defined(publishedAt) && publishedAt < now()] | order(publishedAt desc)[0...12].game->slug.current,
@@ -180,6 +192,7 @@ export const getRecentGamesAction = unstable_cache(
             
             const slugs = new Set<string>();
             
+            // Add all found slugs to the Set
             (slugsData.reviews || []).forEach((s: string) => s && slugs.add(s));
             (slugsData.articles || []).forEach((s: string) => s && slugs.add(s));
             (slugsData.news || []).forEach((s: string) => s && slugs.add(s));
@@ -189,20 +202,24 @@ export const getRecentGamesAction = unstable_cache(
 
             if (uniqueSlugs.length === 0) return [];
 
+            // 2. Fetch full Game Hub data for these specific games
             const query = groq`*[_type == "game" && slug.current in $slugs] {
                 _id,
                 title,
                 "slug": slug.current,
                 "mainImage": mainImage{${mainImageFields}},
                 
+                // Get ALL content for this game (up to 24 items)
                 "linkedContent": *[_type in ["review", "article", "news"] && defined(publishedAt) && publishedAt < now() && game->slug.current == ^.slug.current] | order(publishedAt desc)[0...24] { ${cardListProjection} }
             }`;
             
             const rawGames = await client.fetch(query, { slugs: uniqueSlugs });
             
+            // 3. Enrich the content lists
             const enrichedGames = await Promise.all(rawGames.map(async (game: any) => {
                 if (game.linkedContent && game.linkedContent.length > 0) {
                     game.linkedContent = await enrichContentList(game.linkedContent);
+                    // Mark as loaded so store knows not to fetch again
                     game.contentLoaded = true;
                 }
                 return game;
@@ -214,9 +231,9 @@ export const getRecentGamesAction = unstable_cache(
             return [];
         }
     },
-    ['recent-games-hubs-targeted-v7'],
+    ['recent-games-hubs-targeted-v7'], // Key updated
     { 
-        revalidate: false, 
+        revalidate: 3600, 
         tags: ['game', 'content'] 
     }
 );

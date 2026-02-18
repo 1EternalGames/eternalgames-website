@@ -95,7 +95,8 @@ export async function toggleUserBanAction(targetUserId: string, reason: string, 
             }
         });
 
-        revalidateTag('ban-status');
+        // THE FIX: Added 'max' profile argument
+        revalidateTag('ban-status', 'max');
         revalidatePath('/studio/director');
         
         return { success: true, message: shouldBan ? "تم حظر المستخدم." : "تم رفع الحظر." };
