@@ -43,6 +43,21 @@ export default function CommentsManager({ initialComments }: { initialComments: 
             toast.error('فشل الحذف');
         }
     };
+    
+    // Construct valid link based on content type
+    const getLink = (comment: any) => {
+        const type = comment.contentType;
+        const slug = comment.contentSlug;
+        if (!type) return `/${slug}`; // Fallback
+        
+        switch (type) {
+            case 'review': return `/reviews/${slug}`;
+            case 'article': return `/articles/${slug}`;
+            case 'news': return `/news/${slug}`;
+            case 'gameRelease': return `/releases`; // Releases might not have individual pages depending on design, or direct link
+            default: return `/${slug}`;
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -70,7 +85,7 @@ export default function CommentsManager({ initialComments }: { initialComments: 
                                 </div>
                                 <p className={styles.text}>{comment.content}</p>
                                 <div className={styles.actions}>
-                                    <Link href={`/${comment.contentSlug}`} className={styles.linkButton} target="_blank">
+                                    <Link href={getLink(comment)} className={styles.linkButton} target="_blank">
                                         عرض في الموقع ↗
                                     </Link>
                                     {!comment.isDeleted && (

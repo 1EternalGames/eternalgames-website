@@ -35,8 +35,21 @@ const CHANNEL_TRANSLATIONS: Record<string, string> = {
     'Unassigned': 'غير مصنف'
 };
 
+const DEVICE_TRANSLATIONS: Record<string, string> = {
+    'desktop': 'سطح المكتب',
+    'mobile': 'جوال',
+    'tablet': 'جهاز لوحي',
+    'smart tv': 'تلفاز ذكي',
+    'windows': 'Windows',
+    'macintosh': 'MacOS',
+    'android': 'Android',
+    'ios': 'iOS',
+    'linux': 'Linux'
+};
+
 const translateEvent = (name: string) => EVENT_TRANSLATIONS[name] || name;
 const translateChannel = (name: string) => CHANNEL_TRANSLATIONS[name] || name;
+const translateDevice = (name: string) => DEVICE_TRANSLATIONS[name.toLowerCase()] || name;
 
 
 // --- Shared Components ---
@@ -71,11 +84,12 @@ export const CyberCard = ({ children, className, delay = 0 }: { children: React.
     );
 };
 
-export const Header = ({ title }: { title: string }) => (
+export const Header = ({ title, children }: { title: string, children?: React.ReactNode }) => (
     <div className={styles.cardHeader}>
         <div className={styles.cardTitle}>
             <span style={{ color: 'var(--accent)' }}>//</span> {title}
         </div>
+        {children}
         <div className={styles.headerDecor}>
             <div className={styles.headerDot} />
             <div className={styles.headerDot} />
@@ -91,7 +105,7 @@ export const RealtimeBlock = ({ count }: { count: number }) => {
 
     return (
         <CyberCard className={styles.realtimeCard} delay={0}>
-            <Header title="حالة النظام" />
+            <Header title="الزوار النشطون الآن" />
             <div className={styles.pulseContainer}>
                 <div className={styles.hudRing} style={{ borderStyle: 'solid', borderWidth: '2px', borderColor: 'rgba(0,255,240,0.1)', width: '180px', height: '180px', animationDuration: isActive ? '30s' : '60s', animationDirection: 'reverse', opacity: 0.5 }} />
                 {isActive && <div className={styles.hudRing} />}
@@ -115,9 +129,23 @@ export const RealtimeBlock = ({ count }: { count: number }) => {
 };
 
 // --- 2. Trend Stream (Translated) ---
-export const TrendBlock = ({ data }: { data: any[] }) => (
+export const TrendBlock = ({ data, totalUsers, totalSessions }: { data: any[], totalUsers?: number, totalSessions?: number }) => (
     <CyberCard className={styles.trendCard} delay={0.1}>
-        <Header title="تدفق الزيارات" />
+        <Header title="تدفق الزيارات">
+            {(totalUsers !== undefined && totalSessions !== undefined) && (
+                <div className={styles.trendTotals}>
+                     <div className={styles.trendTotalItem}>
+                        <span>زوار:</span>
+                        <span className={styles.trendTotalValue}>{totalUsers}</span>
+                    </div>
+                    <span style={{opacity:0.3}}>|</span>
+                    <div className={styles.trendTotalItem}>
+                        <span>جلسات:</span>
+                        <span className={styles.trendTotalValue}>{totalSessions}</span>
+                    </div>
+                </div>
+            )}
+        </Header>
         <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -139,33 +167,98 @@ export const TrendBlock = ({ data }: { data: any[] }) => (
 
 // --- 3. Acquisition (Translated) ---
 export const AcquisitionBlock = ({ data }: { data: any[] }) => {
+    const total = data.reduce((sum, item) => sum + item.value, 0);
     const maxVal = Math.max(...data.map(d => d.value), 1);
+    
     return (
         <CyberCard className={styles.acquisitionCard} delay={0.2}>
-            <Header title="قوة الإشارة: المصادر" />
+            <Header title="مصادر الزيارات" />
             <div style={{ marginTop: '1rem' }}>
-                {data.map((item, i) => (
-                    <div key={i} className={styles.powerRow}>
-                        <div className={styles.powerHeader}>
-                            <span>{translateChannel(item.name)}</span>
-                            <span style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{item.value}</span>
+                {data.map((item, i) => {
+                    const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                    return (
+                        <div key={i} className={styles.powerRow}>
+                            <div className={styles.powerHeader}>
+                                <span>{translateChannel(item.name)}</span>
+                                <div style={{ display:'flex', gap:'0.5rem' }}>
+                                    <span style={{ color: '#888', fontSize: '1.1rem' }}>{percent}%</span>
+                                    <span className={styles.trendTotalValue}>{item.value}</span>
+                                </div>
+                            </div>
+                            <div className={styles.powerTrack}>
+                                <motion.div className={styles.powerFill} initial={{ width: 0 }} animate={{ width: `${(item.value / maxVal) * 100}%` }} transition={{ duration: 1, delay: 0.5 + (i * 0.1), ease: "circOut" }} />
+                            </div>
                         </div>
-                        <div className={styles.powerTrack}>
-                            <motion.div className={styles.powerFill} initial={{ width: 0 }} animate={{ width: `${(item.value / maxVal) * 100}%` }} transition={{ duration: 1, delay: 0.5 + (i * 0.1), ease: "circOut" }} />
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </CyberCard>
     );
 };
 
-// --- 4. Geo (Translated & Expandable) ---
+// --- NEW. Devices ---
+export const DevicesBlock = ({ dataCategory, dataOS }: { dataCategory: any[], dataOS: any[] }) => {
+    const [viewMode, setViewMode] = useState<'category' | 'os'>('category');
+    
+    const data = viewMode === 'category' ? dataCategory : dataOS;
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    
+    return (
+        <CyberCard className={styles.devicesCard} delay={0.25}>
+            <Header title="الأجهزة">
+                <div className={styles.miniToggle}>
+                    <button className={viewMode === 'category' ? styles.active : ''} onClick={() => setViewMode('category')}>النوع</button>
+                    <button className={viewMode === 'os' ? styles.active : ''} onClick={() => setViewMode('os')}>النظام</button>
+                </div>
+            </Header>
+            <div style={{ marginTop: '1rem', minHeight: '200px' }}>
+                <AnimatePresence mode='wait'>
+                    <motion.div
+                        key={viewMode}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {data.slice(0, 6).map((item, i) => {
+                            const percent = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                            return (
+                                <div key={i} className={styles.powerRow}>
+                                    <div className={styles.powerHeader}>
+                                        <span>{translateDevice(item.name)}</span>
+                                        <div style={{ display:'flex', gap:'0.5rem' }}>
+                                             <span style={{ color: '#888', fontSize: '1.1rem' }}>{percent}%</span>
+                                             <span className={styles.trendTotalValue}>{item.value}</span>
+                                        </div>
+                                    </div>
+                                    <div className={styles.powerTrack}>
+                                        <motion.div 
+                                            className={styles.powerFill} 
+                                            initial={{ width: 0 }} 
+                                            animate={{ width: `${(item.value / maxVal) * 100}%` }} 
+                                            transition={{ duration: 0.5, ease: "circOut" }}
+                                            style={{ background: i === 0 ? 'var(--accent)' : (i === 1 ? '#8B5CF6' : '#F472B6'), boxShadow: 'none' }}
+                                        />
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+        </CyberCard>
+    );
+};
+
+// --- 4. Geo (Translated & Expandable & Percentages) ---
 export const GeoBlock = ({ data }: { data: any[] }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const totalUsers = data.reduce((sum, item) => sum + item.users, 0);
+
     return (
         <CyberCard className={styles.geoCard} delay={0.3}>
-            <Header title="العقد الجغرافية" />
+            <Header title="أوطان الزوار" />
             <div className={styles.geoLayout}>
                 <div className={styles.radarContainer}>
                     <div className={styles.radarCircle} style={{ width: '100%', height: '100%' }} />
@@ -176,12 +269,18 @@ export const GeoBlock = ({ data }: { data: any[] }) => {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className={`${styles.countryList} ${isExpanded ? styles.expanded : ''}`}>
-                        {(isExpanded ? data : data.slice(0, 7)).map((c, i) => (
-                            <div key={i} className={styles.countryRow}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: '#666', fontSize: '0.8rem', fontFamily: 'monospace' }}>{(i+1).toString().padStart(2, '0')}</span>{c.country}</span>
-                                <span style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{c.users}</span>
-                            </div>
-                        ))}
+                        {(isExpanded ? data : data.slice(0, 7)).map((c, i) => {
+                             const percent = totalUsers > 0 ? Math.round((c.users / totalUsers) * 100) : 0;
+                             return (
+                                <div key={i} className={styles.countryRow}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ color: '#666', fontSize: '0.8rem', fontFamily: 'monospace' }}>{(i+1).toString().padStart(2, '0')}</span>{c.country}</span>
+                                    <div style={{ display:'flex', gap:'1rem' }}>
+                                        <span style={{ color: '#888', fontSize: '1.2rem', minWidth:'30px', textAlign:'left' }}>{percent}%</span>
+                                        <span className={styles.trendTotalValue}>{c.users}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                     {data.length > 7 && <button onClick={() => setIsExpanded(!isExpanded)} className={styles.expandButton}>{isExpanded ? 'عرض أقل' : 'عرض الكل'}</button>}
                 </div>
@@ -214,7 +313,7 @@ export const PagesBlock = ({ data }: { data: any[] }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     return (
         <CyberCard className={styles.listCard} delay={0.5}>
-            <Header title="القطاعات النشطة" />
+            <Header title="الصفحات الرائجة" />
             <div className={`${styles.terminalList} ${isExpanded ? styles.expanded : ''}`}>
                 {(isExpanded ? data : data.slice(0, 7)).map((item, i) => (
                     <motion.div key={i} className={styles.terminalItem} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.5 + (i * 0.05) }}>

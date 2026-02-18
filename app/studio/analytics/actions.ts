@@ -22,6 +22,7 @@ export async function getAnalyticsSummary() {
     return { users: userCount, comments: commentCount, engagements: engagementCount, shares: shareCount };
 }
 
+// OLD: Simple total counts (kept for fallback/init)
 export async function getContentCounts() {
     try {
         const session = await getAuthenticatedSession();
@@ -36,6 +37,28 @@ export async function getContentCounts() {
         return await client.fetch(query);
     } catch (error) {
         console.error("Failed to fetch Sanity content counts:", error);
+        return { reviews: 0, articles: 0, news: 0, releases: 0 };
+    }
+}
+
+// NEW: Date-range specific content counts
+export async function getContentProductionStats(startDateStr: string, endDateStr: string) {
+    try {
+        const session = await getAuthenticatedSession();
+        if (!session.user.roles.includes('DIRECTOR')) throw new Error('Unauthorized');
+
+        // Note: For releases we use releaseDate, for others publishedAt
+        const query = groq`{
+            "reviews": count(*[_type == "review" && publishedAt >= $startDate && publishedAt <= $endDate]),
+            "articles": count(*[_type == "article" && publishedAt >= $startDate && publishedAt <= $endDate]),
+            "news": count(*[_type == "news" && publishedAt >= $startDate && publishedAt <= $endDate]),
+            "releases": count(*[_type == "gameRelease" && releaseDate >= $startDate && releaseDate <= $endDate])
+        }`;
+
+        const data = await client.fetch(query, { startDate: startDateStr, endDate: endDateStr });
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch content production stats:", error);
         return { reviews: 0, articles: 0, news: 0, releases: 0 };
     }
 }
@@ -79,13 +102,17 @@ export async function fetchGoogleAnalytics(dateRange: '7d' | '28d' | '90d' = '28
             acquisitionReport,
             pagesReport,
             geoReport,
-            eventsReport
+            eventsReport,
+            devicesReport,
+            osReport // NEW: Operating System Report
         ] = await Promise.all([
+            // 1. Realtime
             analyticsDataClient.runRealtimeReport({
                 property: `properties/${propertyId}`,
                 dimensions: [{ name: 'country' }],
                 metrics: [{ name: 'activeUsers' }],
             }),
+            // 2. Trend
             analyticsDataClient.runReport({
                 property: `properties/${propertyId}`,
                 dateRanges: [{ startDate, endDate: 'today' }],
@@ -93,13 +120,14 @@ export async function fetchGoogleAnalytics(dateRange: '7d' | '28d' | '90d' = '28
                 metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
                 orderBys: [{ dimension: { orderType: 'ALPHANUMERIC', dimensionName: 'date' } }],
             }),
+            // 3. Acquisition
             analyticsDataClient.runReport({
                 property: `properties/${propertyId}`,
                 dateRanges: [{ startDate, endDate: 'today' }],
                 dimensions: [{ name: 'sessionDefaultChannelGroup' }],
                 metrics: [{ name: 'activeUsers' }],
             }),
-            // THE FIX: Increased limit to fetch more data
+            // 4. Pages
             analyticsDataClient.runReport({
                 property: `properties/${propertyId}`,
                 dateRanges: [{ startDate, endDate: 'today' }],
@@ -107,7 +135,7 @@ export async function fetchGoogleAnalytics(dateRange: '7d' | '28d' | '90d' = '28
                 metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
                 limit: 100,
             }),
-            // THE FIX: Increased limit
+            // 5. Geo
             analyticsDataClient.runReport({
                 property: `properties/${propertyId}`,
                 dateRanges: [{ startDate, endDate: 'today' }],
@@ -115,13 +143,27 @@ export async function fetchGoogleAnalytics(dateRange: '7d' | '28d' | '90d' = '28
                 metrics: [{ name: 'activeUsers' }],
                 limit: 100,
             }),
-            // THE FIX: Increased limit
+            // 6. Events
              analyticsDataClient.runReport({
                 property: `properties/${propertyId}`,
                 dateRanges: [{ startDate, endDate: 'today' }],
                 dimensions: [{ name: 'eventName' }],
                 metrics: [{ name: 'eventCount' }],
                 limit: 100,
+            }),
+            // 7. Devices (Category)
+            analyticsDataClient.runReport({
+                property: `properties/${propertyId}`,
+                dateRanges: [{ startDate, endDate: 'today' }],
+                dimensions: [{ name: 'deviceCategory' }],
+                metrics: [{ name: 'activeUsers' }],
+            }),
+            // 8. Devices (OS)
+            analyticsDataClient.runReport({
+                property: `properties/${propertyId}`,
+                dateRanges: [{ startDate, endDate: 'today' }],
+                dimensions: [{ name: 'operatingSystem' }],
+                metrics: [{ name: 'activeUsers' }],
             })
         ]);
         
@@ -153,12 +195,22 @@ export async function fetchGoogleAnalytics(dateRange: '7d' | '28d' | '90d' = '28
             country: row.dimensionValues?.[0]?.value || 'Unknown',
             iso: row.dimensionValues?.[1]?.value || '',
             users: parseInt(row.metricValues?.[0]?.value || '0', 10)
-        })) || [];
+        })).sort((a,b) => b.users - a.users) || [];
 
         const eventsData = eventsReport[0].rows?.map(row => ({
             name: row.dimensionValues?.[0]?.value || 'Unknown',
             count: parseInt(row.metricValues?.[0]?.value || '0', 10)
         })).sort((a,b) => b.count - a.count) || [];
+
+        const devicesCategoryData = devicesReport[0].rows?.map(row => ({
+            name: row.dimensionValues?.[0]?.value || 'Unknown',
+            value: parseInt(row.metricValues?.[0]?.value || '0', 10)
+        })).sort((a,b) => b.value - a.value) || [];
+
+        const devicesOSData = osReport[0].rows?.map(row => ({
+            name: row.dimensionValues?.[0]?.value || 'Unknown',
+            value: parseInt(row.metricValues?.[0]?.value || '0', 10)
+        })).sort((a,b) => b.value - a.value) || [];
 
         return {
             realtime: realtimeTotal,
@@ -166,7 +218,11 @@ export async function fetchGoogleAnalytics(dateRange: '7d' | '28d' | '90d' = '28
             acquisition: acquisitionData,
             pages: pagesData,
             geo: geoData,
-            events: eventsData
+            events: eventsData,
+            devices: {
+                category: devicesCategoryData,
+                os: devicesOSData
+            }
         };
 
     } catch (e: any) {
