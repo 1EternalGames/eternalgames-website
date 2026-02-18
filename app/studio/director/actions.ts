@@ -75,8 +75,9 @@ export async function updateUserRolesAction(userId: string, roleIds: number[]) {
             }
         }
         
-        revalidateTag('enriched-creators');
-        revalidateTag('studio-metadata'); 
+        // FIX: Added 'max' argument to satisfy type definition
+        revalidateTag('enriched-creators', 'max');
+        revalidateTag('studio-metadata', 'max'); 
         revalidatePath('/studio/director');
         return { success: true, updatedRoles: updatedUser.roles };
     } catch (error) {
