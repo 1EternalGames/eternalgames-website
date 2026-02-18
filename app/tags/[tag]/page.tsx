@@ -62,9 +62,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export async function generateStaticParams() {
     try {
         const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
-        // FIX: Filter out empty/null slugs
+        // FIX: Strict filtering
         return slugs
-            .filter(slug => slug && slug.trim() !== '')
+            .filter(slug => 
+                typeof slug === 'string' && 
+                slug.trim().length > 0 && 
+                slug !== '.' &&
+                !slug.includes('/')
+            )
             .map((slug) => ({
                 tag: slug,
             }));

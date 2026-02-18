@@ -7,13 +7,18 @@ import type { SanityGameRelease } from '@/types/sanity';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; 
 
 export async function generateStaticParams() {
-    // FIX: Added 'defined(slug.current)' to query and added JS filter
     const developers = await client.fetch<string[]>(`
         *[_type == "developer" && defined(slug.current)].slug.current
     `);
     
+    // FIX: Strict filtering
     return developers
-        .filter(slug => slug && slug.trim() !== '')
+        .filter(slug => 
+            typeof slug === 'string' && 
+            slug.trim().length > 0 && 
+            slug !== '.' &&
+            !slug.includes('/')
+        )
         .map(slug => ({ slug }));
 }
 

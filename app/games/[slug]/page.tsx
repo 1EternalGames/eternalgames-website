@@ -87,13 +87,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export async function generateStaticParams() {
     try {
         const slugs = await client.fetch<string[]>(`*[_type == "game" && defined(slug.current)][].slug.current`);
-        // FIX: Filter out empty strings to prevent "Resolved page mismatch" errors during build
+        // FIX: Strictly filter out invalid slugs (., empty, or paths)
         return slugs
-            .filter(slug => slug && slug.trim() !== '')
+            .filter(slug => 
+                typeof slug === 'string' && 
+                slug.trim().length > 0 && 
+                slug !== '.' &&
+                !slug.includes('/')
+            )
             .map((slug) => ({
                 slug,
             }));
     } catch (error) {
+        console.error("Error generating game params:", error);
         return [];
     }
 }
