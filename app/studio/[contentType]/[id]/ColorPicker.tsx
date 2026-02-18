@@ -139,7 +139,7 @@ export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverS
                     <input
                         ref={colorInputRef}
                         type="color"
-                        onInput={handleCustomColorChange}
+                        onChange={handleCustomColorChange}
                         value={currentColor}
                         className={styles.customColorInput}
                     />
@@ -148,5 +148,3 @@ export function ColorPicker({ editor, popoverStyle }: { editor: Editor, popoverS
         </motion.div>
     );
 }
-
-
