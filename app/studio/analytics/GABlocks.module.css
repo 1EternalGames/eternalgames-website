@@ -1,0 +1,410 @@
+/* --- GLOBAL GRID & LAYOUT --- */
+.gridContainer {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(180px, auto);
+    gap: 2.5rem;
+    margin-bottom: 6rem;
+    perspective: 1000px;
+}
+
+/* --- THE CYBER CARD CHASSIS --- */
+.cyberCard {
+    position: relative;
+    background: rgba(8, 10, 15, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 1), 0 20px 50px -10px rgba(0, 0, 0, 0.5);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform-style: preserve-3d;
+}
+
+.cyberCard::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.cyberCard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 1px,
+        rgba(0, 255, 240, 0.02) 2px,
+        rgba(0, 255, 240, 0.02) 3px
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cyberCard:hover {
+    border-color: rgba(0, 255, 240, 0.3);
+    box-shadow: 0 0 30px rgba(0, 255, 240, 0.1);
+    transform: translateY(-5px) translateZ(10px);
+}
+
+.cyberCard:hover::before {
+    opacity: 1;
+    box-shadow: 0 0 15px var(--accent);
+}
+
+.glowSpot {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(0, 255, 240, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    mix-blend-mode: screen;
+}
+.cyberCard:hover .glowSpot { opacity: 1; }
+
+/* --- HEADER STYLES --- */
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.cardTitle {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.headerDecor {
+    display: flex;
+    gap: 4px;
+}
+.headerDot {
+    width: 4px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 50%;
+}
+.cyberCard:hover .headerDot {
+    background: var(--accent);
+    box-shadow: 0 0 5px var(--accent);
+    transition: background 0.3s ease;
+}
+
+/* --- 1. REALTIME HEARTBEAT --- */
+.realtimeCard {
+    grid-column: span 3;
+    background: linear-gradient(160deg, rgba(10,11,15,0.9) 0%, rgba(5,5,5,1) 100%);
+}
+
+.pulseContainer {
+    position: relative;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.hudRing {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 50%;
+    animation: spin 20s linear infinite;
+}
+.hudRing::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 4px;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+.realtimeValue {
+    font-family: var(--font-heading);
+    font-size: 6.4rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(0, 255, 240, 0.4);
+    z-index: 2;
+}
+
+.liveBadge {
+    position: absolute;
+    bottom: 2rem;
+    left: 2rem;
+    right: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--accent);
+    font-family: var(--font-main), sans-serif;
+    font-size: 1.2rem;
+}
+
+.ecgLine {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    opacity: 0.3;
+}
+
+/* --- 2. TREND STREAM --- */
+.trendCard {
+    grid-column: span 9;
+}
+.chartContainer {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    z-index: 5;
+}
+
+/* --- 3. ACQUISITION POWER CELLS --- */
+.acquisitionCard {
+    grid-column: span 4;
+}
+
+.powerRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.powerHeader {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-main), sans-serif;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.powerTrack {
+    height: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+    padding: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+.powerFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, #fff 100%);
+    box-shadow: 0 0 10px var(--accent);
+    border-radius: 1px;
+    position: relative;
+}
+
+.powerTrack::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(90deg, transparent 90%, black 90%);
+    background-size: 10% 100%;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* --- 4. GEO RADAR --- */
+.geoCard {
+    grid-column: span 8;
+}
+
+.geoLayout {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 2rem;
+    height: 100%;
+}
+
+.countryList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    overflow: hidden;
+    max-height: 280px; /* NEW: Adjusted height for 7 items */
+    transition: max-height 0.4s ease-out;
+}
+
+.countryList.expanded {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.countryList.expanded::-webkit-scrollbar { width: 4px; }
+.countryList.expanded::-webkit-scrollbar-track { background: transparent; }
+.countryList.expanded::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+.countryRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    cursor: default;
+    font-family: var(--font-main), sans-serif;
+}
+.countryRow:hover {
+    background: rgba(0, 255, 240, 0.1);
+    border-color: rgba(0, 255, 240, 0.3);
+}
+
+.radarContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(0,255,240,0.05) 0%, transparent 60%);
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    max-height: 280px;
+    margin: 0 auto;
+}
+
+.radarCircle {
+    position: absolute;
+    border: 1px solid rgba(0, 255, 240, 0.2);
+    border-radius: 50%;
+}
+
+.radarSweep {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    top: 0; left: 0;
+    transform-origin: 100% 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,255,240,0.1) 100%);
+    animation: spin 4s linear infinite;
+    border-right: 1px solid rgba(0, 255, 240, 0.5);
+    z-index: 1;
+}
+
+/* --- 5. TERMINAL LISTS (Pages & Events) --- */
+.listCard {
+    grid-column: span 6;
+}
+
+.terminalList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-family: var(--font-main), sans-serif;
+    max-height: 350px; /* NEW: Adjusted height for 7 items */
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+}
+
+.terminalList.expanded {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.terminalList.expanded::-webkit-scrollbar { width: 4px; }
+.terminalList.expanded::-webkit-scrollbar-track { background: transparent; }
+.terminalList.expanded::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+.terminalItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.terminalItem:hover {
+    color: var(--accent);
+    background: rgba(0,255,240,0.05);
+    padding-left: 1.5rem;
+}
+.terminalItem:hover::before {
+    content: '>';
+    margin-right: 0.5rem;
+    color: var(--accent);
+}
+
+.terminalValue {
+    color: #fff;
+    font-weight: 700;
+}
+
+/* Expand Button */
+.expandButton {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem 1.5rem;
+    border-radius: 99px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-family: var(--font-main);
+    transition: all 0.2s ease;
+    margin-top: 1.5rem;
+    align-self: center;
+}
+
+.expandButton:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0, 255, 240, 0.1);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+    .realtimeCard, .acquisitionCard, .listCard {
+        grid-column: span 6;
+    }
+    .trendCard, .geoCard {
+        grid-column: span 12;
+    }
+}
+
+@media (max-width: 768px) {
+    .gridContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    .geoLayout {
+        grid-template-columns: 1fr;
+    }
+}

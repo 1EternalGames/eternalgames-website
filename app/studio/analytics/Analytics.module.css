@@ -1,0 +1,331 @@
+/* app/studio/analytics/Analytics.module.css */
+
+.container {
+    padding-top: 4rem;
+    padding-bottom: 6rem;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 5rem;
+    position: relative;
+}
+
+.title {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(to bottom, #fff 40%, rgba(255,255,255,0.5));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 240, 0.2));
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.6rem;
+}
+
+.dateBtn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem 1.5rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.dateBtn:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+.dateBtn.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 700;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2.5rem;
+    margin-bottom: 4rem;
+}
+
+.card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 180px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px -5px rgba(0, 255, 240, 0.15);
+    border-color: var(--accent);
+}
+
+.cardIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.cardValue {
+    font-size: 4.2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-heading);
+    letter-spacing: -1px;
+}
+
+.cardLabel {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Vercel Card Specifics */
+.vercelCard {
+    grid-column: 1 / -1;
+    background: black;
+    border-color: #333;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 120px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.vercelCard:hover {
+    border-color: #fff;
+    box-shadow: 0 0 30px rgba(255,255,255,0.1);
+}
+
+.vercelLogoArea {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.vercelIcon {
+    width: 60px;
+    height: 60px;
+    color: white;
+}
+
+.vercelText h3 {
+    color: white;
+    font-size: 2.4rem;
+    margin: 0 0 0.5rem 0;
+}
+.vercelText p {
+    color: #888;
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.vercelAction {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: white;
+    color: black;
+    padding: 1rem 2rem;
+    border-radius: 99px;
+    font-weight: 700;
+    font-size: 1.4rem;
+    transition: transform 0.2s ease;
+}
+
+.vercelCard:hover .vercelAction {
+    transform: scale(1.05);
+}
+
+/* Charts Section */
+.chartsSection {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2.5rem;
+}
+
+.chartCard {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    min-height: 400px;
+}
+
+.chartTitle {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Custom Bar Chart */
+.barChart {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+    justify-content: center;
+}
+
+.barRow {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.barLabel {
+    width: 100px;
+    text-align: right;
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.barTrack {
+    flex-grow: 1;
+    height: 24px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.barFill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 6px;
+    position: relative;
+    min-width: 4px;
+}
+
+.barFill.reviews { background: #00FFF0; box-shadow: 0 0 15px rgba(0,255,240,0.3); }
+.barFill.articles { background: #A78BFA; box-shadow: 0 0 15px rgba(167,139,250,0.3); }
+.barFill.news { background: #F472B6; box-shadow: 0 0 15px rgba(244,114,182,0.3); }
+.barFill.releases { background: #FACC15; box-shadow: 0 0 15px rgba(250,204,21,0.3); }
+
+.barValue {
+    margin-right: 1rem;
+    font-family: monospace;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    width: 40px;
+}
+
+.uplinkCard {
+    text-decoration: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 100px;
+    transition: all 0.3s ease;
+}
+
+.logoArea {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.uplinkIcon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+}
+
+.uplinkText h3 {
+    margin: 0 0 0.2rem 0;
+    font-size: 1.6rem;
+    color: var(--text-primary);
+}
+.uplinkText p {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+}
+
+.uplinkAction {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.uplinkCard:hover {
+    border-color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
+}
+.uplinkCard:hover .uplinkAction {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+}
+
+@media (max-width: 1024px) {
+    .chartsSection {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .vercelCard {
+        flex-direction: column;
+        text-align: center;
+        gap: 2rem;
+        padding: 3rem;
+    }
+    .vercelLogoArea {
+        flex-direction: column;
+    }
+}
