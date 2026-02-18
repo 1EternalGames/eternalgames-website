@@ -61,9 +61,8 @@ export async function POST(req: NextRequest) {
         tagsToInvalidate.add('universal-base');
     }
 
-    // Execute Revalidations
     tagsToInvalidate.forEach(tag => {
-        revalidateTag(tag);
+        revalidateTag(tag, 'max');
         console.log(`[REVALIDATE] Triggered tag: ${tag}`);
     });
 

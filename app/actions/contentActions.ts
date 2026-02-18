@@ -51,7 +51,7 @@ export async function setLikeAction(contentId: number, contentType: string, cont
         if (!limitCheck.success) return { success: false, error: "تم تجاوز الحد المسموح." };
 
         await setEngagement(session.user.id, contentId, contentType, 'LIKE', isLiked);
-        revalidateTag('engagement-scores');
+        revalidateTag('engagement-scores', 'max');
         return { success: true };
     } catch (error: any) {
         console.error("CRITICAL: setLikeAction failed:", error);
@@ -71,7 +71,7 @@ export async function recordShareAction(contentId: number, contentType: string, 
         await prisma.share.create({
             data: { userId, contentId, contentType },
         });
-        revalidateTag('engagement-scores');
+        revalidateTag('engagement-scores', 'max');
         
         const updatedShares = await prisma.share.findMany({
             where: { userId },
