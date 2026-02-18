@@ -20,7 +20,7 @@ import { usePerformanceStore } from '@/lib/performanceStore';
 import KineticLink from '@/components/kinetic/KineticLink'; 
 import { generateLayoutId } from '@/lib/layoutUtils'; 
 
-import { Calendar03Icon } from '@/components/icons';
+import { Calendar03Icon } from '@/components/icons/index';
 import PCIcon from '@/components/icons/platforms/PCIcon';
 import PS5Icon from '@/components/icons/platforms/PS5Icon';
 import XboxIcon from '@/components/icons/platforms/XboxIcon';
@@ -76,6 +76,43 @@ export const PlatformNames: Record<string, string> = { 'PC': 'PC', 'PlayStation'
 const PLATFORM_SORT_WEIGHTS: Record<string, number> = { 'Switch': 4, 'Xbox': 3, 'PlayStation': 2, 'PC': 1 };
 
 const morphTransition: Transition = { type: "spring", stiffness: 220, damping: 25, mass: 1.0 };
+
+const VideoModal = ({ trailerId, onClose }: { trailerId: string, onClose: (e: React.MouseEvent | React.TouchEvent) => void }) => {
+    return (
+        <AnimatePresence>
+            {createPortal(
+                <motion.div 
+                    className={styles.videoOverlay}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                >
+                     <motion.div 
+                        className={styles.videoModal}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button className={styles.modalCloseButton} onClick={onClose}>
+                            <span>إغلاق</span>
+                            <CloseIcon />
+                        </button>
+                        <iframe 
+                            src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&controls=1&modestbranding=1&rel=0&mute=1`} 
+                            title="Trailer Modal" 
+                            style={{ width: '100%', height: '100%', border: 'none' }} 
+                            allow="autoplay; encrypted-media; fullscreen" 
+                            allowFullScreen 
+                        />
+                    </motion.div>
+                </motion.div>,
+                document.body
+            )}
+        </AnimatePresence>
+    );
+};
 
 interface SatelliteItem {
     type: string;
@@ -450,33 +487,7 @@ const TimelineCardComponent = ({
             {mounted && createPortal(
                 <AnimatePresence>
                     {showVideoModal && trailerId && (
-                        <motion.div 
-                            className={styles.videoOverlay}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={handleCloseVideo}
-                        >
-                             <motion.div 
-                                className={styles.videoModal}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <button className={styles.modalCloseButton} onClick={handleCloseVideo}>
-                                    <span>إغلاق</span>
-                                    <CloseIcon />
-                                </button>
-                                <iframe 
-                                    src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&controls=1&modestbranding=1&rel=0`} 
-                                    title="Trailer Modal" 
-                                    style={{ width: '100%', height: '100%', border: 'none' }} 
-                                    allow="autoplay; encrypted-media; fullscreen" 
-                                    allowFullScreen 
-                                />
-                            </motion.div>
-                        </motion.div>
+                        <VideoModal trailerId={trailerId} onClose={handleCloseVideo} />
                     )}
                 </AnimatePresence>,
                 document.body
@@ -484,8 +495,8 @@ const TimelineCardComponent = ({
 
             <motion.div
                 ref={livingCardRef}
-                className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
                 {...handlers}
+                className={`${styles.livingCardWrapper} ${isHovered ? styles.activeState : ''} ${!isCornerAnimationEnabled ? 'noCornerAnimation' : ''}`}
                 style={animationStyles}
             >
                 <div className={`${styles.timelineCard} ${autoHeight ? styles.autoHeight : ''} ${variant === 'homepage' ? styles.homepage : ''}`} style={{ position: 'relative' }}>
@@ -493,7 +504,7 @@ const TimelineCardComponent = ({
                     <div style={{ position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none' }}>
                          {isVideoActive && trailerId && (
                             <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', zIndex: 110, pointerEvents: 'auto' }}>
-                                <iframe ref={videoRef} src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&controls=1&modestbranding=1&rel=0`} title="Trailer" style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover', borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+                                <iframe ref={videoRef} src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&controls=1&modestbranding=1&rel=0&mute=1`} title="Trailer" style={{ width: '100%', height: '100%', border: 'none', objectFit: 'cover', borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }} allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
                                 <button onClick={handleCloseVideo} onTouchStart={(e) => e.stopPropagation()} className={styles.videoCloseButton}> <CloseIcon /> </button>
                             </div>
                         )}
