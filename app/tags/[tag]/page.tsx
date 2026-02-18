@@ -8,7 +8,7 @@ import { getCachedTagPageData } from '@/lib/sanity.fetch';
 import { client } from '@/lib/sanity.client'; 
 import { enrichContentList } from '@/lib/enrichment'; 
 import { unstable_cache } from 'next/cache';
-import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; 
 
 export const dynamicParams = true;
 
@@ -62,9 +62,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export async function generateStaticParams() {
     try {
         const slugs = await client.fetch<string[]>(`*[_type == "tag" && defined(slug.current)][].slug.current`);
-        return slugs.map((slug) => ({
-            tag: slug,
-        }));
+        // FIX: Filter out empty/null slugs
+        return slugs
+            .filter(slug => slug && slug.trim() !== '')
+            .map((slug) => ({
+                tag: slug,
+            }));
     } catch (error) {
         return [];
     }

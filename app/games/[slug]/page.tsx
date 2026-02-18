@@ -9,7 +9,7 @@ import { unstable_cache } from 'next/cache';
 import { groq } from 'next-sanity';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import VideoGameJsonLd from '@/components/seo/VideoGameJsonLd';
-import GameHubClient from '@/components/GameHubClient'; // <--- IMPORTED
+import GameHubClient from '@/components/GameHubClient'; 
 
 export const dynamicParams = true;
 
@@ -87,9 +87,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export async function generateStaticParams() {
     try {
         const slugs = await client.fetch<string[]>(`*[_type == "game" && defined(slug.current)][].slug.current`);
-        return slugs.map((slug) => ({
-            slug,
-        }));
+        // FIX: Filter out empty strings to prevent "Resolved page mismatch" errors during build
+        return slugs
+            .filter(slug => slug && slug.trim() !== '')
+            .map((slug) => ({
+                slug,
+            }));
     } catch (error) {
         return [];
     }

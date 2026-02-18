@@ -4,14 +4,17 @@ import { notFound } from 'next/navigation';
 import { groq } from 'next-sanity';
 import ReleasePageClient from '@/app/releases/ReleasePageClient';
 import type { SanityGameRelease } from '@/types/sanity';
-import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; // ADDED
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd'; 
 
 export async function generateStaticParams() {
+    // FIX: Added 'defined(slug.current)' to query and added JS filter
     const developers = await client.fetch<string[]>(`
-        *[_type == "developer"].slug.current
+        *[_type == "developer" && defined(slug.current)].slug.current
     `);
     
-    return developers.map(slug => ({ slug }));
+    return developers
+        .filter(slug => slug && slug.trim() !== '')
+        .map(slug => ({ slug }));
 }
 
 export const dynamicParams = true;
