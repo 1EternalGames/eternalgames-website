@@ -18,7 +18,7 @@ export default async function ReviewsPage() {
   // The layout has already fetched it, so this cache hit is cheap.
   // We need it to pass to the Client Component for the "Base Layer" if user reloads here.
   const data = await getUniversalBaseData();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.eternalgamesweb.com';
 
   // Extract Review Data from Universal Set
   const { reviews: allReviews, metadata: meta } = data;

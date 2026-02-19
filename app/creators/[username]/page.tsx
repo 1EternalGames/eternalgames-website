@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getCachedCreatorData(username);
   if (!data || !data.user) return {};
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.eternalgamesweb.com';
   const title = `أعمال ${data.user.name || username}`;
   const description = `استكشف جميع مساهمات ${data.user.name || username} على منصة EternalGames.`;
   const ogImageUrl = data.user.image || `${siteUrl}/og.png`;
@@ -103,7 +103,7 @@ export default async function CreatorHubPage({ params }: { params: Promise<{ use
     }
 
     const { user, items: allItems } = data;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.eternalgamesweb.com';
     const profileUrl = `${siteUrl}/creators/${user.username}`;
 
     const socialLinks = [];

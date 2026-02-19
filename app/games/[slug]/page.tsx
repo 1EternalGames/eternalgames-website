@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!data) return {}; 
   
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.eternalgamesweb.com';
   const title = `محور لعبة: ${data.title}`;
   const description = data.synopsis || `استكشف كل المحتوى المتعلق بلعبة ${data.title} على EternalGames.`;
   const ogImageUrl = data.mainImage 

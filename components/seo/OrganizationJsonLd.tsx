@@ -2,7 +2,7 @@
 import React from 'react';
 
 export default function OrganizationJsonLd() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.eternalgamesweb.com';
   
   const schema = {
     "@context": "https://schema.org",
@@ -11,7 +11,7 @@ export default function OrganizationJsonLd() {
     "url": siteUrl,
     "logo": {
         "@type": "ImageObject",
-        "url": `${siteUrl}/icon.png`,
+        "url": `${siteUrl}/icon.svg`,
         "width": 512,
         "height": 512
     },

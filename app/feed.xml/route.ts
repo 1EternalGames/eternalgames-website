@@ -69,12 +69,12 @@ export async function GET() {
       <channel>
         <title>EternalGames</title>
         <link>${siteUrl}</link>
-        <description>حيث لا تُفنى الألعاب - مراجعات، أخبار، ومقالات.</description>
+        <description>عالمٌ يُنسيك ما سِواه - مراجعات، أخبار، ومقالات.</description>
         <language>ar</language>
         <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
         <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml" />
         <image>
-            <url>${siteUrl}/icon.png</url>
+            <url>${siteUrl}/icon.svg</url>
             <title>EternalGames</title>
             <link>${siteUrl}</link>
         </image>

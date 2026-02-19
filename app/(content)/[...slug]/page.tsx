@@ -61,7 +61,7 @@ function generateStructuredData(item: any, type: string, url: string) {
             "name": "EternalGames",
             "logo": {
                 "@type": "ImageObject",
-                "url": `${siteUrl}/icon.png`
+                "url": `${siteUrl}/icon.svg`
             }
         }
     };

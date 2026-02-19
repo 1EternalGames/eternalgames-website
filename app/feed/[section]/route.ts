@@ -87,7 +87,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ sect
         <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
         <atom:link href="${siteUrl}/feed/${section}" rel="self" type="application/rss+xml" />
         <image>
-            <url>${siteUrl}/icon.png</url>
+            <url>${siteUrl}/icon.svg</url>
             <title>${titleMap[section]}</title>
             <link>${siteUrl}/${section}</link>
         </image>

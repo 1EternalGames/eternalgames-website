@@ -2,7 +2,7 @@
 import React from 'react';
 
 export default function AboutPageJsonLd() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternalgames.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.eternalgamesweb.com';
   
   const schema = {
     "@context": "https://schema.org",
